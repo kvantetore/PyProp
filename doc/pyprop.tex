@@ -11,7 +11,7 @@
 Pyprop is a framework for propagating the TDSE (or similar equations) in time. It is written in
 C++/Python, using boost::python as the interface between C++ and Python. An introduction to pyprop 
 is given in this document, along with information on how to install and use pyprop for
-specific problems.
+specific problems. Pyprop is hosted on Google Code (http://code.google.com/p/pyprop/)
 \end{abstract}
 
 %------------------------------------------------------------------
@@ -248,15 +248,14 @@ The initial condition section specifies how the initial wavefunction should be i
 	type = InitialConditionType.Function
 	function = lambda conf, x: 1
 \end{verbatim}
+Type specified by which method the initial function should be created. "InitialConditionType.Function" means that the
+wavefunction should be created from an inline python function. The function variable declares the function which evaluates
+the initial wavefunction at every grid point, and will most oftenly be an inline lambda expression. The function should take
+two parameters, the first being the current config section, and the second beeing a list containing the grid points.
 
-
-\begin{verbatim}
-	[StaticPotential]
-	type = PotentialType.Static
-	function = lambda conf, x: 0.5 * conf.strength**2 * sum(asarray(x)**2) 
-	strength = 1
-\end{verbatim}
-
+\subsubsection*{[Propagation]}
+The propagation section specifies how the propagator should be created, and gives details on how we should
+proceed from one timestep to another.
 \begin{verbatim}
 	[Propagation]
 	propagator = CartesianPropagator
@@ -265,7 +264,25 @@ The initial condition section specifies how the initial wavefunction should be i
 	duration = 10
 	renormalization = True
 \end{verbatim}
+The most important thing to note here, is the propagator variable, which specifies which propagator class to use
+for propagating the wavefunction. This propagator must know how to handle the representation specified in the
+representation section. Another important concept is potential evaluation. This variable gives a list of the
+"normal" potentials used in this propagation. In this case it is only one potential, namely "StaticPotential". 
+Pyprop looks for a configuration section with the same label as the name of the potential, and tries to create
+a potential based on this. The propagators will then use these potentials in the propagation.
 
+\subsubsection*{[StaticPotential]}
+The potential section is special in that the label is insignificant, it must only match the name reffered to in
+the propagation section. It's layout is very similar to the initial condition section.
+\begin{verbatim}
+	[StaticPotential]
+	type = PotentialType.Static
+	function = lambda conf, x: 0.5 * conf.strength**2 * sum(asarray(x)**2) 
+	strength = 1
+\end{verbatim}
+
+
+\subsubsection*{[Distribution]}
 \begin{verbatim}
 	[Distribution]
 	model = "LargestStride"

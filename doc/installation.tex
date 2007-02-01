@@ -40,18 +40,18 @@ the \textit{./patch/} subdirectory in the pyprop source directory.
 \section{Compilation}
 \subsection*{Getting the source tree}
 Locate the folder where you whish to install pyprop. This folder will be referenced to as the pyprop folder.
-First you must get the newest version from the subversion repository. UoB has no working subversion repository at
-the moment, so you must connect to my server (apokalypse.no). Username is provided on request to 
-tore.birkeland@math.uib.no. 
+First you must get the newest version from the subversion repository. The project is hosted on Google Code, and 
+can be accessed from subversion (svn). In your console window, run the command
 \begin{verbatim}
-	svn co http://apokalypse.no:81/svn/repo/pyprop/trunk .
+	svn co http://pyprop.googlecode.com/svn/trunk pyprop
 \end{verbatim}
-This will download the entire pyprop source code into the current directory. Later, you can get the latest
+This will download the entire pyprop source code into a folder called pyprop. Later, you can download the latest
 changes by typing
 \begin{verbatim}
 	svn update
 \end{verbatim}
-in the same folder.
+from the pyprop folder.
+
 
 \subsection*{Configuring Makefiles}
 When the pyprop is downloaded, the platform specific makefile must be configured. First make
