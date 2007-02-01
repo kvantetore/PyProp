@@ -1,0 +1,5 @@
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "pulse.cpp")
+
+PotentialEvaluator("CoulombPotential<1> 1","CoulombPotential_1")
+PotentialEvaluator("PulsePotential<1> 1","PulsePotential_1")
+

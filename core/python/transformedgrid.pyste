@@ -1,0 +1,18 @@
+
+#parameter
+Parameter = Class("TransformedGrid::Parameter", "transform/transformedgrid/tools.h")
+rename(Parameter, "TransformedGridParameter")
+TransformType = Enum("TransformedGrid::TransformType", "transform/transformedgrid/tools.h")
+
+#range
+TransformedRange = Class("TransformedRange", "representation/transformedrange.h")
+set_policy(TransformedRange.GetWeights, return_value_policy(return_by_value))
+set_policy(TransformedRange.GetGrid, return_value_policy(return_by_value))
+
+#representation
+Class("TransformedRadialRepresentation", "representation/transformedradialrepresentation.h")
+
+#transform
+TransformedGridPropagator = Template("TransformedGrid::Propagator", "transform/transformedgridpropagator.h")
+TransformedGridPropagator("1", "TransformedGridPropagator_1")
+TransformedGridPropagator("2", "TransformedGridPropagator_2")

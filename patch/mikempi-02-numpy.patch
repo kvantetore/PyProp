@@ -1,0 +1,144 @@
+diff -Naur src/mmpi_asynchronous.h ../../mikempi-1.0.102/src/mmpi_asynchronous.h
+--- src/mmpi_asynchronous.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_asynchronous.h	2006-07-25 00:09:07.000000000 +0200
+@@ -27,7 +27,7 @@
+ /* Standard Header files */
+ #include <mpi.h>
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <sys/types.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_cartesian.h ../../mikempi-1.0.102/src/mmpi_cartesian.h
+--- src/mmpi_cartesian.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_cartesian.h	2006-07-25 00:09:17.000000000 +0200
+@@ -28,7 +28,7 @@
+ /* Standard Header files */
+ #include <mpi.h>
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <sys/types.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_collective.h ../../mikempi-1.0.102/src/mmpi_collective.h
+--- src/mmpi_collective.h	2006-07-27 08:50:53.000000000 +0200
++++ ../../mikempi-1.0.102/src/mmpi_collective.h	2006-07-25 00:09:25.000000000 +0200
+@@ -20,7 +20,7 @@
+ 
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_comm.h ../../mikempi-1.0.102/src/mmpi_comm.h
+--- src/mmpi_comm.h	2006-02-22 07:08:51.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_comm.h	2006-07-25 00:09:31.000000000 +0200
+@@ -22,7 +22,7 @@
+ /* Standard Header files */
+ #include <mpi.h>
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ 
+ #include <sys/types.h>
+ #include <sys/stat.h>
+diff -Naur src/mmpi_error.h ../../mikempi-1.0.102/src/mmpi_error.h
+--- src/mmpi_error.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_error.h	2006-07-25 00:09:41.000000000 +0200
+@@ -21,7 +21,7 @@
+ 
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_graph.h ../../mikempi-1.0.102/src/mmpi_graph.h
+--- src/mmpi_graph.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_graph.h	2006-07-25 00:10:11.000000000 +0200
+@@ -27,7 +27,7 @@
+ /* Standard Header files */
+ #include <mpi.h>
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <sys/types.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_module.c ../../mikempi-1.0.102/src/mmpi_module.c
+--- src/mmpi_module.c	2006-07-27 08:50:53.000000000 +0200
++++ ../../mikempi-1.0.102/src/mmpi_module.c	2006-07-24 23:35:20.000000000 +0200
+@@ -32,7 +32,7 @@
+ */
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+diff -Naur src/mmpi_synchronous.h ../../mikempi-1.0.102/src/mmpi_synchronous.h
+--- src/mmpi_synchronous.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_synchronous.h	2006-07-25 00:10:07.000000000 +0200
+@@ -20,7 +20,7 @@
+ 
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff -Naur src/mmpi_timing.h ../../mikempi-1.0.102/src/mmpi_timing.h
+--- src/mmpi_timing.h	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/mmpi_timing.h	2006-07-25 00:10:16.000000000 +0200
+@@ -22,7 +22,7 @@
+ /* Standard Header files */
+ #include <mpi.h>
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff -Naur src/mmpi_utilities.h ../../mikempi-1.0.102/src/mmpi_utilities.h
+--- src/mmpi_utilities.h	2006-07-27 08:50:53.000000000 +0200
++++ ../../mikempi-1.0.102/src/mmpi_utilities.h	2006-07-25 00:10:39.000000000 +0200
+@@ -25,7 +25,7 @@
+ #define MPIMODULE_UTILITIES_H
+ 
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ 
+ #include "mmpi_globals.h"
+ 
+diff -Naur src/template.c.ignore ../../mikempi-1.0.102/src/template.c.ignore
+--- src/template.c.ignore	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/template.c.ignore	2006-07-25 00:10:49.000000000 +0200
+@@ -23,7 +23,7 @@
+ 
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+diff -Naur src/template.h.ignore ../../mikempi-1.0.102/src/template.h.ignore
+--- src/template.h.ignore	2006-01-31 21:53:58.000000000 +0100
++++ ../../mikempi-1.0.102/src/template.h.ignore	2006-07-25 00:11:02.000000000 +0200
+@@ -20,7 +20,7 @@
+ 
+ /* Standard Header files */
+ #include <Python.h>
+-#include <Numeric/arrayobject.h>
++#include <numpy/arrayobject.h>
+ #include <mpi.h>
+ #include <stdio.h>
+ #include <stdlib.h>

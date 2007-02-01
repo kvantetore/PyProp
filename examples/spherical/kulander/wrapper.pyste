@@ -1,0 +1,5 @@
+PotentialEvaluator = Template("SphericalDynamicPotentialEvaluator", "kulander.cpp")
+
+PotentialEvaluator("CoulombPotential<3> 2","CoulombPotential_2")
+PotentialEvaluator("KulanderPotential<3> 2","KulanderPotential_2")
+

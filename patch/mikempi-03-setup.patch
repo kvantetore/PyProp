@@ -1,0 +1,21 @@
+diff -Nau ./setup.py ../../mikempi-1.0.102/setup.py
+--- ./setup.py	2006-02-22 07:08:51.000000000 +0100
++++ ../../mikempi-1.0.102/setup.py	2006-07-27 09:05:01.000000000 +0200
+@@ -6,6 +6,8 @@
+ from distutils.sysconfig import get_python_inc
+ import distutils.unixccompiler
+ 
++import numpy
++
+ # process special arguments; these are default values
+ 
+ # /somepath/include/python2.4/Numeric
+@@ -48,7 +50,7 @@
+ # now go on and do the actual setup
+ 
+ SOURCE = ["src/mmpi_module.c"]
+-INCLUDES = [get_python_inc(prefix=array_prefix)]
++INCLUDES = [get_python_inc(prefix=array_prefix), numpy.__path__[0] + "/core/include"]
+ 
+ print 'Setting MMPI setup with Python ',sys.executable,', version ',sys.version
+ 

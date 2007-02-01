@@ -1,0 +1,6 @@
+
+DistributedModel = Template("DistributedModel", "mpi/distributedmodel.h")
+DistributedModel("1")
+DistributedModel("2")
+DistributedModel("3")
+DistributedModel("4")

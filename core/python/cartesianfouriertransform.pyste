@@ -1,0 +1,9 @@
+
+
+CartesianFourierTransform = Template("CartesianFourierTransform",
+"transform/cartesianfouriertransform.h")
+CartesianFourierTransform("1")
+CartesianFourierTransform("2")
+CartesianFourierTransform("3")
+CartesianFourierTransform("4")
+

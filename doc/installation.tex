@@ -1,0 +1,116 @@
+
+\chapter{Installation}
+\section{Prerequistes}
+Pyprop relies heavily on C++ templates, so a fairly standards compliant C++ compiler is required.
+It is developed using mainly GNU C++ and Intel C++, but other compliant compilers should work as well.
+Python 2.4 or newer is highly recommended. Pyprop might work with v2.2 or 2.3, but it is only tested on
+Python 2.4 and 2.5. Pyprop also uses pyste (a part of boost::python) to generate boost::python code. 
+A modified version of pyste must be installed in order to successfully compile pyprop.
+
+\textbf{An alternative to this procedure is to use someone elses prerequisites... add more info on that later}
+
+The following libaries must be compiled and available in order to compile pyprop
+\begin{itemize}
+\item blitz++ v0.9 (http://www.oonumerics.org/blitz)
+\item boost::python v1.33.1 (http://www.boost.org)
+\item BLAS (ATLAS or some other implementation supporting the cblas interface) (http://math-atlas.sourceforge.net/)
+\item LAPACK (http://netlib.org/lapack)
+\end{itemize}
+ATLAS and LAPACK can easily be compiled into one library, which simplifies things considerably. See the ATLAS documentation
+for more info.
+
+The following python modules must be installed and available in order to run pyprop:
+\begin{itemize}
+\item numpy v1.0 or later (http://numpy.scipy.org/)
+\item matplotlib 0.87.7 or later (http://matplotlib.sourceforge.net/)
+\end{itemize}
+	
+In addition the following modules are highly recommended:
+\begin{itemize}
+\item ipython (http://ipython.scipy.org) (A great interactive python interpreter)
+\item scipy (http://www.scipy.org) (Library for almost everything related to scientific computing)
+\item pymat (http://claymore.engineer.gvsu.edu/~steriana/Python/pymat.html) (MATLAB interface to Python. 
+	Makes it possible to do plotting and analyisis in MATLAB directly from Python)
+\end{itemize}
+
+Installation of the mentioned libraries and modules can be slightly tricky, and I will not cover the details here, 
+however pyste and blitz++ must be patched before they can be used with pyprop. The patch files can be found in 
+the \textit{./patch/} subdirectory in the pyprop source directory.
+
+\section{Compilation}
+\subsection*{Getting the source tree}
+Locate the folder where you whish to install pyprop. This folder will be referenced to as the pyprop folder.
+First you must get the newest version from the subversion repository. UoB has no working subversion repository at
+the moment, so you must connect to my server (apokalypse.no). Username is provided on request to 
+tore.birkeland@math.uib.no. 
+\begin{verbatim}
+	svn co http://apokalypse.no:81/svn/repo/pyprop/trunk .
+\end{verbatim}
+This will download the entire pyprop source code into the current directory. Later, you can get the latest
+changes by typing
+\begin{verbatim}
+	svn update
+\end{verbatim}
+in the same folder.
+
+\subsection*{Configuring Makefiles}
+When the pyprop is downloaded, the platform specific makefile must be configured. First make
+a copy of the example makefile provided
+\begin{verbatim}
+	cp Makefile.platform.example Makefile.platform
+\end{verbatim}
+and open Makefile.platform in your favourite editor. This is the only makefile you will need to edit. 
+Changes will be reflected in the pyprop core module as well as in all plugins compiled with the provided
+makefiles.
+
+The parameter MPICXX must be set to the compiler you whish to use. Unless -DINGLEPROC is set, this compiler
+must be able to compile MPI programs. Until the MPI-support has been properly fixed, it is strongly recommended
+to use \-DSINGLEPROC and a standard compiler like \textit{g++} or \textit{icpc}.
+The flag -DLONGSIZE\_32BIT be set if and only if pyprop is compiled under a 32bit operating system.
+
+For debugging, the following CPPFLAGS are recommended
+\begin{verbatim}
+	CPPFLAGS := $(CPPFLAGS) -DSINGLEPROC -DBZ_DEBUG -DPYPROP_DEBUG
+\end{verbatim}
+For optimization, the following -DBZ\_DEBUG and -DPYPROP\_DEBUG should not be used, and the following
+CXXFLAGS is suitable for the GNU C++ Compiler
+\begin{verbatim}
+	CXXFLAGS := $(CXXFLAGS) -Wall -O3 -ffast-math -funroll-loops
+\end{verbatim}
+For the Intel C++ Compiler, the following optimization flags is commonly used
+\begin{verbatim}
+	CXXFLAGS := -$(CXXFLAGS) -O3 -Zp16 -ip -ansi_alias -no-ipo
+\end{verbatim}
+
+\subsection*{Compiling}
+Compilation can be VERY time consuming, taking up to 20 minutes and consuming 200+MB RAM. 
+The most time consuming part of the compilation is when pyste generates boost::python wrappers, and
+it is generally recommended to drink some coffee while waiting.
+\begin{verbatim}
+	make clean
+	make pyclean
+	make
+\end{verbatim}
+The first time pyprop is built, it may complain about not knowing how to create certain .cpp files from
+.d files. In that case, just run \textit{make} again, and the problem should go away.
+
+
+Normally the autodependencies will take care of when recompilation of certain modules are needed, 
+such that the user will only need to type \textit{make}, and never \textit{make clean}. However, if
+some of the interfaces are changed, that is some public propery or method is added or changed, a pyste
+recompilation might be needed. In that case the user should do a complete remake to ensure that everything
+is up to date.
+\begin{verbatim}
+	make clean
+	make pyclean
+	make
+\end{verbatim}
+
+\section{Testing}
+Go to the pyprop folder, and run the command
+\begin{verbatim}
+	python -c "import pyprop"
+\end{verbatim}
+If that does not work it means that pyprop has not been properly compiled. If it works, you may go 
+on to test some examples
+

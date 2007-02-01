@@ -1,0 +1,32 @@
+
+The Core folder contains the core c++ routines. Make will build a python
+extension module from these sources, and put the output in ./pyprop/Core/_Core.so.
+
+To build pyprop, be sure to read INSTALL, and install all prerequisites.
+Then, copy Makefile.platform.example to Makefile.platform 
+
+cp Makefile.platform.example Makefile.platform
+
+This makefile can then be customized to suit your needs (set up optimization
+flags, support for other compilers/mpi-libraries, custom include paths etc.)
+
+when the makefile is to your liking, run make in the main directory, to build
+the extension module. The output library will be put in the folder
+
+./pyprop/core/
+
+where it will automatically be imported into python when you import pyprop
+
+----------------------------------------------------------------------------
+
+To use pyprop, put the root folder in your $PYTHONPATH, start python
+and run
+
+import pyprop
+prop = pyprop.LoadPropagator("config.ini")
+prop.SetupStep()
+
+if you have done changes to the python files in the stage folder, you can 
+reload the pyprop module by typing "pyprop = reload(pyprop)" in your 
+python interpreter.
+

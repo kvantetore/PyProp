@@ -1,0 +1,11 @@
+
+Function("EXPFD_GetDiagonalValue", "finitediff/exponentialfinitedifference.h")
+Function("EXPFD_UpdateEigenvalues", "finitediff/exponentialfinitedifference.h")
+Function("EXPFD_UpdateEigenvectors", "finitediff/exponentialfinitedifference.h")
+Function("EXPFD_UpdateBlock", "finitediff/exponentialfinitedifference.h")
+Function("EXPFD_UpdateDiagonal", "finitediff/exponentialfinitedifference.h")
+
+ExponentialFiniteDifferenceEvaluator = Template("ExponentialFiniteDifferenceEvaluator", "finitediff/exponentialfinitedifference.h")
+
+ExponentialFiniteDifferenceEvaluator("HarmonicOscillatorPotential<1> 1")
+

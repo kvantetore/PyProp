@@ -1,0 +1,8 @@
+
+SphericalTransformTensorGrid = Class("SphericalTransformTensorGrid", "transform/shtools.h")
+SphericalTransform3D = Class("SphericalTransform3D", "transform/sphericaltransform.h")
+#set_policy(SphericalTransform3D.CreateSphericalHarmonicRepr, return_value_policy(manage_new_object))
+#set_policy(SphericalTransform3D.CreateAngularRepresentation, return_value_policy(manage_new_object))
+
+RadialTransform = Template("RadialTransform", "transform/radialtransform.h")
+RadialTransform("2", "RadialTransform_2")

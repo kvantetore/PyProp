@@ -1,0 +1,2 @@
+execfile("groundstate.py")
+run()

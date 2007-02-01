@@ -1,0 +1,23 @@
+#Copy this file to Makefile.platform, and modify it
+#To suit your platform specific needs.
+#Compiler options set here will be included by makefiles in all subdirs
+
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS)
+CPPFLAGS       := $(CPPFLAGS) -DSINGLEPROC -DPYPROP_USE_BLAS
+MPICXX         := g++
+LAPACK_LIBS    := -llapack_pic -lf77blas -lcblas -latlas
+
+#pyprop CPPFLAGS:
+# -DSINGLEPROC  
+#    compile for single processor only. No MPI calls are made when this flag
+#    is set.
+#
+# -DLONGSIZE_32BIT
+#    compile for 32bit processor. currently this only affects the timer
+#    hltimer.h
+#
+#-DPYPROP_USE_BLAS
+#  	 use blas routines for matrix-vector, matrix-matrix, and 
+#  	 vector-vector operations.
+#  	 see core/utility/blitzblas.cpp for details
+#

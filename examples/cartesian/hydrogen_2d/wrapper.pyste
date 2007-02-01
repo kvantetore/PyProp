@@ -1,0 +1,7 @@
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "hydrogen.cpp")
+
+PotentialEvaluator("SoftColoumbPotential<1> 1","SoftColoumbPotential_1")
+PotentialEvaluator("SoftColoumbPotential<2> 2","SoftColoumbPotential_2")
+PotentialEvaluator("SoftColoumbPotential<3> 3","SoftColoumbPotential_3")
+PotentialEvaluator("SoftColoumbPotential<4> 4","SoftColoumbPotential_4")
+

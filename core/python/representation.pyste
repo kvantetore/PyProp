@@ -1,0 +1,7 @@
+Representation = Template("Representation", "representation/representation.h")
+set_policy(Representation.GetDistributedModel, return_internal_reference())
+Representation("1")
+Representation("2")
+Representation("3")
+Representation("4")
+

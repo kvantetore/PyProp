@@ -1,0 +1,11 @@
+
+Include("python/arrayfunctions.cpp")
+module_code('def("SetWavefunctionFromGridFunction_1", SetWavefunctionFromGridFunction<1>);\n')
+module_code('def("SetWavefunctionFromGridFunction_2", SetWavefunctionFromGridFunction<2>);\n')
+module_code('def("SetWavefunctionFromGridFunction_3", SetWavefunctionFromGridFunction<3>);\n')
+module_code('def("SetWavefunctionFromGridFunction_4", SetWavefunctionFromGridFunction<4>);\n')
+
+module_code('def("SetPotentialFromGridFunction_1", SetPotentialFromGridFunction<1>);\n')
+module_code('def("SetPotentialFromGridFunction_2", SetPotentialFromGridFunction<2>);\n')
+module_code('def("SetPotentialFromGridFunction_3", SetPotentialFromGridFunction<3>);\n')
+module_code('def("SetPotentialFromGridFunction_4", SetPotentialFromGridFunction<4>);\n')

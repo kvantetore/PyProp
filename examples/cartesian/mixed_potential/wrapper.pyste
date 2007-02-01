@@ -1,0 +1,17 @@
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "mixedpotential.cpp")
+
+PotentialEvaluator("MixedPotentialX<1> 1","MixedPotentialX_1")
+PotentialEvaluator("MixedPotentialX<2> 2","MixedPotentialX_2")
+PotentialEvaluator("MixedPotentialX<3> 3","MixedPotentialX_3")
+PotentialEvaluator("MixedPotentialX<4> 4","MixedPotentialX_4")
+
+PotentialEvaluator("MixedPotentialY<1> 1","MixedPotentialY_1")
+PotentialEvaluator("MixedPotentialY<2> 2","MixedPotentialY_2")
+PotentialEvaluator("MixedPotentialY<3> 3","MixedPotentialY_3")
+PotentialEvaluator("MixedPotentialY<4> 4","MixedPotentialY_4")
+
+PotentialEvaluator("GridPotential<1> 1","GridPotential_1")
+PotentialEvaluator("GridPotential<2> 2","GridPotential_2")
+PotentialEvaluator("GridPotential<3> 3","GridPotential_3")
+PotentialEvaluator("GridPotential<4> 4","GridPotential_4")
+

@@ -1,0 +1,101 @@
+include makefiles/Makefile.include
+
+#output
+MODULE_NAME	= libcore
+OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
+
+#pyste source files
+#IMPORTANT: The order of these files ARE significant
+#due to a required change in pyste. Any base class must be
+#exported before its subclasses
+PYSTEFILES = \
+	python/representation.pyste \
+	python/transformedgrid.pyste \
+	python/arrayfunctions.pyste \
+	python/dynamicpotential.pyste \
+	python/configurationwrapper.pyste \
+	python/blitzwrapper.pyste \
+	python/cartesianfouriertransform.pyste \
+	python/cartesianpotential.pyste \
+	python/sphericalrepresentation.pyste \
+	python/cartesianrange.pyste \
+	python/distributedmodel.pyste \
+	python/staticpotential.pyste \
+	python/exponentialfinitediff.pyste \
+	python/sphericaltransform.pyste \
+	python/wavefunction.pyste
+PYSTEOUTPUTDIR   = python/pysteoutput
+PYSTEOUTPUTFILES = $(addprefix $(PYSTEOUTPUTDIR)/_, $(notdir $(PYSTEFILES:%.pyste=%.cpp)))
+PYSTEOUTPUT      = python/wrapper.cpp
+
+#C++ source files
+SOURCES= \
+	utility/blitzblas.cpp \
+	transform/transformedgridpropagator.cpp \
+	transform/transformedgrid/tgridweights.cpp \
+	transform/transformedgrid/tgridcheb.cpp \
+	transform/transformedgrid/tgridsetup.cpp \
+	transform/transformedgrid/tgridxymat.cpp \
+	wavefunction.cpp \
+	representation/combinedrepresentation.cpp  \
+	representation/sphericalrepresentation3d.cpp \
+	configuration.cpp \
+	transform/radialtransform.cpp \
+	transform/sphericalharmonics.cpp \
+	transform/fouriertransform.cpp \
+	transform/cartesianfouriertransform.cpp \
+	transform/shtools.cpp \
+	representation/cartesianrepresentation.cpp \
+	representation/angularrepresentation.cpp \
+	mpi/distributedmodel.cpp \
+	python/pysteoutput/_main.cpp \
+	finitediff/exponentialfinitedifference.cpp \
+	$(PYSTEOUTPUTFILES) 
+SOURCEFILES=$(notdir $(SOURCES))
+
+#C++ object files
+OBJECTS=$(SOURCES:.cpp=.o)
+
+#autodependencies
+DEPDIR = .deps
+df = $(DEPDIR)/$(*F)
+DEPENDENCIES=$(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
+
+all: $(OUTPUT)
+
+$(OUTPUT): $(OBJECTS)
+	$(LD) -o $(OUTPUT) $(OBJECTS) $(LIBS) $(LDFLAGS)
+
+#PYSTE-rules
+#_%.cpp : ../%.pyste 
+#	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $<
+#
+
+python/pysteoutput/_main.cpp: $(PYSTEFILES)
+	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(PYSTEFILES)
+	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
+	
+clean:
+	rm -rf .deps
+	mkdir .deps
+	rm -f *.so
+	rm -f *.o
+	rm -f mpi/*.o
+	rm -f potential/*.o
+	rm -f python/*.o
+	rm -f representation/*.o
+	rm -f transform/*.o
+	rm -f python/pysteoutput/*.o
+	
+pyclean:
+	rm -f $(PYSTEOUTPUTDIR)/*
+	
+#C++ Compile rule
+%.o : %.cpp
+	$(CXX) -MD -c $< -o $*.o
+	@cp $*.d $(df).P; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
+	  rm -f $*.d
+
+-include $(DEPENDENCIES)
