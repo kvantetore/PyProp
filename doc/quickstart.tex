@@ -1,0 +1,431 @@
+\chapter{Quickstart}
+The main idea behind pyprop is to try to extract some common features from every propagation problem and 
+separate those from the project files into a general framework. 
+That way one can easily let somebody else maintain the general framework, while keeping it easy to
+integrate new features in the individual projects. Normal users should therefore try to avoid
+modifying the files in the pyprop folder, and instead keep their own projects in a separate folder. 
+
+During the course of this chapter, I will try to warn about some common pitfalls one might fall into
+when migrating from a MATLAB environment, as well as explain some basic python commands. This is, however, 
+not by any standards a python tutorial, and I refer to the official python tutorial \ref{pythonTut},
+as well as the book by H.P. Langtangen \ref{langtangen} for a more thourough introduction to python, and
+its applications to scientific computing.
+
+\section{A simple example in great detail}
+\subsection{The problem}
+In this example, we will try to find the ground state energy of a 2D harmonic oscillator.
+We will perform all our calculations in cartesian coordinates.
+
+\subsection{Preparations}
+Create a new folder outside the pyprop folder, and copy the contents of \textit{examples/cartesian/groundstate/*} to
+the new folder. This keeps the pyprop source tree clutter free, and makes it easier to integrate upgrades to pyprop.
+\begin{verbatim}
+	cd ..
+	mkdir example1
+	cd example1
+	cp ../pyprop/examples/cartesian/groundstate/* .
+\end{verbatim}
+Open the file example.py in your favourite editor, and on line 22, change pyprop\_path to point to your pyprop folder.
+If you followed the instructions above, the line should read
+\begin{verbatim}
+	pyprop_path = "../pyprop/"
+\end{verbatim}
+
+\subsection{A very short introduction to Python}
+Start the python interpreter by executing \textit{ipython} on the command line.. If you do not have ipython installed, 
+you can start the standard python interpreter by calling \textit{python}. The standard python 
+interpreter is rather lacking when it comes to advanced interactive features, like command completion, command history and more. When python has started, you can execute the contents of example.py with the execfile() function. When you are done, 
+and whish to exit python, press <CTRL>+D to mark EOF which causes the interpreter to terminate.
+\begin{verbatim}
+	ipython
+	execfile("example.py")
+\end{verbatim}
+
+\subsubsection*{Execfile}
+The execfile() function has the same effect as typing every line in the file into the editor manually. I.e. much the 
+same effect as executing a .m file in MATLAB. This notes some important differences between function handling in 
+Python and MATLAB:
+\begin{itemize}
+\item In MATLAB there is a distinction between function-files and command-files. There is no such distinction in Python
+\item In MATLAB there can only be defined one function per file. In Python there are no such restrictions.
+\item In MATLAB a function file is automatically reloaded every time a function is called. In Python a function has to
+be redecleared in order to be changed. 
+\end{itemize}
+The last item means that whenever you make a change to a function in a file, this file must be execfile()'ed again for the
+changes to be reflected in the Python environment.
+
+\subsubsection*{Docstrings and comments}
+Looking at example.py, the first ting you will see is the rather strange comment encapsulated in triple quotes ("""). This
+is called docstrings, and is the normal way of documenting python modules. Text you write in triple quotes at the beginning 
+of files, and functions, will be readily available in the interpreter. In the python interpreter, type
+\begin{verbatim}
+	help FindGroundstate
+\end{verbatim}
+Docstrings written anywhere else in the file will be treated more or less as multi-line comments. 
+
+\subsubsection*{Importing modules}
+Looking further down in example.py (lines 13-25) you will see various import statements. There are
+\begin{verbatim}
+	import sys
+	import os
+\end{verbatim}
+Which imports the modules \textit{sys} and \textit{os}. These are standard modules in python, and after importing them this
+way, their contents can be access with the prefiex \textit{sys.} and \textit{os.} respectively. I.e. you can get the version
+of the currently running python interpreter by typing \textit{sys.version}.
+
+Next, you will see some alternative import statements
+\begin{verbatim}
+	from pylab import *
+	from numpy import *
+\end{verbatim}
+These statements import everything from the pylab (MATLAB-like plotting module) and numpy (numerical arrays in python)
+modules into the current namespace. To test numpy and pylab, type the following into the interpreter:
+\begin{verbatim}
+	x = r_[-10:10:0.1]
+	y = sin(x) * x**2
+	plot(x, y)
+\end{verbatim}
+If everything goes according to plan, you should now look at a plot of $x^2 \sin x $ for $-10 < x < 10$.
+
+The last import statement imports the pyprop library from a specified folder into the pyprop namespace, and makes sure 
+it is reloaded every time this file is executed.
+
+\subsubsection*{Functions}
+The rest of example.py is the definition of two functions, \textit{FindGroundstate} and \textit{Propagate}. 
+Note how code blocks are defined by indentation, and not with "end"-statements, as in MATLAB. 
+Python functions can take zero or more objects
+as input, and return zero or more objects as output. In contrast to MATLAB, the return variables are not defined in the
+method declaration header, but rather with a "return"-statement whenever the method should be terminated, and flow returned
+to the caller. 
+
+The function \textit{FindGroundstate} has no input parameters, but returns two objects, the propagation object, and the 
+ground state energy. Find the ground state energy of 2D hydrogen by typing
+\begin{verbatim}
+	prop, energy = FindGroundstate()
+\end{verbatim}
+After some time. Control should be returned to the interpreter, and you can inspect the energy by typing \textit{energy} in
+the interpreter. The variable prop is now an instance of the class pyprop.Problem, which is the central class in the
+pyprop library. By typing \textit{pyprop.} and pressing <TAB>, the ipython autocomplete function will list the members of
+the prop object. Type \textit{pyprop.psi.GetNorm()} to get the square of the weighted 2-norm of the wavefunction (in other 
+words: the inner product of the wavefunction with itself).
+
+\subsection{The details of pypropagation}
+We shall now consider the method \textit{FindGroundstate} in more detail, in order to understand what is required for 
+propagation with pyprop.
+\begin{verbatim}
+	conf = pyprop.Load("find_groundstate.ini")
+\end{verbatim}
+Loads the configuration file "find\_groundstate.ini" into a configuration object. 
+\begin{verbatim}
+	prop = pyprop.Problem(conf)
+\end{verbatim}
+Creates a propagation object (of class pyprop.Problem). This is the main object of propagation, and has knowledge of 
+the wavefunction, the potentials, and the transformations needed to propagate the wavefunction. 
+\begin{verbatim}
+	prop.SetupStep()
+\end{verbatim}
+Sets up the propagation object to its initial state. This includes allocating data for the wavefunction and transformations,
+creating the static potential arrays, Running every transformation once, in order to ensure that they're initialized properly
+\footnote{The fourier transformations used (FFTW with FFTW\_MEASURE) produces garbage the first time they are called. Calling
+them once in the SetupStep avoids all such problems}. This method can be called later, if one wants to reset the propagation
+object to its initial state.
+\begin{verbatim}
+	for t in prop.Advance(10):
+	    print "t =", t, "E =", prop.GetEnergy()
+\end{verbatim}
+Iterates over all timesteps for $0 \ge t \ge T_{max}$, where $T_{max}$ is given by the duration specified in the 
+configuration file. While propagating timesteps, the propgagation routine will break 10 evenly spaced times to print
+out a line containing the current propagated time, and the approximated ground state energy at this timestep (Note 
+that the GetEnergy() method actually propagates the wavefunction another timestep).
+
+Technically, prop.Advance() returns a generator object, which propagates the problem to its end, yielding at a number of 
+timesteps see the Python tutorial \cite{pythonTut} for more information about generators.
+
+When the for loop exits, the wavefunction is assumed to be fully converged to the ground state (Looking at the output
+from the propagation, we clearly see that this is the case). 
+\begin{verbatim}	
+	prop.SaveWavefunction("groundstate.dat")
+\end{verbatim}
+Saves the current wavefunction to the file "groundstate.dat". The file format used is the binary format used
+by the cPickle module, and it can be loaded with a call to \textit{prop.LoadWavefunction()}. The format is, however, not 
+easily interpreted in any other language but python. As long as python is the only language used for manipulating the 
+wavefunction, this is not a problem. However, sometimes it is favorable to be able to load the wavefunction in some
+other language (i.e. MATLAB or Fortran90). For such situations \textit{prop.SaveWavefunctionAscii()} and
+\textit{prop.LoadWavefunctionAscii()}
+can be used. It is much slower than pickle, produces much larger files, and can only write 1D or 2D arrays, but the files
+produced are easily readable in MATLAB (by the \textit{load} function)
+
+\subsection{The configuration file}
+The code in the above section is fairly standard. It will be common for most pyprop based projects. The main difference
+will usually be what done with the system in each print step, and which configuration file is loaded. In this section we 
+will look at configuration file format, and try to see what the different sections mean, and how they interact.
+
+\subsubsection*{Configuration basics}
+The configuration file format used, is one based on the common .ini file format. The file is divided into different
+sections, each labeled with a name enclosed in square brackets(i.e. [Representation]). All lines following the section
+label until the next section label or EOF are said to belonging to that section. Every line belonging to a section is
+empty, or on the format 
+\begin{verbatim}
+	<name> = <value>
+\end{verbatim}
+Where <name> can be any valid python variable name in lower case (Upper case letters will be converted to lower case during
+parsing). Basically, this means that it must start with a letter, and can not contain any spaces or operators. 
+<value> can be any valid python expression. During parsing, <value> is evaluated as a python statement 
+(with the \textit{eval} function). Any characters following the comment character (\#) on a line, will be ignored.
+
+\noindent This means that the following are valid variable declarations
+\begin{verbatim}
+	my = 10               # An integer
+	variable = 10.5       # A float
+	is = [1, 2, 3, 4]     # A list
+	the_best = "hello"    # A string
+	angle = pi/2.         # an expression
+	func = lambda x: x**2 # A lambda function
+\end{verbatim}
+While the following are variable declarations are not
+\begin{verbatim}
+	my variable = 10      # Names can not contain space
+	my_string = hello     # Strings must be enclosed in ""
+	10er = 10 * 0.5       # Variable names must start with a letter
+	N = 100               # Case will be lost during parsing
+\end{verbatim}
+
+\subsubsection*{Configuration sections}
+There are several configuration sections with special meaning to pyprop. The ones that are most used are [Representation], 
+[InitialCondition], [Propagation] and [Import]. In addition the configured propagator may require additional 
+configuration sections to function properly.
+
+\subsubsection*{[Representation]}
+The representation section has information on which representation to choose for the initial wavefunction. Transformations
+may change the current representation later, but this will be the basic representation of your problem. 
+\begin{verbatim}
+	[Representation]
+	type = core.CartesianRepresentation\_2
+	rank = 2
+	rank0 = [-8, 8, 64]
+	rank1 = [-8, 8, 64]
+\end{verbatim}
+In our case, we are
+using a two dimensional cartesian representation. The type of representation is given in the variable \textit{type}, which
+is a reference to a core class (and should therefore not be enclosed in quotes). Following the type is the \textit{rank} 
+of the problem. The rank is the same as the number of dimensions used for the wavefunction. 
+This must match what the representation given in \textit{type} expects.
+
+For a cartesian representation we must also specify the dimensions for each rank. This is done on separate lines, 
+starting on \textit{rank0}. Each line should have the name \textit{rank<rankindex>}, and a list as value. The list is
+interpreted as \textit{[min, max, count]}. This creates an equispaced grid starting on (and including) \textit{min},
+going to (but excluding) \textit{max}, with \textit{count} gridpoints.
+
+For other representations the number of grid points will most likely not be specified in the same way.
+
+\subsubsection*{[InitialCondition]}
+The initial condition section specifies how the initial wavefunction should be initialized.
+\begin{verbatim}
+	[InitialCondition]
+	type = InitialConditionType.Function
+	function = lambda conf, x: 1
+\end{verbatim}
+Type specified by which method the initial function should be created. "InitialConditionType.Function" means that the
+wavefunction should be created from an inline python function. The function variable declares the function which evaluates
+the initial wavefunction at every grid point, and will most oftenly be an inline lambda expression. The function should take
+two parameters, the first being the current config section, and the second beeing a list containing the grid points.
+
+\subsubsection*{[Propagation]}
+The propagation section specifies how the propagator should be created, and gives details on how we should
+proceed from one timestep to another.
+\begin{verbatim}
+	[Propagation]
+	propagator = CartesianPropagator
+	potential\_evaluation = ["StaticPotential"]
+	timestep = -0.01j
+	duration = 10
+	renormalization = True
+\end{verbatim}
+The most important thing to note here, is the propagator variable, which specifies which propagator class to use
+for propagating the wavefunction. This propagator must know how to handle the representation specified in the
+representation section. Another important concept is potential evaluation. This variable gives a list of the
+"normal" potentials used in this propagation. In this case it is only one potential, namely "StaticPotential". 
+Pyprop looks for a configuration section with the same label as the name of the potential, and tries to create
+a potential based on this. The propagators will then use these potentials in the propagation.
+
+\subsubsection*{[StaticPotential]}
+The potential section is special in that the label is insignificant, it must only match the name reffered to in
+the propagation section. It's layout is very similar to the initial condition section.
+\begin{verbatim}
+	[StaticPotential]
+	type = PotentialType.Static
+	function = lambda conf, x: 0.5 * conf.strength**2 * sum(asarray(x)**2) 
+	strength = 1
+\end{verbatim}
+The Static potential type means that this potential is evaluated once (in the setup step), and stored in an array.
+In contrast, using the Dynamic potential type requires pyprop to evaluate the potential at every time step. 
+Using a static potential is extremely much faster, but it requires a bit of memory (sizeof(complex) * \# gridpoints)
+in order to store the potential.
+
+The function is of the same type as the one used in the initial condition section: The first argument is the current
+configuration section (used here to specify the harmonic frequency of the harmonic oscillator). The second argument is
+a list of the current grid point coordinates $[x_0, x_1, ..., x_{rank}]$. 
+
+The asarray function converts the list to a
+numeric array, the squaring is element wise and the sum function takes the sum over every component in the numerical 
+array.
+
+\subsubsection*{[Distribution]}
+\begin{verbatim}
+	[Distribution]
+	model = "LargestStride"
+	transpose_model = 2 #core.TransposeModel.TRANSPOSE\_SEMI
+\end{verbatim}
+Please ignore this section for now. It is related to parallelization, and it is not yet working
+properly.
+
+\subsubsection*{Try it out!}
+\begin{enumerate}
+\item Find the ground state energy of a 1D and 3D harmonic oscillator.
+
+\item Find the ground state of the potential 
+\begin{equation}
+	V = x_0^2/3. + 2. x_1^2/3.
+\end{equation}
+
+\item Find the ground state energy of 2D hydrogen 
+(use a softed potential in order to avoid the singularity at $x = y = 0$).
+\end{enumerate}
+
+%-------- 
+\section{More advanced potentials}
+In this section, we will modify the example from the previous section, to allow for more advanced 
+potentials. In the previous example, the potential was specified by an inline lambda function. While
+this is certainly convenient for simple potentials, it can be tedious to express a complex potential 
+expression in one statement. 
+
+\subsection{Python potentials}
+It is,possible to define the potential as a stand alone function 
+and only refer to its in the configuration file. First, add the following function to example.py.
+\begin{verbatim}
+	def MyPotential(conf, x):
+	    V1 = 0.5 * conf.omega1 * x[0]**2
+	    V2 = 0.5 * conf.omega2 * x[1]**2
+	    return V1 + V2
+\end{verbatim}
+Save the file and run \textit{execfile("example.py")} in the python interpreter in order to load the 
+changes to example.py.
+
+Next, we must refer to this potential function in the configuration file. We could, of course, 
+simply change the existing StaticPotential section, but in order to make it easy to switch between
+the potentials, we will add a new section to find\_groundstate.ini
+\begin{verbatim}
+	[PythonPotential]
+	type = PotentialType.Static
+	function = MyPotential
+	omega1 = 1.0
+	omega2 = 0.5
+\end{verbatim}
+Now, change the \textit{potential\_evaluation} variable in the \textit{Propagation} section to use PythonPotential.
+\begin{verbatim}
+	potential_evaluation = ["PythonPotential"]
+\end{verbatim}
+
+While the python potentials are easy to use and modify, there is no support for time dependent python potentials 
+in pyprop. The reason for this is execution speed; Python potentials requires a call to a python function for every
+grid point every time the potential is evaulated. The overhead of calling functions in python would completely ruin
+every hope of any good performance. This overhead may also become an issue for very large time independent problems,
+where the set up step takes an inproportionate amount of time, compared with the rest of the calculations.
+
+\subsection{Compiled potentials}
+An alternative to python potentials are the compiled potentials. Compiled potentials are, as the name suggest, written 
+in C++ and compiled into a python module. The fact that it is compiled instead of interpreted, automatically makes it a
+lot faster and furthermore, due to some C++ template tricks, no function calls are needed for every grid point. 
+
+\subsubsection*{Getting the template}
+In order to make compilation of potentials as easy as possible, a template is provided in the folder 
+\textit{pyprop/examples/template}. Copy this template to your project folder.
+\begin{verbatim}
+	cp ../pyprop/examples/template/* .
+\end{verbatim}
+This should give you three new files in the project folder: 
+\begin{itemize}
+	\item \textit{potential.cpp}, the source file containing the potential.
+	\item \textit{wrapper.pyste}, describing the python wrapper in pyste format.
+	\item \textit{Makefile}, one makefile to rule it all.
+\end{itemize}
+
+\subsubsection*{potential.cpp}
+Open potential.cpp in your favorite editor. In a real project, you would probably rename the PotentialTemplate
+class to something more describing, however in this simple example that is not necessary. 
+In the PotentialTemplate class, remove the line declaring the field \textit{param}, and replace it with.
+\begin{verbatim}
+	//potential parameters
+	double omega1;
+	double omega2; 
+\end{verbatim}
+In the method \textit{ApplyConfigSection}, replace the call to config.Get() by
+\begin{verbatim}
+	config.Get("omega1", omega1);
+	config.Get("omega2", omega2);
+\end{verbatim}
+And finally, in the method \textit{GetPotentialValue}, add the following lines
+\begin{verbatim}
+	double V1 = 0.5 * omega1 * sqr(pos(0));
+	double V2 = 0.5 * omega2 * sqr(pos(1));
+	return V1 + V2;
+\end{verbatim}
+You should now have a fully working potential implementing a 2D Harmonic oscillator with different harmonic frequencies
+in the $x_0$ and $x_1$ direction.
+
+\subsubsection*{wrapper.pyste}
+Wrapper.pyste is a file describing to pyste which parts from potential.cpp should be exposed to python. This file is very
+simple, containing ony ~3 lines. One to declare the potential evaluator, and 2 to use it on the declared potential with
+different ranks. It is necessary to use the potential for each rank you whish to use. 
+
+\subsubsection*{Makefile}
+The makefile is mostly set up correctly, you need only specify the path (may be a relative path) to where pyprop 
+is installed (../pyprop), and a name for the extention module. Call it \textit{libcpotential} or something else of your
+choice, so that line 11 in Makefile reads
+\begin{verbatim}
+	MODULENAME   := libcpotential
+\end{verbatim}
+
+The python module should now compile without errors or warnings if you type \textit{make} into the console.
+
+\subsubsection*{Loading the Python module}
+Add the following to the top of example.py:
+\begin{verbatim}
+	from libcpotential import *
+\end{verbatim}
+And re-execute the file to load the changes. 
+This should load the recently compiled libcpotential module and import everything in it into the current namespace.
+You can verify that you have two new python classes PotentialTemplate\_1 and PotentialTemplate\_2 in your namespace, which 
+corresponds to the C++ PotentialTemplate template class for rank 1 and rank 2 problems correspondingly.
+
+\subsubsection*{Using the compiled potential}
+In find\_groundstate.ini, add the following section
+\begin{verbatim}
+	[CompiledPotential]
+	type = PotentialType.Static
+	classname = "PotentialTemplate"
+	omega1 = 1.0
+	omega2 = 0.5
+\end{verbatim}
+And change \textit{potential\_evaluation} to 
+\begin{verbatim}
+	potential_evaluation = ["CompiledPotential"]
+\end{verbatim}
+Notice that compared with python potentials, compiled potentials are specified with a classname variable instead of function
+variable. Also note that this is a string, and that the trailing "\_1" or "\_2" specifying rank is omitted. This is because
+the pyprop automatically appends the correct postfix for rank specified in the representation section.
+
+You can now test that your new compiled potential gives the same energy as the python potential by running
+\textit{FindGroundstate} in the python interpreter. The performance impact of using dynamic instead of static potentials
+can be demonstrated by timing the call to \textit{FindGroundstate()}. If you have ipython, you can type
+\begin{verbatim}
+	%prun FindGroundstate()
+\end{verbatim}
+Which will give you the total time used, along with a corse profile of the run. On my laptop, this takes 3.9 seconds. 
+Changing to dynamic potentials, by changing the type in CompiledPotential to
+\begin{verbatim}
+	type = PotentialType.Dynamic
+\end{verbatim}
+And timing \textit{FindGroundstate} again. On my laptop this takes 7.1 seconds, and now the potential evaulation is by far the 
+task that consumes most time during propagation. This may be surprising as asymptotically the fourier transform should be more
+expensive ($n \log n$ instead of $n$).

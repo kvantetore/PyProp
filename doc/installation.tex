@@ -9,22 +9,35 @@ A modified version of pyste must be installed in order to successfully compile p
 
 \textbf{An alternative to this procedure is to use someone elses prerequisites... add more info on that later}
 
+\subsubsection*{Required applications}
+\begin{itemize}
+\item Standards compliant C++ compiler (GNU C++, Intel C++, etc.)
+\item Python 2.4 or newer (http://www.python.org)
+\item GCC\_XML, cvs version (http://www.gccxml.org)
+\item CMake 2.4 or newer (http://www.cmake.org)
+\end{itemize}
+	
+\subsubsection*{Required libraries}
 The following libaries must be compiled and available in order to compile pyprop
 \begin{itemize}
 \item blitz++ v0.9 (http://www.oonumerics.org/blitz)
 \item boost::python v1.33.1 (http://www.boost.org)
+\item FFTW 3.x (http://www.fftw.org)
 \item BLAS (ATLAS or some other implementation supporting the cblas interface) (http://math-atlas.sourceforge.net/)
 \item LAPACK (http://netlib.org/lapack)
 \end{itemize}
-ATLAS and LAPACK can easily be compiled into one library, which simplifies things considerably. See the ATLAS documentation
-for more info.
+ATLAS and LAPACK can easily be compiled into one library, which simplifies things considerably (especially the compilation
+of numpy). See the ATLAS documentation for more info.
 
+\subsubsection*{Required Python modules}
 The following python modules must be installed and available in order to run pyprop:
 \begin{itemize}
 \item numpy v1.0 or later (http://numpy.scipy.org/)
 \item matplotlib 0.87.7 or later (http://matplotlib.sourceforge.net/)
+\item elementtree (http://effbot.org/downloads/\#elementtree)
 \end{itemize}
 	
+\subsubsection*{Recommended Python modules}
 In addition the following modules are highly recommended:
 \begin{itemize}
 \item ipython (http://ipython.scipy.org) (A great interactive python interpreter)
