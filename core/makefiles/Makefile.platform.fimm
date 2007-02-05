@@ -1,0 +1,6 @@
+MPICXX	       := $(CXX)
+ATLASHOME      := /home/fimm/mi/torebi/download/lib/ATLAS
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -no-ipo
+CPPFLAGS       := $(CPPFLAGS) -DSINGLEPROC -DPYPROP_USE_BLAS -I/$(ATLASHOME)/include/Linux_HAMMER64SSE2_2 -I/$(ATLASHOME)/include
+LDFLAGS        := $(LDFLAGS) -L$(ATLASHOME)/lib/Linux_HAMMER64SSE2_2
+LAPACK_LIBS    := -llapack -lf77blas -lcblas -latlas -lg2c -lifcore -L/opt/intel/fce/9.1/lib
