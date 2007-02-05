@@ -10,9 +10,6 @@ import pyprop
 pyprop = reload(pyprop)
 from libh2p import *
 
-import submitpbs
-from datetime import timedelta
-
 #numpy an pylab for good measure
 from pylab import *
 from numpy import *
@@ -98,8 +95,31 @@ def FindConvergenceGridSizeCartesian(**args):
 
 	return gridSize, E
 		
+def FindNormLoss(**args):
+	if 'dt' in args:
+		dt = args['dt']
+	else:
+		dt = 0.01
+	args['imTime'] = False
 
+	if 'dtSteps' in args:
+		dtSteps = args['dtSteps']
+	else:
+		dtSteps = 10
 
+	dtList = r_[dt:dt/dtSteps:-dt/dtSteps]
+	normLoss = zeros(len(dtList), dtype=double)
+	for i in range(len(dtList)):
+		dt = dtList[i]
+		args['dt'] = dt
+		prop = SetupProblem(**args)
+		prop.psi.Normalize()
+		n1 = prop.psi.GetNorm()
+		for j in range(10): prop.AdvanceStep()
+		n2 = prop.psi.GetNorm()
+		normLoss[i] = (n2 / n1) ** ( 1 / (10 * dt))
+		
+	return dtList, normLoss	
 #---------------------------------------------------------------------------------
 
 def SetupConfig(**args):
@@ -150,6 +170,26 @@ def SetupConfig(**args):
 		else:
 			conf.Propagation.renormalization = False
 			conf.Propagation.timestep = abs(dt)
+
+	if 'softing' in args:
+		softing = args['softing']
+		print "Using softing ", softing
+		conf.Potential.softing = softing
+
+	if 'lmax' in args:
+		lmax = args['lmax']
+		print "Using LMax = ", lmax
+		conf.AngularRepresentation.maxl = lmax
+
+	if 'duration' in args:
+		duration = args['duration']
+		conf.Propagation.duration = duration
+
+	if 'orientation' in args:
+		orientation = args['orientation']
+		conf.Potential.nuclear_orientation = orientation
+		
+
 	print "Setup Config Complete"
 	print ""
 	return conf
@@ -199,7 +239,48 @@ def CalculateAngularMomentumDistribution(prop):
 			lDistrib[l] += distrib
 
 	return lDistrib
+
+def CalculateMDistribution(prop):
+	radialRepr = prop.psi.GetRepresentation().GetRadialRepresentation()
+	if radialRepr.__class__ == pyprop.core.CartesianRepresentation_1:
+		weights = radialRepr.GetRange(0).Dx
+	elif radialRepr.__class__ == pyprop.core.TransformedRadialRepresentation:
+		weights = radialRepr.Range.GetWeights()	
+	else:
+		raise "Invaliud representation: " + str(radialRepr)
+
+	lmax = prop.Propagator.LmRepresentation.Range.MaxL
+
+	data = prop.psi.GetData()
+	mDistrib = zeros(lmax+1, dtype=double)
+	for l in r_[0:lmax+1]:
+		for m in r_[-l:l+1]:
+			idx = MapLmIndex(l,m)
+			distrib = sum(weights * abs(data[:,idx])**2)
+			mDistrib[abs(m)] += distrib
+
+	return mDistrib
 	
+def CalculateLMDistribution(prop):
+	radialRepr = prop.psi.GetRepresentation().GetRadialRepresentation()
+	if radialRepr.__class__ == pyprop.core.CartesianRepresentation_1:
+		weights = radialRepr.GetRange(0).Dx
+	elif radialRepr.__class__ == pyprop.core.TransformedRadialRepresentation:
+		weights = radialRepr.Range.GetWeights()	
+	else:
+		raise "Invaliud representation: " + str(radialRepr)
+
+	lmax = prop.Propagator.LmRepresentation.Range.MaxL
+
+	data = prop.psi.GetData()
+	mDistrib = zeros((lmax+1)**2, dtype=double)
+	for l in r_[0:lmax+1]:
+		for m in r_[-l:l+1]:
+			idx = MapLmIndex(l,m)
+			distrib = sum(weights * abs(data[:,idx])**2)
+			mDistrib[idx] = distrib
+
+	return mDistrib
 	
 def PlotAngularMomentumDistribution(prop):
 	lDistrib = CalculateAngularMomentumDistribution(prop)

@@ -2,8 +2,8 @@ PYPROP_ROOT  := ../../..
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 
+PYPROP_LIB_PATH := $(PYPROP_ROOT)/pyprop/core
 INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
-#CPPFLAGS     := $(CPPFLAGS) 
 
 PYSTEFILES   := wrapper.pyste
 SOURCEFILES  := wrapper.cpp
@@ -11,7 +11,7 @@ OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libh2p
 
 $(MODULENAME).so: $(OBJECTS)
-	$(LD) -shared -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_ROOT)/pyprop/core
+	$(LD) -shared -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) -Wl,-rpath=$(PYPROP_LIB_PATH)
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste

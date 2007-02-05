@@ -13,16 +13,26 @@ public:
 	double Charge;
 	double NuclearSeparation;
 	double Softing;
+	double cosOrient;
+	double sinOrient;
 
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("charge", Charge);
 		config.Get("nuclear_separation", NuclearSeparation);
 		config.Get("softing", Softing);
+		
+		double orientation = 0;
+		config.Get("nuclear_orientation", orientation);
+		cosOrient = cos(orientation);
+		sinOrient = sin(orientation);
+
+		cout << "Orient " << cosOrient << " " << sinOrient << endl;
 	}
 
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
+/*
 		//coordinates
 		double r = fabs(pos(0));
 		double theta = pos(1);
@@ -34,10 +44,26 @@ public:
 		//double y = r * sin(theta) * sin(phi);
 
 		//Coulomb Potential
-		double V1 = Charge / sqrt(a + sqr(z + NuclearSeparation/2.0) + Softing);
-		double V2 = Charge / sqrt(a + sqr(z - NuclearSeparation/2.0) + Softing);
+		double V1 = Charge / sqrt(a + sqr(z + NuclearSeparation/2.0) + sqr(Softing));
+		double V2 = Charge / sqrt(a + sqr(z - NuclearSeparation/2.0) + sqr(Softing));
 	
 		return V1 + V2;
+*/
+
+		//Coordinates
+		double r = fabs(pos(0));
+		double theta = pos(1);
+		double phi = pos(2);
+
+		double r2 = sqr(pos(0)) + sqr(NuclearSeparation) / 4 + sqr(Softing);
+		double z = r * cos(theta);
+		double x = r * sin(theta) * cos(phi);
+	
+		double angDep = NuclearSeparation * (x * sinOrient + z * cosOrient); 
+		double V1 = 1 / sqrt(r2 + angDep); 
+		double V2 = 1 / sqrt(r2 - angDep); 
+
+		return Charge * (V1 + V2);
 	}
 };
 

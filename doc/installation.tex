@@ -119,12 +119,12 @@ For debugging, the following CPPFLAGS are recommended
 \begin{verbatim}
 	CPPFLAGS := $(CPPFLAGS) -DSINGLEPROC -DBZ_DEBUG -DPYPROP_DEBUG
 \end{verbatim}
-For optimization, the following -DBZ\_DEBUG and -DPYPROP\_DEBUG should not be used, and the following
+For optimization, -DBZ\_DEBUG and -DPYPROP\_DEBUG should not be used, and the following
 CXXFLAGS is suitable for the GNU C++ Compiler
 \begin{verbatim}
 	CXXFLAGS := $(CXXFLAGS) -Wall -O3 -ffast-math -funroll-loops
 \end{verbatim}
-For the Intel C++ Compiler, the following optimization flags is commonly used
+For the Intel C++ Compiler, the following optimization flags are commonly used
 \begin{verbatim}
 	CXXFLAGS := -$(CXXFLAGS) -O3 -Zp16 -ip -ansi_alias -no-ipo
 \end{verbatim}
@@ -140,7 +140,6 @@ it is generally recommended to drink some coffee while waiting.
 \end{verbatim}
 The first time pyprop is built, it may complain about not knowing how to create certain .cpp files from
 .d files. In that case, just run \textit{make} again, and the problem should go away.
-
 
 Normally the autodependencies will take care of when recompilation of certain modules are needed, 
 such that the user will only need to type \textit{make}, and never \textit{make clean}. However, if
