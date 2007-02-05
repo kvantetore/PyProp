@@ -1,5 +1,53 @@
 \documentclass[a4paper,12pt]{report}
 \usepackage[utf8]{inputenc}
+\usepackage{listings} % Used for syntax highlighting. 
+\usepackage{color}    % Used for syntax highlighting. 
+\usepackage{textcomp} % Used for syntax highlighting. 
+\usepackage{url}
+ 
+\definecolor{gray}{gray}{0.5} 
+\definecolor{key}{rgb}{0,0.5,0} 
+\newcommand{\setpython}{
+  \lstset{ 
+    language=python, 
+    keywordstyle=\color{blue}, 
+    stringstyle=\color{red}, 
+    showstringspaces=false, 
+    commentstyle=\color{gray}\slshape, 
+  }
+}
+\newcommand{\setc}{
+  \lstset{ 
+    language=c++, 
+    commentstyle=\color{gray}\slshape, 
+%     basicstyle=\ttfamily\small, 
+%     otherkeywords={-, =, +, [, ], (, ), \{, \}, :, *, !}, 
+     keywordstyle=\color{blue}, 
+     stringstyle=\color{red}, 
+     showstringspaces=false
+  }
+}
+\newcommand{\setbash}{
+  \lstset{ 
+    language=bash, 
+    commentstyle=\color{gray}\slshape, 
+    keywordstyle=\color{blue}, 
+    stringstyle=\color{red}, 
+    showstringspaces=false
+  }
+}
+\lstnewenvironment{python}[1][]{ 
+  \setpython
+} {} 
+\lstnewenvironment{c++}[1][]{
+  \setc
+} {}
+\lstnewenvironment{bash}[1][]{
+  \setbash
+} {}
+
+\newcommand{\inlinepy}[1]{\setpython\lstinline[basicstyle=\bfseries]!#1!}
+\newcommand{\inlinec}[1]{\setc\lstinline[basicstyle=\bfseries]!#1!}
 
 % Title Page
 \title{PyProp - A TDSE propagator}
@@ -25,7 +73,8 @@ Pyprop is written in Python and C++ (depending heavily on the numpy module in py
 blitz++ array library in C++). It uses boost::python as the interface between C++ and Python, 
 and pyste to automate the tedious task of writing boost::python interface code.
 
-Pyprop is licenced under the GPL, and hosted on Google Code. http://www.
+Pyprop is lisenced under the GNU GPL, and hosted on Google Code. 
+\url{http://code.google.com/p/pyprop}.
 
 %------------------------------------------------------------------
 \input{installation.tex}

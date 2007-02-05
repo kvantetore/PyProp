@@ -7,24 +7,62 @@ Python 2.4 or newer is highly recommended. Pyprop might work with v2.2 or 2.3, b
 Python 2.4 and 2.5. Pyprop also uses pyste (a part of boost::python) to generate boost::python code. 
 A modified version of pyste must be installed in order to successfully compile pyprop.
 
-\textbf{An alternative to this procedure is to use someone elses prerequisites... add more info on that later}
+\subsection{Using Tores prerequisites}
+On systems yours truly are using, the required programs and libraries are likely to be 
+installed, and you may use them instead of installing your own copies. In most cases, everything
+will be installed in a folder called \textit{sys} located in torebi's home folder. Assuming bash
+is the shell used, add the following to the end of your \textit{~/.bashrc}
+\begin{bash}
+export TOREHOME=~torebi
+export PATH=$TOREHOME/sys/bin:$PATH
+export LD_LIBRARY_PATH=$TOREHOME/sys/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=$TOREHOME/sys/lib/python
+export CFLAGS="-I$TOREHOME/sys/include -fPIC"
+export CXXFLAGS="-fPIC"
+export CPPFLAGS="-I$TOREHOME/sys/include"
+export LDFLAGS="-L$TOREHOME/sys/lib"
+export BOOST_ROOT="$TOREHOME/download/lib/boost_1_33_1"
+$
+\end{bash}
+
+\subsubsection*{Linux (fimm.bccs.uib.no)}
+On fimm, you must also choose a compiler. The Intel C++ compiler produces blitz++ code that is serveral
+times faster than GNU C++, so it is recommended to use that compiler. To use Intel C++ along with
+OpenMPI, add the following lines to your \textit{~/.bashrc}
+\begin{bash}
+source ~/use_compiler intel > /dev/null
+source ~/use_mpi openmpi > /dev/null	
+\end{bash}
+	
+\subsubsection*{Other platforms (AIX)}
+I have yet to find a sane AIX platform. On njord.hpc.ntnu.no, the installed python version appears to be 32bit, 
+and as such, completely useless for any problems of reasonable size (and it creates a lot of problems for other modules
+trying to be 64 bit). So until someone is able to compile a properly working 64bit python on AIX, pyprop will not work
+on that platform. Feel free to apply pressure on hpc.uib.no by filing a request to support-notur@
+	
+\subsection{Installing your own prerequisites}
+Installation of the below mentioned applications, libraries and modules can be slightly tricky, and I 
+will not cover the details here, however pyste and blitz++ must be patched before they can be used 
+with pyprop. The patch files can be found in the \textit{./patch/} subdirectory in the pyprop 
+source directory. There are some more details concerning the installation in the INSTALL textfile
+in the pyprop folder.
 
 \subsubsection*{Required applications}
 \begin{itemize}
 \item Standards compliant C++ compiler (GNU C++, Intel C++, etc.)
-\item Python 2.4 or newer (http://www.python.org)
-\item GCC\_XML, cvs version (http://www.gccxml.org)
-\item CMake 2.4 or newer (http://www.cmake.org)
+\item Python 2.4 or newer (\url{http://www.python.org})
+\item GCC\_XML, cvs version (\url{http://www.gccxml.org})
+\item CMake 2.4 or newer (\url{http://www.cmake.org})
 \end{itemize}
 	
 \subsubsection*{Required libraries}
 The following libaries must be compiled and available in order to compile pyprop
 \begin{itemize}
-\item blitz++ v0.9 (http://www.oonumerics.org/blitz)
-\item boost::python v1.33.1 (http://www.boost.org)
-\item FFTW 3.x (http://www.fftw.org)
-\item BLAS (ATLAS or some other implementation supporting the cblas interface) (http://math-atlas.sourceforge.net/)
-\item LAPACK (http://netlib.org/lapack)
+\item blitz++ v0.9 (\url{http://www.oonumerics.org/blitz})
+\item boost::python v1.33.1 (\url{http://www.boost.org})
+\item FFTW 3.x (\url{http://www.fftw.org})
+\item BLAS (ATLAS or some other implementation supporting the cblas interface) (\url{http://math-atlas.sourceforge.net/})
+\item LAPACK (\url{http://netlib.org/lapack})
 \end{itemize}
 ATLAS and LAPACK can easily be compiled into one library, which simplifies things considerably (especially the compilation
 of numpy). See the ATLAS documentation for more info.
@@ -32,23 +70,19 @@ of numpy). See the ATLAS documentation for more info.
 \subsubsection*{Required Python modules}
 The following python modules must be installed and available in order to run pyprop:
 \begin{itemize}
-\item numpy v1.0 or later (http://numpy.scipy.org/)
-\item matplotlib 0.87.7 or later (http://matplotlib.sourceforge.net/)
-\item elementtree (http://effbot.org/downloads/\#elementtree)
+\item numpy v1.0 or later (\url{http://numpy.scipy.org/})
+\item matplotlib 0.87.7 or later (\url{http://matplotlib.sourceforge.net/})
+\item elementtree (\url{http://effbot.org/downloads/\#elementtree})
 \end{itemize}
 	
 \subsubsection*{Recommended Python modules}
 In addition the following modules are highly recommended:
 \begin{itemize}
-\item ipython (http://ipython.scipy.org) (A great interactive python interpreter)
-\item scipy (http://www.scipy.org) (Library for almost everything related to scientific computing)
-\item pymat (http://claymore.engineer.gvsu.edu/~steriana/Python/pymat.html) (MATLAB interface to Python. 
+\item ipython (\url{http://ipython.scipy.org}) (A great interactive python interpreter)
+\item scipy (\url{http://www.scipy.org}) (Library for almost everything related to scientific computing)
+\item pymat (\url{http://claymore.engineer.gvsu.edu/~steriana/Python/pymat.html}) (MATLAB interface to Python. 
 	Makes it possible to do plotting and analyisis in MATLAB directly from Python)
 \end{itemize}
-
-Installation of the mentioned libraries and modules can be slightly tricky, and I will not cover the details here, 
-however pyste and blitz++ must be patched before they can be used with pyprop. The patch files can be found in 
-the \textit{./patch/} subdirectory in the pyprop source directory.
 
 \section{Compilation}
 \subsection*{Getting the source tree}
@@ -74,7 +108,7 @@ a copy of the example makefile provided
 \end{verbatim}
 and open Makefile.platform in your favourite editor. This is the only makefile you will need to edit. 
 Changes will be reflected in the pyprop core module as well as in all plugins compiled with the provided
-makefiles.
+makefiles (on fimm, you may use \txtit{core/makefiles/Makefile.platform.fimm} as your starting point).
 
 The parameter MPICXX must be set to the compiler you whish to use. Unless -DINGLEPROC is set, this compiler
 must be able to compile MPI programs. Until the MPI-support has been properly fixed, it is strongly recommended
