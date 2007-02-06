@@ -1,0 +1,7 @@
+#redirect cout
+redirect_cout = Function("redirect_cout", "redirect_funcs.cpp")
+set_policy(redirect_cout, return_value_policy(return_opaque_pointer))
+
+#restore cout
+Function("restore_cout", "redirect_funcs.cpp")
+

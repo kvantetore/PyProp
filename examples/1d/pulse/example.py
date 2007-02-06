@@ -10,9 +10,6 @@ import pyprop
 pyprop = reload(pyprop)
 from libpulse import *
 
-import submitpbs
-from datetime import timedelta
-
 #numpy an pylab for good measure
 from pylab import *
 from numpy import *
@@ -50,6 +47,9 @@ def SetupConfig(conf, **args):
 		#only use one of them in a given run
 		conf.CartesianRepresentation.rank0[2] = gridSize
 		conf.TransformedRepresentation.n = gridSize
+
+	if 'silent' in args:
+		conf.Propagation.silent = args['silent']
 
 	#Grid type
 	if 'gridType' in args:
@@ -91,7 +91,7 @@ def MapLmIndex(l, m):
 
 def FindGroundstate(**args):
 	conf = pyprop.Load("groundstate.ini")
-	SetupConfig(**args)
+	SetupConfig(conf, **args)
 
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()

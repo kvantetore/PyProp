@@ -1,17 +1,20 @@
-PYPROP_ROOT  := ../../..
+PYPROP_ROOT  := ../../
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 
-PYPROP_LIB_PATH := $(PYPROP_ROOT)/pyprop/core
 INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
+DESTDIR      := ../../pyprop/core
 
 PYSTEFILES   := wrapper.pyste
-SOURCEFILES  := wrapper.cpp
+SOURCEFILES  := wrapper.cpp redirect.cpp
 OBJECTS      := $(SOURCEFILES:.cpp=.o)
-MODULENAME   := libpulse
+MODULENAME   := libredirect
+MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 
-$(MODULENAME).so: $(OBJECTS)
-	$(LD) -shared -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) -Wl,-rpath=$(PYPROP_LIB_PATH)
+all: $(MODULEFILE)
+
+$(MODULEFILE): $(OBJECTS)
+	$(LD) -shared -o $(MODULEFILE) $(OBJECTS) $(LIBS) 
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -21,7 +24,7 @@ clean:
 	mkdir .deps
 	rm -rf wrapper.cpp
 	rm -rf *.o
-	rm -rf *.so
+	rm -rf $(MODULEFILE)
 
 #autodependencies
 DEPDIR        = .deps

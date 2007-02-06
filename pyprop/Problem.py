@@ -1,55 +1,5 @@
 import signal
 
-class InterruptHandlerClass:
-	"""
-	KeyboardInterrupt handler, which is used in Problem.Advance, in order to not
-	to put the problem in an invalid state when using ctrl+c during propagation
-	"""
-	def __init__(self):
-		self.__interrupt = False
-		self.__signum = -1
-		self.__frame = -1
-		self.__origHandler = None
-
-	def Register(self):
-		if self.__origHandler != None:
-			raise "Already registered"
-
-		self.__origHandler = signal.signal(signal.SIGINT, self.Handler)
-
-	def UnRegister(self):
-		if self.__origHandler == None:
-			print "Not registered..."
-			raise "Not registered"
-			
-		signal.signal(signal.SIGINT, signal.default_int_handler)
-		self.__origHandler = None
-		self.__signum = -1
-		self.__frame = -1
-		self.__interrupt = False
-	
-	def Handler(self, signum, frame):
-		print "Got keyboard interrupt, will terminate next timestep"
-		self.__signum = signum
-		self.__frame = frame
-		self.__interrupt = True
-
-	def ProcessInterrupt(self):
-		if not self.IsInterrupted():
-			print "HM? Not interrupted"
-			return
-
-		hndlr = self.__origHandler
-		signum = self.__signum
-		frame = self.__frame
-		self.UnRegister()
-		hndlr(signum, frame)
-
-	def IsInterrupted(self):
-		return self.__interrupt
-	
-InterruptHandler = InterruptHandlerClass()
-
 #----------------------------------------------------------------------------------------------------
 # Problem
 #----------------------------------------------------------------------------------------------------
@@ -61,21 +11,38 @@ class Problem:
 
 	def __init__(self, config):
 		self.Config = config
+		try:
+			#Enable redirect
+			if hasattr(config.Propagation, "silent"):
+				self.Silent = config.Propagation.silent
+			else:
+				self.Silent = False
 
-		print "Creating DistributionModel..."
-		self.Distribution = CreateDistribution(config)
+			Redirect.Enable(self.Silent)
+			
+			print "Creating DistributionModel..."
+			self.Distribution = CreateDistribution(config)
 		
-		print "Creating Representation..."
-		self.Representation = CreateRepresentation(config, self.Distribution)
+			print "Creating Representation..."
+			self.Representation = CreateRepresentation(config, self.Distribution)
 		
-		print "Creating Wavefunction..."
-		self.psi = CreateWavefunction(config, self.Representation)
+			print "Creating Wavefunction..."
+			self.psi = CreateWavefunction(config, self.Representation)
 		
-		print "Creating Momentum Evaluator..."
-		self.Propagator = CreatePropagator(config, self.psi)
+			print "Creating Momentum Evaluator..."
+			self.Propagator = CreatePropagator(config, self.psi)
 		
-		#apply propagation config
-		config.Propagation.Apply(self)
+			#apply propagation config
+			config.Propagation.Apply(self)
+
+			#Disable redirect
+			Redirect.Disable()
+
+		except:
+			#Diasable redirect
+			Redirect.Disable()
+			raise
+			
 
 	def GetGrid(self):
 		"""
@@ -99,17 +66,28 @@ class Problem:
 		This function must be called before the first call to AdvanceStep()
 		or Advance().
 		"""
-		print "Starting setup timestep..."
-		print "    Setting up Propagator."
-		if self.Propagator != None:
-			self.Propagator.SetupStep(self.TimeStep )
+		try:
+			#Enable redirect
+			Redirect.Enable(self.Silent)
+			
+			print "Starting setup timestep..."
+			print "    Setting up Propagator."
+			if self.Propagator != None:
+				self.Propagator.SetupStep(self.TimeStep )
 
-		print "    Setting up initial wavefunction"
-		self.SetupWavefunction()
-		
-		self.PropagatedTime = 0
-		print "Setup timestep complete."
-		
+			print "    Setting up initial wavefunction"
+			self.SetupWavefunction()
+			
+			self.PropagatedTime = 0
+			print "Setup timestep complete."
+	
+			#Disable redirect
+			Redirect.Disable()
+
+		except:
+			#Diasable redirect
+			Redirect.Disable()
+			raise	
 
 	def AdvanceStep(self):
 		"""
@@ -124,7 +102,7 @@ class Problem:
 			self.psi.Normalize()
 
 		self.PropagatedTime += abs(self.TimeStep)
-	
+
 	def Advance(self, yieldCount, duration=0):
 		"""
 		Returns a generator for advancing the wavefunction a number of timesteps. 

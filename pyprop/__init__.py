@@ -26,6 +26,8 @@ execfile(__path__[0] + "/Config.py")
 execfile(__path__[0] + "/Serialize.py")
 execfile(__path__[0] + "/Plot.py")
 execfile(__path__[0] + "/Utility.py")
+execfile(__path__[0] + "/Redirect.py")
+execfile(__path__[0] + "/Interrupt.py")
 
 execfile(__path__[0] + "/Propagator.py")
 execfile(__path__[0] + "/propagator/CartesianPropagator.py")

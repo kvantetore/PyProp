@@ -62,6 +62,7 @@ df = $(DEPDIR)/$(*F)
 DEPENDENCIES=$(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
 
 all: $(OUTPUT)
+	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 
 $(OUTPUT): $(OBJECTS)
 	$(LD) -o $(OUTPUT) $(OBJECTS) $(LIBS) $(LDFLAGS)
@@ -76,6 +77,7 @@ python/pysteoutput/_main.cpp: $(PYSTEFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
 	
 clean:
+	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 	rm -rf .deps
 	mkdir .deps
 	rm -f *.so
