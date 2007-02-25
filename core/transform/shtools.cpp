@@ -2,8 +2,7 @@
 
 #include <iostream>
 #include "shtools.h"
-#include "fftw3.h"
-
+#include "fouriertransform.h"
 
 void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output)
 {
@@ -25,27 +24,9 @@ void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input,
 	blitz::TinyVector<int, 3> shape(radialCount, thetaCount, phiCount);
 	blitz::TinyVector<int, 3> stride(omegaCount, phiCount, 1);
 	blitz::Array<cplx, 3> expandedInput(input.data(), shape, stride, blitz::neverDeleteData);
-	
-	// Creates a plan to perform FFT transform. 
-	fftw_complex *data = (fftw_complex *) expandedInput.data();
-	int transformCount = radialCount * thetaCount;
-	fftw_plan plan = fftw_plan_many_dft(
-						1, 				//Rank of the transform
-						&phiCount,		//Length of the vector 
-						transformCount,	//Number of vectors to transform
-						data, 			//Input data
-						NULL,		 	//no padding (input)
-						1,				//Stride of vector (input)
-						phiCount, 		//Distance between vectors (input)
-						data, 			//Output data
-						NULL,			//no padding (output)
-						1,				//Stride of vector (output) 
-						phiCount,		//Distance between vectors (output)
-						FFTW_FORWARD,   //fft-direction 
-						FFTW_MEASURE   //using estimate
-						);
-	fftw_execute(plan);
-	fftw_destroy_plan(plan);
+
+	//Fourier transform phi
+	FftRank(expandedInput, 2, FFT_FORWARD);
 
 	output = 0.0;
 	for (int r=0; r<radialCount; r++)
@@ -119,28 +100,8 @@ void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, 2> input,
 		}
 	}
 
-	// Creates a plan to perform FFT transform. 
-	fftw_complex *data = (fftw_complex *) expandedOutput.data();
-	int transformCount = radialCount * thetaCount;
-	fftw_plan plan = fftw_plan_many_dft(
-						1, 				//Rank of the transform
-						&phiCount,		//Length of the vector 
-						transformCount,	//Number of vectors to transform
-						data, 			//Input data
-						NULL,		 	//no padding (input)
-						1,				//Stride of vector (input)
-						phiCount, 		//Distance between vectors (input)
-						data, 			//Output data
-						NULL,			//no padding (output)
-						1,				//Stride of vector (output) 
-						phiCount,		//Distance between vectors (output)
-						FFTW_BACKWARD,  //fft-direction 
-						FFTW_MEASURE   //using estimate
-						);
-	
-
-	fftw_execute(plan);
-	fftw_destroy_plan(plan);
+	//FFT along phi	
+	FftRank(expandedOutput, 2, FFT_BACKWARD);
 }
 
 /*

@@ -93,7 +93,7 @@ void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 2> data)
 	for (int i=0; i<data.extent(1); i++)
 	{
 		Array<cplx, 1> v = data(Range::all(), i);
-		temp = v.copy();
+		temp = v; // v.copy();
 		MatrixVectorMultiply(prop, temp, v);
 	}
 }

@@ -20,42 +20,22 @@ void CartesianFourierTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int
 		std::cout << "Cannot execute fourier transform along distributed rank." << std::endl;
 		throw std::runtime_error("Cannot execute fourier transform along distributed rank.");
 	}
-	
-	int minStrideRank = psi.Data.ordering(0);
-	int maxStrideRank = psi.Data.ordering(Rank - 1);
 
-	//if we are transforming the minimum strided rank, we can do it better
-	//than the generic routine
-	if (rank == minStrideRank)
-	{
-		//std::cout << "Transforming min stride" << std::endl;
-		FftOnlyMinStride(psi.Data, direction);
-	}
-	else if (rank == maxStrideRank)
-	{
-		//std::cout << "Transforming max stride" << std::endl;
-		FftOnlyMaxStride(psi.Data, direction);
-	}
-	else
-	{
-		if (rank < Rank/2)
-		{
-			FftRankNegative(psi.Data, rank, direction);
-		} 
-		else
-		{
-			FftRankPositive(psi.Data, rank, direction);
-		}
-	}	
+	FftRank(psi.Data, rank, direction);
 }
 
+/* Specialized TransformRank for 1D */
 template<>
 void CartesianFourierTransform<1>::TransformRank(Wavefunction<1> &psi, int rank, int direction)
 {
 	FftRank(psi.Data, rank, direction);
 }
 
-
+/*
+ * After a performing forward and backward transforms with one rank at a time,
+ * a call to Renormalize() is required to rescale the wavefunction to the expected
+ * norm. This is done automatically by ForwardTransform and InverseTransform
+ */
 template<int Rank>
 void CartesianFourierTransform<Rank>::Renormalize(Wavefunction<Rank> &psi)
 {
@@ -72,6 +52,50 @@ template<int Rank>
 void CartesianFourierTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi)
 {
 	FourierTransform(psi, FFT_BACKWARD);
+}
+
+
+template<int Rank>
+void CartesianFourierTransform<Rank>::FourierTransform(Wavefunction<Rank> &psi, int direction)
+{
+	if (psi.GetRepresentation().GetDistributedModel().ProcCount == 1)
+	{
+		//For one processor, we can execute a full Rank-D FFT 
+		FftAll(psi.Data, direction);
+	}
+	else 
+	{
+		//On a multi processor system, first transform all but the distributed rank,
+		//change distribution, and hopefully, the previously distrubted rank is now
+		//the min stride rank.
+		if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride(psi))
+		{
+			throw std::runtime_error("Error in FourierTransform(psi, direction): Maximum stride is not distributed, this case is not implemented in FourierTransform() yet.");
+		}
+		int distributedRank = psi.GetRepresentation().GetDistributedModel().GetDistributedRank(psi);
+		FftAllExceptMaxStride(psi.Data, direction);
+		
+		//change representation
+		psi.GetRepresentation().GetDistributedModel().ChangeRepresentation(psi);
+		
+		int minStrideRank = psi.Data.ordering(0);
+		//if we are transforming the minimum strided rank, we can do it better
+		//than the generic routine
+		if (distributedRank == minStrideRank)
+		{
+			FftOnlyMinStride(psi.Data, direction);
+		}
+		else
+		{
+			std::cout << "Warning from FourierTransform(psi,direction): Performing FFT along a suboptimal rank " << distributedRank << std::endl;
+			FftRank(psi.Data, distributedRank, direction);
+		}
+	}
+	
+	if (direction == FFT_BACKWARD) 
+	{
+		FftScale(psi);		
+	}
 }
 
 /** Create representations for a full transform */
@@ -105,6 +129,36 @@ CartesianRepresentation<Rank> CartesianFourierTransform<Rank>::CreateFourierRepr
 	return fftRepr;
 }
 
+/**
+Scales the wavefunction after a full forward / backward transform.
+It is equivalent to calling FftScaleRank() for all ranks (only much
+more efficient).
+*/
+template <int Rank>
+void FftScale(Wavefunction<Rank> &psi)
+{
+	double scale = 1.0;
+	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation().GetFullShape();
+	for (int dimension=0; dimension<Rank; dimension++)
+	{
+		scale /= fullShape(dimension);
+	}
+	psi.Data = psi.Data * scale;		
+}
+
+/**
+Scales the wavefunction after a forward / backward transform along
+the specified rank. 
+*/
+template <int Rank>
+void FftScaleRank(Wavefunction<Rank> &psi, int rank)
+{
+	double scale = 1.0;
+	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation().GetFullShape();
+	scale /= fullShape(rank);
+	psi.Data = psi.Data * scale;		
+}
+
 
 template class CartesianFourierTransform<1>;
 template class CartesianFourierTransform<2>;
@@ -115,3 +169,6 @@ template class CartesianFourierTransform<6>;
 template class CartesianFourierTransform<7>;
 template class CartesianFourierTransform<8>;
 template class CartesianFourierTransform<9>;
+
+
+

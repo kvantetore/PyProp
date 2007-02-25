@@ -8,11 +8,22 @@
 
 template<int Rank> class CartesianRepresentation;
 
-/**
-*/
+/*
+ * This class really has to different interfaces: 
+ * 1) The high level interface. Calling ForwardTransform() and 
+ *    InverseTransform() will fourier transform the entire wavefunction,
+ *    taking care of distribution among processors etc.
+ *
+ * 2) The low level interace. TransformRank, etc. transformes the 
+ *    wavefunction along a single rank. It will return an error if the transformed
+ *    rank is currently distributed, and will not perform any redistributions.
+ */
 template<int Rank>
 class CartesianFourierTransform
 {
+private:
+	void FourierTransform(Wavefunction<Rank> &psi, int direction);
+	
 public:
 	CartesianFourierTransform() 		
 	{

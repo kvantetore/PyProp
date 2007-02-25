@@ -4,7 +4,7 @@
 #include "common.h"
 
 template<int Rank>
-inline bool IncIndex(blitz::TinyVector<int, Rank>& extent, blitz::TinyVector<int, Rank> &index, int curDimension, int skipDimension)
+inline bool IncIndex(const blitz::TinyVector<int, Rank>& extent, blitz::TinyVector<int, Rank> &index, int curDimension, int skipDimension)
 {
 	if (curDimension < 0) {
 		return false;
@@ -26,3 +26,4 @@ inline bool IncIndex(blitz::TinyVector<int, Rank>& extent, blitz::TinyVector<int
 }
 
 #endif
+

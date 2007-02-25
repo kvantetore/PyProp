@@ -103,7 +103,7 @@ def FindGroundstate(**args):
 
 def RunPulseExperiment(gridType=GridType.CARTESIAN):
 	#Find groundstate
-	initPsi = FindGroundstate(gridType)
+	initPsi = FindGroundstate(gridType=gridType)
 
 	#load config file. hydrogen.ini uses ../sphericalbase.ini as a base
 	#configuration file, so be sure to check out that one as well.
