@@ -42,8 +42,10 @@ void CartesianRepresentation<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 	//Get range	
 	for (int i=0; i<Rank; i++)
 	{
+		int globalRank = i + this->GetBaseRank();
+
 		blitz::TinyVector<double, 3> rangeVector;
-		std::string settingName = "rank" + ToString(i);
+		std::string settingName = "rank" + ToString(globalRank);
 		cfg.Get(settingName, rangeVector);
 		
 		double min = rangeVector(0);

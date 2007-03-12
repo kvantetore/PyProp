@@ -5,13 +5,7 @@ template<int Rank>
 void Wavefunction<Rank>::AllocateData()
 {
 	blitz::TinyVector<int, Rank> shape = Repr->GetInitialShape();
-	long byteCount = (long)blitz::product(shape) * sizeof(cplx);
 
-	std::cout 
-		<< "Creating wavefunctions of shape " << shape
-		<< " (~ " << byteCount / (1024*1024) << "MB)"
-		<< std::endl;
-	
 	int name = AllocateData(shape);
 	SetActiveBuffer(name);
 }
@@ -34,6 +28,12 @@ size_t Wavefunction<Rank>::GetMemoryFootprint() const
 template<int Rank>
 int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 {
+	long byteCount = (long)blitz::product(shape) * sizeof(cplx);
+	std::cout 
+		<< "Creating wavefunctions of shape " << shape
+		<< " (~ " << byteCount / (1024*1024) << "MB)"
+		<< std::endl;
+	
 	DataArrayPtr data = DataArrayPtr( new DataArray(shape) );
 	int newName = WavefunctionData.size();
 	WavefunctionData.push_back(data);
@@ -88,7 +88,6 @@ Wavefunction<Rank>::Copy() const
 	/* Set up representations and stuff */
 	Wavefunction<Rank>* newPsi = new Wavefunction();
 	newPsi->SetRepresentation(this->Repr);
-	newPsi->DistributedRank = this->DistributedRank;
 	
 	/* Allocate data */
 	int bufferName = newPsi->AllocateData(Data.shape());
@@ -107,7 +106,6 @@ Wavefunction<Rank>::CopyDeep() const
 	/* Set up representations and stuff */
 	Wavefunction<Rank>* newPsi = new Wavefunction();
 	newPsi->SetRepresentation(this->Repr);
-	newPsi->DistributedRank = this->DistributedRank;
 	
 	/* Allocate data */
 	for (size_t i = 0; i < this->WavefunctionData.size(); i++)

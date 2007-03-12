@@ -1,3 +1,11 @@
+12. March 2007
+	Changed the concept of Distribution as a progress of making pyprop
+	properly multiproc enabled. It is now the Distribution, and not the
+	Wavefunction which knows how the data is distributed. In practice this
+	means that all the DistributedRank property of Wavefunction is moved to
+	DistributedModel, and all GetLocal*() methods on the representations 
+	no longer require the Wavefunction parameter.	
+
 31. January 2007
 	Added support for transformed radial grids. Using variable transforms by
 	Sørevik, along with chebyshev differentiation, a highly accurate solution

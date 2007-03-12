@@ -1,7 +1,12 @@
-from numpy import * 
 from pylab import *
-import sys
+from numpy import * 
 
+import sys
+import os
+
+#load pyprop
+pyprop_path = "../../../"
+sys.path.insert(1, os.path.abspath(pyprop_path))
 import pyprop
 pyprop = reload(pyprop)
 
@@ -94,7 +99,7 @@ def Measure(dx, dt, soft):
 	return  energy, corr
 
 def Plot2DSlice(prop, yIndex):
-	xvector = prop.psi.GetRepresentation().GetLocalGrid(prop.psi, 0)
+	xvector = prop.psi.GetRepresentation().GetLocalGrid(0)
 	plot(xvector, abs(prop.psi.GetData()[:, yIndex])**2)
 
 def Plot2DSliceFFT(prop, yIndex):

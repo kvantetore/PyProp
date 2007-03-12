@@ -7,7 +7,7 @@ using namespace blitz;
 template<int Rank>
 void RadialTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int direction)
 {
-	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(psi, rank))
+	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(rank))
 	{
 		std::cout << "Cannot execute fourier transform along distributed rank." << std::endl;
 		throw std::runtime_error("Cannot execute fourier transform along distributed rank.");

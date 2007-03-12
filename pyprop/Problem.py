@@ -54,7 +54,7 @@ class Problem:
 		"""
 		#set up grid
 		repr = self.psi.GetRepresentation()
-		grid = [repr.GetLocalGrid(self.psi, i) for i in range(0, self.psi.GetRank())]
+		grid = [repr.GetLocalGrid(i) for i in range(0, self.psi.GetRank())]
 		return grid
 		
 		

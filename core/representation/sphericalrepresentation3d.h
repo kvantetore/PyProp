@@ -34,7 +34,7 @@ public:
 		return GetRepresentation(1);
 	}
 
-	blitz::Array<double, 2> GetLocalAngularGrid(const Wavefunction<2>& psi);
+	blitz::Array<double, 2> GetLocalAngularGrid();
 	virtual std::complex<double> InnerProduct(const Wavefunction<2>& w1, const Wavefunction<2>& w2);
 
 private:

@@ -1,11 +1,14 @@
 import sys
-import pyprop
+import os
 import profile
 
-from numpy import *
 from pylab import *
+from numpy import *
 
-reload(sys.modules['pyprop'])
+pyprop_path = "../../../"
+sys.path.insert(1, os.path.abspath(pyprop_path))
+import pyprop
+pyprop = reload(pyprop)
 
 def FindGroundstate():
 	#load config

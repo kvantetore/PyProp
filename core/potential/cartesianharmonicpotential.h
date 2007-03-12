@@ -26,7 +26,7 @@ public:
 		blitz::TinyVector< blitz::Array<double, 1>, Rank> grid;
 		for (int i=0; i<Rank; i++)
 		{
-			grid(i).reference(repr->GetLocalGrid(wave, i));
+			grid(i).reference(repr->GetLocalGrid(i));
 		}
 		
 		ApplyDynamicPotential(wave, grid, t, dt);

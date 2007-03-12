@@ -17,7 +17,7 @@ public:
 		Representation<Rank> *repr = &psi.GetRepresentation();
 		for (int curRank = 0; curRank<Rank; curRank++)
 		{
-			grid(curRank).reference(repr->GetLocalGrid(psi, curRank));
+			grid(curRank).reference(repr->GetLocalGrid(curRank));
 		}
 	
 		//Iterate through each point in the wavefunction

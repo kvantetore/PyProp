@@ -5,7 +5,7 @@
 template<int Rank>
 void CartesianFourierTransform<Rank>::TransformExceptDistributedRank(Wavefunction<Rank> &psi, int direction)
 {
-	if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride(psi))
+	if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride())
 	{
 		throw std::runtime_error("Maximum stride is not distributed, this case is not implemented in cartesian fourier transform.");
 	}
@@ -15,7 +15,7 @@ void CartesianFourierTransform<Rank>::TransformExceptDistributedRank(Wavefunctio
 template<int Rank>
 void CartesianFourierTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int direction)
 {
-	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(psi, rank))
+	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(rank))
 	{
 		std::cout << "Cannot execute fourier transform along distributed rank." << std::endl;
 		throw std::runtime_error("Cannot execute fourier transform along distributed rank.");
@@ -68,11 +68,11 @@ void CartesianFourierTransform<Rank>::FourierTransform(Wavefunction<Rank> &psi, 
 		//On a multi processor system, first transform all but the distributed rank,
 		//change distribution, and hopefully, the previously distrubted rank is now
 		//the min stride rank.
-		if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride(psi))
+		if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride())
 		{
 			throw std::runtime_error("Error in FourierTransform(psi, direction): Maximum stride is not distributed, this case is not implemented in FourierTransform() yet.");
 		}
-		int distributedRank = psi.GetRepresentation().GetDistributedModel().GetDistributedRank(psi);
+		int distributedRank = psi.GetRepresentation().GetDistributedModel().GetDistributedRank();
 		FftAllExceptMaxStride(psi.Data, direction);
 		
 		//change representation

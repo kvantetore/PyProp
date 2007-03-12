@@ -21,7 +21,7 @@ public:
 		CartesianRepresentation<Rank> *repr = (CartesianRepresentation<Rank>*) reprBasic;
 		for (int curRank = 0; curRank<Rank; curRank++)
 		{
-			grid(curRank).reference(repr->GetLocalGrid(psi, curRank));
+			grid(curRank).reference(repr->GetLocalGrid(curRank));
 		}
 
 		//Max values

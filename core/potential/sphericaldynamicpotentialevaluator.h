@@ -68,10 +68,10 @@ public:
 		SphericalRepresentation3D *repr = static_cast<SphericalRepresentation3D*>(&psi.GetRepresentation());
 
 		blitz::Array<double, 1> radialGrid;
-		radialGrid.reference(repr->GetLocalGrid(psi, 0));
+		radialGrid.reference(repr->GetLocalGrid(0));
 
 		blitz::Array<double, 2> omegaGrid;
-		omegaGrid.reference(repr->GetLocalAngularGrid(psi));
+		omegaGrid.reference(repr->GetLocalAngularGrid());
 		
 		//postition is size rank+1 since <r,(l,m)> --> <r,l,m> = pos
 		blitz::TinyVector<double, Rank+1> pos;

@@ -77,7 +77,7 @@ class CartesianRadialPropagator(RadialPropagator):
 			
 
 	def GetOriginIndex(self):
-		grid = self.psi.GetRepresentation().GetLocalGrid(self.psi, 0)
+		grid = self.psi.GetRepresentation().GetLocalGrid(0)
 		idxList = where(abs(grid) <  1e-14)[0]
 		if len(idxList) != 1:
 			print grid

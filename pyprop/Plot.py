@@ -9,8 +9,8 @@ def Plot1D(prop):
 def Plot2DFull(prop):
 	data = GetFullWavefunctionData(prop)
 
-	xvector = prop.psi.GetRepresentation().GetLocalGrid(prop.psi, 0)
-	yvector = prop.psi.GetRepresentation().GetLocalGrid(prop.psi, 1)
+	xvector = prop.psi.GetRepresentation().GetLocalGrid(0)
+	yvector = prop.psi.GetRepresentation().GetLocalGrid(1)
 	x, y = meshgrid(xvector,yvector)
 	
 	plotdata = real(conj(data) * data)

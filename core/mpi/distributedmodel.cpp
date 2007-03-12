@@ -70,8 +70,8 @@ void DistributedModel<Rank>::ChangeRepresentation(Wavefunction<Rank> &psi)
 	//Choose direction
 	TransposeDirection direction = TRANSPOSE_FORWARD;
 	if (
-		(Model == TRANSPOSE_SEMI && GetDistributedRank(psi) != 0) 
-		|| (Model == TRANSPOSE_SEMI && GetDistributedRank(psi) != 0)
+		(Model == TRANSPOSE_SEMI && GetDistributedRank() != 0) 
+		|| (Model == TRANSPOSE_SEMI && GetDistributedRank() != 0)
 	)
 	{
 		direction = TRANSPOSE_BACKWARD;
@@ -80,12 +80,12 @@ void DistributedModel<Rank>::ChangeRepresentation(Wavefunction<Rank> &psi)
 	//Transpose into tempdata
 	if (Model == TRANSPOSE_SEMI)
 	{
-		psi.DistributedRank = TransposeSemi(src, dst, psi.DistributedRank, direction);
+		DistributedRank = TransposeSemi(src, dst, DistributedRank, direction);
 	}
 	else
 	{
 		Transpose(src, dst, direction);
-		psi.DistributedRank = dst.ordering(Rank-1);
+		DistributedRank = dst.ordering(Rank-1);
 	}
 
 	//Make the transposed data active

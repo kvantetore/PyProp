@@ -11,6 +11,8 @@ SOURCEFILES  := wrapper.cpp
 OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libhydrogen
 
+all: $(MODULENAME).so
+
 $(MODULENAME).so: $(OBJECTS)
 	$(LD) -shared -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) -Wl,-rpath=$(PYPROP_LIB_PATH)
 

@@ -51,11 +51,10 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(const Wavefunction<Rank> &psi, int rank)
+	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
 	{
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(psi, rank);
-		//std::cout << "LocalIndexRange " << indexRange << std::endl;
-		return Range(rank).GetGrid()(indexRange);
+		int effectiveRank = rank - this->GetBaseRank();
+		return this->GetDistributedModel().GetLocalArray(Range(effectiveRank).GetGrid(), rank);
 	}	
 
 	//Implementation of the Representation interface.

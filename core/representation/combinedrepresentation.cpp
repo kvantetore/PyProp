@@ -26,15 +26,6 @@ template<> Wavefunction<1>* CombinedRepresentation<2>
 ::CreateSlicedWavefunction(const Wavefunction<2> &psi, int sliceRank, const blitz::TinyVector<int, 1> &slicePosition)
 {
 	Wavefunction<1> *slicedPsi = new Wavefunction<1>();
-	if (psi.DistributedRank == sliceRank)
-	{
-		slicedPsi->DistributedRank = 0;
-	}
-	else
-	{
-		slicedPsi->DistributedRank = -1;
-	}
-
 	if (sliceRank == 0)
 	{
 		slicedPsi->Data.reference(psi.Data(blitz::Range::all(), slicePosition(0)));
@@ -51,20 +42,11 @@ template<> Wavefunction<1>* CombinedRepresentation<2>
 /*----------------------------------------------------------------------------
                 Implementation of the Representation interface
   ----------------------------------------------------------------------------*/
-template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>
-::GetLocalGrid(const Wavefunction<Rank> &psi, int rank)
+template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::
+GetLocalGrid(int rank)
 {
-	//Create sliced psi
-	blitz::TinyVector<int, Rank-1> pos = 0;
-	Wavefunction<1> *slicedPsi = CreateSlicedWavefunction(psi, rank, pos);
-		
 	//Get the local grid in the specified rank
-	LocalGrid[rank].reference( GetRepresentation(rank)->GetLocalGrid(*slicedPsi, 0) );
-	
-	//deallocate sliced psi
-	delete slicedPsi;
-
-	return LocalGrid[rank];
+	return GetRepresentation(rank)->GetLocalGrid(rank);
 }
 
 template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
@@ -73,7 +55,7 @@ template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
 	blitz::TinyVector<int, Rank> shape;
 	for (int i=0;i<Rank;i++)
 	{
-		shape(i) = (*GetRepresentation(i)).GetFullShape()(0);
+		shape(i) = GetRepresentation(i)->GetFullShape()(0);
 	}
 	return shape;
 }

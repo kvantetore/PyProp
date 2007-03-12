@@ -50,6 +50,7 @@ def CreateSubRepresentations(representation, config):
 	print "Creating RadialRepresentation..."
 	#radial part
 	radialRepr = config.Representation.radialtype()
+	radialRepr.SetBaseRank(0)
 	print "Radial Repr: %s" % radialRepr
 	radialRepr.SetDistributedModel(distrib1d1)
 	config.RadialRepresentation.Apply(radialRepr)
@@ -58,6 +59,7 @@ def CreateSubRepresentations(representation, config):
 	print "Creating AngularRepresentation..."
 	#angular part
 	angularRepr = config.Representation.angulartype()
+	angularRepr.SetBaseRank(1)
 	angularRepr.SetDistributedModel(distrib1d2)
 	config.AngularRepresentation.Apply(angularRepr)
 	representation.SetRepresentation(1,angularRepr)

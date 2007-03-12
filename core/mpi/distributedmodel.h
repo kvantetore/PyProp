@@ -24,6 +24,7 @@ class DistributedModel
 {
 private:
 	unsigned int CurrentStep;
+	unsigned int DistributedRank;
 	
 public:
 	TransposeModel Model;
@@ -64,13 +65,13 @@ public:
 		return 0;
 	}
 	
-	bool IsDistributedRank(const Wavefunction<Rank> &psi, int rank)
+	bool IsDistributedRank(int rank)
 	{
 		if (IsSingleProc())
 		{
 			return false;
 		}
-		return GetDistributedRank(psi) == rank;
+		return GetDistributedRank() == rank;
 	}
 	
 	/**
@@ -88,26 +89,26 @@ public:
 	Returns the rank which is currently distributed among
 	the procs.
 	*/
-	int GetDistributedRank(const Wavefunction<Rank> &psi)
+	int GetDistributedRank()
 	{
-		return psi.DistributedRank;
+		return DistributedRank;
 	}
 	
 	/**
 	Returns if the currently distributed rank has maximum stride.
 	*/
-	bool HasDistributedRangeMaxStride(const Wavefunction<Rank> &psi)
+	bool HasDistributedRangeMaxStride()
 	{
-		return GetDistributedRank(psi) == psi.Data.ordering(Rank-1);
+		return GetDistributedRank() == Rank - 1;
 	}
 	
 	/**
 	Returns the index for the global virtual super-wavefunction.
 	*/
-	blitz::Range GetFullIndexRange(Wavefunction<Rank> &psi, int currentRank)
+	blitz::Range GetFullIndexRange(const Wavefunction<Rank> &psi, int currentRank)
 	{
 		int extent = psi.Data.extent(currentRank);
-		if (currentRank != GetDistributedRank(psi)) 
+		if (currentRank != GetDistributedRank()) 
 		{
 			return blitz::Range(0, extent - 1);
 		} 
@@ -121,7 +122,7 @@ public:
 	Returns the index of the local part of the wavefunction
 	in current-proc coordinates.
 	*/
-	blitz::Range GetLocalIndexRange(Wavefunction<Rank> &psi, int currentRank)
+	blitz::Range GetLocalIndexRange(const Wavefunction<Rank> &psi, int currentRank)
 	{
 		int extent = psi.Data.extent(currentRank);
 		return blitz::Range(0, extent - 1);
@@ -132,13 +133,12 @@ public:
 	 * Returns the index in the virtual super wavefunction
 	 * on which this proc starts
 	 */
-	int GetGlobalStartIndex(const Wavefunction<Rank> &psi, int currentRank)
+	int GetGlobalStartIndex(int globalSize, int currentRank)
 	{
-		int extent = psi.Data.extent(currentRank);
 		int base = 0;
-		if (currentRank == GetDistributedRank(psi)) 
+		if (currentRank == GetDistributedRank()) 
 		{
-			base = extent * ProcId;
+			base = globalSize * ProcId;
 		}
 		return base;
 	}
@@ -149,11 +149,21 @@ public:
 	 * rank it returns the same as GetLocalIndex, and for a 
 	 * distributed rank, it returns (extent*ProcId -> extent * (procid + 1))
 	 */	
-	blitz::Range GetGlobalIndexRange(const Wavefunction<Rank> &psi, int currentRank)
+	blitz::Range GetGlobalIndexRange(int globalSize, int currentRank)
 	{
-		int base = GetGlobalStartIndex(psi, currentRank);
-		int extent = psi.Data.extent(currentRank);
-		return blitz::Range(base, base + extent - 1);
+		int base = GetGlobalStartIndex(globalSize, currentRank);
+		return blitz::Range(base, base + globalSize - 1);
+	}
+
+	template<class T> const blitz::Array<T, 1> GetLocalArray(const blitz::Array<T, 1> &array, int rank)
+	{
+		//Should be implemented correctly, need to set up a proper way to figure out the
+		//partitioning, etc.
+		if (IsDistributedRank(rank))
+		{
+			cout << "Warning: Should implement DistributedModel::GetLocalArray properly" << endl;
+		}
+		return array;
 	}
 
 

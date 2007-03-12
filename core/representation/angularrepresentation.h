@@ -45,20 +45,25 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(const Wavefunction<1> &psi, int rank)
+	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
 	{
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(psi, 0);
-		return Range.GetIndexGrid()(indexRange);
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong rank" <<  endl;
+		}
+		return this->GetDistributedModel().GetLocalArray(Range.GetIndexGrid(), rank);
 	}
 	
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 2> GetLocalOmegaGrid(const Wavefunction<1> &psi)
+	virtual blitz::Array<double, 2> GetLocalOmegaGrid()
 	{
-		//angular representations must be the second rank (rank==1) 
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(psi, 0);
-		return Range.GetOmegaGrid()(indexRange, blitz::Range::all());
+		blitz::Array<double, 2> omegaGrid( Range.GetOmegaGrid() );
+		int size = omegaGrid.extent(0);
+
+		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(size, GetBaseRank());
+		return omegaGrid(indexRange, blitz::Range::all());
 	}
 	
 	/** Apply config, and set up Range

@@ -15,7 +15,7 @@ void SetWavefunctionFromGridFunction(Wavefunction<Rank> &psi, object& function, 
 	Representation<Rank> *repr = &psi.GetRepresentation();
 	for (int curRank = 0; curRank<Rank; curRank++)
 	{
-		grid(curRank).reference(repr->GetLocalGrid(psi, curRank));
+		grid(curRank).reference(repr->GetLocalGrid(curRank));
 	}
 	
 	//blitz::TinyVector<double, Rank> pos;
@@ -49,7 +49,7 @@ void SetPotentialFromGridFunction(StaticPotential<Rank> &potential, cplx timeSte
 	blitz::TinyVector< blitz::Array<double, 1>, Rank> grid;
 	for (int curRank = 0; curRank<Rank; curRank++)
 	{
-		grid(curRank).reference(repr.GetLocalGrid(psi, curRank));
+		grid(curRank).reference(repr.GetLocalGrid(curRank));
 	}
 	
 	list pos;

@@ -9,32 +9,26 @@ typedef CartesianRepresentation<1>::Ptr CartesianRepresentation1DPtr;
 using boost::dynamic_pointer_cast;
 using namespace blitz;
 
-Array<double, 2> SphericalRepresentation3D::GetLocalAngularGrid(const Wavefunction<2>& psi)
-	{
-	//Create sliced psi
-	TinyVector<int, 1> pos = 0;
-	Wavefunction<1> *slicedPsi = CreateSlicedWavefunction(psi, 1, pos);
+Array<double, 2> SphericalRepresentation3D::GetLocalAngularGrid()
+{
 	Array<double, 2> grid;
-	
 	AngularRepresentationPtr angRepr = dynamic_pointer_cast<AngularRepresentation>(GetAngularRepresentation());
 	if (angRepr)
 	{
-		grid.reference(angRepr->GetLocalOmegaGrid(*slicedPsi));
+		grid.reference(angRepr->GetLocalOmegaGrid());
 	}
 	else
 	{
 		SphericalHarmonicRepresentationPtr sphRepr = dynamic_pointer_cast<SphericalHarmonicRepresentation>(GetAngularRepresentation()); 
 		if (sphRepr)
 		{
-			grid.reference(sphRepr->GetLocalLmGrid(*slicedPsi));
+			grid.reference(sphRepr->GetLocalLmGrid());
 		}
 	}
 	if (grid.size() == 0)
 	{
 		throw std::runtime_error("Invalid Angular Representation for SphericalDynamicPotentialEvaluator");
 	}
-	
-	delete slicedPsi;
 	return grid;
 }
 

@@ -40,20 +40,22 @@ public:
 	 */
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(w1, 0);
-		blitz::Array<double, 1> weights(Range.GetWeights());
+		blitz::Array<double, 1> weights(this->GetDistributedModel().GetLocalArray(Range.GetWeights(), GetBaseRank()));
 
-		cplx innerProd = sum(weights(indexRange) * conj(w1.Data) * w2.Data);
+		cplx innerProd = sum(weights * conj(w1.Data) * w2.Data);
 		return innerProd;
 	}
 
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(const Wavefunction<1> &psi, int rank)
+	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
 	{
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(psi, rank);
-		return Range.GetGrid()(indexRange);
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong rank" <<  endl;
+		}
+		return this->GetDistributedModel().GetLocalArray(Range.GetGrid(), rank);
 	}
 
 	/** Apply config, and set up Range

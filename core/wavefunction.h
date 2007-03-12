@@ -23,10 +23,8 @@ private:
 			
 public:
 	blitz::Array<cplx, Rank> Data;
-	int DistributedRank;
 	
-	Wavefunction() :
-		DistributedRank(0)
+	Wavefunction() 
 	{
 	}
 	

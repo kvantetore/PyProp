@@ -19,7 +19,7 @@ public:
 		//Set up grid
 		blitz::Array<double, 1> radialGrid;
 		SphericalRepresentation3D *repr = static_cast<SphericalRepresentation3D*>(&psi.GetRepresentation());
-		radialGrid.reference(repr->GetLocalGrid(psi, 0));
+		radialGrid.reference(repr->GetLocalGrid(0));
 
 		int radialCount = psi.Data.extent(0);
 		int omegaCount = psi.Data.extent(1);
