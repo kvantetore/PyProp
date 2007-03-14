@@ -3,7 +3,7 @@
 
 #include "../common.h"
 #include "../wavefunction.h"
-#include "../representation/sphericalrepresentation3d.h"
+#include "../representation/sphericalrepresentation.h"
 #include "../representation/angularrepresentation.h"
 #include "../representation/sphericalharmonicrepresentation.h"
 #include "shtools.h"
@@ -11,7 +11,8 @@
 
 /** class that performs the transformation between the angular space and the spherical harmonic space
 */
-class SphericalTransform3D
+template<int Rank>
+class SphericalTransform
 {
 private:
 	int LmDataName;			//
@@ -21,7 +22,7 @@ public:
 	SphericalTransformTensorGrid transform;
 
 	//Constructors
-	SphericalTransform3D() :
+	SphericalTransform() :
 			LmDataName(-1),
 			AngularDataName(-1)
 	{}
@@ -31,8 +32,10 @@ public:
 	void SetupStep(const Wavefunction<2> &psi)
 	{
 		// uses the representation of the wavefunction to get MaxL
-		SphericalRepresentation3D* reprSphere = dynamic_cast<SphericalRepresentation3D*>(&psi.GetRepresentation());
-		SphericalHarmonicRepresentation* reprAngular = dynamic_cast<SphericalHarmonicRepresentation*>(&(*reprSphere->GetAngularRepresentation()));
+		typedef SphericalRepresentation<Rank> SphRepr;
+		typedef SphericalHarmonicRepresentation SphHarmRepr;
+		SphRepr* reprSphere = dynamic_cast< SphRepr* >(&psi.GetRepresentation());
+		SphHarmRepr* reprAngular = dynamic_cast<SphHarmRepr*>(&(*reprSphere->GetAngularRepresentation()));
 		if (reprAngular == 0) 
 		{
 			std::cout << "Invalid wavefunction representation, must be SphericalHarmonicRepresentation" << std::endl;
@@ -71,7 +74,8 @@ public:
 		blitz::Array<cplx, 2> srcData(psi.GetData());
 		blitz::Array<cplx, 2> dstData(psi.GetData(LmDataName));
 
-		transform.ForwardTransform(srcData, dstData);
+		//The last rank is the spherical rank
+		transform.ForwardTransform(srcData, dstData, Rank-1);
 		psi.SetActiveBuffer(LmDataName);
 	}
 
@@ -98,8 +102,9 @@ public:
 		
 		blitz::Array<cplx, 2> srcData(psi.GetData());
 		blitz::Array<cplx, 2> dstData(psi.GetData(AngularDataName));
-		
-		transform.InverseTransform(srcData, dstData);
+	
+		//The last rank is the spherical rank
+		transform.InverseTransform(srcData, dstData, Rank-1);
 		psi.SetActiveBuffer(AngularDataName);
 	}
 

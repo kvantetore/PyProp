@@ -11,6 +11,7 @@ private:
 	//It contains only the index value, stored as a double!
 	blitz::Array<double, 1> IndexGrid;
 	blitz::Array<double, 2> LmGrid;
+	blitz::Array<double, 1> Weights;
 	
 public:
 	//Public fields
@@ -53,6 +54,15 @@ public:
 			}
 		}
 		return LmGrid;
+	}
+	
+	blitz::Array<double, 1> GetWeights()
+	{
+		if (Weights.size() == 0)
+		{
+			Weights.resize(Count());
+		}
+		return Weights;
 	}
 
 	/** -------------- Mapping between index and l,m pairs ----------------- */

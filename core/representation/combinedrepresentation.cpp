@@ -37,8 +37,6 @@ template<> Wavefunction<1>* CombinedRepresentation<2>
 	return slicedPsi;
 }
 
-//TODO: Implement for higher than 2D
-
 /*----------------------------------------------------------------------------
                 Implementation of the Representation interface
   ----------------------------------------------------------------------------*/
@@ -47,6 +45,13 @@ GetLocalGrid(int rank)
 {
 	//Get the local grid in the specified rank
 	return GetRepresentation(rank)->GetLocalGrid(rank);
+}
+
+template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::
+GetLocalWeights(int rank)
+{
+	//Get the local grid in the specified rank
+	return GetRepresentation(rank)->GetLocalWeights(rank);
 }
 
 template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
@@ -77,12 +82,10 @@ template<int Rank> void CombinedRepresentation<Rank>
 template<int Rank> void CombinedRepresentation<Rank>
 ::ApplyConfigSection(const ConfigSection &config) 
 {
-	for (int i=0;i<Rank;i++)
-	{
-		GetRepresentation(i)->ApplyConfigSection(config);
-	}
+	//Do this manually for each sub-representation
 }
 
 
 template class CombinedRepresentation<2>;
+template class CombinedRepresentation<3>;
 

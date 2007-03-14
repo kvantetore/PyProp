@@ -19,7 +19,7 @@ class TransformedRadialPropagator(RadialPropagator):
 		self.Propagator = CreateInstanceRank("core.TransformedGridPropagator", rank)
 
 	def SetupStep(self, dt):
-		param = self.psi.GetRepresentation().GetRadialRepresentation().Range.Param
+		param = self.psi.GetRepresentation().GetRepresentation(0).Range.Param
 		radialRank = 0
 		self.Propagator.Setup(param, dt, self.psi, radialRank)
 
@@ -42,7 +42,7 @@ class CartesianRadialPropagator(RadialPropagator):
 
 	def SetupStep(self, dt):
 		#setup representation
-		self.RadialRepresentation = self.psi.GetRepresentation().GetRadialRepresentation()
+		self.RadialRepresentation = self.psi.GetRepresentation().GetRepresentation(0)
 		self.RadialFourierRepresentation = self.CreateRadialFourierRepr(self.RadialRepresentation)
 
 		# transform radial into fourier space
@@ -122,7 +122,7 @@ class SphericalPropagator(PropagatorBase):
 	
 		#TODO: Add support for other radial propagators
 		self.RadialPropagator = self.CreateRadialPropagator() 
-		self.SphericalTransform3D = core.SphericalTransform3D();
+		self.SphericalTransform = core.SphericalTransform_2();
 
 		#instantiate potentials
 		self.AngularKineticPotential = None 
@@ -134,13 +134,13 @@ class SphericalPropagator(PropagatorBase):
 		self.__Base.ApplyConfigSection(self, configSection)
 		
 	def SetupStep(self, dt):
-		print "        Setup SphericalTransform3D"
-		self.SphericalTransform3D.SetupStep(self.psi);
+		print "        Setup SphericalTransform"
+		self.SphericalTransform.SetupStep(self.psi);
 	
 		#get representations
 		print "        Setup representations"
 		self.LmRepresentation = self.psi.GetRepresentation().GetAngularRepresentation()
-		self.AngularRepresentation = self.SphericalTransform3D.CreateAngularRepresentation()
+		self.AngularRepresentation = self.SphericalTransform.CreateAngularRepresentation()
 		self.AngularRepresentation.SetDistributedModel(self.LmRepresentation.GetDistributedModel())
 
 		#transform into grid space
@@ -182,7 +182,7 @@ class SphericalPropagator(PropagatorBase):
 
 	#Radial proapgator
 	def CreateRadialPropagator(self):
-		radialRepr = self.psi.GetRepresentation().GetRadialRepresentation()
+		radialRepr = self.psi.GetRepresentation().GetRepresentation(0)
 		if radialRepr.__class__ == core.CartesianRepresentation_1:
 			prop = CartesianRadialPropagator(self.psi)
 		elif radialRepr.__class__ == core.TransformedRadialRepresentation:
@@ -194,11 +194,11 @@ class SphericalPropagator(PropagatorBase):
 
 	#Transforms:		
 	def TransformSphericalForward(self):
-		self.SphericalTransform3D.ForwardTransform(self.psi)
+		self.SphericalTransform.ForwardTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(1, self.LmRepresentation)
 
 	def TransformSphericalInverse(self):
-		self.SphericalTransform3D.InverseTransform(self.psi)
+		self.SphericalTransform.InverseTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(1, self.AngularRepresentation)
 		
 	# Helper class for kinetic energy potentials

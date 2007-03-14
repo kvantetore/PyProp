@@ -3,7 +3,7 @@
 
 #include "../common.h"
 #include "../wavefunction.h"
-#include "../representation/sphericalrepresentation3d.h"
+#include "../representation/sphericalrepresentation.h"
 #include "staticpotential.h"
 
 // Action classes define the operations to be performed on the data
@@ -49,7 +49,6 @@ public:
 };
 
 
-
 // The class inherits from DynamicPotentialClass and ActionClass
 // DynamicPotentialClass defines the potential
 // ActionClass defines the how the potential is to be applied to the data
@@ -60,16 +59,21 @@ public:
 	/** Updates propagates the wavefunction a step with this dynamic potential **/
 	void IterateAction(const Wavefunction<Rank> &psi, blitz::Array<cplx, Rank> updateData, const cplx &timeStep, const double &curTime)
 	{
+		typedef SphericalRepresentation<Rank> SphRepr;		
+
 		//Set up PotentialClass
 		this->CurTime = curTime;
 		this->TimeStep = timeStep;
 
 		//Get representations
-		SphericalRepresentation3D *repr = static_cast<SphericalRepresentation3D*>(&psi.GetRepresentation());
+		SphRepr *repr = static_cast<SphRepr*>(&psi.GetRepresentation());
 
-		blitz::Array<double, 1> radialGrid;
-		radialGrid.reference(repr->GetLocalGrid(0));
-
+		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
+		for (int i=0; i<Rank-1; i++)
+		{
+			grid(i).reference(repr->GetLocalGrid(i));
+		}
+		
 		blitz::Array<double, 2> omegaGrid;
 		omegaGrid.reference(repr->GetLocalAngularGrid());
 		
@@ -78,15 +82,17 @@ public:
 		typename blitz::Array<cplx, Rank>::iterator it = updateData.begin();
 		for (int linearCount=0; linearCount<updateData.size(); linearCount++)
 		{
-			// rank 0 - radius
-			pos(0) = radialGrid(it.position()(0));
+			for (int i=0; i<Rank-1; i++)
+			{
+				pos(i) = grid(i)(it.position()(i));
+			}
 			
-			// rank 1 - theta
+			// second last rank - theta
 			int omegaIndex = it.position()(1);
-			pos(1) = omegaGrid(omegaIndex, 0);
+			pos(Rank-1) = omegaGrid(omegaIndex, 0);
 							
-			// rank 2 - phi
-			pos(2) = omegaGrid(omegaIndex, 1);
+			// last rank - phi
+			pos(Rank) = omegaGrid(omegaIndex, 1);
 
 			// Uses the function from the inherited classes
 			ApplyAction(it, GetPotentialValue(pos), timeStep );

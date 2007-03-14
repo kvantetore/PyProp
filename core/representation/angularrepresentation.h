@@ -17,7 +17,6 @@ class AngularRepresentation : public Representation1D
 {
 public:
 	OmegaRange Range;                          //The points chosen for the angular grid
-	blitz::Array<double, 1> OmegaWeight;       //The weights used when integrating over the grid
 
 	//Constructors:
 	AngularRepresentation() {}
@@ -39,7 +38,7 @@ public:
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
 		throw std::runtime_error("AngularRepresentation::InnerProduct is not implemented");
-		return sum(conj(w1.Data) * w2.Data * OmegaWeight); 
+		return sum(conj(w1.Data) * w2.Data * GetLocalWeights(GetBaseRank())); 
 	}
 
 	/** 
@@ -53,7 +52,19 @@ public:
 		}
 		return this->GetDistributedModel().GetLocalArray(Range.GetIndexGrid(), rank);
 	}
-	
+
+	/** 
+	Returns the portion of the grid local to the current processor.
+	**/
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	{
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong rank" <<  endl;
+		}
+		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+	}
+
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/

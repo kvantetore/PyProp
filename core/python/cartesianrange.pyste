@@ -11,3 +11,4 @@ CartesianRepresentation("4")
 
 CartesianRange = Class("CartesianRange", "representation/cartesianrange.h")
 set_policy(CartesianRange.GetGrid, return_value_policy(return_by_value))
+exclude(CartesianRange.GetWeights)

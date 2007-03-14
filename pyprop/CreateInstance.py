@@ -27,44 +27,45 @@ def CreateDistribution(config, rank=None):
 def CreateRepresentation(config, distribution):
 	#Create instance
 	representation = config.Representation.type()
-	
-	if config.Representation.type == core.SphericalRepresentation3D:
-		CreateSubRepresentations(representation, config)
-	
+
 	#Set distribution model
 	representation.SetDistributedModel(distribution)
-	
+		
 	#Apply configuration section
-	#If representation is SphericalRepresentation3D object don't need
-	# to apply config since it was applied in CreateSubRepresentations
-	if config.Representation.type != core.SphericalRepresentation3D:
-		config.Representation.Apply(representation)
+	config.Representation.Apply(representation)
 
+	#If the representation is a base class of CombinedRepresentation,
+	#we must set up the 1d sub-representations.
+	combinedRepr = eval("core.CombinedRepresentation_" + str(config.Representation.rank))
+	if combinedRepr in config.Representation.type.__mro__:
+		CreateSubRepresentations(representation, config)
+	
 	return representation
 
-def CreateSubRepresentations(representation, config):
-	#1D distributed models
-	distrib1d1 = CreateDistribution(config, 1)
-	distrib1d2 = CreateDistribution(config, 1)
+def CreateSubRepresentations(combinedRepr, config):
+	rank = config.Representation.rank
+	for i in range(rank):
+		sectionName = config.Representation.Get("representation" + str(i))
+		print "ConfigSection for rank %i is %s" % (i, sectionName)
+		section = config.GetSection(sectionName)
 
-	print "Creating RadialRepresentation..."
-	#radial part
-	radialRepr = config.Representation.radialtype()
-	radialRepr.SetBaseRank(0)
-	print "Radial Repr: %s" % radialRepr
-	radialRepr.SetDistributedModel(distrib1d1)
-	config.RadialRepresentation.Apply(radialRepr)
-	representation.SetRepresentation(0,radialRepr)
-	
-	print "Creating AngularRepresentation..."
-	#angular part
-	angularRepr = config.Representation.angulartype()
-	angularRepr.SetBaseRank(1)
-	angularRepr.SetDistributedModel(distrib1d2)
-	config.AngularRepresentation.Apply(angularRepr)
-	representation.SetRepresentation(1,angularRepr)
+		#create instance
+		repr = section.type()
+		repr.SetBaseRank(i)
+		print "Representation for rank %i is %s" % (i, repr)
 
-	print "done creating AngularRepresentation"
+		#set distributed model
+		#TODO: Fix sub-distributed models to reflect the same distribution
+		#as the full distributed model.
+		distrib = CreateDistribution(config, 1)
+		repr.SetDistributedModel(distrib)
+
+		#apply configuration
+		section.Apply(repr)
+
+		#Attach this repr to the main representation
+		combinedRepr.SetRepresentation(i, repr)
+
 	
 def CreateWavefunction(config, representation):
 	#Create instance
@@ -90,10 +91,8 @@ def CreatePropagator(config, psi):
 		propagator = config.Propagation.propagator(psi)
 		config.Apply(propagator)
 		config.Propagation.Apply(propagator)
-		#why was this here
-		#config.Representation.Apply(propagator)
 	else:
-		print "WARNING: No momentum evaluator specified in config file. Make sure your potential evaluator includes kinetic energy."
+		print "WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy."
 	
 	return propagator
 	

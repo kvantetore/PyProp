@@ -4,32 +4,104 @@
 #include "shtools.h"
 #include "fouriertransform.h"
 
-void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output)
+template<class T, int Rank>
+blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, int secondRankCount)
+{
+	using namespace blitz;
+
+    //Check that the array is in C-order
+	for (int i=0; i<Rank; i++)
+	{
+		if (array.ordering(i) != (Rank - 1 - i))
+		{
+			throw std::runtime_error("data is not in C-style ordering");
+		}
+	}
+	
+	int firstRankSize = 1;
+	for (int i=0; i<firstRankCount;i++)
+	{
+		firstRankSize *= array.extent(i);
+	}
+
+	int secondRankSize = 1;
+	for (int i=0; i<secondRankCount; i++)
+	{
+		int curRank = i + firstRankCount;
+		secondRankSize *= array.extent(curRank);
+	}
+
+	int thirdRankSize = array.size() / (secondRankSize * firstRankSize);
+	
+	//Set up shape and stride vectors
+	TinyVector<int, 3> shape(firstRankSize, secondRankSize, thirdRankSize);
+	TinyVector<int, 3> stride(secondRankSize*thirdRankSize, thirdRankSize, 1);
+
+	//Create an array
+	//TODO: fix this so it doesn't reference the underlying vector, but rather
+	//the reference counted memory pool. That way we will have deallocation 
+	//as expected
+	//The current implementation requires that the lifetime of the input array
+	//exceeds the lifetime of the output array
+	Array<cplx, 3> ret(array.data(), shape, stride, neverDeleteData);
+
+	return ret;
+}
+
+template<int Rank> void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int omegaRank)
+{
+	//Project input and output into 3D arrays with omegaRank in the middle. if omega is highest 
+	//or lowest rank, the highest or lowest rank will be of size 1 
+	blitz::Array<cplx, 3> input3d = MapToRank3(input, omegaRank, 1);
+	blitz::Array<cplx, 3> output3d = MapToRank3(output, omegaRank, 1);
+
+	ForwardTransform_Impl(input3d, output3d);
+}
+	
+template<int Rank> void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int omegaRank)
+{
+	//Project input and output into 3D arrays with omegaRank in the middle. if omega is highest 
+	//or lowest rank, the highest or lowest rank will be of size 1 
+	blitz::Array<cplx, 3> input3d = MapToRank3(input, omegaRank, 1);
+	blitz::Array<cplx, 3> output3d = MapToRank3(output, omegaRank, 1);
+
+	InverseTransform_Impl(input3d, output3d);
+}
+
+void SphericalTransformTensorGrid::ForwardTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
 {
 	int thetaCount = ThetaGrid.extent(0);
 	int phiCount = PhiGrid.extent(0);		
-	int radialCount = input.extent(0);		//The first rank is the radial index
+	int lowerCount = input.extent(0);		//The first rank is the lower index
 	int omegaCount = input.extent(1);		//The second rank is the omega index
+	int upperCount = input.extent(2);
 
 	if (omegaCount != phiCount * thetaCount)
 	{
 		throw std::runtime_error("Something is wrong with phicount, thetacount or omegacount");
 	}
 
-	//Reinterpret the 2D INPUT data as a 3D array, where the compressed rank omega
+	//Reinterpret the 3D INPUT data as a 4D array, where the compressed rank omega
 	//is expanded into theta and phi.
-	//rank0 = radius
+	//rank0 = lower
 	//rank1 = theta
 	//rank2 = phi
-	blitz::TinyVector<int, 3> shape(radialCount, thetaCount, phiCount);
-	blitz::TinyVector<int, 3> stride(omegaCount, phiCount, 1);
-	blitz::Array<cplx, 3> expandedInput(input.data(), shape, stride, blitz::neverDeleteData);
+	//rank3 = upper
+	blitz::TinyVector<int, 4> shape(lowerCount, thetaCount, phiCount, upperCount);
+	blitz::TinyVector<int, 4> stride;
+	stride(3) = 1;
+	for (int i=2; i>=0; i--) 
+	{
+		stride(i) = stride(i+1) * shape(i+1);
+	}
+	blitz::Array<cplx, 4> expandedInput(input.data(), shape, stride, blitz::neverDeleteData);
 
 	//Fourier transform phi
 	FftRank(expandedInput, 2, FFT_FORWARD);
 
 	output = 0.0;
-	for (int r=0; r<radialCount; r++)
+	double assocPoly = 0.0;
+	for (int lower=0; lower<lowerCount; lower++)
 	{
 		for (int i=0; i<thetaCount; i++)
 		{
@@ -38,12 +110,20 @@ void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input,
 			{
 				for (int m=-l; m<0; m++)
 				{
-					output(r, lmIndex) += expandedInput(r, i, phiCount + m) * AssocLegendrePoly(i, lmIndex) *  Weights(i); 
+					assocPoly = AssocLegendrePoly(i, lmIndex) *  Weights(i);
+					for (int upper=0; upper<upperCount; upper++)
+					{
+						output(lower, lmIndex, upper) += expandedInput(lower, i, phiCount + m, upper) * assocPoly; 
+					}
 					lmIndex++;
 				}
 				for (int m=0; m<=l; m++)
 				{
-					output(r, lmIndex) += expandedInput(r, i, m) * AssocLegendrePoly(i, lmIndex) *  Weights(i); 
+					assocPoly = AssocLegendrePoly(i, lmIndex) *  Weights(i);
+					for (int upper=0; upper<upperCount; upper++)
+					{
+						output(lower, lmIndex, upper) += expandedInput(lower, i, m, upper) * assocPoly; 
+					}
 					lmIndex++;
 				}
 			}
@@ -51,31 +131,39 @@ void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input,
 	}
 }
 
-void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output)
+void SphericalTransformTensorGrid::InverseTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
 {
 	int thetaCount = ThetaGrid.extent(0);
 	int phiCount = PhiGrid.extent(0);		
-	int radialCount = input.extent(0);		//The first rank is the radial index
+	int lowerCount = output.extent(0);		//The first rank is the lower index
 	int omegaCount = output.extent(1);		//The second rank is the omega index
+	int upperCount = output.extent(2);		//The third rank is the upper index
 
 	if (omegaCount != phiCount * thetaCount)
 	{
 		throw std::runtime_error("Something is wrong with phicount, thetacount or omegacount");
 	}
 
-	//Reinterpret the 2D OUTPUT data as a 3D array, where the compressed rank omega
+	//Reinterpret the 3D OUTPUT data as a 4D array, where the compressed rank omega
 	//is expanded into theta and phi.
-	//rank0 = radius
+	//rank0 = lower
 	//rank1 = theta
 	//rank2 = phi
-	blitz::TinyVector<int, 3> shape(radialCount, thetaCount, phiCount);
-	blitz::TinyVector<int, 3> stride(omegaCount, phiCount, 1);
-	blitz::Array<cplx, 3> expandedOutput(output.data(), shape, stride, blitz::neverDeleteData);
+	//rank3 = upper
+	blitz::TinyVector<int, 4> shape(lowerCount, thetaCount, phiCount, upperCount);
+	blitz::TinyVector<int, 4> stride;
+	stride(3) = 1;
+	for (int i=2; i>=0; i--) 
+	{
+		stride(i) = stride(i+1) * shape(i+1);
+	}	
+	blitz::Array<cplx, 4> expandedOutput(output.data(), shape, stride, blitz::neverDeleteData);
 	
 	//initialize output to zero
 	expandedOutput = 0;
 
-	for (int rd=0; rd<radialCount; rd++)
+	double assocPoly = 0.0;
+	for (int lower=0; lower<lowerCount; lower++)
 	{
 		for(int i=0; i<thetaCount; i++)
 		{
@@ -86,14 +174,22 @@ void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, 2> input,
 				//negative m
 				for (int m=-l; m < 0; m++)
 				{
-					expandedOutput(rd, i, phiCount + m) += input(rd,lmIndex) * AssocLegendrePoly(i,lmIndex);
+					assocPoly = AssocLegendrePoly(i,lmIndex);
+					for (int upper=0; upper<upperCount; upper++)
+					{
+						expandedOutput(lower, i, phiCount + m, upper) += input(lower, lmIndex, upper) * assocPoly;
+					}
 					lmIndex++;
 				}
 				
 				//positive m
 				for (int m=0; m<=l; m++)
 				{
-					expandedOutput(rd, i, m) += input(rd,lmIndex) * AssocLegendrePoly(i,lmIndex);
+					assocPoly = AssocLegendrePoly(i,lmIndex);
+					for (int upper=0; upper<upperCount; upper++)
+					{
+						expandedOutput(lower, i, m, upper) += input(lower, lmIndex, upper) * assocPoly;
+					}
 					lmIndex++;
 				}
 			}
@@ -325,4 +421,9 @@ blitz::Array<double, 2> SphericalTransformTensorGrid::EvaluateAssociatedLegendre
 	return legendre;
 }
 
+template void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output, int omegaRank);
+template void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, 3> input, blitz::Array<cplx, 3> output, int omegaRank);
+
+template void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output, int omegaRank);
+template void SphericalTransformTensorGrid::InverseTransform(blitz::Array<cplx, 3> input, blitz::Array<cplx, 3> output, int omegaRank);
 

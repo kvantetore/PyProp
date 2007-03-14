@@ -58,6 +58,15 @@ public:
 		return this->GetDistributedModel().GetLocalArray(Range.GetGrid(), rank);
 	}
 
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	{
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong rank" <<  endl;
+		}
+		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+	}
+
 	/** Apply config, and set up Range
 	  */
 	virtual void ApplyConfigSection(const ConfigSection &config)

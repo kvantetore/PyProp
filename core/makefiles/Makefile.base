@@ -38,7 +38,6 @@ SOURCES= \
 	transform/transformedgrid/tgridxymat.cpp \
 	wavefunction.cpp \
 	representation/combinedrepresentation.cpp  \
-	representation/sphericalrepresentation3d.cpp \
 	configuration.cpp \
 	transform/radialtransform.cpp \
 	transform/sphericalharmonics.cpp \
@@ -50,6 +49,7 @@ SOURCES= \
 	mpi/distributedmodel.cpp \
 	python/pysteoutput/_main.cpp \
 	finitediff/exponentialfinitedifference.cpp \
+	representation/sphericalrepresentation.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 

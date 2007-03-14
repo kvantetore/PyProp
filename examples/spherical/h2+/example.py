@@ -201,7 +201,7 @@ def SetRadialGridType(conf, gridType):
 	"""
 
 	if gridType == None:
-		gridType = RadialGridType.CARTESIAN
+		gridType = RadialGridType.TRANSFORMED
 
 	#Set RadialRepresentation section
 	if gridType == RadialGridType.CARTESIAN:

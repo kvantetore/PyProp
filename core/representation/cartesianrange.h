@@ -7,6 +7,7 @@ class CartesianRange
 {
 private:
 	blitz::Array<double, 1> Grid;
+	blitz::Array<double, 1> Weights;
 	
 public:
 	double Min;
@@ -57,6 +58,16 @@ public:
 			
 		}
 		return Grid;
+	}
+
+	blitz::Array<double, 1>& GetWeights()
+	{
+		if (Weights.extent(0) == 0)
+		{
+			Weights.resize(Count);
+			Weights = Dx;
+		}
+		return Weights;
 	}
 	
 	double GetPosition(int index)

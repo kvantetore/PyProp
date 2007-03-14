@@ -33,6 +33,7 @@ public:
 	//This should be re-implemented by inheriting class in an efficient manner
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2) = 0;
 	virtual blitz::Array<double, 1> GetLocalGrid(int rank);
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank);
 	virtual void ApplyConfigSection(const ConfigSection &config);
 };
 

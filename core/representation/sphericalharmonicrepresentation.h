@@ -55,6 +55,18 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	{
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong rank" <<  endl;
+		}
+		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+	}
+	
+	/** 
+	Returns the portion of the grid local to the current processor.
+	**/
 	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
 	{
 		if (rank != GetBaseRank())

@@ -57,6 +57,15 @@ public:
 		return this->GetDistributedModel().GetLocalArray(Range(effectiveRank).GetGrid(), rank);
 	}	
 
+	/** 
+	Returns the portion of the weights local to the current processor.
+	**/
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	{
+		int effectiveRank = rank - this->GetBaseRank();
+		return this->GetDistributedModel().GetLocalArray(Range(effectiveRank).GetWeights(), rank);
+	}	
+
 	//Implementation of the Representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);

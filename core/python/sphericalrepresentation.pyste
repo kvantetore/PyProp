@@ -4,10 +4,14 @@ CombinedRepresentation = Template("CombinedRepresentation", "representation/comb
 #set_policy(CombinedRepresentation.GetRepresentation, return_internal_reference())
 set_policy(CombinedRepresentation.CreateSlicedWavefunction, return_value_policy(manage_new_object))
 CombinedRepresentation("2")
+CombinedRepresentation("3")
 
 #Combined representation for spherical coordinates.
-SphericalRepresentation3D = Class("SphericalRepresentation3D", "representation/sphericalrepresentation3d.h")
-use_shared_ptr(SphericalRepresentation3D)
+SphericalRepresentation = Template("SphericalRepresentation", "representation/sphericalrepresentation.h")
+SphRepr_2 = SphericalRepresentation("2")
+SphRepr_3 = SphericalRepresentation("3")
+use_shared_ptr(SphRepr_2)
+use_shared_ptr(SphRepr_3)
 
 #Range for a pair of angles
 OmegaRange = Class("OmegaRange", "representation/omegarange.h")
