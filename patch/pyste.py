@@ -2,9 +2,6 @@
 # distribution is subject to the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at 
 # http:#www.boost.org/LICENSE_1_0.txt)
-#
-# Modified by Tore Birkeland October 2006, to accomodate for requirements
-# in pyprop.
 
 """
 Pyste version %s
@@ -226,6 +223,8 @@ def CreateContext():
     context['holder'] = infos.holder
     context['add_method'] = infos.add_method
     context['final'] = infos.final
+    context['no_init'] = infos.no_init
+    context['no_virtual'] = infos.no_virtual
     context['export_values'] = infos.export_values
     # policies
     context['return_internal_reference'] = return_internal_reference
