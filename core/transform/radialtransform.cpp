@@ -16,19 +16,20 @@ void RadialTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int
 }
 
 template <int Rank>
-void RadialTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi)
+void RadialTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi, int rank)
 {
-	TransformRank(psi, 0, FFT_FORWARD);
+	TransformRank(psi, rank, FFT_FORWARD);
 }
 
 template <int Rank>
-void RadialTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi)
+void RadialTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi, int rank)
 {
-	TransformRank(psi, 0, FFT_BACKWARD);
-	FftScaleRank(psi.Data, 0);
+	TransformRank(psi, rank, FFT_BACKWARD);
+	FftScaleRank(psi.Data, rank);
 }
 
 
 template class RadialTransform<2>;
+template class RadialTransform<3>;
 
 

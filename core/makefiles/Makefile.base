@@ -40,7 +40,6 @@ SOURCES= \
 	representation/combinedrepresentation.cpp  \
 	configuration.cpp \
 	transform/radialtransform.cpp \
-	transform/sphericalharmonics.cpp \
 	transform/fouriertransform.cpp \
 	transform/cartesianfouriertransform.cpp \
 	transform/shtools.cpp \
@@ -72,7 +71,7 @@ $(OUTPUT): $(OBJECTS)
 #	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $<
 #
 
-python/pysteoutput/_main.cpp: $(PYSTEFILES)
+python/pysteoutput/_main.cpp: 
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(PYSTEFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
 	

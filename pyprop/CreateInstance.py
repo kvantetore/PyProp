@@ -36,8 +36,12 @@ def CreateRepresentation(config, distribution):
 
 	#If the representation is a base class of CombinedRepresentation,
 	#we must set up the 1d sub-representations.
-	combinedRepr = eval("core.CombinedRepresentation_" + str(config.Representation.rank))
-	if combinedRepr in config.Representation.type.__mro__:
+	combinedRepr = None
+	try:
+		combinedRepr = eval("core.CombinedRepresentation_" + str(config.Representation.rank))
+	except:
+		pass
+	if combinedRepr != None and combinedRepr in config.Representation.type.__mro__:
 		CreateSubRepresentations(representation, config)
 	
 	return representation

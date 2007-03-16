@@ -14,6 +14,14 @@ cplx ToCplx(double a)
 
 BZ_DECLARE_FUNCTION(ToCplx);
 
+
+template<int Rank>
+void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
+{
+	config.Get("mass", Mass);
+	cout << "TransformedGridPropagator: Mass = " << Mass << endl;
+}
+
 template<int Rank>
 void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank)
 {
@@ -52,8 +60,7 @@ void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavef
 	
 	//scale eigenvectors by complex rotation
 	//The missing minus sign in the exponent is included in the matrix.
-	double mass = 1.0;
-	ev = ev(i,j) * exp( I * dt * ew(j) / (2.0 * mass));
+	ev = ev(i,j) * exp( I * dt * ew(j) / (2.0 * Mass));
 
 	//Create full matrix to propagate wavefunction
 	PropagationMatrix.resize(ev.shape());
@@ -66,22 +73,16 @@ void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavef
 template<int Rank>
 void Propagator<Rank>::AdvanceStep(Wavefunction<Rank> &psi)
 {
-	if (PropagateRank != 0)
-	{
-		cout << "Currently TransformedGridPropagator only works for the first rank" <<endl;
-		throw std::runtime_error("Invalid rank");
-	}
+	//Map the data to a 3D array, where the radial part is the 
+	//middle rank
+	Array<cplx, 3> data3d = MapToRank3(psi.Data, PropagateRank, 1);
 
-	//Map the data to a 2D array, where the radial part is the 
-	//first rank (of highest stride)
-	Array<cplx, 2> data2d = MapToRank2(psi.Data, 1);
-
-	//Propagate the 2D array
-	ApplyPropagationMatrix(data2d);
+	//Propagate the 3D array
+	ApplyPropagationMatrix(data3d);
 }
 
 template<int Rank>
-void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 2> data)
+void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 3> &data)
 {
 	//TODO: Make this faster, much faster, by calling
 	//on some vectorized function in blas.
@@ -90,11 +91,14 @@ void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 2> data)
 	Array<cplx, 2> prop = PropagationMatrix;
 			
 	//iterate over the array direction which is not propagated
-	for (int i=0; i<data.extent(1); i++)
+	for (int i=0; i<data.extent(0); i++)
 	{
-		Array<cplx, 1> v = data(Range::all(), i);
-		temp = v; // v.copy();
-		MatrixVectorMultiply(prop, temp, v);
+		for (int j=0; j<data.extent(2); j++)
+		{
+			Array<cplx, 1> v = data(i, Range::all(), j);
+			temp = v; // v.copy();
+			MatrixVectorMultiply(prop, temp, v);
+		}
 	}
 }
 

@@ -18,10 +18,12 @@ private:
 	int PropagateRank;
 	Parameter Param;
 	int N;
+	double Mass;
 
-	void ApplyPropagationMatrix(blitz::Array<cplx, 2> data);
+	void ApplyPropagationMatrix(blitz::Array<cplx, 3> &data);
 		
 public:
+	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank);
 	void AdvanceStep(Wavefunction<Rank> &psi);
 };

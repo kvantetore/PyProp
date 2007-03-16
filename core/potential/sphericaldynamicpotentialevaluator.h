@@ -88,7 +88,7 @@ public:
 			}
 			
 			// second last rank - theta
-			int omegaIndex = it.position()(1);
+			int omegaIndex = it.position()(Rank-1);
 			pos(Rank-1) = omegaGrid(omegaIndex, 0);
 							
 			// last rank - phi

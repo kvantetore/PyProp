@@ -3,8 +3,9 @@
 #---------------------------------------------------------------------
 
 class RadialPropagator:
-	def __init__(self, psi):
+	def __init__(self, psi, transformRank):
 		self.psi = psi
+		self.TransformRank = transformRank
 
 	def SetupStep(self, dt): pass
 	def AdvanceStep(self, t, dt): pass
@@ -12,16 +13,20 @@ class RadialPropagator:
 class TransformedRadialPropagator(RadialPropagator):
 	__Base = RadialPropagator
 	
-	def __init__(self, psi):
-		self.__Base.__init__(self, psi)
+	def __init__(self, psi, transformRank):
+		self.__Base.__init__(self, psi, transformRank)
 
 		rank = psi.GetRank()	
 		self.Propagator = CreateInstanceRank("core.TransformedGridPropagator", rank)
+		self.TransformRank = transformRank
+
+	def ApplyConfigSection(self, configSection):
+		configSection.Apply(self.Propagator)
 
 	def SetupStep(self, dt):
-		param = self.psi.GetRepresentation().GetRepresentation(0).Range.Param
-		radialRank = 0
-		self.Propagator.Setup(param, dt, self.psi, radialRank)
+		param = self.psi.GetRepresentation().GetRepresentation(self.TransformRank).Range.Param
+		
+		self.Propagator.Setup(param, dt, self.psi, self.TransformRank)
 
 	def AdvanceStep(self, t, dt):
 		self.Propagator.AdvanceStep(self.psi)
@@ -30,8 +35,8 @@ class TransformedRadialPropagator(RadialPropagator):
 class CartesianRadialPropagator(RadialPropagator):
 	__Base = RadialPropagator
 	
-	def __init__(self, psi):
-		self.__Base.__init__(self, psi)
+	def __init__(self, psi, transformRank):
+		self.__Base.__init__(self, psi, transformRank)
 
 		rank = psi.GetRank()	
 
@@ -40,9 +45,12 @@ class CartesianRadialPropagator(RadialPropagator):
 		self.RadialTransform = CreateInstanceRank("core.RadialTransform", rank)
 		self.RadialKineticPotential = None
 
+	def ApplyConfigSection(self, configSection):
+		self.Mass = configSection.mass
+
 	def SetupStep(self, dt):
 		#setup representation
-		self.RadialRepresentation = self.psi.GetRepresentation().GetRepresentation(0)
+		self.RadialRepresentation = self.psi.GetRepresentation().GetRepresentation(self.TransformRank)
 		self.RadialFourierRepresentation = self.CreateRadialFourierRepr(self.RadialRepresentation)
 
 		# transform radial into fourier space
@@ -71,13 +79,12 @@ class CartesianRadialPropagator(RadialPropagator):
 		self.TransformRadialInverse()
 
 		#For imaginary time propagation, set origin to 0 to keep symmetry
-		if 1.0j * imag(dt) == dt:
-			idx = self.OriginIndex
-			self.psi.GetData()[idx, :] = 0
+		if 1.0j * imag(dt) == dt and self.OriginIndex != None:
+			self.SetValue(self.OriginIndex, 0)
 			
-
+			
 	def GetOriginIndex(self):
-		grid = self.psi.GetRepresentation().GetLocalGrid(0)
+		grid = self.psi.GetRepresentation().GetLocalGrid(self.TransformRank)
 		idxList = where(abs(grid) <  1e-14)[0]
 		if len(idxList) != 1:
 			print grid
@@ -87,13 +94,26 @@ class CartesianRadialPropagator(RadialPropagator):
 			print "Found origin r_i = 0 at i = " + str(idx)
 		return idx
 
+	def SetValue(self, rankIndex, value):
+		"""
+		Sets the wavefunction to value for all points in the grid at the given
+		radial index
+		"""
+		data = self.psi.GetData()
+
+		#Create a slice object for all ranks except TransformRank
+		index = [slice(None) for i in range(self.psi.GetRank())]
+		index[self.TransformRank] = rankIndex
+
+		data[index] = value
+
 	def TransformRadialForward(self):
-		self.RadialTransform.ForwardTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(0, self.RadialFourierRepresentation)
+		self.RadialTransform.ForwardTransform(self.psi, self.TransformRank)
+		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialFourierRepresentation)
 
 	def TransformRadialInverse(self):
-		self.RadialTransform.InverseTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(0, self.RadialRepresentation)
+		self.RadialTransform.InverseTransform(self.psi, self.TransformRank)
+		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialRepresentation)
 	
 	# Helper class for kinetic energy potentials
 	class StaticEnergyConf(Section):
@@ -103,6 +123,8 @@ class CartesianRadialPropagator(RadialPropagator):
 	
 	def SetupRadialKineticPotential(self, dt):
 		radialConf = self.StaticEnergyConf(PotentialType.Static, "core.DiagonalRadialPotential")
+		radialConf.mass = self.Mass
+		radialConf.radial_rank = self.TransformRank
 		radialPot = CreatePotentialFromSection(radialConf, "RadialKineticEnergy", self.psi)
 		radialPot.SetupStep(dt)
 		self.RadialKineticPotential = radialPot
@@ -117,22 +139,35 @@ class SphericalPropagator(PropagatorBase):
 	
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
-	
-		rank = psi.GetRank()
-	
-		#TODO: Add support for other radial propagators
-		self.RadialPropagator = self.CreateRadialPropagator() 
-		self.SphericalTransform = core.SphericalTransform_2();
+
+		#Create spherical transform
+		self.Rank = psi.GetRank()
+		self.SphericalTransform = CreateInstanceRank("core.SphericalTransform", self.Rank);
 
 		#instantiate potentials
 		self.AngularKineticPotential = None 
 
 	def ApplyConfig(self, config):
 		self.__Base.ApplyConfig(self, config)
-		
+	
+		#Create all but spherical propagators
+		self.SubPropagators = []
+		for i in range(self.Rank-1):
+			sectionName = config.Propagation.Get("propagator" + str(i))
+			section = config.GetSection(sectionName)
+
+			prop = section.propagator(self.psi, i)
+			print "Propagator for rank %i is %s" % (i, prop)
+			
+			section.Apply(prop)
+
+			self.SubPropagators.append(prop)
+			
 	def ApplyConfigSection(self, configSection): 
 		self.__Base.ApplyConfigSection(self, configSection)
-		
+
+		self.AngularMass = configSection.mass
+	
 	def SetupStep(self, dt):
 		print "        Setup SphericalTransform"
 		self.SphericalTransform.SetupStep(self.psi);
@@ -161,7 +196,8 @@ class SphericalPropagator(PropagatorBase):
 
 		# setup radial propagator
 		print "	       Setup Radial Propagator"
-		self.RadialPropagator.SetupStep(dt)
+		for prop in self.SubPropagators:
+			prop.SetupStep(dt)
 		
 	
 	def AdvanceStep(self, t, dt):
@@ -178,28 +214,17 @@ class SphericalPropagator(PropagatorBase):
 		self.AngularKineticPotential.AdvanceStep(t, dt)
 		
 		#radial propagator
-		self.RadialPropagator.AdvanceStep(t, dt)
-
-	#Radial proapgator
-	def CreateRadialPropagator(self):
-		radialRepr = self.psi.GetRepresentation().GetRepresentation(0)
-		if radialRepr.__class__ == core.CartesianRepresentation_1:
-			prop = CartesianRadialPropagator(self.psi)
-		elif radialRepr.__class__ == core.TransformedRadialRepresentation:
-			prop = TransformedRadialPropagator(self.psi)
-		else:
-			raise "Representation ", radialRepr, " is not supported by SphericalPropagator"
-	
-		return prop
+		for prop in self.SubPropagators:
+			prop.AdvanceStep(t, dt)
 
 	#Transforms:		
 	def TransformSphericalForward(self):
 		self.SphericalTransform.ForwardTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(1, self.LmRepresentation)
+		self.psi.GetRepresentation().SetRepresentation(self.Rank-1, self.LmRepresentation)
 
 	def TransformSphericalInverse(self):
 		self.SphericalTransform.InverseTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(1, self.AngularRepresentation)
+		self.psi.GetRepresentation().SetRepresentation(self.Rank-1, self.AngularRepresentation)
 		
 	# Helper class for kinetic energy potentials
 	class StaticEnergyConf(Section):
@@ -209,6 +234,9 @@ class SphericalPropagator(PropagatorBase):
 	
 	def SetupAngularKineticPotential(self, dt):
 		angularConf = self.StaticEnergyConf(PotentialType.Static, "core.DiagonalAngularPotential")
+		angularConf.mass = self.AngularMass
+		angularConf.radial_rank = self.Rank-2 #the last non-spherical rank
+		print "using mass ", self.AngularMass
 		angularPot = CreatePotentialFromSection(angularConf, "AngularKineticEnergy", self.psi)
 		print "Create potential..."
 		angularPot.SetupStep(dt)

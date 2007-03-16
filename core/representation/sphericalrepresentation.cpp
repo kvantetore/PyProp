@@ -41,7 +41,7 @@ cplx SphericalRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, c
 		return InnerProductSphericalHarmonic(w1, w2);
 	}
 	
-	throw std::runtime_error("Spherical inner product is only implemented for SphericalHarmonic and Angular representation");
+	throw std::runtime_error("Spherical inner product is only implemented for SphericalHarmonic representation");
 }
 
 
@@ -70,7 +70,7 @@ cplx SphericalRepresentation<Rank>::InnerProductSphericalHarmonic(const Wavefunc
 			weight *= weights(curRank)(it1.position()(curRank));
 		}
 		
-		innerProduct += (*it1) * (*it2) * weight;
+		innerProduct += conj(*it1) * (*it2) * weight;
 		it1++;
 		it2++;
 	}

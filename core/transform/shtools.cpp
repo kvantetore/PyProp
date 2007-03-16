@@ -3,50 +3,7 @@
 #include <iostream>
 #include "shtools.h"
 #include "fouriertransform.h"
-
-template<class T, int Rank>
-blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, int secondRankCount)
-{
-	using namespace blitz;
-
-    //Check that the array is in C-order
-	for (int i=0; i<Rank; i++)
-	{
-		if (array.ordering(i) != (Rank - 1 - i))
-		{
-			throw std::runtime_error("data is not in C-style ordering");
-		}
-	}
-	
-	int firstRankSize = 1;
-	for (int i=0; i<firstRankCount;i++)
-	{
-		firstRankSize *= array.extent(i);
-	}
-
-	int secondRankSize = 1;
-	for (int i=0; i<secondRankCount; i++)
-	{
-		int curRank = i + firstRankCount;
-		secondRankSize *= array.extent(curRank);
-	}
-
-	int thirdRankSize = array.size() / (secondRankSize * firstRankSize);
-	
-	//Set up shape and stride vectors
-	TinyVector<int, 3> shape(firstRankSize, secondRankSize, thirdRankSize);
-	TinyVector<int, 3> stride(secondRankSize*thirdRankSize, thirdRankSize, 1);
-
-	//Create an array
-	//TODO: fix this so it doesn't reference the underlying vector, but rather
-	//the reference counted memory pool. That way we will have deallocation 
-	//as expected
-	//The current implementation requires that the lifetime of the input array
-	//exceeds the lifetime of the output array
-	Array<cplx, 3> ret(array.data(), shape, stride, neverDeleteData);
-
-	return ret;
-}
+#include "../utility/blitztricks.h"
 
 template<int Rank> void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int omegaRank)
 {

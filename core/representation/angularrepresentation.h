@@ -48,7 +48,7 @@ public:
 	{
 		if (rank != GetBaseRank())
 		{
-			cout << "Warning: Trying to get the wrong rank" <<  endl;
+			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
 		return this->GetDistributedModel().GetLocalArray(Range.GetIndexGrid(), rank);
 	}
@@ -60,7 +60,7 @@ public:
 	{
 		if (rank != GetBaseRank())
 		{
-			cout << "Warning: Trying to get the wrong rank" <<  endl;
+			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
 		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
 	}

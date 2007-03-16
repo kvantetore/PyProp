@@ -29,7 +29,7 @@ public:
 
 	// get the legendre polinomials evaluated at cos(theta) in shtools object
 	// alternative: use the constructor with the Wavefunction argument
-	void SetupStep(const Wavefunction<2> &psi)
+	void SetupStep(const Wavefunction<Rank> &psi)
 	{
 		// uses the representation of the wavefunction to get MaxL
 		typedef SphericalRepresentation<Rank> SphRepr;
@@ -50,7 +50,7 @@ public:
 	 * The first time this function is called, A new data buffer is allocated on the 
 	 * wavefunction to accomodate for the out of place transform. 
 	 */
-	void ForwardTransform(Wavefunction<2> &psi)
+	void ForwardTransform(Wavefunction<Rank> &psi)
 	{
 		if (LmDataName == -1)
 		{
@@ -59,9 +59,9 @@ public:
 			//a new buffer for spherical harmonic representation
 			AngularDataName = psi.GetActiveBufferName();
 
-			int rSize = psi.GetData().extent(0);
+			blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
 			int lmSize = transform.GetAssociatedLegendrePolynomial().extent(1);
-			blitz::TinyVector<int, 2> shape(rSize, lmSize);
+			shape(Rank-1) = lmSize;
 			LmDataName = psi.AllocateData(shape);
 		}
 
@@ -71,15 +71,15 @@ public:
 			throw std::runtime_error("Active databuffer is not what is should be...");
 		}
 	
-		blitz::Array<cplx, 2> srcData(psi.GetData());
-		blitz::Array<cplx, 2> dstData(psi.GetData(LmDataName));
+		blitz::Array<cplx, Rank> srcData(psi.GetData());
+		blitz::Array<cplx, Rank> dstData(psi.GetData(LmDataName));
 
 		//The last rank is the spherical rank
 		transform.ForwardTransform(srcData, dstData, Rank-1);
 		psi.SetActiveBuffer(LmDataName);
 	}
 
-	void InverseTransform(Wavefunction<2> &psi)
+	void InverseTransform(Wavefunction<Rank> &psi)
 	{
 		if (AngularDataName == -1)
 		{
@@ -87,10 +87,10 @@ public:
 			//class. That means the active data buffer is the spherical harmonic
 			//representation, and we must allocate a data buffer for the
 			//grid data.
-			int rSize = psi.GetData().extent(0);
+			blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
 			int omegaSize = transform.GetOmegaGrid().extent(0);
-			blitz::TinyVector<int, 2> shape(rSize, omegaSize);
-
+			shape(Rank-1) = omegaSize;
+	
 			AngularDataName = psi.AllocateData(shape);
 			LmDataName = psi.GetActiveBufferName();
 		}
@@ -100,8 +100,8 @@ public:
 			throw std::runtime_error("Active data buffer is not the lm buffer");
 		}
 		
-		blitz::Array<cplx, 2> srcData(psi.GetData());
-		blitz::Array<cplx, 2> dstData(psi.GetData(AngularDataName));
+		blitz::Array<cplx, Rank> srcData(psi.GetData());
+		blitz::Array<cplx, Rank> dstData(psi.GetData(AngularDataName));
 	
 		//The last rank is the spherical rank
 		transform.InverseTransform(srcData, dstData, Rank-1);
@@ -113,6 +113,7 @@ public:
 	{
 		SphericalHarmonicRepresentationPtr repr(new SphericalHarmonicRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
+		repr->SetBaseRank( Rank - 1 );
 		return repr;
 	}
 
@@ -120,6 +121,7 @@ public:
 	{
 		AngularRepresentationPtr repr(new AngularRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
+		repr->SetBaseRank( Rank - 1 );
 		return repr;
 	}
 

@@ -53,7 +53,7 @@ public:
 	{
 		if (rank != GetBaseRank())
 		{
-			cout << "Warning: Trying to get the wrong rank" <<  endl;
+			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
 		return this->GetDistributedModel().GetLocalArray(Range.GetGrid(), rank);
 	}
@@ -62,7 +62,7 @@ public:
 	{
 		if (rank != GetBaseRank())
 		{
-			cout << "Warning: Trying to get the wrong rank" <<  endl;
+			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
 		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
 	}

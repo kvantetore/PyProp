@@ -1,0 +1,4 @@
+PotentialEvaluator = Template("SphericalDynamicPotentialEvaluator", "h2+.cpp")
+
+PotentialEvaluator("H2pPotential<4> 3","H2pPotential_3")
+

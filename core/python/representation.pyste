@@ -1,4 +1,6 @@
 Representation = Template("Representation", "representation/representation.h")
+no_init(Representation)
+no_virtual(Representation)
 set_policy(Representation.GetDistributedModel, return_internal_reference())
 Representation("1")
 Representation("2")

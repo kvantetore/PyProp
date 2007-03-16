@@ -1,6 +1,7 @@
 #Absorbers
 SphAbsorbingPotential = Template("SphericalAbsorbingPotential", "potential/sphericalabsorber.h")
 SphAbsorbingPotential("2", "SphericalAbsorbingPotential_2")
+SphAbsorbingPotential("3", "SphericalAbsorbingPotential_3")
 
 AbsorbingPotential = Template("CartesianAbsorbingPotential", "potential/cartesianabsorber.h")
 AbsorbingPotential("1", "CartesianAbsorbingPotential_1")
@@ -15,6 +16,11 @@ SphericalDynamicPotentialEvaluator = Template("SphericalDynamicPotentialEvaluato
 SphericalDynamicPotentialEvaluator("DiagonalAngularPotential<3> 2", "DiagonalAngularPotential_2")
 SphericalDynamicPotentialEvaluator("DiagonalRadialPotential<3> 2", "DiagonalRadialPotential_2")
 SphericalDynamicPotentialEvaluator("InitialPotential<3> 2", "InitialPotential_2")
+
+SphericalDynamicPotentialEvaluator("DiagonalAngularPotential<4> 3", "DiagonalAngularPotential_3")
+SphericalDynamicPotentialEvaluator("DiagonalRadialPotential<4> 3", "DiagonalRadialPotential_3")
+SphericalDynamicPotentialEvaluator("InitialPotential<4> 3", "InitialPotential_3")
+
 
 #Cartesian Potentials
 Include("potential/examplepotentials.h")

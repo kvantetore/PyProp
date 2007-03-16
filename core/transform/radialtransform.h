@@ -15,8 +15,8 @@ public:
 
 	//Standard transform interface
 	void TransformRank(Wavefunction<Rank> &psi, int rank, int direction);
-	void ForwardTransform(Wavefunction<Rank> &psi);
-	void InverseTransform(Wavefunction<Rank> &psi);
+	void ForwardTransform(Wavefunction<Rank> &psi, int rank);
+	void InverseTransform(Wavefunction<Rank> &psi, int rank);
 };
 
 #endif

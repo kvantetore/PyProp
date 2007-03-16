@@ -15,7 +15,7 @@ from pylab import *
 from numpy import *
 
 #Choose radial grid type:
-class RadialGridType:
+class GridType:
 	CARTESIAN = 1
 	TRANSFORMED = 2
 
@@ -53,73 +53,6 @@ def FindGroundstateEnergy(**args):
 	prop = FindGroundstate(**args)
 	return prop.GetEnergy()
 
-def PropagateState(**args):
-	#Never use imtime for propagation
-	args['imTime'] = False
-
-	#Create propagator
-	prop = SetupProblem(**args)
-
-	if not 'initPsi' in args:
-		raise "Argument initPsi not supplied"
-	initPsi = args['initPsi']
-	if initPsi.__class__ == str:
-		prop.LoadWavefunction(initPsi)
-		initPsi = prop.psi.Copy()
-
-	else:
-		#if initpsi and prop.psi has different number of 
-		#spherical harmonics, it is no problem: we only load
-		#the first n, where n is the smallest number of spherical
-		#harmonics in initpsi and prop.psi
-		lmlength1 = len(initPsi.GetData()[0,:])
-		lmlength2 = len(prop.psi.GetData()[0,:])
-		lmlength = min(lmlength1, lmlength2)
-		prop.psi.GetData()[:,:lmlength] = initPsi.GetData()[:,:lmlength]
-
-	for t in  prop.Advance(20):
-		Corr = abs(prop.psi.InnerProduct(initPsi))**2
-		Norm = prop.psi.GetNorm()
-		print "t = ", t, ", Corr = ", Corr, ", Norm = ", Norm
-
-	return prop
-
-
-def FindConvergenceGridSizeCartesian(**args):
-	args['gridType'] = RadialGridType.CARTESIAN	
-	gridSize = r_[64:512:50]
-	E = zeros(len(gridSize), dtype=double)
-	for i in range(len(gridSize)):
-		args['gridSize'] = gridSize[i]
-		E[i] = FindGroundstateEnergy(**args)
-
-	return gridSize, E
-		
-def FindNormLoss(**args):
-	if 'dt' in args:
-		dt = args['dt']
-	else:
-		dt = 0.01
-	args['imTime'] = False
-
-	if 'dtSteps' in args:
-		dtSteps = args['dtSteps']
-	else:
-		dtSteps = 10
-
-	dtList = r_[dt:dt/dtSteps:-dt/dtSteps]
-	normLoss = zeros(len(dtList), dtype=double)
-	for i in range(len(dtList)):
-		dt = dtList[i]
-		args['dt'] = dt
-		prop = SetupProblem(**args)
-		prop.psi.Normalize()
-		n1 = prop.psi.GetNorm()
-		for j in range(10): prop.AdvanceStep()
-		n2 = prop.psi.GetNorm()
-		normLoss[i] = (n2 / n1) ** ( 1 / (10 * dt))
-		
-	return dtList, normLoss	
 #---------------------------------------------------------------------------------
 
 def SetupConfig(**args):
@@ -137,21 +70,37 @@ def SetupConfig(**args):
 		configFile = "h2p.ini"
 	conf = pyprop.Load(configFile)
 	
-	#Grid size
-	if 'gridSize' in args:
-		gridSize = args['gridSize']
-		print "Using Grid Size = ", gridSize
+	#Radial Grid size
+	if 'radialGridSize' in args:
+		radialGridSize = args['radialGridSize']
+		print "Using Grid Size = ", radialGridSize
 		#set grid size of both representations, but we will
 		#only use one of them in a given run
-		conf.CartesianRadialRepresentation.rank0[2] = gridSize
-		conf.TransformedRadialRepresentation.n = gridSize
+		conf.CartesianRadialRepresentation.rank0[2] = radialGridSize
+		conf.TransformedRadialRepresentation.n = radialGridSize
 
-	#Grid type
-	if 'gridType' in args:
-		gridType = args['gridType']
+	#Radial Grid type
+	if 'radialGridType' in args:
+		radialGridType = args['radialGridType']
 	else:
-		gridType = None
-	SetRadialGridType(conf, gridType)
+		radialGridType = None
+	SetRadialGridType(conf, radialGridType)
+
+	#Nuclear Grid size
+	if 'nuclearGridSize' in args:
+		nuclearGridSize = args['nuclearGridSize']
+		print "Using Nuclear Grid Size = ", nuclearGridSize
+		#set grid size of both representations, but we will
+		#only use one of them in a given run
+		conf.CartesianNuclearRepresentation.rank0[2] = nuclearGridSize
+		conf.TransformedNuclearRepresentation.n = nuclearGridSize
+
+	#Nuclear Grid type
+	if 'nuclearGridType' in args:
+		nuclearGridType = args['nuclearGridType']
+	else:
+		nuclearGridType = None
+	SetNuclearGridType(conf, nuclearGridType)
 	
 	#TimeStep
 	if 'dt' in args:
@@ -194,29 +143,45 @@ def SetupConfig(**args):
 	print ""
 	return conf
 
+def SetNuclearGridType(conf, gridType):
+	"""
+	Chooses between Cartesian and Transformed grid. On a loaded config
+	object.
+	"""
+	if gridType == None:
+		gridType = GridType.TRANSFORMED
+
+	#Set RadialRepresentation section
+	if gridType == GridType.CARTESIAN:
+		conf.NuclearRepresentation = conf.CartesianNuclearRepresentation
+		conf.NuclearPropagator.propagator = pyprop.CartesianRadialPropagator
+
+	elif gridType == GridType.TRANSFORMED:
+		conf.NuclearRepresentation = conf.TransformedNuclearRepresentation
+		conf.NuclearPropagator.propagator = pyprop.TransformedRadialPropagator
+
+	else:
+		raise "Invalid nuclear grid type ", gridType
+
 def SetRadialGridType(conf, gridType):
 	"""
 	Chooses between Cartesian and Transformed grid. On a loaded config
 	object.
 	"""
-
 	if gridType == None:
-		gridType = RadialGridType.TRANSFORMED
+		gridType = GridType.TRANSFORMED
 
 	#Set RadialRepresentation section
-	if gridType == RadialGridType.CARTESIAN:
+	if gridType == GridType.CARTESIAN:
 		conf.RadialRepresentation = conf.CartesianRadialRepresentation
 		conf.RadialPropagator.propagator = pyprop.CartesianRadialPropagator
 
-	elif gridType == RadialGridType.TRANSFORMED:
+	elif gridType == GridType.TRANSFORMED:
 		conf.RadialRepresentation = conf.TransformedRadialRepresentation
 		conf.RadialPropagator.propagator = pyprop.TransformedRadialPropagator
 
 	else:
-		raise "Invalid grid type ", gridType
-
-	#Set radialtype 
-	conf.Representation.radialtype = conf.RadialRepresentation.type
+		raise "Invalid radial grid type ", gridType
 
 def MapLmIndex(l, m):
 	return (l + 1) * l + m

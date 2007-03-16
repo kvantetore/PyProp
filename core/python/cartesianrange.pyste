@@ -1,9 +1,6 @@
 
 CartesianRepresentation = Template("CartesianRepresentation", "representation/cartesianrepresentation.h")
-#final(CartesianRepresentation.InnerProduct)
-#final(CartesianRepresentation.ApplyConfigSection)
-#final(CartesianRepresentation.GetLocalGrid)
-#final(CartesianRepresentation.GetFullShape)
+no_virtual(CartesianRepresentation)
 CartesianRepresentation("1")
 CartesianRepresentation("2")
 CartesianRepresentation("3")
@@ -11,4 +8,4 @@ CartesianRepresentation("4")
 
 CartesianRange = Class("CartesianRange", "representation/cartesianrange.h")
 set_policy(CartesianRange.GetGrid, return_value_policy(return_by_value))
-exclude(CartesianRange.GetWeights)
+set_policy(CartesianRange.GetWeights, return_value_policy(return_by_value))

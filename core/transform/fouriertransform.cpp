@@ -208,7 +208,27 @@ void FftRank(blitz::Array<cplx, Rank> &array, int rank, int direction)
 	}
 	else
 	{
-		if (rank < Rank/2)
+		int rankOrderIndex = -1;
+		for (int i=0; i<Rank; i++)
+		{
+			if (array.ordering(i) == rank)
+			{
+				rankOrderIndex = i;
+				break;
+			}
+		}
+	
+		int lowerCount = 1;
+		for (int i=0; i<rankOrderIndex; i++)
+		{
+			lowerCount *= array.extent(array.ordering(i));
+		}
+		int upperCount = 1;
+		for (int i=rankOrderIndex+1; i<Rank; i++)
+		{
+			upperCount *= array.extent(array.ordering(i));
+		}
+		if (lowerCount > upperCount)
 		{
 			FftRankNegative(array, rank, direction);
 		} 
