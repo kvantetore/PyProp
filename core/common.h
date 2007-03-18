@@ -72,6 +72,12 @@ inline T min(const T& a, const T& b)
 	return a < b ? a : b;
 }
 
+#ifdef PYPROP_ROUND
+inline int round(double x)
+{
+	return static_cast<int>( (x > 0.0) ? (x + 0.5) : (x - 0.5) );
+}
+#endif
 
 #endif
 
