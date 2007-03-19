@@ -32,4 +32,27 @@ public:
 	}
 };
 
+void testdata(int n, int count)
+{
+	using namespace blitz;
+
+	Array<double, 1> r(n);
+	Array<double, 2> data(n,n);
+	double rmax = 100;
+	double dr = rmax / n;
+	r = tensor::i * dr;
+	
+	data = 0;
+	for (int i=0; i<count; i++)
+	{
+		for (int x=0; x<n; x++)
+		{
+			for (int y=0; y<n; y++)
+			{
+				data(x, y) = 1 / sqrt(r(x)*r(x) + r(y) * r(y) + 0.01);
+			}
+		}
+	}
+}
+
 

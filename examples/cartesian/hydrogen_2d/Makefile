@@ -14,7 +14,7 @@ MODULENAME   := libhydrogen
 all: $(MODULENAME).so
 
 $(MODULENAME).so: $(OBJECTS)
-	$(LD) -shared -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) -Wl,-rpath=$(PYPROP_LIB_PATH)
+	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) 
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -33,7 +33,7 @@ DEPENDENCIES  = $(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
 
 #C++ Compile rule
 %.o : %.cpp
-	$(CXX) -MD -c $< -o $*.o
+	$(CXX) -M -c $< -o $*.o
 	@cp $*.d $(df).P; \
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \

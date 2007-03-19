@@ -1,4 +1,7 @@
-from pylab import *
+try:
+	from pylab import *
+except:
+	pass
 from numpy import * 
 
 import sys
@@ -56,7 +59,8 @@ def FindGroundState(conf):
 	prop.SetupStep()
 	
 	#propagate with imaginary time to find groundstate
-	for t in prop.Advance(10): pass
+	for t in prop.Advance(10): 
+		print "t = ", t, ", E = ", prop.GetEnergy()
 
 	return prop 
 
