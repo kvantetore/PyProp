@@ -40,8 +40,8 @@ void testdata(int n, int count)
 	using namespace blitz;
 
 	Array<double, 1> r(n);
-	Array<cplx, 2> data(n,n);
-	Array<cplx, 2> data2(n,n);
+	Array<double, 2> data(n,n);
+	Array<double, 2> data2(n,n);
 	double rmax = 100;
 	double dr = rmax / n;
 	r = tensor::i * dr;
@@ -50,8 +50,10 @@ void testdata(int n, int count)
 	data2 = 0.9;
 	for (int i=0; i<count; i++)
 	{
-		VectorElementMultiply(data, data2, data);
+		//VectorElementMultiply(data, data2, data);
+		data = data2 * data;
 	}
+	cout << data(0,0) << endl;
 }
 
 
