@@ -41,6 +41,11 @@ void testdata(int n, int count)
 	double rmax = 100;
 	double dr = rmax / n;
 	r = tensor::i * dr;
+
+	SoftColoumbPotential<2> pot;
+	pot.soft = 0.01;
+	pot.charge = -1;
+	TinyVector<double, 2> pos;
 	
 	data = 0;
 	for (int i=0; i<count; i++)
@@ -49,7 +54,9 @@ void testdata(int n, int count)
 		{
 			for (int y=0; y<n; y++)
 			{
-				data(x, y) = 1 / sqrt(r(x)*r(x) + r(y) * r(y) + 0.01);
+				pos(0) = r(x);
+				pos(1) = r(y);
+				data(x, y) *= pot.GetPotentialValue(pos);
 			}
 		}
 	}
