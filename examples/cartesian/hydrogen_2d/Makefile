@@ -14,7 +14,7 @@ MODULENAME   := libhydrogen
 all: $(MODULENAME).so
 
 $(MODULENAME).so: $(OBJECTS)
-	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) 
+	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) 
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste

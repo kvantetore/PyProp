@@ -37,7 +37,7 @@ void testdata(int n, int count)
 	using namespace blitz;
 
 	Array<double, 1> r(n);
-	Array<double, 2> data(n,n);
+	Array<cplx, 2> data(n,n);
 	double rmax = 100;
 	double dr = rmax / n;
 	r = tensor::i * dr;
