@@ -48,12 +48,13 @@ void testdata(int n, int count)
 
 	data = 1;
 	data2 = 0.9;
+	double d = 10;
 	for (int i=0; i<count; i++)
 	{
-		//VectorElementMultiply(data, data2, data);
-		data = data2 * data;
+		d /= VectorInnerProduct(data, data2);
+		//data = data2 * data;
 	}
-	cout << data(0,0) << endl;
+	cout << d << endl;
 }
 
 
