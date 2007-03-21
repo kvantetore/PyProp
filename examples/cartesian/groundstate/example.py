@@ -15,7 +15,7 @@ import sys
 import os
 
 #numerical modules
-from pylab import *
+#from pylab import *
 from numpy import *
 
 #home grown modules
@@ -68,6 +68,6 @@ def Propagate():
 	for t in prop.Advance(10):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		print "t = ", t, ", P(t) = ", corr
-		pyprop.Plot2DFull(prop)
+		#pyprop.Plot2DFull(prop)
 
 	
