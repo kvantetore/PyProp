@@ -50,6 +50,7 @@ template<class T, int Rank>
 void VectorElementMultiplyTemplate(const Array<T, Rank> &u, const Array<T, Rank> &v, Array<T, Rank> &w)
 {
 	w = u * v;
+	//cout << "hei\n";
 }
 
 template<int Rank>

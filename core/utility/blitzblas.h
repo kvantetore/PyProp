@@ -22,9 +22,9 @@ void VectorElementMultiply(const blitz::Array<double, Rank> &u, const blitz::Arr
 //Performs the inner product conj(u) * v, and returns the value
 //u and v may be the same vector
 template<int Rank>
-void VectorInnerProduct(const blitz::Array<double, Rank> &u, const blitz::Array<double, Rank> &v);
+double VectorInnerProduct(const blitz::Array<double, Rank> &u, const blitz::Array<double, Rank> &v);
 template<int Rank>
-void VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cplx, Rank> &v);
+cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cplx, Rank> &v);
 
 #endif
 
