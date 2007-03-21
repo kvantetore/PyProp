@@ -35,26 +35,42 @@ public:
 
 #include <core/utility/blitzblas.h>
 
-void testdata(int n, int count)
+void innerprod(int n, int count)
 {
 	using namespace blitz;
 
-	Array<double, 1> r(n);
 	Array<double, 2> data(n,n);
 	Array<double, 2> data2(n,n);
-	double rmax = 100;
-	double dr = rmax / n;
-	r = tensor::i * dr;
 
 	data = 1;
 	data2 = 0.9;
 	double d = 10;
 	for (int i=0; i<count; i++)
 	{
-		d /= VectorInnerProduct(data, data2);
-		//data = data2 * data;
+		double innerprod = 0;
+		for (int i=0; i<n*n; i++)
+		{
+			innerprod += data.data()[i] * data2.data()[i];
+		}
+		d /= innerprod;
 	}
 	cout << d << endl;
 }
 
+void innerprod2(int n, int count)
+{
+	using namespace blitz;
+
+	Array<double, 2> data(n,n);
+	Array<double, 2> data2(n,n);
+
+	data = 1;
+	data2 = 0.9;
+	double d = 10;
+	for (int i=0; i<count; i++)
+	{
+		d /= sum(data * data2);
+	}
+	cout << d << endl;
+}
 
