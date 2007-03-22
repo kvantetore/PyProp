@@ -15,17 +15,6 @@ SphRepr_3 = SphericalRepresentation("3")
 use_shared_ptr(SphRepr_2)
 use_shared_ptr(SphRepr_3)
 
-#Range for a pair of angles
-OmegaRange = Class("OmegaRange", "representation/omegarange.h")
-use_shared_ptr(OmegaRange)
-set_policy(OmegaRange.GetIndexGrid, return_value_policy(return_by_value))
-set_policy(OmegaRange.GetOmegaGrid, return_value_policy(return_by_value))
-
-#Range for a pair of spherical harmonic eigenvalues
-LmRange = Class("LmRange", "representation/lmrange.h")
-use_shared_ptr(LmRange)
-set_policy(LmRange.GetIndexGrid, return_value_policy(return_by_value))
-
 #Representations for the angular part of the spherical representation
 AngularRepresentation = Class("AngularRepresentation", "representation/angularrepresentation.h")
 no_virtual(AngularRepresentation)

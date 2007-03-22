@@ -29,8 +29,9 @@ def CreateRepresentation(config, distribution):
 	representation = config.Representation.type()
 
 	#Set distribution model
+	print "setting distributed model"
 	representation.SetDistributedModel(distribution)
-		
+	
 	#Apply configuration section
 	config.Representation.Apply(representation)
 

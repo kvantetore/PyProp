@@ -10,20 +10,26 @@ OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
 #exported before its subclasses
 PYSTEFILES = \
 	python/representation.pyste \
-	python/transformedgrid.pyste \
 	python/arrayfunctions.pyste \
-	python/dynamicpotential.pyste \
-	python/configurationwrapper.pyste \
 	python/blitzwrapper.pyste \
+	python/cartesianabsorber.pyste \
 	python/cartesianfouriertransform.pyste \
-	python/cartesianpotential.pyste \
-	python/sphericalrepresentation.pyste \
+	python/cartesiankineticpotential.pyste \
 	python/cartesianrange.pyste \
+	python/configurationwrapper.pyste \
 	python/distributedmodel.pyste \
-	python/staticpotential.pyste \
+	python/examplepotential.pyste \
 	python/exponentialfinitediff.pyste \
+	python/sphericalabsorber.pyste \
+	python/sphericalkineticpotential.pyste \
+	python/sphericalrange.pyste \
+	python/sphericalrepresentation.pyste \
 	python/sphericaltransform.pyste \
-	python/wavefunction.pyste
+	python/staticpotential.pyste \
+	python/transformedgrid.pyste \
+	python/wavefunction.pyste 
+
+
 PYSTEOUTPUTDIR   = python/pysteoutput
 PYSTEOUTPUTFILES = $(addprefix $(PYSTEOUTPUTDIR)/_, $(notdir $(PYSTEFILES:%.pyste=%.cpp)))
 PYSTEOUTPUT      = python/wrapper.cpp
@@ -89,14 +95,7 @@ clean:
 	rm -f python/pysteoutput/*.o
 	
 pyclean:
-	rm -f $(PYSTEOUTPUTDIR)/*
+	rm -rf $(PYSTEOUTPUTDIR)
+	mkdir $(PYSTEOUTPUTDIR)
 	
-#C++ Compile rule
-%.o : %.cpp
-	$(CXX) -MD -c $< -o $*.o
-	@cp $*.d $(df).P; \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
-	  rm -f $*.d
-
 -include $(DEPENDENCIES)

@@ -1,0 +1,10 @@
+#Cartesian Potentials
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator", "potential/cartesiankineticenergypotential.h")
+
+DynamicPotentialEvaluator("CartesianKineticEnergyPotential<1> 1")
+DynamicPotentialEvaluator("CartesianKineticEnergyPotential<2> 2")
+DynamicPotentialEvaluator("CartesianKineticEnergyPotential<3> 3")
+DynamicPotentialEvaluator("CartesianKineticEnergyPotential<4> 4")
+
+
+

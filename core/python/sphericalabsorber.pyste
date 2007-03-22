@@ -1,0 +1,7 @@
+
+#Absorbers
+SphAbsorbingPotential = Template("SphericalAbsorbingPotential", "potential/sphericalabsorber.h")
+SphAbsorbingPotential("2", "SphericalAbsorbingPotential_2")
+SphAbsorbingPotential("3", "SphericalAbsorbingPotential_3")
+
+

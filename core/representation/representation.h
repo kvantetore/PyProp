@@ -26,7 +26,9 @@ public:
 	
 	inline void SetDistributedModel(DistributedModelPtr distrib)
 	{
+		cout << "c++ setting distributed model...";
 		Distrib = distrib;
+		cout << "completed." << endl;
 	}
 	
 	inline DistributedModel<Rank>& GetDistributedModel()

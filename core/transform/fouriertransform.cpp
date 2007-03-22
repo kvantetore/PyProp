@@ -423,81 +423,48 @@ template void FftAll(blitz::Array<cplx, 1> &array, int direction);
 template void FftAll(blitz::Array<cplx, 2> &array, int direction);
 template void FftAll(blitz::Array<cplx, 3> &array, int direction);
 template void FftAll(blitz::Array<cplx, 4> &array, int direction);
-template void FftAll(blitz::Array<cplx, 5> &array, int direction);
-template void FftAll(blitz::Array<cplx, 6> &array, int direction);
-template void FftAll(blitz::Array<cplx, 7> &array, int direction);
-template void FftAll(blitz::Array<cplx, 8> &array, int direction);
-template void FftAll(blitz::Array<cplx, 9> &array, int direction);
+
 
 //explicitly specialized:
 //template void FftAllExceptMaxStride(blitz::Array<cplx, 1> &array, int direction);
 template void FftAllExceptMaxStride(blitz::Array<cplx, 2> &array, int direction);
 template void FftAllExceptMaxStride(blitz::Array<cplx, 3> &array, int direction);
 template void FftAllExceptMaxStride(blitz::Array<cplx, 4> &array, int direction);
-template void FftAllExceptMaxStride(blitz::Array<cplx, 5> &array, int direction);
-template void FftAllExceptMaxStride(blitz::Array<cplx, 6> &array, int direction);
-template void FftAllExceptMaxStride(blitz::Array<cplx, 7> &array, int direction);
-template void FftAllExceptMaxStride(blitz::Array<cplx, 8> &array, int direction);
-template void FftAllExceptMaxStride(blitz::Array<cplx, 9> &array, int direction);
 
 template void FftOnlyMinStride(blitz::Array<cplx, 1> &array, int direction);
 template void FftOnlyMinStride(blitz::Array<cplx, 2> &array, int direction);
 template void FftOnlyMinStride(blitz::Array<cplx, 3> &array, int direction);
 template void FftOnlyMinStride(blitz::Array<cplx, 4> &array, int direction);
-template void FftOnlyMinStride(blitz::Array<cplx, 5> &array, int direction);
-template void FftOnlyMinStride(blitz::Array<cplx, 6> &array, int direction);
-template void FftOnlyMinStride(blitz::Array<cplx, 7> &array, int direction);
-template void FftOnlyMinStride(blitz::Array<cplx, 8> &array, int direction);
-template void FftOnlyMinStride(blitz::Array<cplx, 9> &array, int direction);
+
 
 template void FftOnlyMaxStride(blitz::Array<cplx, 1> &array, int direction);
 template void FftOnlyMaxStride(blitz::Array<cplx, 2> &array, int direction);
 template void FftOnlyMaxStride(blitz::Array<cplx, 3> &array, int direction);
 template void FftOnlyMaxStride(blitz::Array<cplx, 4> &array, int direction);
-template void FftOnlyMaxStride(blitz::Array<cplx, 5> &array, int direction);
-template void FftOnlyMaxStride(blitz::Array<cplx, 6> &array, int direction);
-template void FftOnlyMaxStride(blitz::Array<cplx, 7> &array, int direction);
-template void FftOnlyMaxStride(blitz::Array<cplx, 8> &array, int direction);
-template void FftOnlyMaxStride(blitz::Array<cplx, 9> &array, int direction);
+
 
 template void FftRank(blitz::Array<cplx, 1> &array, int rank, int direction);
 template void FftRank(blitz::Array<cplx, 2> &array, int rank, int direction);
 template void FftRank(blitz::Array<cplx, 3> &array, int rank, int direction);
 template void FftRank(blitz::Array<cplx, 4> &array, int rank, int direction);
-template void FftRank(blitz::Array<cplx, 5> &array, int rank, int direction);
-template void FftRank(blitz::Array<cplx, 6> &array, int rank, int direction);
-template void FftRank(blitz::Array<cplx, 7> &array, int rank, int direction);
-template void FftRank(blitz::Array<cplx, 8> &array, int rank, int direction);
-template void FftRank(blitz::Array<cplx, 9> &array, int rank, int direction);
+
 
 template void FftRankPositive(blitz::Array<cplx, 1> &array, int rank, int direction);
 template void FftRankPositive(blitz::Array<cplx, 2> &array, int rank, int direction);
 template void FftRankPositive(blitz::Array<cplx, 3> &array, int rank, int direction);
 template void FftRankPositive(blitz::Array<cplx, 4> &array, int rank, int direction);
-template void FftRankPositive(blitz::Array<cplx, 5> &array, int rank, int direction);
-template void FftRankPositive(blitz::Array<cplx, 6> &array, int rank, int direction);
-template void FftRankPositive(blitz::Array<cplx, 7> &array, int rank, int direction);
-template void FftRankPositive(blitz::Array<cplx, 8> &array, int rank, int direction);
-template void FftRankPositive(blitz::Array<cplx, 9> &array, int rank, int direction);
+
 
 template void FftRankNegative(blitz::Array<cplx, 1> &array, int rank, int direction);
 template void FftRankNegative(blitz::Array<cplx, 2> &array, int rank, int direction);
 template void FftRankNegative(blitz::Array<cplx, 3> &array, int rank, int direction);
 template void FftRankNegative(blitz::Array<cplx, 4> &array, int rank, int direction);
-template void FftRankNegative(blitz::Array<cplx, 5> &array, int rank, int direction);
-template void FftRankNegative(blitz::Array<cplx, 6> &array, int rank, int direction);
-template void FftRankNegative(blitz::Array<cplx, 7> &array, int rank, int direction);
-template void FftRankNegative(blitz::Array<cplx, 8> &array, int rank, int direction);
-template void FftRankNegative(blitz::Array<cplx, 9> &array, int rank, int direction);
+
 
 
 template void FftScaleRank(blitz::Array<cplx, 1> &array, int rank);
 template void FftScaleRank(blitz::Array<cplx, 2> &array, int rank);
 template void FftScaleRank(blitz::Array<cplx, 3> &array, int rank);
 template void FftScaleRank(blitz::Array<cplx, 4> &array, int rank);
-template void FftScaleRank(blitz::Array<cplx, 5> &array, int rank);
-template void FftScaleRank(blitz::Array<cplx, 6> &array, int rank);
-template void FftScaleRank(blitz::Array<cplx, 7> &array, int rank);
-template void FftScaleRank(blitz::Array<cplx, 8> &array, int rank);
-template void FftScaleRank(blitz::Array<cplx, 9> &array, int rank);
+
 

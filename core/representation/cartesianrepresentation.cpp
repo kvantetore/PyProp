@@ -1,5 +1,6 @@
 #include "cartesianrepresentation.h"
 #include "../wavefunction.h"
+#include "../utility/blitzblas.h"
 
 //Implementation of the Representation interface.
 template<int Rank>
@@ -22,7 +23,8 @@ cplx CartesianRepresentation<Rank>::InnerProduct(const Wavefunction<Rank> &w1, c
 		weight *= Range(i).Dx;
 	}
 	
-	return sum(conj(w1.Data) * w2.Data) * weight;
+	return VectorInnerProduct(w1.Data, w2.Data) * weight;
+	//return sum(conj(w1.Data) * w2.Data) * weight;
 }
 
 template <int Rank>
@@ -58,8 +60,4 @@ template class CartesianRepresentation<1>;
 template class CartesianRepresentation<2>;
 template class CartesianRepresentation<3>;
 template class CartesianRepresentation<4>;
-template class CartesianRepresentation<5>;
-template class CartesianRepresentation<6>;
-template class CartesianRepresentation<7>;
-template class CartesianRepresentation<8>;
-template class CartesianRepresentation<9>;
+

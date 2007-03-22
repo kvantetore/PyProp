@@ -1,0 +1,9 @@
+
+#Cartesian Potentials
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator", "potential/examplepotentials.h")
+DynamicPotentialEvaluator("DipoleElectricPulse<1> 1")
+DynamicPotentialEvaluator("DipoleElectricPulse<2> 2")
+DynamicPotentialEvaluator("DipoleElectricPulse<3> 3")
+DynamicPotentialEvaluator("DipoleElectricPulse<4> 4")
+
+

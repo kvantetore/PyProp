@@ -349,6 +349,8 @@ class ClassExporter(Exporter):
             wrapper = self.info[m.name].wrapper
             if wrapper:
                 return '&' + wrapper.FullName()
+            elif not m.is_unique:
+                return m.WrapperName()
             else:
                 return m.PointerDeclaration() 
 
@@ -401,6 +403,8 @@ class ClassExporter(Exporter):
             wrapper = method_info.wrapper
             if wrapper and wrapper.code:
                 self.Add('declaration', wrapper.code)
+            if not method.is_unique:
+                self.Add('declaration', method.WrapperDeclaration())
         
         # export staticmethod statements
         for name in staticmethods:

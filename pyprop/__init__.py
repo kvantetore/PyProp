@@ -1,8 +1,12 @@
 #import mpi
-import pylab
+try:
+	import pylab
+	from pylab import *
+except:
+	print "Warning: Unable to load matplotlib. Plotting will not be available"
+
 import numpy
 
-from pylab import *
 from numpy import *
 
 #import mpi.pympi as pympi
@@ -15,6 +19,10 @@ import utilities
 reload(utilities)
 from utilities import *
 del utilities
+
+
+
+import sys
 
 execfile(__path__[0] + "/Distribution.py")
 execfile(__path__[0] + "/Enum.py")

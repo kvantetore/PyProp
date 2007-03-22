@@ -4,19 +4,21 @@
 #include "tools.h"
 #include "../../utility/blitzblas.h"
 
+#define FORTRAN_NAME(x) x
+
 namespace TransformedGrid
 {
 
 extern "C"
 {
-   void dgeevx_(char *BALANC,char *JOBVL,char *JOBVR,char *SENSE,int *N,
+   void FORTRAN_NAME(dgeevx)(char *BALANC,char *JOBVL,char *JOBVR,char *SENSE,int *N,
                  double *A,int *LDA,double *WR,double *WI,
                  double *VL,int *LDVL,double *VR,int *LDVR,int *ILO,int *IHI,
                  double *SCALE,double *ABNRM,
                  double *RCONDE,double *RCONDV,double *WORK,int *LWORK,
                  int *IWORK,int *INFO);
  
-   void dgesv_(int *LDA, int *NRHS, double *A, int *LDA, int *IPIV,
+   void FORTRAN_NAME(dgesv)(int *LDA, int *NRHS, double *A, int *LDA2, int *IPIV,
                  double *B, int *LDB, int *INFO);
 }
 
@@ -109,7 +111,7 @@ void setup (int N, const Parameter &param, Array<double, 1> &WR, Array<double,2>
    LDVL = Nm1;
    LDVR = Nm1;
 
-   dgeevx_(BALANC, JOBVL, JOBVR, SENSE, &Nm1,
+   FORTRAN_NAME(dgeevx)(BALANC, JOBVL, JOBVR, SENSE, &Nm1,
             A.data(), &LDA, WR.data(), WI.data(),
             VL.data(), &LDVL, VR.data(), &LDVR, &ILO, &IHI,
             SCALE.data(), &ABNRM,
@@ -125,7 +127,7 @@ void setup (int N, const Parameter &param, Array<double, 1> &WR, Array<double,2>
     B = 0.0;
     for (i=0; i<Nm1; i++) B(i,i) = 1.0; 
 
-    dgesv_(&Nm1, &NRHS, evInv.data(), &LDA, IPIV.data(), B.data(), &LDB, &INFO);
+    FORTRAN_NAME(dgesv)(&Nm1, &NRHS, evInv.data(), &LDA, IPIV.data(), B.data(), &LDB, &INFO);
 
 	ev = VR(tensor::j, tensor::i);   //Transpose
 	evInv = B(tensor::j, tensor::i); //Transpose

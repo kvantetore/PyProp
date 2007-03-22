@@ -76,7 +76,7 @@ public:
 	//Gets the l-value from the linear index
 	static inline int GetL(int index)
 	{
-		return static_cast<int>(sqrt(index));		
+		return static_cast<int>(sqrt((double)index));		
 	}
 
 	//Gets the m-value from the linear index

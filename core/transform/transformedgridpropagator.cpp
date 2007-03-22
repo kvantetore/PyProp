@@ -107,9 +107,6 @@ template class Propagator<1>;
 template class Propagator<2>;
 template class Propagator<3>;
 template class Propagator<4>;
-template class Propagator<5>;
-template class Propagator<6>;
-
 
 };
 

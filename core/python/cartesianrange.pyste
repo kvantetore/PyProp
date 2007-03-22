@@ -1,4 +1,5 @@
 
+
 CartesianRepresentation = Template("CartesianRepresentation", "representation/cartesianrepresentation.h")
 no_virtual(CartesianRepresentation)
 CartesianRepresentation("1")

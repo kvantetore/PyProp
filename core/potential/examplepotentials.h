@@ -1,18 +1,16 @@
 #ifndef EXAMPLEPOTENTIALS_H
 #define EXAMPLEPOTENTIALS_H
 
+#include "dynamicpotentialevaluator.h"
+
 /* 
 Example dynamic potential. for a Electric puslse convoluted by a cosine pulse
 in the dipole approximation ( E = E0 * x *cos(conv(t)) * sin(w*t) ) , 
 */
 template<int Rank>
-class DipoleElectricPulse
+class DipoleElectricPulse : public PotentialBase<Rank>
 {
 public:
-	//Required by DynamicPotentialEvaluator
-	cplx TimeStep;
-	double CurTime;
-	
 	//Potential parameters
 	double FieldStrength;
 	double Frequency;
@@ -49,12 +47,10 @@ public:
  * Dynamic potential for a harmonic oscillator
  */
 template<int Rank>
-class HarmonicOscillatorPotential
+class HarmonicOscillatorPotential : public PotentialBase<Rank>
 {
 public:
-	double CurTime;
-	cplx TimeStep;
-
+	
 	double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double pot = 0;
@@ -63,32 +59,6 @@ public:
 			pot += sqr(pos(i));
 		}
 		return 0.5 * pot;
-	}
-};
-
-/* 
-Dynamic potential for evaluation of the kinetic energy potential for CartesianFFTEvaluator
-*/
-template<int Rank>
-class CartesianKineticEnergyPotential
-{
-public:
-	//Required by DynamicPotentialEvaluator
-	cplx TimeStep;
-	double CurTime;
-	
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-	}
-
-	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &momentum)
-	{
-		double kineticPotential = 0.0;
-		for (int i=0;i<Rank;i++)
-		{
-			kineticPotential += sqr(momentum(i));
-		}
-		return kineticPotential/2.0;
 	}
 };
 

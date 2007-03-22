@@ -4,6 +4,8 @@ include ../Makefile.platform
 SUBDIRS = redirect
 
 #A small rule to compile only a selected few pyste files
-TESTFILES := python/dynamicpotential.pyste
-test:
+TESTFILES := python/representation.pyste python/sphericalrepresentation.pyste python/sphericalrange.pyste
+
+
+test: test
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(TESTFILES)

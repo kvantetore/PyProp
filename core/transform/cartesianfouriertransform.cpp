@@ -164,11 +164,7 @@ template class CartesianFourierTransform<1>;
 template class CartesianFourierTransform<2>;
 template class CartesianFourierTransform<3>;
 template class CartesianFourierTransform<4>;
-template class CartesianFourierTransform<5>;
-template class CartesianFourierTransform<6>;
-template class CartesianFourierTransform<7>;
-template class CartesianFourierTransform<8>;
-template class CartesianFourierTransform<9>;
+
 
 
 

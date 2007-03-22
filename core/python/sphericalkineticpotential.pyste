@@ -1,0 +1,12 @@
+#Note that spherical potentials use potential evaluators with one rank higher than 
+#the rank of the wavefunction. This is because SphericalDynamicPotentialEvaluator translates
+#the compressed lm or angular rank into their full 2d values.
+SphericalDynamicPotentialEvaluator = Template("SphericalDynamicPotentialEvaluator","potential/sphericalkineticenergypotential.h")
+
+SphericalDynamicPotentialEvaluator("AngularKineticEnergyPotential<3> 2", "AngularKineticEnergyPotential_2")
+SphericalDynamicPotentialEvaluator("AngularKineticEnergyPotential<4> 3", "AngularKineticEnergyPotential_3")
+
+SphericalDynamicPotentialEvaluator("RadialKineticEnergyPotential<3> 2", "RadialKineticEnergyPotential_2")
+SphericalDynamicPotentialEvaluator("RadialKineticEnergyPotential<4> 3", "RadialKineticEnergyPotential_3")
+
+

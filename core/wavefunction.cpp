@@ -133,9 +133,5 @@ template class Wavefunction<1>;
 template class Wavefunction<2>;
 template class Wavefunction<3>;
 template class Wavefunction<4>;
-template class Wavefunction<5>;
-template class Wavefunction<6>;
-template class Wavefunction<7>;
-template class Wavefunction<8>;
-template class Wavefunction<9>;
+
 

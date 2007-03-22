@@ -2,16 +2,27 @@
 #includes
 NUMPY_INCLUDE  := -I$(shell python -c "import numpy;print numpy.__path__[0]")/core/include
 PYTHON_INCLUDE := -I$(shell python -c "import distutils.sysconfig;print distutils.sysconfig.get_python_inc()")
-BOOST_INCLUDE   = -I$(BOOST_ROOT)
+BOOST_INCLUDE   = $(IF, $(BOOST_ROOT), -I$(BOOST_ROOT), )
 INCLUDE         = -I. $(NUMPY_INCLUDE) $(PYTHON_INCLUDE) $(BOOST_INCLUDE)
+MAKE_DEPENDENCIES := -MD
 
 #libraries
-LAPACK_LIBS=-llapack_pic -lf77blas -lcblas -latlas
-LIBS=-lboost_python-gcc-d -lblitz -lfftw3 $(LAPACK_LIBS)
+LAPACK_LIBS = -llapack_pic -lf77blas -lcblas -latlas
+BOOST_LIBS  = -lboost_python-gcc
+LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS)
 
 #propgrams
-PYSTE	= pyste.py $(CPPFLAGS) $(INCLUDE) 
-CXX	= $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB -fPIC 
-LD	= $(MPICXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared 
+PYSTE = pyste.py $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
+CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB -fPIC 
+LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared 
+
+
+#C++ Compile rule
+%.o : %.cpp
+	$(CXX) $(MAKE_DEPENDENCIES) -MF $*.d -c $< -o $*.o
+	@cp $*.d $(df).P; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
+	  rm -f $*.d
 
 

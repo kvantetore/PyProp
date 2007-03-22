@@ -14,7 +14,8 @@ MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 all: $(MODULEFILE)
 
 $(MODULEFILE): $(OBJECTS)
-	$(LD) -shared -o $(MODULEFILE) $(OBJECTS) $(LIBS) 
+	rm -f $(MODULEFILE)
+	$(LD) -o $(MODULEFILE) $(OBJECTS) $(LIBS) 
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -33,11 +34,11 @@ DEPENDENCIES  = $(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
 
 #C++ Compile rule
 %.o : %.cpp
-	$(CXX) -MD -c $< -o $*.o
-	@cp $*.d $(df).P; \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
-	  rm -f $*.d
+	$(CXX) -c $< -o $*.o
+#	@cp $*.d $(df).P; \
+#	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+#	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
+#	  rm -f $*.d
 
 -include $(DEPENDENCIES)
 

@@ -122,7 +122,7 @@ class CartesianRadialPropagator(RadialPropagator):
 			self.classname = classname
 	
 	def SetupRadialKineticPotential(self, dt):
-		radialConf = self.StaticEnergyConf(PotentialType.Static, "core.DiagonalRadialPotential")
+		radialConf = self.StaticEnergyConf(PotentialType.Static, "core.RadialKineticEnergyPotential")
 		radialConf.mass = self.Mass
 		radialConf.radial_rank = self.TransformRank
 		radialPot = CreatePotentialFromSection(radialConf, "RadialKineticEnergy", self.psi)
@@ -233,7 +233,7 @@ class SphericalPropagator(PropagatorBase):
 			self.classname = classname
 	
 	def SetupAngularKineticPotential(self, dt):
-		angularConf = self.StaticEnergyConf(PotentialType.Static, "core.DiagonalAngularPotential")
+		angularConf = self.StaticEnergyConf(PotentialType.Static, "core.AngularKineticEnergyPotential")
 		angularConf.mass = self.AngularMass
 		angularConf.radial_rank = self.Rank-2 #the last non-spherical rank
 		print "using mass ", self.AngularMass

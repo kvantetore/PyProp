@@ -21,7 +21,8 @@ test:
 	ipython -c "import libhydrogen; libhydrogen.testdata(1000, 100)"
 
 $(MODULENAME).so: semiclean $(OBJECTS)
-	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) -lcore
+	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) 
+	#-lcore
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -37,14 +38,6 @@ clean:
 DEPDIR        = .deps
 df            = $(DEPDIR)/$(*F)
 DEPENDENCIES  = $(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
-
-#C++ Compile rule
-%.o : %.cpp
-	$(CXX) -M -c $< -o $*.o
-	@cp $*.d $(df).P; \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
-	  rm -f $*.d
 
 -include $(DEPENDENCIES)
 
