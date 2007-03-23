@@ -6,4 +6,11 @@ DynamicPotentialEvaluator("DipoleElectricPulse<2> 2")
 DynamicPotentialEvaluator("DipoleElectricPulse<3> 3")
 DynamicPotentialEvaluator("DipoleElectricPulse<4> 4")
 
+#Cartesian Potentials
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator", "potential/examplepotentials.h")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<1> 1")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<2> 2")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<3> 3")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<4> 4")
+
 

@@ -24,6 +24,37 @@ sys.path.insert(1, os.path.abspath(pyprop_path))
 import pyprop
 pyprop = reload(pyprop)
 
+def FindEnergy(prop):
+	prop.psi.Normalize()
+	
+	psi = prop.psi.Copy()
+
+	#potential energy:
+	curE = 0
+	for pot in prop.Propagator.PotentialList:
+		potEval = pot.PotentialEvaluator
+		curE += potEval.CalculateExpectationValue(prop.psi, prop.TimeStep, prop.PropagatedTime)
+		print curE
+
+	
+	prop.Propagator.FFTTransform.ForwardTransform(prop.psi)
+	prop.Propagator.ChangeRepresentation()
+
+	pot = prop.Propagator.KineticPotential.GetPotential(prop.TimeStep)
+	prop.psi.GetData()[:] *= pot
+
+	prop.Propagator.FFTTransform.InverseTransform(prop.psi)
+	prop.Propagator.ChangeRepresentation()
+
+	curE += real(prop.psi.InnerProduct(psi))
+	print curE
+
+	prop.psi.GetData()[:] = psi.GetData()
+
+
+	
+	
+
 def FindGroundstate():
 	"""
 	Loads the configuration file "find_groundstate.ini", which contains information

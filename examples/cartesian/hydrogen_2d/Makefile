@@ -21,8 +21,7 @@ test:
 	ipython -c "import libhydrogen; libhydrogen.testdata(1000, 100)"
 
 $(MODULENAME).so: semiclean $(OBJECTS)
-	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) 
-	#-lcore
+	$(LD) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) -lcore -Wl,-rpath=$(PYPROP_LIB_PATH)
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste

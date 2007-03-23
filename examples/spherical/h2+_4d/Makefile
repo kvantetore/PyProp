@@ -30,13 +30,5 @@ DEPDIR        = .deps
 df            = $(DEPDIR)/$(*F)
 DEPENDENCIES  = $(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
 
-#C++ Compile rule
-%.o : %.cpp
-	$(CXX) -MD -c $< -o $*.o
-	@cp $*.d $(df).P; \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
-	  rm -f $*.d
-
 -include $(DEPENDENCIES)
 

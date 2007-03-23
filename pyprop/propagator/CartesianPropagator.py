@@ -12,7 +12,6 @@ class CartesianPropagator(PropagatorBase):
 		rank = psi.GetRank()
 		self.FFTTransform = CreateInstanceRank("core.CartesianFourierTransform", rank)
 
-		self.KineticPotential = CreateInstanceRank("core.StaticPotential", rank)
 		self.SplittingOrder = 2
 		self.RepresentationMapping = dict()
 
@@ -69,20 +68,18 @@ class CartesianPropagator(PropagatorBase):
 		if self.SplittingOrder == 1:
 			#first order splitting
 			self.ApplyPotential(t, dt)
-			self.AdvanceKineticEnergy()
+			self.AdvanceKineticEnergy(t, dt)
 		
 		elif self.SplittingOrder == 2:
 			#strang splitting
 			self.ApplyPotential(t, dt/2.)
-			self.AdvanceKineticEnergy()
+			self.AdvanceKineticEnergy(t, dt)
 			self.ApplyPotential(t, dt/2.)
 
 		else:
 			raise "Invalid splitting order " + str(self.SplittingOrder)
 	
-		
-
-	def AdvanceKineticEnergy(self):
+	def AdvanceKineticEnergy(self, t, dt):
 		# transform into fourier space
 		if IsSingleProc():
 			self.FFTTransform.ForwardTransform(self.psi)
@@ -94,7 +91,7 @@ class CartesianPropagator(PropagatorBase):
 		self.ChangeRepresentation()
 		
 		# apply kinetic energy potential
-		self.KineticPotential.ApplyPotential(self.psi)
+		self.KineticPotential.AdvanceStep(t, dt) 
 		
 		# transform back into real space
 		if IsSingleProc():
@@ -117,7 +114,7 @@ class CartesianPropagator(PropagatorBase):
 		#create potential 
 		pot = CreatePotentialFromSection(conf, "KineticEnergy", self.psi)
 		pot.SetupStep(dt)
-		self.KineticPotential = pot.Potential
+		self.KineticPotential = pot
 		
 	def IsDistributedRank(self, rank):
 		return self.psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.psi, rank)

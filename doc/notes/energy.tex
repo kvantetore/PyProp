@@ -1,0 +1,103 @@
+\documentclass[a4paper,10pt]{article}
+
+\newcommand{\abs}[1]{\vert #1 \vert}
+\newcommand{\bra}[1]{\langle #1 \vert}
+\newcommand{\ket}[1]{\ensuremath{\vert #1 \rangle}}
+\newcommand{\innerproduct}[2]{\ensuremath{\langle #1 \vert #2 \rangle}}
+\newcommand{\braketnorm}[1]{\ensuremath{\langle #1 \vert #1 \rangle}}
+\newcommand{\expectationvalue}[1]{\ensuremath{\langle #1 \rangle}}
+\newcommand{\timediff}[1]{\ensuremath{#1'}}
+\newcommand{\operator}[1]{\ensuremath{\hat{#1}}}
+\newcommand{\totaldiff}[2][]{\ensuremath{\frac{d#1}{d{#2}}}}
+\newcommand{\totaldifforder}[3][]{\ensuremath{\frac{d^{#3}#1}{d{#2}^{#3}}}}
+\newcommand{\partialdifforder}[3][]{\ensuremath{\frac{\partial^{#3}#1}{\partial{#2}^{#3}}}}
+\newcommand{\partialdiff}[2][]{\ensuremath{\frac{\partial#1}{\partial{#2}}}}
+
+% Title Page
+\title{Calculating Ground State Energy}
+\author{Tore Birkeland}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+How to calculate the ground state energy in pyprop.
+\end{abstract}
+
+\section{Finding the ground state}
+(More or less stolen from Lene\&Raymond(2006))
+Using a TDSE solver (like pyprop) one can find the ground state of the given system
+using what is known in the litterature as imaginary time propagation. Imaginary time
+propagation is in essence to change the problem from the TDSE (with a static potential)
+to a diffusion equation, to which one wants to find the stationary (ground) state.
+
+Effectively this is done by replacing $t$ by $\tau = - \imath t$ in the TDSE. Because
+all operators in the TDSE are Hermitian, using imaginary time transforms the equation 
+into a real diffusion equation
+\begin{equation}
+	\partialdiff{\tau} \ket{\psi(\tau)} = - H \ket{\psi(\tau)}
+\end{equation}
+With solution
+\begin{equation}
+	\ket{\psi(\tau)} = e^{- H \tau} \ket{\psi(0)}
+\end{equation}
+If we expand $\ket{\psi(0)}$ in the eigenstates of $H$, $\ket{phi_n}$, the solution
+becomes
+\begin{equation}
+	\ket{\psi(\tau)} = \sum_n e^{- E_n \tau} \ket{\phi_n} 
+\end{equation}
+From this we see that as we propagate $\tau$, and keep $\ket{\psi(\tau)}$ normalized,
+all states with energy higher than the ground state will be exponentially damped, thus
+the solution will rapidly converge towards the ground state.
+
+\section{Finding the ground state energy directly}
+If the solution is converged to the ground state (applying one more time step does not 
+change the solution significantly) at $\tau = \tau_c$, we may calculate the energy by propagating 
+the solution one final time step.
+\begin{equation}
+	\ket{\psi(\tau_c + \Delta \tau)} =  e^{- E_0 \Delta \tau} \ket{\phi_n} 
+\end{equation}
+We observe that the ground state energy $E_0$ can be found by
+\begin{equation}
+	E_0 = - \frac{\log \braketnorm{\psi(\tau_c + \Delta \tau)}}{2 \Delta \tau}
+\end{equation}
+
+
+\section{Finding the ground state by expectation values}
+An alternative to using the diffusion propagator to find the ground state energy directly, one
+could find the energy by calculating the expectation value of the Hamiltonian. Luckily, it is
+relatively easy to modify an existing split step TDSE propagator to calculate the expectation 
+value instead of propagating one timestep. 
+
+Recall that a split step propagator divides the problem into parts $H_n$ which we can find an expression
+for the matrix exponential $e^{- \imath H \Delta t}$ that is easy to evaluate. This is usually done by 
+finding a basis $X_n$ with eigenvalues $\Lambda_n$ that diagonalizes $H_n$. We can then write the 
+matrix exponential as
+\begin{equation}
+	e^{- \imath H \Delta t} = X_n e^{- \imath \Lambda_n \Delta t} X_n^{-1}
+\end{equation}
+Propagating one timestep with the split step propagator (using 1. order splitting) can then be written
+\begin{equation}
+	\ket{\psi(t + \Delta t)} = \left ( \prod_{n} X_n e^{- \imath \Lambda_n \Delta t} X_n^{-1} \right ) \ket{\psi(t)} 
+\end{equation}
+Where one applies the sub operators consecutively. 
+
+To calculate the expectation value of the energy, one should calculate the following quantity
+\begin{equation}
+	E = \bra{\psi} H \ket{\psi}
+\end{equation}
+If we split $H$ in the same sub operators as for the propagator, we can write the energy
+\begin{equation}
+	E = \sum_n \bra{\psi} H_n \ket{\psi} = \sum_n \bra{\psi} X_n \Lambda_n X_n^{-1} \ket{\psi}
+\end{equation}
+Thus in order to use the split step propagator to calculate the energy expectation value, we have to make
+three modifications
+
+\begin{itemize}
+\item Modiyfy each sub propagator to apply the diagonalized operators directly, instead
+of the matrix exponential
+\item Calculate the projection of the propagated state onto the original state at each sub operator.
+\item Sum the energies calculated by each sub operator to the total energy
+\end{itemize}
+
+\end{document}

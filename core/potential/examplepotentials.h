@@ -32,12 +32,12 @@ public:
 		AngularFrequency = M_PI * Frequency;
 	}
 
-	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double z = pos(PolarizationAxis);
 		
-		double convolution = cos(CurTime * ConvAngFreq);
-		double field = sin(CurTime * M_PI * AngularFrequency);
+		double convolution = cos(this->CurTime * ConvAngFreq);
+		double field = sin(this->CurTime * M_PI * AngularFrequency);
 		
 		return FieldStrength * z * convolution * field;
 	}
@@ -50,15 +50,21 @@ template<int Rank>
 class HarmonicOscillatorPotential : public PotentialBase<Rank>
 {
 public:
+	double strength;	
 	
-	double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("strength", strength);
+	}
+	
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double pot = 0;
 		for (int i=0;i<Rank;i++)
 		{
 			pot += sqr(pos(i));
 		}
-		return 0.5 * pot;
+		return 0.5 * strength * pot;
 	}
 };
 

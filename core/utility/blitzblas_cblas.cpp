@@ -165,9 +165,17 @@ double VectorInnerProduct(const blitz::Array<double, Rank> &u, const blitz::Arra
 		cout << "Vector u and v is of different size: " << u.size() << " != " << v.size() << endl;
 		throw std::runtime_error("invalid vector sizes for inner product");
 	}
+	if (!u.isStorageContiguous())
+	{
+		throw std::runtime_error("Vector u is not contiguous");
+	}
+	if (!v.isStorageContiguous())
+	{
+		throw std::runtime_error("Vector v is not contiguous");
+	}
 	int N = u.size();
-	int uStride = u.stride(0);
-	int vStride = u.stride(1);
+	int uStride = 1; //u.stride(0);
+	int vStride = 1; //v.stride(0);
 	return cblas_ddot(N, u.data(), uStride, v.data(), vStride);
 }
 
@@ -179,9 +187,17 @@ cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cp
 		cout << "Vector u and v is of different size: " << u.size() << " != " << v.size() << endl;
 		throw std::runtime_error("invalid vector sizes for inner product");
 	}
+	if (!u.isStorageContiguous())
+	{
+		throw std::runtime_error("Vector u is not contiguous");
+	}
+	if (!v.isStorageContiguous())
+	{
+		throw std::runtime_error("Vector v is not contiguous");
+	}
 	int N = u.size();
-	int uStride = u.stride(0);
-	int vStride = u.stride(1);
+	int uStride = 1; //u.stride(0);
+	int vStride = 1; //v.stride(0);
 
 	cplx result;
 	cblas_zdotc_sub(N, u.data(), uStride, v.data(), vStride, &result);
