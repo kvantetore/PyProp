@@ -5,7 +5,6 @@ class CartesianMixedPropagator(CartesianPropagator):
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
 		self.MixedPotentials = dict()
-		del self.KineticPotential
 		
 	def ApplyConfig(self, config):
 		self.__Base.ApplyConfig(self, config)

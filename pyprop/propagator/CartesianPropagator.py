@@ -117,7 +117,7 @@ class CartesianPropagator(PropagatorBase):
 		self.KineticPotential = pot
 		
 	def IsDistributedRank(self, rank):
-		return self.psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.psi, rank)
+		return self.psi.GetRepresentation().GetDistributedModel().IsDistributedRank(rank)
 		
 	def TransformA(self, direction):
 		rank = self.psi.GetRepresentation().GetDistributedModel().GetDistributedRank(self.psi)

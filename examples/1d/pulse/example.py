@@ -11,7 +11,9 @@ pyprop = reload(pyprop)
 from libpulse import *
 
 #numpy an pylab for good measure
-from pylab import *
+try:
+	from pylab import *
+except: pass
 from numpy import *
 
 #Choose radial grid type:

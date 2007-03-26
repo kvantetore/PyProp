@@ -11,7 +11,9 @@ import pyprop
 pyprop = reload(pyprop)
 
 #pylab and numpy should be imported in this order.
-from pylab import *
+try:
+	from pylab import *
+except: pass
 from numpy import *
 
 def test():

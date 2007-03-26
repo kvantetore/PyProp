@@ -9,24 +9,21 @@
  * whereas all the other ranks are in grid space
  */
 
+ double const c = 137.0;
+
 
 /*
  * Base for all potentials in this project. It contains the ApplyConfigSection method, 
  * which ensures that all potentials get the same parameters
  */
-class PotentialBase
+template<int Rank>
+class MixedPotentialBase : public PotentialBase<Rank>
 {
 public:
-	//Required by DynamicPotentialEvaluator
-	cplx TimeStep;
-	double CurTime;
-
 	//Potential parameters
 	double omega;
 	double A0;
 	double q1,q2,m1,m2;
-
-	double static const c = 137.0;
 
 	//Calculated pararmeters
 	double Q;
@@ -53,20 +50,18 @@ public:
 		E0 = A0 * omega;
 	}
 };
-double const PotentialBase::c;
-
 
 /*
  * MixedPotentialX is the mixed potential where the x-rank (rank 0) is transformed
  * into fourier space 
  */
 template<int Rank>
-class MixedPotentialX : public PotentialBase
+class MixedPotentialX : public MixedPotentialBase<Rank>
 {
 public:
 	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
-		PotentialBase::ApplyConfigSection(config);
+		MixedPotentialBase<Rank>::ApplyConfigSection(config);
 	}
 
 	double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
@@ -86,12 +81,12 @@ public:
  * into fourier space, while the other dimensions are in grid space
  */
 template<int Rank>
-class MixedPotentialY : public PotentialBase
+class MixedPotentialY : public MixedPotentialBase<Rank>
 {
 public:
 	void ApplyConfigSection(const ConfigSection &config)
 	{
-		PotentialBase::ApplyConfigSection(config);
+		MixedPotentialBase<Rank>::ApplyConfigSection(config);
 	}
 
 	cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
@@ -112,14 +107,14 @@ public:
  * GridPotential is the potential where all ranks are in grid space
  */
 template<int Rank>
-class GridPotential : public PotentialBase
+class GridPotential : public MixedPotentialBase<Rank> 
 {
 public:
 	double SoftRadius;
 
 	void ApplyConfigSection(const ConfigSection &config)
 	{
-		PotentialBase::ApplyConfigSection(config);
+		MixedPotentialBase<Rank>::ApplyConfigSection(config);
 		config.Get("soft_radius", SoftRadius);
 	}
 
