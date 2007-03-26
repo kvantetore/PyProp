@@ -93,6 +93,9 @@ clean:
 	rm -f representation/*.o
 	rm -f transform/*.o
 	rm -f python/pysteoutput/*.o
+	rm -f utility/*.o
+	rm -f finitediff/*.o
+	rm -f transform/transformedgrid/*.o
 	
 pyclean:
 	rm -rf $(PYSTEOUTPUTDIR)
