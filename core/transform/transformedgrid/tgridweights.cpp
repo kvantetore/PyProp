@@ -38,19 +38,19 @@ void SetupWeights (int N, const Parameter &param, const blitz::Array<double, 1> 
   // Scaling the weights according to transformations
      if (param.Type == 1) 
         for (k=0; k<N; k++){
-           fder = 2.0/(1.0+x(k))/(1.0+x(k));
+           fder = param.Scaling * 2.0/(1.0+x(k))/(1.0+x(k));
            weight(k) *= fder;
         }
      if (param.Type == 2){ 
         pi_4 = M_PI/4.0;
         for (k=0; k<N; k++){
-           fder = pi_4 / cos(pi_4*(1+x(k)))/cos(pi_4*(1+x(k)));
+           fder = param.Scaling * pi_4 / cos(pi_4*(1+x(k)))/cos(pi_4*(1+x(k)));
            weight(k) *= fder;
         }
      }
      if (param.Type == 3) 
         for (k=0; k<N; k++){
-           fder = 6.0/(1.0-x(k));
+           fder = param.Scaling * 6.0/(1.0-x(k));
            weight(k) *= fder;
         }
      

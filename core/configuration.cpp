@@ -54,12 +54,13 @@ ConfigSection::~ConfigSection()
 		{
 			Py_DECREF((PyObject*)SectionObject);
 			SectionObject = 0;
-		}
+			}
 	}
 } 
 
 ConfigSection::ConfigSection(const ConfigSection& other)
 {
+	Mode = other.Mode;
 	if (Mode == ConfigSectionModePython)
 	{
 		//We must create a instance of object for each instance of 
