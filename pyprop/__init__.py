@@ -17,10 +17,6 @@ reload(core)
 
 import utilities
 reload(utilities)
-from utilities import *
-del utilities
-
-
 
 import sys
 
