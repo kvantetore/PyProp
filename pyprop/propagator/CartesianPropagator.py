@@ -20,6 +20,9 @@ class CartesianPropagator(PropagatorBase):
 		
 	def ApplyConfigSection(self, configSection): 
 		PropagatorBase.ApplyConfigSection(self, configSection)
+		self.Mass = 1.0
+		if hasattr(configSection, 'mass'):
+			self.Mass = configSection.mass
 
 	def SetupStep(self, dt):
 		#representation mappings		
@@ -110,6 +113,7 @@ class CartesianPropagator(PropagatorBase):
 				self.type = type
 				self.classname = classname
 		conf = staticEnergyConf(PotentialType.Static, "CartesianKineticEnergyPotential")
+		conf.mass = self.Mass
 
 		#create potential 
 		pot = CreatePotentialFromSection(conf, "KineticEnergy", self.psi)

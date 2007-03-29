@@ -1,12 +1,14 @@
 #1D
-def Plot1D(prop):
+def Plot1D(prop, **args):
 	data = prop.psi.GetData()
 	grid = prop.GetGrid()[0]
 	if IsMaster():
-		plot(grid, real(conj(data) * data))
+		plot(grid, real(conj(data) * data), **args)
 	
 #2D
-def Plot2DFull(prop):
+def Plot2DFull(prop, **args):
+	if 'shading' not in args:
+		args['shading'] = 'flat'
 	data = GetFullWavefunctionData(prop)
 
 	xvector = prop.psi.GetRepresentation().GetLocalGrid(0)
@@ -16,15 +18,15 @@ def Plot2DFull(prop):
 	plotdata = real(conj(data) * data)
 	plotdata = plotdata * 100 / max(plotdata.flatten())
 	if IsMaster():
-		pcolor(x, y, plotdata, shading='flat')
+		pcolor(x, y, plotdata,  **args)
 	
 
-def Plot2DRank(prop, rank):
+def Plot2DRank(prop, rank, **args):
 	grid = prop.GetGrid()[rank]
 	data = GetFullWavefunctionData(prop)
 	plotdata = sum(abs(data)**2, 1 - rank) * diff(grid)[0] #assume equidistant grid
 	if IsMaster():
-		plot(grid, plotdata)
+		plot(grid, plotdata, **args)
 
 def GetProjectedWavefunction(prop, rankList):
 	"Integrates the absolute square of the wavefunction in all other "
@@ -52,31 +54,34 @@ def GetProjectedWavefunction(prop, rankList):
 	return data
 	
 #4D
-def Plot4DRank2D(prop, rank1, rank2):
-        if rank1 < rank2:
-                rank1, rank2 = rank2, rank1
+def Plot4DRank2D(prop, rank1, rank2, **args):
+	if 'shading' not in args:
+		args['shading'] = 'flat'
 
-        data = abs(prop.psi.GetData())
+	if rank1 < rank2:
+		rank1, rank2 = rank2, rank1
+	
+	data = abs(prop.psi.GetData())
+	
+	removeRanks = range(prop.psi.GetRank())
+	del removeRanks[rank1]
+	del removeRanks[rank2]
+	removeRanks.reverse()
+	for rank in removeRanks:
+		data = sum(data, rank)
+	
+	data = 100 * data / max(data.flatten())
+	pcolor(data, **args)
 
-        removeRanks = range(prop.psi.GetRank())
-        del removeRanks[rank1]
-        del removeRanks[rank2]
-        removeRanks.reverse()
-        for rank in removeRanks:
-                data = sum(data, rank)
-
-        data = 100 * data / max(data.flatten())
-        pcolor(data, shading='flat')
-
-def Plot4DRank1D(prop, rank):
-        data = abs(prop.psi.GetData())
-
-        removeRanks = range(prop.psi.GetRank())
-        del removeRanks[rank]
-        removeRanks.reverse()
-        for rank in removeRanks:
-                data = sum(data, rank)
-
-        grid = prop.GetGrid()[rank]
-        plot(grid, data)
+def Plot4DRank1D(prop, rank, **args):
+	data = abs(prop.psi.GetData())
+	
+	removeRanks = range(prop.psi.GetRank())
+	del removeRanks[rank]
+	removeRanks.reverse()
+	for rank in removeRanks:
+		data = sum(data, rank)
+	
+	grid = prop.GetGrid()[rank]
+	plot(grid, data, **args)
 

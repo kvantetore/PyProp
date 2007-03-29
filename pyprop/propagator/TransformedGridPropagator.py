@@ -21,6 +21,7 @@ class TransformedGridPropagator(PropagatorBase):
 		
 	def ApplyConfigSection(self, configSection): 
 		self.__Base.ApplyConfigSection(self, configSection)
+		configSection.Apply(self.Propagator)
 		
 	def SetupStep(self, dt):
 		print "        Setup Potential"

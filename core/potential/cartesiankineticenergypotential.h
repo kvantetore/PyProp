@@ -10,12 +10,11 @@ template<int Rank>
 class CartesianKineticEnergyPotential : public PotentialBase<Rank>
 {
 public:
-	//Required by DynamicPotentialEvaluator
-	cplx TimeStep;
-	double CurTime;
-	
+	double Mass;
+
 	void ApplyConfigSection(const ConfigSection &config)
 	{
+		config.Get("mass", Mass);
 	}
 
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &momentum)
@@ -25,7 +24,7 @@ public:
 		{
 			kineticPotential += sqr(momentum(i));
 		}
-		return kineticPotential/2.0;
+		return kineticPotential/(2.0 * Mass);
 	}
 };
 
