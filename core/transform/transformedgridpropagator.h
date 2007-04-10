@@ -26,6 +26,7 @@ public:
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank);
 	void AdvanceStep(Wavefunction<Rank> &psi);
+	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
 };
 
 }; //Namespace

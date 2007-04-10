@@ -34,9 +34,9 @@ void XYmat(int N, const Parameter &param, Array<double, 1> &X, Array<double, 1> 
     
 	if (param.Type == Transform2)
 	{
-      r = L * tan(M_PI/4*(xc + 1));
-      X = 4/M_PI/(L*L+r*r)/L;
-      Y = -8/M_PI*r*L/(L*L+r*r)/(L*L+r*r);
+      r = L * tan((xc + 1.0) * M_PI/4.0);
+      X =  (4.0/M_PI) * L / (L*L + r*r);
+      Y = -(8.0/M_PI) * L * r /((L*L + r*r) * (L*L + r*r));
 	} 
     
 	if (param.Type == Transform3)
