@@ -45,7 +45,7 @@ public:
 		//Get this procs position in the global scheme of things...
 		DistributedModel<1>* distr = & psi.GetRepresentation().GetDistributedModel();
 		int fullSize = psi.GetRepresentation().GetFullShape()(0);
-		int globalStartIndex = distr->GetGlobalStartIndex(fullSize, 0);
+		int globalStartIndex = distr->GetLocalStartIndex(fullSize, 0);
 	
 		//If we do not start on the beginning of a block
 		int startIndex = 0;

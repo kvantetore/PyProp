@@ -7,6 +7,11 @@ module_code("create_array_converter<double, 2>();\n")
 module_code("create_array_converter<double, 3>();\n")
 module_code("create_array_converter<double, 4>();\n")
 
+module_code("create_array_converter<int, 1>();\n")
+module_code("create_array_converter<int, 2>();\n")
+module_code("create_array_converter<int, 3>();\n")
+module_code("create_array_converter<int, 4>();\n")
+
 module_code("create_array_converter<std::complex<double>, 1>();\n")
 module_code("create_array_converter<std::complex<double>, 2>();\n")
 module_code("create_array_converter<std::complex<double>, 3>();\n")

@@ -41,10 +41,10 @@ template<> Wavefunction<1>* CombinedRepresentation<2>
                 Implementation of the Representation interface
   ----------------------------------------------------------------------------*/
 template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::
-GetLocalGrid(int rank)
+GetGlobalGrid(int rank)
 {
 	//Get the local grid in the specified rank
-	return GetRepresentation(rank)->GetLocalGrid(rank);
+	return GetRepresentation(rank)->GetGlobalGrid(rank);
 }
 
 template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::

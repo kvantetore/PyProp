@@ -20,6 +20,7 @@ public:
 	ConfigSection(const ConfigSection & copy); 
 	virtual ~ConfigSection();
 
+	bool HasValue(const std::string &name) const;
 	template<class T> T Get(const std::string &name) const;
 	template<class T> T Set(const std::string &name, const T& value);
 	

@@ -9,7 +9,11 @@ import numpy
 
 from numpy import *
 
-#import mpi.pympi as pympi
+try:
+	import mpi.pympi as pympi
+except:
+	print "Warning: unable to load mpi."
+
 import cPickle as pickle
 
 import core

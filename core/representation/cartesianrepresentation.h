@@ -51,10 +51,10 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
+	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		int effectiveRank = rank - this->GetBaseRank();
-		return this->GetDistributedModel().GetLocalArray(Range(effectiveRank).GetGrid(), rank);
+		return Range(effectiveRank).GetGrid();
 	}	
 
 	/** 

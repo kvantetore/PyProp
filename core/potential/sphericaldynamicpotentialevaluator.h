@@ -96,10 +96,12 @@ public:
 	/** 
    	  * Returns an array containing this dynamic potential at the given time. 
 	  * WARNING: This method allocates and returns a new blitz array in the same size as the wavefunction
+	  *
+	  * In a multiproc environment this returns the local portion of the potential corresponding to 
+	  * the current distribution of the wavefunction.
 	  */
 	blitz::Array<cplx, Rank> GetPotential(const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
 	{
-		//TODO: Fix for multiproc
 		blitz::Array<cplx, Rank> potentialData(psi.Data.shape());
 		Get.IterateAction(Potential, psi, potentialData, timeStep, curTime);
 		return potentialData;

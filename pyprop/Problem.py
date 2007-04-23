@@ -275,13 +275,6 @@ class Problem:
 		else:
 			raise "Invalid file format: " + format
 	
-	def ChangeDistribution(self):
-		"""
-		TODO: This should probably be updated or removed... first i must figure out how
-		to deal with distributed memory.
-		"""
-		self.psi.GetRepresentation().GetDistributedModel().ChangeRepresentation(self.psi)
-		
 	#(de)serialization---------------------------------------------
 	def LoadWavefunctionData(self, newdata):
 		data = self.psi.GetData()

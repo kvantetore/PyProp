@@ -3,16 +3,6 @@
 #include "../representation/cartesianrepresentation.h"
 
 template<int Rank>
-void CartesianFourierTransform<Rank>::TransformExceptDistributedRank(Wavefunction<Rank> &psi, int direction)
-{
-	if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride())
-	{
-		throw std::runtime_error("Maximum stride is not distributed, this case is not implemented in cartesian fourier transform.");
-	}
-	FftAllExceptMaxStride(psi.Data, FFT_FORWARD);
-}
-
-template<int Rank>
 void CartesianFourierTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int direction)
 {
 	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(rank))
@@ -65,31 +55,7 @@ void CartesianFourierTransform<Rank>::FourierTransform(Wavefunction<Rank> &psi, 
 	}
 	else 
 	{
-		//On a multi processor system, first transform all but the distributed rank,
-		//change distribution, and hopefully, the previously distrubted rank is now
-		//the min stride rank.
-		if (!psi.GetRepresentation().GetDistributedModel().HasDistributedRangeMaxStride())
-		{
-			throw std::runtime_error("Error in FourierTransform(psi, direction): Maximum stride is not distributed, this case is not implemented in FourierTransform() yet.");
-		}
-		int distributedRank = psi.GetRepresentation().GetDistributedModel().GetDistributedRank();
-		FftAllExceptMaxStride(psi.Data, direction);
-		
-		//change representation
-		psi.GetRepresentation().GetDistributedModel().ChangeRepresentation(psi);
-		
-		int minStrideRank = psi.Data.ordering(0);
-		//if we are transforming the minimum strided rank, we can do it better
-		//than the generic routine
-		if (distributedRank == minStrideRank)
-		{
-			FftOnlyMinStride(psi.Data, direction);
-		}
-		else
-		{
-			std::cout << "Warning from FourierTransform(psi,direction): Performing FFT along a suboptimal rank " << distributedRank << std::endl;
-			FftRank(psi.Data, distributedRank, direction);
-		}
+		throw std::runtime_error("Cannot execute fourier transform along distributed rank.");
 	}
 	
 	if (direction == FFT_BACKWARD) 

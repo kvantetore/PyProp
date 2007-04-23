@@ -67,7 +67,7 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
+	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
@@ -84,7 +84,7 @@ public:
 		blitz::Array<double, 2> lmGrid( Range.GetLmGrid() );
 		int size = lmGrid.extent(0);
 
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(size, GetBaseRank());
+		blitz::Range indexRange = this->GetDistributedModel().GetLocalIndexRange(size, GetBaseRank());
 		return lmGrid(indexRange, blitz::Range::all());
 	}
 	

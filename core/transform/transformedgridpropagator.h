@@ -13,6 +13,7 @@ class Propagator
 {
 private:
 	blitz::Array<cplx, 2> PropagationMatrix;
+	blitz::Array<cplx, 2> DiffMatrix;
 	blitz::Array<cplx, 1> TempData;
 
 	int PropagateRank;
@@ -27,6 +28,7 @@ public:
 	void Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank);
 	void AdvanceStep(Wavefunction<Rank> &psi);
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
+	blitz::Array<cplx, 2> GetDifferentiationMatrix();
 };
 
 }; //Namespace

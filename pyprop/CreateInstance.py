@@ -7,10 +7,6 @@ def CreateInstanceRank(className, rank):
 		raise ex
 		
 def CreateDistribution(config, rank=None):
-	#Currently we only support one distribution model
-	if config.Distribution.model != "LargestStride":
-		raise Exception, "Invalid DistributionModel '%s'" % config.Distribution.model
-
 	#Instance Distribution class which is templated over rank
 	if rank == None:
 		rank = config.Representation.rank
@@ -60,9 +56,8 @@ def CreateSubRepresentations(combinedRepr, config):
 		print "Representation for rank %i is %s" % (i, repr)
 
 		#set distributed model
-		#TODO: Fix sub-distributed models to reflect the same distribution
-		#as the full distributed model.
-		distrib = CreateDistribution(config, 1)
+		fullDistrib = combinedRepr.GetDistributedModel()
+		distrib = fullDistrib.CreateSubDistributedModel()
 		repr.SetDistributedModel(distrib)
 
 		#apply configuration

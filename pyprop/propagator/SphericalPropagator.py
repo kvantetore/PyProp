@@ -194,12 +194,18 @@ class SphericalPropagator(PropagatorBase):
 		print "        Setup Angular Kinetic Potential"
 		self.SetupAngularKineticPotential(dt)
 
+		# Transpose
+		self.SetupTranspose()
+		self.Transpose(1)
+
 		# setup radial propagator
 		print "	       Setup Radial Propagator"
 		for prop in self.SubPropagators:
 			prop.SetupStep(dt)
-		
-	
+
+		#transpose back
+		self.Transpose(2)
+
 	def AdvanceStep(self, t, dt):
 		# transform back into spherical (theta,phi) space
 		self.TransformSphericalInverse()
@@ -212,10 +218,43 @@ class SphericalPropagator(PropagatorBase):
 	
 		#apply potential
 		self.AngularKineticPotential.AdvanceStep(t, dt)
+	
+		#transpose	
+		self.Transpose(1)
 		
 		#radial propagator
 		for prop in self.SubPropagators:
 			prop.AdvanceStep(t, dt)
+
+		#transpose back
+		self.Transpose(2)
+
+	#Transpose
+	def SetupTranspose(self):
+		#get transpose
+		distrModel = self.psi.GetRepresentation().GetDistributedModel()
+		if not distrModel.IsSingleProc():
+			self.Distribution1 = distrModel.GetDistribution().copy()
+			if len(self.Distribution1) > 1: 
+				raise "Does not support more than 1D proc grid"
+			transpose = distrModel.GetTranspose()
+			#Setup shape	
+			fullShape = self.psi.GetRepresentation().GetFullShape()
+			self.Distribution2 = array([self.Rank-1])
+			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
+			#allocate wavefunction
+			self.TransposeBuffer1 = self.psi.GetActiveBufferName()
+			self.TransposeBuffer2 = self.psi.AllocateData(distribShape)
+
+	def Transpose(self, stage):
+		distrModel = self.psi.GetRepresentation().GetDistributedModel()
+		if not distrModel.IsSingleProc():
+			if stage == 1:
+				distrModel.ChangeDistribution(self.psi, self.Distribution2, self.TransposeBuffer2)
+			elif stage == 2:
+				distrModel.ChangeDistribution(self.psi, self.Distribution1, self.TransposeBuffer1)
+			else:
+				raise "Invalid stage %i" % stage
 
 	#Transforms:		
 	def TransformSphericalForward(self):

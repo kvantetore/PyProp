@@ -114,6 +114,8 @@ public:
 		else
 		{
 			std::cout << "Invalid datatype" << std::endl;
+			cout << "d1 = " << arr_obj->descr->type_num << endl;
+			cout << "d2 = " << type_descr->type_num << endl;
 			throw std::runtime_error("Invalid datatype");
 		}
 		data->convertible = storage;

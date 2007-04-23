@@ -34,6 +34,9 @@ class Section:
 	
 	def Get(self, optionName):
 		return self.__dict__[optionName]
+
+	def Exists(self, optionName):
+		return hasattr(self, optionName)
 		
 	def Apply(self, other):
 		if hasattr(other,"ApplyConfigSection"):

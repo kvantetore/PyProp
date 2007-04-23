@@ -37,7 +37,6 @@ public:
 	void InverseTransform(Wavefunction<Rank> &psi);
 
 	/* Advanced interface */
-	void TransformExceptDistributedRank(Wavefunction<Rank> &psi, int direction);
 	void TransformRank(Wavefunction<Rank> &psi, int rank, int direction);
 	
 	/**

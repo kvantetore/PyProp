@@ -26,9 +26,7 @@ public:
 	
 	inline void SetDistributedModel(DistributedModelPtr distrib)
 	{
-		cout << "c++ setting distributed model...";
 		Distrib = distrib;
-		cout << "completed." << endl;
 	}
 	
 	inline DistributedModel<Rank>& GetDistributedModel()
@@ -57,11 +55,16 @@ public:
 		return (long int)this;
 	}
 
+	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
+	{
+		return this->GetDistributedModel().GetLocalArray(GetGlobalGrid(rank), rank);
+	}
+
 	//Must override
 	virtual blitz::TinyVector<int, Rank> GetFullShape() = 0;
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2) = 0;
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank) = 0;
-	virtual blitz::Array<double, 1> GetLocalGrid(int rank) = 0;
+	virtual blitz::Array<double, 1> GetGlobalGrid(int rank) = 0;
 	virtual void ApplyConfigSection(const ConfigSection &config) = 0;
 
 };

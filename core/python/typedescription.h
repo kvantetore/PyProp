@@ -22,7 +22,7 @@ template<> PyArray_Descr* type_to_descr(float)
 
 template<> PyArray_Descr* type_to_descr(int)
 {
-	return PyArray_DescrFromType(PyArray_INT);
+	return PyArray_DescrFromType(PyArray_LONG);
 }
 
 template<> PyArray_Descr* type_to_descr(std::complex<double>)

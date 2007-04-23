@@ -61,11 +61,12 @@ public:
 		{
 			//grid
 			grid(i).reference(repr->GetLocalGrid(i));
+			blitz::Array<double, 1> globalGrid(repr->GetGlobalGrid(i));
 
 			//Max value
-			//TODO: Fix for multiproc
-			int gridSize = grid(i).size();
-			double maxR = grid(i)(gridSize-1);
+			//TODO: Do properly
+			int gridSize = globalGrid.size();
+			double maxR = max(globalGrid(gridSize-1), globalGrid(0));
 			
 			//Setup absorber
 			scaling(i).reference( Absorber(i).GetScaling(grid(i), maxR) );

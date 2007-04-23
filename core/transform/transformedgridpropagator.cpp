@@ -45,26 +45,26 @@ void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavef
 	//We need the eigenvalues and vectors in complex format
 	Array<cplx, 1> ew(ewReal.shape());    //eigenvalue 
 	Array<cplx, 2> ev(evReal.shape());    //eigenvector matrix
+	Array<cplx, 2> evExp(evReal.shape());     //eigenvectors scaled by exp(ew)
+	Array<cplx, 2> evDiff(evReal.shape());    //eigenvectors scaled by ew
 	Array<cplx, 2> evInv(evInvReal.shape());  //inverse eigenvector matrix
 
-			
 	ew = ewReal(tensor::i);
 	ev = evReal(tensor::i, tensor::j);
 	evInv = evInvReal(tensor::i, tensor::j);
 
-//	cout.precision(15);
-//	cout << "Eigenvalues: " << ewReal << endl;
-//	cout << "Eigenvectors: " << evReal << endl;
-//	cout << "Eigenvectorsinv: " << evInvReal << endl;
-	
-	
 	//scale eigenvectors by complex rotation
 	//The missing minus sign in the exponent is included in the matrix.
-	ev = ev(i,j) * exp( I * dt * ew(j) / (2.0 * Mass));
+	evExp = ev(i,j) * exp( I * dt * ew(j) / (2.0 * Mass));
+	evDiff = ev(i,j) * ew(j) / (2.0 * Mass);
 
 	//Create full matrix to propagate wavefunction
 	PropagationMatrix.resize(ev.shape());
-	MatrixMatrixMultiply(ev, evInv, PropagationMatrix);
+	MatrixMatrixMultiply(evExp, evInv, PropagationMatrix);
+
+	//Create full differentiation matrix
+	DiffMatrix.resize(ev.shape());
+	MatrixMatrixMultiply(evDiff, evInv, DiffMatrix);
 
 	//Allocate temp data
 	TempData.resize(ew.extent(0));
@@ -102,6 +102,13 @@ void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 3> &data)
 	}
 }
 
+template<int Rank>
+blitz::Array<cplx, 2> Propagator<Rank>::GetDifferentiationMatrix()
+{
+	//TODO: Move initialization of DiffMatrix in here to save memory in case
+	//we don't need it.
+	return DiffMatrix;
+}
 
 template class Propagator<1>;
 template class Propagator<2>;

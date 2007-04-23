@@ -44,13 +44,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
+	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetIndexGrid(), rank);
+		return Range.GetIndexGrid();
 	}
 
 	/** 
@@ -73,7 +73,7 @@ public:
 		blitz::Array<double, 2> omegaGrid( Range.GetOmegaGrid() );
 		int size = omegaGrid.extent(0);
 
-		blitz::Range indexRange = this->GetDistributedModel().GetGlobalIndexRange(size, GetBaseRank());
+		blitz::Range indexRange = this->GetDistributedModel().GetLocalIndexRange(size, GetBaseRank());
 		return omegaGrid(indexRange, blitz::Range::all());
 	}
 	

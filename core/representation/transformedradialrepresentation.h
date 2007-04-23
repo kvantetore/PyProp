@@ -19,12 +19,6 @@ public:
 	TransformedRadialRepresentation() {}
 	virtual ~TransformedRadialRepresentation() {}
 
-	blitz::Array<double, 1> GetFullGrid()
-	{
-		return Range.GetGrid();
-	}
-			
-
 	/* ---------- Implementation of Representation<1> interface ----------- */
 		
 	//Returns the size of the grid 
@@ -49,13 +43,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
+	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetGrid(), rank);
+		return Range.GetGrid();
 	}
 
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank)

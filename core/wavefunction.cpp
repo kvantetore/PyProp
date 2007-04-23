@@ -129,6 +129,13 @@ Wavefunction<Rank>::CopyDeep() const
 	return newPsi;
 }
 
+template<int Rank>
+double Wavefunction<Rank>::GetNorm() const
+{
+	double localNorm = GetLocalNorm();
+	return GetRepresentation().GetDistributedModel().GetGlobalSum(localNorm);
+}
+
 template class Wavefunction<1>;
 template class Wavefunction<2>;
 template class Wavefunction<3>;

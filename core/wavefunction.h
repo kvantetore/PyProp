@@ -6,13 +6,13 @@
 
 template<int Rank> class Representation;
 
-
 template<int Rank> 
 class Wavefunction
 {
 public:
 	typedef boost::shared_ptr< Representation<Rank> > RepresentationPtr;
 	typedef blitz::Array<cplx, Rank> DataArray;
+	typedef blitz::TinyVector<int, Rank> IndexVector;
 	typedef boost::shared_ptr< DataArray > DataArrayPtr;
 	typedef std::vector<DataArrayPtr> DataArrayVector;
 		
@@ -78,7 +78,8 @@ public:
 	void AllocateData();
 	
 	/* Utility functions */
-	double GetNorm() const
+	double GetNorm() const;
+	double GetLocalNorm() const
 	{
 		return GetRepresentation().InnerProduct(*this, *this).real();
 	}
@@ -86,7 +87,6 @@ public:
 	double Normalize()
 	{
 		double norm = GetNorm();
-		//TODO: Gather data from all procs
 		Data /= sqrt(norm);
 		return norm;
 	}

@@ -19,6 +19,19 @@ typedef std::map<std::string, std::string> ConfigMap;
 
 /* implementations */
 
+bool HasPythonValue(const std::string &name, const ConfigSection *conf)
+{
+	handle<> hndl(borrowed((PyObject*)conf->SectionObject));
+	object config_obj(hndl);
+	return extract<bool>(config_obj.attr("Exists")(name));
+}
+
+bool HasMapValue(const std::string &name, const ConfigSection *conf)
+{
+	ConfigMap *map = static_cast<ConfigMap*>(conf->SectionObject);
+	return map->find(name) == map->end();
+}
+
 template<class T> T GetPythonValue(const std::string &name, const ConfigSection *conf)
 {
 	handle<> hndl(borrowed((PyObject*)conf->SectionObject));
@@ -85,6 +98,19 @@ T ConfigSection::Get(const std::string &name) const
 	throw std::runtime_error("Invalid config section mode");
 }
 
+bool ConfigSection::HasValue(const std::string &name) const
+{
+	if (Mode == ConfigSectionModePython)
+	{
+		return HasPythonValue(name, this);
+	}
+	if (Mode == ConfigSectionModeMap)
+	{
+		return HasMapValue(name, this);
+	}
+	throw std::runtime_error("Invalid config section mode");
+}
+
 /*template<class T>
 void ConfigSection::Set(const std::string &name, const T &value)
 {
@@ -125,3 +151,6 @@ template blitz::TinyVector<double, 6> ConfigSection::Get< blitz::TinyVector<doub
 template blitz::TinyVector<double, 7> ConfigSection::Get< blitz::TinyVector<double, 7> >(const std::string &name) const;
 template blitz::TinyVector<double, 8> ConfigSection::Get< blitz::TinyVector<double, 8> >(const std::string &name) const;
 template blitz::TinyVector<double, 9> ConfigSection::Get< blitz::TinyVector<double, 9> >(const std::string &name) const;
+
+
+template blitz::Array<int, 1> ConfigSection::Get< blitz::Array<int, 1> >(const std::string &name) const;
