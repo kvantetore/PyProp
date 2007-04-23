@@ -177,4 +177,12 @@ double DistributedModel<Rank>::GetGlobalSum(double localValue)
 	return globalValue;
 }
 
+template<int Rank>
+cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
+{
+	cplx globalValue = 0;
+	MPI_Allreduce(&localValue, &globalValue, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	return globalValue;
+}
+
 

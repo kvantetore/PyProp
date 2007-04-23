@@ -108,6 +108,7 @@ public:
 	void ApplyConfigSection(const ConfigSection &cfg);
 
 	double GetGlobalSum(double localValue);
+	cplx GetGlobalSum(cplx localValue);
 
 	bool IsDistributedRank(int rank);
 	void ChangeDistribution(Wavefunction<Rank> &psi, const Distribution::DataArray &newDistrib, int destBufferName);

@@ -78,11 +78,10 @@ public:
 	void AllocateData();
 	
 	/* Utility functions */
+	cplx InnerProduct(const Wavefunction<Rank> &psi) const;
+	cplx LocalInnerProduct(const Wavefunction<Rank> &psi) const;
 	double GetNorm() const;
-	double GetLocalNorm() const
-	{
-		return GetRepresentation().InnerProduct(*this, *this).real();
-	}
+	double GetLocalNorm() const;
 	
 	double Normalize()
 	{
@@ -91,11 +90,6 @@ public:
 		return norm;
 	}
 	
-	cplx InnerProduct(Wavefunction<Rank> &psi) const
-	{
-		return GetRepresentation().InnerProduct(psi, *this);
-	}
-
 	/* Make a copy of the currently active data buffer only.
 	 * Use this method when you want a copy of the wavefunction for
 	 * Computing values throughout the propagation (i.e. autocorrelation)

@@ -107,4 +107,9 @@ double DistributedModel<Rank>::GetGlobalSum(double localValue)
 	return localValue;
 }
 
+template<int Rank>
+cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
+{
+	return localValue;
+}
 

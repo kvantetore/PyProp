@@ -136,6 +136,27 @@ double Wavefunction<Rank>::GetNorm() const
 	return GetRepresentation().GetDistributedModel().GetGlobalSum(localNorm);
 }
 
+template<int Rank>
+double Wavefunction<Rank>::GetLocalNorm() const
+{
+	return GetRepresentation().InnerProduct(*this, *this).real();
+}
+
+template<int Rank>
+cplx Wavefunction<Rank>::InnerProduct(const Wavefunction<Rank> &psi) const
+{
+	cplx localInnerProd = LocalInnerProduct(psi);
+	return GetRepresentation().GetDistributedModel().GetGlobalSum(localInnerProd);
+}
+
+template<int Rank>
+cplx Wavefunction<Rank>::LocalInnerProduct(const Wavefunction<Rank> &psi) const
+{
+	return GetRepresentation().InnerProduct(psi, *this);
+}
+
+
+
 template class Wavefunction<1>;
 template class Wavefunction<2>;
 template class Wavefunction<3>;
