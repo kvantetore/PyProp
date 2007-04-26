@@ -113,3 +113,9 @@ cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 	return localValue;
 }
 
+template<int Rank>
+void DistributedModel<Rank>::GlobalBarrier()
+{
+}
+
+

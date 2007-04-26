@@ -109,6 +109,7 @@ public:
 
 	double GetGlobalSum(double localValue);
 	cplx GetGlobalSum(cplx localValue);
+	void GlobalBarrier();
 
 	bool IsDistributedRank(int rank);
 	void ChangeDistribution(Wavefunction<Rank> &psi, const Distribution::DataArray &newDistrib, int destBufferName);

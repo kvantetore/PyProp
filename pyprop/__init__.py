@@ -22,6 +22,9 @@ reload(core)
 import utilities
 reload(utilities)
 
+import serialization
+reload(serialization)
+
 import sys
 
 execfile(__path__[0] + "/Distribution.py")

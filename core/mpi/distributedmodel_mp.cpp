@@ -185,4 +185,10 @@ cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 	return globalValue;
 }
 
+template<int Rank>
+void DistributedModel<Rank>::GlobalBarrier()
+{
+	MPI_Barrier(MPI_COMM_WORLD);
+}
+
 
