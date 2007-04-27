@@ -271,7 +271,10 @@ class Problem:
 		if format == WavefunctionFileFormat.Ascii:
 			self.LoadWavefunctionAscii(filename)
 		elif format == WavefunctionFileFormat.Binary:
-			self.LoadWavefunction(filename)
+			self.LoadWavefunctionPickle(filename)
+		elif format == WavefunctionFileFormat.HDF
+			datasetPath = str(config.InitialCondition.dataset)
+			self.LoadWavefunctionHDF(filename, datasetPath)
 		else:
 			raise "Invalid file format: " + format
 	
@@ -282,18 +285,24 @@ class Problem:
 			raise "Invalid shape on loaded wavefunction, got " + str(newdata.shape) + " expected " + str(data.shape)
 		data[:] = newdata
 		
-	def SaveWavefunction(self, filename):
-		SavePickleArray(filename, self.psi.GetData())
+	def SaveWavefunctionPickle(self, filename):
+		serialization.SavePickleArray(filename, self.psi.GetData())
 	
-	def LoadWavefunction(self, filename):
-		arr = LoadPickleArray(filename)
+	def LoadWavefunctionPickle(self, filename):
+		arr = serialization.LoadPickleArray(filename)
 		self.LoadWavefunctionData(arr)
 
+	def LoadWavefunctionHDF(self, filename, datasetPath):
+		serialization.LoadWavefunctionHDF(filename, datasetPath, self)
+
+	def SaveWavefunctionHDF(self, filename, datasetPath):
+		serialization.SaveWavefunctionHDF(filename, datasetPath, self)
+
 	def SaveWavefunctionAscii(self, filename):
-		SaveMatlabArray(filename, self.psi.GetData())
+		pylab.save(filename, self.psi.GetData())
 	
 	def LoadWavefunctionAscii(self, filename):
-		arr = LoadMatlabArray(filename)
+		arr = pylab.load(filename)
 		self.LoadWavefunctionData(arr)
 		
 	

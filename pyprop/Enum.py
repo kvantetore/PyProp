@@ -14,4 +14,5 @@ class InitialConditionType:
 class WavefunctionFileFormat:
 	Ascii  = 1
 	Binary = 2
+	HDF    = 3
 

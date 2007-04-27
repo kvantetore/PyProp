@@ -6,7 +6,6 @@ except:
 	print "Warning: Unable to load matplotlib. Plotting will not be available"
 
 import numpy
-
 from numpy import *
 
 try:
