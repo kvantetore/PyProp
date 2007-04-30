@@ -45,9 +45,8 @@ class Declaration(object):
         namespace = self.namespace or ''
         if namespace and not namespace.endswith('::'):
             namespace += '::'
-        if self.name == None:
-            return namespace + "None"
-        return namespace + self.name
+
+        return namespace + str(self.name)
     
     
     def __repr__(self):        
@@ -314,6 +313,10 @@ class Method(Function):
         if self.is_unique and not force:
             return '&%s' % self.FullName()
         else:
+            if not self.is_unique:
+                print "Developer Warning: For nonunique method (%s), please use WrapperDeclaration()" % self.FullName()
+
+
             result = self.result.FullName()
             params = ', '.join([x.FullName() for x in self.parameters]) 
             const = ''
@@ -321,6 +324,25 @@ class Method(Function):
                 const = 'const'            
             return '(%s (%s::*)(%s) %s%s)&%s' %\
                 (result, self.class_, params, const, self.Exceptions(), self.FullName())  
+
+    def WrapperDeclaration(self):
+        result = self.result.FullName()
+        params = ', '.join([x.FullName() for x in self.parameters]) 
+        const = ''
+        if self.const:
+            const = 'const'            
+        return '%s (%s::*%s)(%s) %s%s = &%s;\n' %\
+            (result, self.class_, self.WrapperName(), params, const, self.Exceptions(), self.FullName())  
+
+    def WrapperName(self):
+        name = self.FullName().replace(":", "_").replace("<","_").replace(">","_").replace(",","_").replace(" ", "").replace("&", "_")
+        params = "_".join([x.FullName() for x in self.parameters])
+        params = params.replace(":", "_").replace("<","_").replace(">","_").replace(",","_").replace(" ", "").replace("&", "_")
+        name += params
+        if self.const:
+            name += "_const"
+        return name
+	
 
 
 #==============================================================================
