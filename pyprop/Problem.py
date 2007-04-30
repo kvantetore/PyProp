@@ -272,7 +272,7 @@ class Problem:
 			self.LoadWavefunctionAscii(filename)
 		elif format == WavefunctionFileFormat.Binary:
 			self.LoadWavefunctionPickle(filename)
-		elif format == WavefunctionFileFormat.HDF
+		elif format == WavefunctionFileFormat.HDF:
 			datasetPath = str(config.InitialCondition.dataset)
 			self.LoadWavefunctionHDF(filename, datasetPath)
 		else:

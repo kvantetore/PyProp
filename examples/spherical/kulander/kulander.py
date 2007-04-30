@@ -10,8 +10,11 @@ import pyprop
 pyprop = reload(pyprop)
 from libkulander import *
 
-import submitpbs
-from datetime import timedelta
+try:
+	import submitpbs
+	from datetime import timedelta
+except:
+	pass
 
 #numpy an pylab for good measure
 from pylab import *
@@ -80,9 +83,12 @@ def RunKulanderExperiment(gridType=RadialGridType.CARTESIAN):
 	#save the initial wavefunction
 	initPsi = prop.psi.Copy()
 
+	lcount = len(CalculateAngularMomentumDistribution(prop))
+	ldist = zeros((500, lcount), dtype=double)
+	save("output/ldist", ldist)
+
 	#propagate through the problem, and do something 
 	#every timestep
-	
 	index = 0
 	for t in prop.Advance(500):
 		#pyprop.Plot2DRank(prop, 0)
@@ -90,8 +96,8 @@ def RunKulanderExperiment(gridType=RadialGridType.CARTESIAN):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		print "t = ", t, "; Norm = ", norm, "; Corr = ", corr
 		
-		ldist = CalculateAngularMomentumDistribution(prop)
-		pyprop.AppendMatlabArray("output/ldist", ldist)
+		ldist[index, :] = CalculateAngularMomentumDistribution(prop)
+		save("output/ldist", ldist)
 
 		index += 1
 
@@ -99,7 +105,7 @@ def RunKulanderExperiment(gridType=RadialGridType.CARTESIAN):
 
 
 def CalculateAngularMomentumDistribution(prop):
-	dr = prop.psi.GetRepresentation().GetRadialRepresentation().GetRange(0).Dx
+	dr = prop.psi.GetRepresentation().GetRepresentation(0).GetRange(0).Dx
 	lmax = prop.Propagator.LmRepresentation.Range.MaxL
 
 	lmDistrib = sum(abs(prop.psi.GetData())**2, 0) * dr

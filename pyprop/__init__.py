@@ -13,8 +13,6 @@ try:
 except:
 	print "Warning: unable to load mpi."
 
-import cPickle as pickle
-
 import core
 reload(core)
 
@@ -33,7 +31,6 @@ execfile(__path__[0] + "/Problem.py")
 
 execfile(__path__[0] + "/CreateInstance.py")
 execfile(__path__[0] + "/Config.py")
-execfile(__path__[0] + "/Serialize.py")
 execfile(__path__[0] + "/Plot.py")
 execfile(__path__[0] + "/Utility.py")
 execfile(__path__[0] + "/Redirect.py")

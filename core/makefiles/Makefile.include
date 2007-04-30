@@ -15,7 +15,7 @@ BOOST_LIBS  = -lboost_python-gcc
 LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS)
 
 #propgrams
-PYSTE = pyste.py $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
+PYSTE = pyste $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
 CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB -fPIC 
 LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared 
 
