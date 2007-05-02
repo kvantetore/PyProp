@@ -3,12 +3,7 @@
 
 #include "tools.h"
 #include "../../utility/blitzblas.h"
-
-#ifdef FORTRAN_NAME_NOUNDERSCORE
-#define FORTRAN_NAME(x) x
-#else
-#define FORTRAN_NAME(x) x ## _
-#endif
+#include "../../utility/fortran.h"
 
 namespace TransformedGrid
 {

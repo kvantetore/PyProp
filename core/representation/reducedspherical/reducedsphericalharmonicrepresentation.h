@@ -1,27 +1,30 @@
 #ifndef LMREPRESENTATION_H
 #define LMREPRESENTATION_H
 
-#include "../common.h"
-#include "representation.h"
-#include "lmrange.h"
+#include "../../common.h"
+#include "../representation.h"
+#include "lrange.h"
+
+namespace ReducedSpherical
+{
 
 /** Represents the wavefunction in a spherical harmonic (l,m) basis.
   * The spherical harmonic of highest order which is represented is 
   * Ylm with l == Range.MaxL, which leaves Range.Count() == (1 + MaxL)**2
   * functions 
   */
-class SphericalHarmonicRepresentation : public Representation<1>
+class ReducedSphericalHarmonicRepresentation : public Representation<1>
 {
 public:
-	LmRange Range;
+	LRange Range;
 
 	//Constructors
-	SphericalHarmonicRepresentation() {}
-	virtual ~SphericalHarmonicRepresentation() {}
+	ReducedSphericalHarmonicRepresentation() {}
+	virtual ~ReducedSphericalHarmonicRepresentation() {}
 
 	void SetupRepresentation(int maxL)
 	{
-		Range = LmRange(maxL);
+		Range = LRange(maxL);
 	}
 
 	/* ---------- Implementation of Representation<1> interface ----------- */
@@ -39,17 +42,7 @@ public:
 	 */
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
-		std::cout << "Calculating inner product of spherical harmonics in "
-		          << "SphericalHarmonicRepresentation. This should probably be done "
-			  << "in the combined representation insted for optimal efficiency"
-			  << std::endl;
-		
-	
-		//The inner product in the spherical harmonics representation is
-		//simply the sum of the product between each element. This can be shown 
-		//from the definition of the expansion coefficients (integration is already
-		//taken care of by the spherical harmonics)
-		return sum(conj(w1.Data) * w2.Data); 
+		throw std::runtime_error("Please do not call InnerProduct on the sub representations. Combined representation will take care of proper InnerProduct");
 	}
 
 	/** 
@@ -73,32 +66,24 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong sphharm rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return Range.GetIndexGrid();
+		return Range.GetGrid();
 	}
 
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
-	virtual blitz::Array<double, 2> GetLocalLmGrid()
-	{
-		blitz::Array<double, 2> lmGrid( Range.GetLmGrid() );
-		int size = lmGrid.extent(0);
 
-		blitz::Range indexRange = this->GetDistributedModel().GetLocalIndexRange(size, GetBaseRank());
-		return lmGrid(indexRange, blitz::Range::all());
-	}
-	
 	/** Apply config, and set up Range
 	  */
 	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
 		int maxl;
 		config.Get("maxl", maxl);
-		Range = LmRange(maxl);
+		Range = LRange(maxl);
 	}
 
 };
 
-typedef boost::shared_ptr<SphericalHarmonicRepresentation> SphericalHarmonicRepresentationPtr;
+typedef boost::shared_ptr<ReducedSphericalHarmonicRepresentation> ReducedSphericalHarmonicRepresentationPtr;
+
+} //Namespace
 
 #endif
+

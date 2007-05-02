@@ -1,0 +1,9 @@
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator","potential/reducedsphericalkineticpotential.h")
+
+DynamicPotentialEvaluator("ReducedAngularKineticEnergyPotential<2> 2", "ReducedAngularKineticEnergyPotential_2")
+DynamicPotentialEvaluator("ReducedAngularKineticEnergyPotential<3> 3", "ReducedAngularKineticEnergyPotential_3")
+
+#DynamicPotentialEvaluator("RadialKineticEnergyPotential<2> 2", "RadialKineticEnergyPotential_2")
+#DynamicPotentialEvaluator("RadialKineticEnergyPotential<3> 3", "RadialKineticEnergyPotential_3")
+
+

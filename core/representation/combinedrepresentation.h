@@ -31,7 +31,7 @@ public:
 	//Implementation of the representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
 	//This should be re-implemented by inheriting class in an efficient manner
-	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2) = 0;
+	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank);
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank);
 	virtual void ApplyConfigSection(const ConfigSection &config);

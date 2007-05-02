@@ -1,0 +1,7 @@
+
+ReducedSphericalTools = Class("ReducedSpherical::ReducedSphericalTools", "transform/reducedspherical/reducedsphericaltools.h")
+
+ReducedSphericalTransform = Template("ReducedSpherical::ReducedSphericalTransform", "transform/reducedspherical/reducedsphericaltransform.h")
+ReducedSphericalTransform("2", "ReducedSphericalTransform_2")
+ReducedSphericalTransform("3", "ReducedSphericalTransform_3")
+

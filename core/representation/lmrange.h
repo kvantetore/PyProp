@@ -61,6 +61,7 @@ public:
 		if (Weights.size() == 0)
 		{
 			Weights.resize(Count());
+			Weights = 1;
 		}
 		return Weights;
 	}

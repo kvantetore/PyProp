@@ -3,9 +3,10 @@ import ConfigParser
 
 class Section:
 	
-	def __init__(self, name, cfg):
+	def __init__(self, name, cfg=None):
 		self.name = name
-		self.LoadConfig(name, cfg)
+		if cfg != None:
+			self.LoadConfig(name, cfg)
 
 	def LoadConfig(self, name, cfg):
 		for optionName in cfg.options(name):

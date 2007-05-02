@@ -10,6 +10,8 @@ OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
 #exported before its subclasses
 PYSTEFILES = \
 	python/representation.pyste \
+	python/reducedsphericalrepresentation.pyste \
+	python/reducedsphericaltransform.pyste \
 	python/arrayfunctions.pyste \
 	python/blitzwrapper.pyste \
 	python/cartesianabsorber.pyste \
@@ -27,6 +29,7 @@ PYSTEFILES = \
 	python/sphericaltransform.pyste \
 	python/staticpotential.pyste \
 	python/transformedgrid.pyste \
+	python/reducedsphericalkineticpotential.pyste \
 	python/wavefunction.pyste 
 
 
@@ -36,7 +39,11 @@ PYSTEOUTPUT      = python/wrapper.cpp
 
 #C++ source files
 SOURCES= \
+	representation/reducedspherical/thetarepresentation.cpp \
+	transform/reducedspherical/reducedsphericaltools.cpp \
+	transform/reducedspherical/reducedsphericaltransform.cpp \
 	utility/blitzblas.cpp \
+	utility/orthogonalpolynomial.cpp \
 	transform/transformedgridpropagator.cpp \
 	transform/transformedgrid/tgridweights.cpp \
 	transform/transformedgrid/tgridcheb.cpp \

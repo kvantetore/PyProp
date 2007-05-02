@@ -1,0 +1,155 @@
+#include "reducedsphericaltools.h"
+#include "../shtools.h"
+#include "../../utility/blitztricks.h"
+#include "../../utility/orthogonalpolynomial.h"
+
+namespace ReducedSpherical
+{
+
+template<int Rank> void ReducedSphericalTools::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int thetaRank)
+{
+	//Project input and output into 3D arrays with thetaRank in the middle. if omega is highest 
+	//or lowest rank, the highest or lowest rank will be of size 1 
+	blitz::Array<cplx, 3> input3d = MapToRank3(input, thetaRank, 1);
+	blitz::Array<cplx, 3> output3d = MapToRank3(output, thetaRank, 1);
+
+	ForwardTransform_Impl(input3d, output3d);
+}
+	
+template<int Rank> void ReducedSphericalTools::InverseTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int thetaRank)
+{
+	//Project input and output into 3D arrays with thetaRank in the middle. if omega is highest 
+	//or lowest rank, the highest or lowest rank will be of size 1 
+	blitz::Array<cplx, 3> input3d = MapToRank3(input, thetaRank, 1);
+	blitz::Array<cplx, 3> output3d = MapToRank3(output, thetaRank, 1);
+
+	InverseTransform_Impl(input3d, output3d);
+}
+
+void ReducedSphericalTools::ForwardTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
+{
+	output = 0;
+	int preCount = input.extent(0);
+	int postCount = input.extent(2);
+	int thetaCount = ThetaGrid.extent(0);
+
+	for (int i=0; i<preCount; i++)
+	{
+		for (int lIndex=0; lIndex<thetaCount; lIndex++)
+		{
+			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+			{
+				double legendre = AssocLegendrePoly(thetaIndex, lIndex) * Weights(thetaIndex);
+
+				for (int j=0; j<postCount; j++)
+				{
+					output(i, lIndex, j) +=  legendre * input(i, thetaIndex, j);
+				}
+			}
+		}
+	}
+}
+
+void ReducedSphericalTools::InverseTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
+{
+	output = 0;
+	int thetaCount = ThetaGrid.extent(0);
+	int preCount = input.extent(0);
+	int postCount = input.extent(2);
+
+	for (int i=0; i<preCount; i++)
+	{
+		for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+		{
+			for (int lIndex=0; lIndex<thetaCount; lIndex++)
+			{
+				double legendre = AssocLegendrePoly(thetaIndex, lIndex);
+
+				for (int j=0; j<postCount; j++)
+				{
+					output(i, thetaIndex, j) +=  legendre * input(i, lIndex, j);
+				}
+			}
+		}
+	}
+}
+
+/*
+ * Initializes the transform to a given lmax
+ */
+void ReducedSphericalTools::Initialize(int lmax)
+{
+	LMax = lmax;
+	SetupQuadrature();
+	SetupExpansion();
+}
+
+/*
+ * Sets up the quadrature rules for integrating polynomials on the sphere
+ * This function allocates and initializes ThetaGrid, PhiGrid, OmegaGrid 
+ * and Weights according to LMax
+ */
+void ReducedSphericalTools::SetupQuadrature()
+{
+	//In order to do integration correct up to l=lmax, we use a grid
+	//of lmax+1 collocation points.
+	int thetaCount = LMax + 1;
+
+	//Resize grid arrays
+	ThetaGrid.resize(thetaCount);
+	Weights.resize(thetaCount);
+	
+	//Find theta gridpoints and weights.
+	blitz::Array<double, 2> thetaQuadrature = OrthogonalPolynomial::CalculateQuadrature(LMax+1, OrthogonalPolynomial::Legendre1);
+
+	//Set up theta grid
+	ThetaGrid = acos( thetaQuadrature(blitz::Range::all(), 0) );
+
+	//Set up weights
+	Weights = thetaQuadrature(blitz::Range::all(), 1);
+}
+
+/* Sets up the expansion from spherical harmonics to grid basis.
+ * This involves evaluating the spherical harmonic in the grid points set up
+ * by SetupQuadrature() (which must be called before this function)
+ * This function initializes the arrays AssocLegendePoly
+ */
+void ReducedSphericalTools::SetupExpansion()
+{
+	//TODO: Add support for different fixed m's
+	std::cout << "Setting up expansion" << std::endl;
+
+	int m = 0; //fixed m
+
+	int thetaCount = ThetaGrid.extent(0);
+	//Calculate all assoc legendre poly, even though we only need some of them. and why? because it works!
+	blitz::Array<double, 2> legendre = SphericalTransformTensorGrid::EvaluateAssociatedLegendrePolynomials(LMax, ThetaGrid);
+	AssocLegendrePoly.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
+
+	//Normalize associated legendre such that the int(legendre_lm * legendre_lm', omega) = delta_lm_lm'
+	for (int l=0; l<=LMax; l++)
+	{
+		//Calculate norm(l, m)
+	    double norm;
+		double sign = 1 ;// (m > 0) ? pow(-1., m) : 1;
+		norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
+		norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
+		norm = norm * sqrt(2*M_PI);
+
+		//Scale assoc legendre
+		AssocLegendrePoly(blitz::Range::all(), l) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
+	}
+}
+
+
+
+template void ReducedSphericalTools::ForwardTransform(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output, int thetaRank);
+template void ReducedSphericalTools::ForwardTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output, int thetaRank);
+template void ReducedSphericalTools::ForwardTransform(blitz::Array<cplx, 3> input, blitz::Array<cplx, 3> output, int thetaRank);
+
+template void ReducedSphericalTools::InverseTransform(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output, int thetaRank);
+template void ReducedSphericalTools::InverseTransform(blitz::Array<cplx, 2> input, blitz::Array<cplx, 2> output, int thetaRank);
+template void ReducedSphericalTools::InverseTransform(blitz::Array<cplx, 3> input, blitz::Array<cplx, 3> output, int thetaRank);
+
+} //namespace
+

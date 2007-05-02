@@ -4,7 +4,7 @@ include ../Makefile.platform
 SUBDIRS = redirect
 
 #A small rule to compile only a selected few pyste files
-TESTFILES := python/distributedmodel.pyste
+TESTFILES := python/reducedsphericalkineticpotential.pyste
 
 
 test: test

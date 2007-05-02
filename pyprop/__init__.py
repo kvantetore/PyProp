@@ -36,13 +36,8 @@ execfile(__path__[0] + "/Utility.py")
 execfile(__path__[0] + "/Redirect.py")
 execfile(__path__[0] + "/Interrupt.py")
 
-execfile(__path__[0] + "/Propagator.py")
-execfile(__path__[0] + "/propagator/CartesianPropagator.py")
-execfile(__path__[0] + "/propagator/CartesianMixedPropagator.py")
-execfile(__path__[0] + "/propagator/ExponentialFiniteDifferencePropagator.py")
-execfile(__path__[0] + "/propagator/SphericalPropagator.py")
-execfile(__path__[0] + "/propagator/TransformedGridPropagator.py")
-
+#Load propagators
+execfile(__path__[0] + "/propagator/init.py")
 
 #set up ProcId and ProcCoun. if pympi is not imported, 
 #we are on a single process"

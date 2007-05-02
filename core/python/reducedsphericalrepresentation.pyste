@@ -1,0 +1,23 @@
+#Representation for the spherical harmonic of the reduced spherical representation
+ReducedSphericalHarmonicRepresentation = Class("ReducedSpherical::ReducedSphericalHarmonicRepresentation", "representation/reducedspherical/reducedsphericalharmonicrepresentation.h")
+no_virtual(ReducedSphericalHarmonicRepresentation)
+use_shared_ptr(ReducedSphericalHarmonicRepresentation)
+
+#Representations for the theta of the reduced spherical representation
+ThetaRepresentation = Class("ReducedSpherical::ThetaRepresentation", "representation/reducedspherical/thetarepresentation.h")
+no_virtual(ThetaRepresentation)
+use_shared_ptr(ThetaRepresentation)
+
+#Range for theta 
+ThetaRange = Class("ReducedSpherical::ThetaRange", "representation/reducedspherical/thetarange.h")
+#use_shared_ptr(OmegaRange)
+set_policy(ThetaRange.GetGrid, return_value_policy(return_by_value))
+
+#Range for  spherical harmonic eigenvalues
+LRange = Class("ReducedSpherical::LRange", "representation/reducedspherical/lrange.h")
+#use_shared_ptr(LmRange)
+set_policy(LRange.GetIndexGrid, return_value_policy(return_by_value))
+
+
+
+

@@ -1,5 +1,5 @@
-#ifndef DIAGONALPOTENTIALS_H
-#define DIAGONALPOTENTIALS_H
+#ifndef SPHERICALKINETICENERGYPOTENTIAL_H
+#define SPHERICALKINETICENERGYPOTENTIAL_H
 
 #include "../common.h"
 #include "../wavefunction.h"
