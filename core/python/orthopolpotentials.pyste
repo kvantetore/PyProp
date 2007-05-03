@@ -1,0 +1,12 @@
+#Additional potentials
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator", "potential/orthopolpotentials.h")
+DynamicPotentialEvaluator("AddedHermitePotential<1> 1")
+DynamicPotentialEvaluator("AddedHermitePotential<2> 2")
+DynamicPotentialEvaluator("AddedHermitePotential<3> 3")
+DynamicPotentialEvaluator("AddedHermitePotential<4> 4")
+
+DynamicPotentialEvaluator("AddedLaguerrePotential<1> 1")
+DynamicPotentialEvaluator("AddedLaguerrePotential<2> 2")
+DynamicPotentialEvaluator("AddedLaguerrePotential<3> 3")
+DynamicPotentialEvaluator("AddedLaguerrePotential<4> 4")
+

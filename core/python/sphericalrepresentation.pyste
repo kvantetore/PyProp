@@ -3,6 +3,7 @@
 CombinedRepresentation = Template("CombinedRepresentation", "representation/combinedrepresentation.h")
 set_policy(CombinedRepresentation.CreateSlicedWavefunction, return_value_policy(manage_new_object))
 no_virtual(CombinedRepresentation)
+CombinedRepresentation("1")
 CombinedRepresentation("2")
 CombinedRepresentation("3")
 

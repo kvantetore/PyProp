@@ -25,12 +25,8 @@ public:
 	Representation1DPtr GetRepresentation(int rank);
 	void SetRepresentation(int rank, Representation1DPtr repr);
 	
-	//Create a new wavefunction
-	Wavefunction<1>* CreateSlicedWavefunction(const Wavefunction<Rank> &psi, int sliceRank, const blitz::TinyVector<int, Rank-1> &slicePosition);
-
 	//Implementation of the representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
-	//This should be re-implemented by inheriting class in an efficient manner
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank);
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank);

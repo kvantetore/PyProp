@@ -10,6 +10,9 @@ OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
 #exported before its subclasses
 PYSTEFILES = \
 	python/representation.pyste \
+	python/orthopolrepresentation.pyste \
+	python/orthopoltransform.pyste \
+	python/orthopolpotentials.pyste \
 	python/reducedsphericalrepresentation.pyste \
 	python/reducedsphericaltransform.pyste \
 	python/arrayfunctions.pyste \
@@ -39,6 +42,8 @@ PYSTEOUTPUT      = python/wrapper.cpp
 
 #C++ source files
 SOURCES= \
+	transform/orthopol/orthopoltools.cpp \
+	transform/orthopol/orthopolpropagator.cpp \
 	representation/reducedspherical/thetarepresentation.cpp \
 	transform/reducedspherical/reducedsphericaltools.cpp \
 	transform/reducedspherical/reducedsphericaltransform.cpp \

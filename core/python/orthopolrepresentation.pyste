@@ -1,0 +1,16 @@
+#parameter
+Parameter = Class("OrthoPol::Parameter", "transform/orthopol/orthopoltools.h")
+rename(Parameter, "OrthoPolParameter")
+TransformType = Enum("OrthoPol::TransformType", "transform/orthopol/orthopoltools.h")
+rename(TransformType, "OrthoPolType")
+
+#range
+OrthoPolRange = Class("OrthoPolRange", "representation/orthopol/orthopolrange.h")
+set_policy(OrthoPolRange.GetWeights, return_value_policy(return_by_value))
+set_policy(OrthoPolRange.GetGrid, return_value_policy(return_by_value))
+
+#representation
+OrthoPolRadialRepresentation = Class("OrthoPolRadialRepresentation", "representation/orthopol/orthopolradialrepresentation.h")
+no_virtual(OrthoPolRadialRepresentation)
+
+

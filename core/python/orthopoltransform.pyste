@@ -1,0 +1,7 @@
+#transform
+OrthoPolPropagator = Template("OrthoPol::Propagator", "transform/orthopol/orthopolpropagator.h")
+OrthoPolPropagator("1", "OrthoPolPropagator_1")
+OrthoPolPropagator("2", "OrthoPolPropagator_2")
+OrthoPolPropagator("3", "OrthoPolPropagator_3")
+
+

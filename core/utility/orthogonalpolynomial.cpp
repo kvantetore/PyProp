@@ -18,6 +18,9 @@ Array<double, 2> CalculateQuadrature(int N, Array<double, 1> diagonal, Array<dou
 	char job = 'V';
 	int info = 0;
 
+	cout << "Diagonal = " << diagonal << endl;
+	cout << "Subdiagonal = " << subDiagonal << endl;
+
 	//Call diagonalization routine
 	FORTRAN_NAME(dstev)(&job, &N, diagonal.data(), subDiagonal.data(), eigenVectors.data(), &N, work.data(), &info);
 
@@ -26,6 +29,8 @@ Array<double, 2> CalculateQuadrature(int N, Array<double, 1> diagonal, Array<dou
 	Array<double, 2> quadrature(N, 2);
 	quadrature(Range::all(), 0) = diagonal;
 	quadrature(Range::all(), 1) = 2 * sqr(eigenVectors(Range::all(), 0));
+
+	cout << "Quadrature points and weights = " << quadrature << endl;
 
 	return quadrature;
 }

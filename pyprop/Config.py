@@ -24,7 +24,7 @@ class Section:
 		except:
 			print "Locals:", self.__dict__
 			print "Option:", optionString
-			raise "error"
+			raise 
 				
 		self.Set(optionName, optionValue)
 		
