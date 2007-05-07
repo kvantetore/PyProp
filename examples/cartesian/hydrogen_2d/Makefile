@@ -21,7 +21,7 @@ test:
 	ipython -c "import libhydrogen; libhydrogen.testdata(1000, 100)"
 
 $(MODULENAME).so: $(OBJECTS)
-	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR, $(PYPROP_LIB_PATH))
+	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste

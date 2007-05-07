@@ -18,7 +18,7 @@ def FindGroundstate():
 
 	#propagate to find ground state
 	for t in prop.Advance(10):
-		print "t = ", t
+		print "t = ", t, ", E =", prop.GetEnergy()
 	
 	#save groundstate to disk
 	prop.SaveWavefunction("groundstate.dat")
