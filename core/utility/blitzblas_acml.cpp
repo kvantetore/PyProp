@@ -5,80 +5,96 @@
  */
 
 
-//Use cblas interface
-extern "C"
+//Use acml interface
+namespace acml
 {
-#include <mkl_cblas.h>
+#include <acml.h>
 }
-#define BLAS_NAME(name) cblas_ ## name
+#define BLAS_NAME(name) acml::name
 
 
 //Performs the matrix-matrix product C = A B
 void MatrixMatrixMultiply(const Array<cplx, 2> &A, const Array<cplx, 2> &B, Array<cplx, 2> &C)
 {
-	int M = C.extent(0);
-	int N = C.extent(1);
-	int K = A.extent(1);
+	/* We have c-style ordering, which corresponds to having all arrays transposed in 
+	 * fortran-style ordering 
+	 * and must therefore swich ordering and use transpose
+	 * C := A B => C' := (B' A')
+	*/
+
+	//In blas world, C := C'
+	int M = C.extent(1);
+	int N = C.extent(0);
+	int K = B.extent(0);
 
 	int lda = A.stride(0);
 	int ldb = B.stride(0);
 	int ldc = C.stride(0);
 
-	cplx alpha = 1;
-	cplx beta = 0;
+	acml::doublecomplex alpha, beta;
+	alpha.real = 1;
+	alpha.imag = 0;
+	beta.real = 0;
+	beta.imag = 0;
 
 	BLAS_NAME(zgemm)(
-		CblasRowMajor,		// C-style array 
-		CblasNoTrans,		// Don't transpose A
-		CblasNoTrans,		// Don't transpose B
-		M,					// Rows in C
-		N,					// Cols in C
-		K,					// Cols in A
+		'N',				// Transpose A
+		'N',				// Transpose B
+		M,				// Rows in C'
+		N,				// Cols in C'
+		K,				// Cols in A
 		&alpha, 			// Scaling of A*B
-		A.data(),			// Pointer to A
-		lda,				// Size of first dim of A
-		B.data(),			// Pointer to B
-		ldb,				// Size of first dim of B
+		(acml::doublecomplex*)B.data(),	// Pointer to A
+		ldb,				// Size of first dim of A
+		(acml::doublecomplex*)A.data(),	// Pointer to B
+		lda,				// Size of first dim of B
 		&beta,				// Scaling of C
-		C.data(),			// Pointer to C
-		ldc					// Size of first dim of C
+		(acml::doublecomplex*)C.data(),	// Pointer to C
+		ldc				// Size of first dim of C
 	);
 }
 		
 void MatrixMatrixMultiply(const Array<double, 2> &A, const Array<double, 2> &B, Array<double, 2> &C)
 {
-	int M = C.extent(0);
-	int N = C.extent(1);
-	int K = A.extent(1);
+	/* We have c-style ordering, but fortran-style ordering 
+	 * and must therefore swich ordering and use transpose
+	 * C := A B => C' := (B' A')
+	*/
+
+	//In blas world, C := C'
+	int M = C.extent(1);
+	int N = C.extent(0);
+	int K = B.extent(0);
 
 	int lda = A.stride(0);
 	int ldb = B.stride(0);
 	int ldc = C.stride(0);
 
+
 	double alpha = 1;
 	double beta = 0;
 
 	BLAS_NAME(dgemm)(
-		CblasRowMajor,		// C-style array 
-		CblasNoTrans,		// Don't transpose A
-		CblasNoTrans,		// Don't transpose B
-		M,					// Rows in C
-		N,					// Cols in C
-		K,					// Cols in A
-		alpha,	 			// Scaling of A*B
-		A.data(),			// Pointer to A
-		lda,				// Size of first dim of A
-		B.data(),			// Pointer to B
-		ldb,				// Size of first dim of B
-		beta,				// Scaling of C
-		C.data(),			// Pointer to C
-		ldc					// Size of first dim of C
+		'N',				// Transpose A
+		'N',				// Transpose B
+		M,				// Rows in C'
+		N,				// Cols in C'
+		K,				// Cols in B'
+		alpha, 				// Scaling of B' A'
+		(double*)B.data(),		// Pointer to B'
+		ldb,				// Size of first dim of B'
+		(double*)A.data(),		// Pointer to A'
+		lda,				// Size of first dim of A'
+		beta,				// Scaling of C'
+		(double*)C.data(),		// Pointer to C'
+		ldc				// Size of first dim of C
 	);
 }
 
 //Performs the matrix-vector product w = A v
 void MatrixVectorMultiply(const Array<cplx, 2> &A, const Array<cplx, 1> &v, Array<cplx, 1> &w)
 {
+	//In lapack world, A := A', however, if we use 'T' to transpose A, all goes back to normal
 	int M = A.extent(0);
 	int N = A.extent(1);
 	int lda = A.stride(0);
@@ -86,21 +102,23 @@ void MatrixVectorMultiply(const Array<cplx, 2> &A, const Array<cplx, 1> &v, Arra
 	int vStride = v.stride(0); 
 	int wStride = w.stride(0); 
 
-	cplx alpha = 1;		   
-	cplx beta = 0;
+	acml::doublecomplex alpha, beta;
+	alpha.real = 1;
+	alpha.imag = 0;
+	beta.real = 0;
+	beta.imag = 0;
 
 	BLAS_NAME(zgemv)(
-		CblasRowMajor, 			// C style arrays
-		CblasNoTrans, 			// Don't transpose A
-		M,						// Rows of A 
-		N, 						// Cols of A
+		'T',					// Transpose A
+		M,					// Rows of A 
+		N, 					// Cols of A
 		&alpha, 				// Scale of A*v
-		A.data(), 				// Pointer to A
+		(acml::doublecomplex*)A.data(), 				// Pointer to A
 		lda, 					// Size of first dim of A
-		v.data(),				// Pointer to input vector 
+		(acml::doublecomplex*)v.data(),				// Pointer to input vector 
 		vStride, 				// Stride of input vector
 		&beta,	 				// Scale of w
-		w.data(), 				// Pointer to output vector
+		(acml::doublecomplex*)w.data(), 				// Pointer to output vector
 		wStride					// Stride of output vector
 	);
 }
@@ -108,32 +126,28 @@ void MatrixVectorMultiply(const Array<cplx, 2> &A, const Array<cplx, 1> &v, Arra
 
 void MatrixVectorMultiply(const Array<double, 2> &A, const Array<double, 1> &v, Array<double, 1> &w)
 {
+	//In lapack world, A := A', however, if we use 'T' to transpose A, all goes back to normal
 	int M = A.extent(0);
 	int N = A.extent(1);
 	int lda = A.stride(0);
 
-	cout << "M, N, lda: " << M << ", " << N << ", " << lda << endl;
-
 	int vStride = v.stride(0);
 	int wStride = w.stride(0);
-
-	cout << "vstride, wstride: " << vStride << ", " << wStride << endl;
 
 	double alpha = 1;
 	double beta = 0;
 
 	BLAS_NAME(dgemv)(
-		CblasRowMajor, 			// C style arrays
-		CblasNoTrans, 			// Don't transpose A
-		M,						// Rows of A 
-		N, 						// Cols of A
+		'T',		 			// Transpose A
+		M,					// Rows of A 
+		N, 					// Cols of A
 		alpha, 					// Scale of A*v
-		A.data(), 				// Pointer to A
+		(double*)A.data(), 				// Pointer to A
 		lda, 					// Size of first dim of A
-		v.data(),				// Pointer to input vector 
+		(double*)v.data(),				// Pointer to input vector 
 		vStride, 				// Stride of input vector
 		beta,	 				// Scale of w
-		w.data(), 				// Pointer to output vector
+		(double*)w.data(), 				// Pointer to output vector
 		wStride					// Stride of output vector
 	);		
 }
@@ -204,7 +218,8 @@ cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cp
 	int vStride = 1; //v.stride(0);
 
 	cplx result;
-	BLAS_NAME(zdotc_sub)(N, u.data(), uStride, v.data(), vStride, &result);
+	acml::doublecomplex ret = BLAS_NAME(zdotc)(N, (acml::doublecomplex*)u.data(), uStride, (acml::doublecomplex*)v.data(), vStride);
+	result = cplx(ret.real, ret.imag);
 	return result;
 }
 

@@ -9,8 +9,11 @@ import numpy
 from numpy import *
 
 try:
-	import mpi.pympi as pympi
+	import mpi
+	ProcId, ProcCount = mpi.init()
 except:
+	ProcId = 0
+	ProcCount = 1
 	print "Warning: unable to load mpi."
 
 import core
@@ -41,9 +44,9 @@ execfile(__path__[0] + "/propagator/init.py")
 
 #set up ProcId and ProcCoun. if pympi is not imported, 
 #we are on a single process"
-ProcId = 0
-ProcCount = 1
-try:
-	ProcId = pympi.rank
-	ProcCount = pympi.size
-except: pass
+#ProcId = 0
+#ProcCount = 1
+#try:
+#	ProcId = pympi.rank
+#	ProcCount = pympi.size
+#except: pass
