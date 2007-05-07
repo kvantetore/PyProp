@@ -3,5 +3,6 @@ OrthoPolPropagator = Template("OrthoPol::Propagator", "transform/orthopol/orthop
 OrthoPolPropagator("1", "OrthoPolPropagator_1")
 OrthoPolPropagator("2", "OrthoPolPropagator_2")
 OrthoPolPropagator("3", "OrthoPolPropagator_3")
+OrthoPolPropagator("4", "OrthoPolPropagator_4")
 
 

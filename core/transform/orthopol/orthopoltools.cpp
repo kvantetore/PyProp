@@ -137,6 +137,17 @@ void SetupHermite(int N, const cplx &dt, const double &cutoff, Array<cplx, 2> &P
 	}
 }
 
+
+/*
+ * Calculates grid and weights for orthopol representation
+ * Input parameters:
+ * 	- N:        Number of grid points
+ * 	- Param:    Parameters to the orthogonal polynomial
+ * Output parameters:
+ *  - X:        Quadrature grid points (resized to N)
+ *  - W:        Quadrature weights (resized to N)
+ *  - Alpha:    Grid scaling
+ */
 void GridAndWeights(int N, const Parameter &Param, Array<double, 1> &X, Array<double, 1> &W, double &Alpha)
 {
 	X.resize(N);
@@ -148,8 +159,6 @@ void GridAndWeights(int N, const Parameter &Param, Array<double, 1> &X, Array<do
 		Alpha = max(X) / L;
 		W *= exp(X*X);
 		X  = X / Alpha; // new X defined on [-L,L]
-		cout << "X = " << X << endl;
-		cout << "W = " << W << endl;
 	}
 	else if (Param.Type == LaguerreTransform)
 	{

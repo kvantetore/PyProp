@@ -87,4 +87,5 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 template class CombinedRepresentation<1>;
 template class CombinedRepresentation<2>;
 template class CombinedRepresentation<3>;
+template class CombinedRepresentation<4>;
 

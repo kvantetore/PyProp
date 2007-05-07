@@ -5,6 +5,9 @@
 #include "../representation.h"
 #include "orthopolrange.h"
 
+namespace OrthoPol
+{
+
 class OrthoPolRadialRepresentation : public Representation<1>
 {
 public:
@@ -75,11 +78,14 @@ public:
 		config.Get("cutoff", param.Cutoff);
 		config.Get("hyperspherical_rank", param.HypersphericalRank);
 		
-		Range = OrthoPolRange(param, N);
+		Range.Initialize(param, N);
 	}
 
 };
 
 typedef boost::shared_ptr<OrthoPolRadialRepresentation> OrthoPolRadialRepresentationPtr;
 
+} //Namespace
+
 #endif
+

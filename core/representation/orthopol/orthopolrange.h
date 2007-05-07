@@ -4,6 +4,9 @@
 #include "../../common.h"
 #include "../../transform/orthopol/orthopoltools.h"
 
+namespace OrthoPol
+{
+
 class OrthoPolRange
 {
 private:
@@ -21,33 +24,33 @@ public:
 		Alpha(0.0)
 	{}
 
-	OrthoPolRange(const OrthoPol::Parameter &param, int N) :
-		Count(N),
-		Param(param),
+	OrthoPolRange(const Parameter &param, int N) : 
 		Alpha(0.0)
-	{}
+	{
+		Initialize(param, N);
+	}
 	
 	//Member functions----------------------------
 	blitz::Array<double, 1>& GetGrid()
 	{
-		if (Grid.extent(0) == 0)
-		{
-			OrthoPol::GridAndWeights(Count, Param, Grid, Weights, Alpha);
-		}
 		return Grid;
 	}
 
 	blitz::Array<double, 1>& GetWeights()
 	{
-		if (Weights.extent(0) == 0)
-		{
-			OrthoPol::GridAndWeights(Count, Param, Grid, Weights, Alpha);
-		}
 		return Weights;
-	}	
+	}
+
+	void Initialize(const Parameter &param, int n)
+	{
+		GridAndWeights(n, param, Grid, Weights, Alpha);
+		Count = n;
+		Param = param;
+	}
 	
 };
 
+} //Namespace
 
 #endif
 

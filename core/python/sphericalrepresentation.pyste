@@ -6,6 +6,7 @@ no_virtual(CombinedRepresentation)
 CombinedRepresentation("1")
 CombinedRepresentation("2")
 CombinedRepresentation("3")
+CombinedRepresentation("4")
 
 #Combined representation for spherical coordinates.
 SphericalRepresentation = Template("SphericalRepresentation", "representation/sphericalrepresentation.h")
