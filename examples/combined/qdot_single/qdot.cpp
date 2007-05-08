@@ -17,20 +17,13 @@ public:
 
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		if (Rank == 1) 
+		double pot = 0.0;
+		for (int i=0; i<Rank; i++)
 		{
-			double x = pos(0);
-			return 0.5 * sqr(x);
+			pot += sqr(pos(i));
 		}
 
-		if (Rank == 2)
-		{
-			//Coordinates
-			double x = pos(0);
-			double y = pos(1);
-
-			return 0.5 * (sqr(x) + sqr(y));
-		}
+		return 0.5 * pot;
 	}
 };
 

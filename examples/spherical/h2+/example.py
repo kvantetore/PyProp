@@ -7,7 +7,7 @@ sys.path.insert(1, os.path.abspath("../../.."))
 
 #Load and reload pyprop in order to get recent changes
 import pyprop
-pyprop = reload(pyprop)
+#pyprop = reload(pyprop)
 from libh2p import *
 
 #numpy an pylab for good measure

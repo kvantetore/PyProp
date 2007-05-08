@@ -1,4 +1,6 @@
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "qdot.cpp")
+PotentialEvaluator("QDotPotential<4> 4","QDotPotential_4")
+PotentialEvaluator("QDotPotential<3> 3","QDotPotential_3")
 PotentialEvaluator("QDotPotential<2> 2","QDotPotential_2")
 PotentialEvaluator("QDotPotential<1> 1","QDotPotential_1")
 

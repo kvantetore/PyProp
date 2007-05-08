@@ -10,7 +10,7 @@
 /* Converter from blitz::TinyVector to NumPy array */
 /* Makes a copy of the objects
 */
-template<class T, int N> class TinyVectorToNumPy
+template<class T, int N, class Traits=PyArrayTraits<T> > class TinyVectorToNumPy
 {
 public:
 	static PyObject* convert(blitz::TinyVector<T, N> vector)
@@ -22,8 +22,7 @@ public:
 		shape[0] = N;
 		strides[0] = sizeof(T);
 		
-		T v = vector(0);
-		PyArray_Descr* type_descr = type_to_descr(v);
+		PyArray_Descr* type_descr = Traits::GetTypeDescr();
 		
 		//Create the array
 		PyObject* wrappedObject = PyArray_NewFromDescr(&PyArray_Type, type_descr, 1, shape, strides, 0, 0, 0);
@@ -42,7 +41,7 @@ public:
 };
 
 /* Converter from NumPy Array to blitz::TinyVector */
-template<class T, int N> class NumPyToTinyVector
+template<class T, int N, class Traits=PyArrayTraits<T> > class NumPyToTinyVector
 {
 public:
 	NumPyToTinyVector()

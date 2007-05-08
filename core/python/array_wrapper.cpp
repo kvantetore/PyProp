@@ -14,7 +14,8 @@ counter of the blitz::Array reaches zero.
 It would be nice to tie up the lifespan of the array memory to both the
 NumPy and blitz:: arrays, but i'm not sure how...
 */
-template<class T, int N> class ArrayToNumPy
+
+template<class T, int N, class Traits=PyArrayTraits<T> > class ArrayToNumPy
 {
 public:
 	static PyObject* convert(blitz::Array<T, N> array)
@@ -24,8 +25,7 @@ public:
 		npy_intp shape[N];
 		npy_intp strides[N];
 		
-		T v = array(0);
-		PyArray_Descr* type_descr = type_to_descr(v);
+		PyArray_Descr* type_descr = Traits::GetTypeDescr();
 		
 		//std::cout << "ref: " << array.getReferenceCount() << std::endl;
 		
@@ -60,7 +60,7 @@ public:
 };
 
 /* Converter from NumPy Array to blitz::Array */
-template<class T, int N> class NumPyToArray
+template<class T, int N, class Traits=PyArrayTraits<T> > class NumPyToArray
 {
 public:
 	NumPyToArray()
@@ -80,7 +80,21 @@ public:
 			PyArrayObject* arr_obj = (PyArrayObject*)obj;
 			if (arr_obj->nd == N) 
 			{
-				return obj;
+				PyArray_Descr* from_type = arr_obj->descr;
+				PyArray_Descr* to_type = Traits::GetTypeDescr();
+				
+				if (from_type->type_num == to_type->type_num)
+				{
+					return obj;
+				}
+	
+				if (from_type->elsize == to_type->elsize)
+				{
+					return obj;
+				}
+
+				//std::cout << "Nothing in common. let's try anyway" << std::endl;
+				//return obj;
 			}
 		}
 		
@@ -105,18 +119,24 @@ public:
 		}
 	
 		//Find type descriptor for C++ type
-		T v = 0;
-		PyArray_Descr* type_descr = type_to_descr(v);
+		PyArray_Descr* type_descr = Traits::GetTypeDescr();
 		
-		if (arr_obj->descr->type_num == type_descr->type_num) {
+		if (arr_obj->descr->type_num == type_descr->type_num || arr_obj->descr->elsize == type_descr->elsize) {
 			new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, neverDeleteData);
 		}
 		else
 		{
-			std::cout << "Invalid datatype" << std::endl;
-			cout << "d1 = " << arr_obj->descr->type_num << endl;
-			cout << "d2 = " << type_descr->type_num << endl;
-			throw std::runtime_error("Invalid datatype");
+			
+			std::cout << "Warning converting from NuPy array to blitz array of different type: creating copy." << std::endl;
+			new (storage) Array<T,N>(shape);
+			
+			Array<typename Traits::BasicType, N> inputData((typename Traits::BasicType*)arr_obj->data, shape, strides, neverDeleteData);
+			Array<T, N> *convertedData = (Array<T,N>*)storage;
+			//Make copy of data
+			for (typename Array<T,N>::iterator it=convertedData->begin(); it != convertedData->end(); it++)
+			{
+				*it = inputData(it.position());
+			}
 		}
 		data->convertible = storage;
 	}
@@ -130,4 +150,6 @@ template<class T, int N> void create_array_converter()
     boost::python::to_python_converter<blitz::Array<T, N>, ArrayToNumPy<T, N> >();
     NumPyToArray<T, N>();
 }
+
+
 

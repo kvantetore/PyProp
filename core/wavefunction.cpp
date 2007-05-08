@@ -28,7 +28,15 @@ size_t Wavefunction<Rank>::GetMemoryFootprint() const
 template<int Rank>
 int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 {
-	long byteCount = (long)blitz::product(shape) * sizeof(cplx);
+	unsigned long byteCount = (unsigned long)blitz::product(shape) * sizeof(cplx);
+	if (byteCount/(1024*1024) > 2048)
+	{
+		cout << "Trying to allocate array larger than 2GB ("
+		     << byteCount/(1024*1024*1024) << "GB). "
+		     << "This is most likely an error, aborting." << endl;
+		exit(-1);
+	}
+
 	std::cout 
 		<< "Creating wavefunctions of shape " << shape
 		<< " (~ " << byteCount / (1024*1024) << "MB)"
