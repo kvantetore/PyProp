@@ -29,7 +29,7 @@ class Problem:
 			print "Creating Wavefunction..."
 			self.psi = CreateWavefunction(config, self.Representation)
 		
-			print "Creating Momentum Evaluator..."
+			print "Creating Propagator..."
 			self.Propagator = CreatePropagator(config, self.psi)
 		
 			#apply propagation config

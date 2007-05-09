@@ -9,8 +9,9 @@ import numpy
 from numpy import *
 
 try:
-	import mpi
-	ProcId, ProcCount = mpi.init()
+	import pypar
+	ProcId = pypar.rank()
+	ProcCount = pypar.size()
 except:
 	ProcId = 0
 	ProcCount = 1

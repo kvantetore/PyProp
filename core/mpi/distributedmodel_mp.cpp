@@ -47,26 +47,15 @@ void DistributedModel<Rank>::SetupMPI()
 template<int Rank>
 void DistributedModel<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 {
-	int procRank = 1;
-	if (cfg.HasValue("proc_array_rank"))
-	{
-		cfg.Get("proc_array_rank", procRank);
-		cout << "Missing proc_array_rank from Distribution, using default." << endl;
-	}
+	//How many dimensions in the processor array
+	int procRank = -1;
+	cfg.Get("proc_array_rank", procRank);
 	Transpose = TransposePtr( new TransposeType(procRank) );
-	
+
+	//How is the initial distribution
 	CurrentDistribution = DistributionPtr( new Distribution(procRank) );
 	Distribution::DataArray distr(procRank);
-	if (cfg.HasValue("initial_distribution"))
-	{
-		cfg.Get("initial_distribution", distr);
-	}
-	else
-	{
-		//default is to initially distribute the procRank first ranks.
-		distr = blitz::tensor::i;
-		cout << "Missing initial_distribution from Distribution, using default." << endl;
-	}
+	cfg.Get("initial_distribution", distr);
 	CurrentDistribution->SetDistribution(distr);
 }
 

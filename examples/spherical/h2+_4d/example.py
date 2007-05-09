@@ -7,8 +7,15 @@ sys.path.insert(1, os.path.abspath("../../.."))
 
 #Load and reload pyprop in order to get recent changes
 import pyprop
-pyprop = reload(pyprop)
+#pyprop = reload(pyprop)
 from libh2p import *
+
+class mystdout:
+	def write(self, data):
+		pass
+
+#if pyprop.ProcId != 0:
+#	sys.stdout = mystdout()
 
 #numpy an pylab for good measure
 try:

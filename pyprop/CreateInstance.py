@@ -15,6 +15,13 @@ def CreateDistribution(config, rank=None):
 	#Apply configuration section to distribution object 
 	#(if it supports applying config data)
 	config.Apply(distrib)
+
+	#hack in initial distribution into configuration
+	#TODO: Get initial distribution from propagator
+	config.Distribution.proc_array_rank = 1
+	config.Distribution.initial_distribution = array([rank-1], dtype=int)
+
+	#apply configuration
 	config.Distribution.Apply(distrib)
 	
 	return distrib

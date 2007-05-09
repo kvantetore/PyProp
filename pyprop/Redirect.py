@@ -26,7 +26,7 @@ class RedirectClass:
 			raise Exception("Not redirected")
 
 		core.restore_cout(self.redirect_cout)
-		sys.stdout = sys.__stdout__
+		sys.stdout = self.redirect_stdout.stdout 
 
 		self.redirect_stdout = None
 		self.redirect_cout = None
