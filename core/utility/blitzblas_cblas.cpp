@@ -8,7 +8,7 @@
 //Use cblas interface
 extern "C"
 {
-#if PYPROP_USE_BLAS=MKL
+#if PYPROP_USE_BLAS == MKL
 #include <mkl_cblas.h>
 #else
 #include <cblas.h>
