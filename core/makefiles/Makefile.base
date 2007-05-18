@@ -33,7 +33,8 @@ PYSTEFILES = \
 	python/staticpotential.pyste \
 	python/transformedgrid.pyste \
 	python/reducedsphericalkineticpotential.pyste \
-	python/wavefunction.pyste 
+	python/wavefunction.pyste \
+	python/blitzblas.pyste 
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
