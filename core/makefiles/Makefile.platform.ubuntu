@@ -1,0 +1,31 @@
+#Copy this file to Makefile.platform, and modify it
+#To suit your platform specific needs.
+#Compiler options set here will be included by makefiles in all subdirs
+
+#Use these flags for speed
+#CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -O3 -ffast-math -funroll-loops
+#CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT  -DPYPROP_USE_BLAS 
+
+#Use these flags for debugging
+CXXFLAGS       := $(CXXFLAGS) -Wall -O0
+CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT -DBZ_DEBUG -DPYPROP_USE_BLAS 
+
+MPICXX         := mpicxx
+BOOST_LIBS     := -lboost_python
+PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
+PYSTE_INCLUDE  := -I/usr/local/include/openmpi
+
+#pyprop CPPFLAGS:
+# -DSINGLEPROC  
+#    compile for single processor only. No MPI calls are made when this flag
+#    is set.
+#
+# -DLONGSIZE_32BIT
+#    compile for 32bit processor. currently this only affects the timer
+#    hltimer.h
+#
+# -DPYPROP_USE_BLAS
+#  	 use blas routines for matrix-vector, matrix-matrix, and 
+#  	 vector-vector operations.
+#  	 see core/utility/blitzblas.cpp for details
+#
