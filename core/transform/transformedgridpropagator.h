@@ -21,12 +21,13 @@ private:
 	int N;
 	double Mass;
 
-	void ApplyPropagationMatrix(blitz::Array<cplx, 3> &data);
+	void ApplyMatrix(const blitz::Array<cplx, 2> &matrix, blitz::Array<cplx, 3> &data);
 		
 public:
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank);
 	void AdvanceStep(Wavefunction<Rank> &psi);
+	void ApplyDifferentiationMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi);
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
 	blitz::Array<cplx, 2> GetDifferentiationMatrix();
 };

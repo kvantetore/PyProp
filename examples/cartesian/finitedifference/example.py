@@ -1,6 +1,5 @@
 import sys
 import os
-import profile
 
 from pylab import *
 from numpy import *
@@ -21,10 +20,12 @@ def FindGroundstate():
 		print "t = ", t, ", E =", prop.GetEnergy()
 	
 	#save groundstate to disk
-	prop.SaveWavefunction("groundstate.dat")
+	prop.SaveWavefunctionHDF("groundstate.h5", "/wavefunction")
 
 	#Find energy
-	print "Groundstate energy:", prop.GetEnergy(), "a.u."
+	E1 = prop.GetEnergyImTime()
+	E2 = prop.GetEnergyExpectationValue()
+	print "Groundstate energy:\n\t %s a.u.\n\t %s" % (E1, E2)
 	pyprop.Plot1D(prop)
 
 	return prop

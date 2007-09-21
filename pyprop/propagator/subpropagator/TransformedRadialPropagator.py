@@ -18,6 +18,9 @@ class TransformedRadialPropagator:
 
 	def AdvanceStep(self, t, dt):
 		self.Propagator.AdvanceStep(self.psi)
+
+	def MultiplyHamiltonian(self, dstPsi, t, dt):
+		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
 	
 	def SetupStepConjugate(self, dt):
 		pass
@@ -25,4 +28,6 @@ class TransformedRadialPropagator:
 	def AdvanceStepConjugate(self, t, dt):
 		self.AdvanceStep(t, dt)
 	
+	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
+		pass
 

@@ -15,8 +15,6 @@ class TransformedGridPropagator(PropagatorBase):
 		if rank != 1:
 			raise "Only rank==1 is supported by TransformedGridPropagator"
 	
-		#instantiate transforms		
-		self.Propagator = CreateInstanceRank("core.TransformedGridPropagator", 1)
 		self.SplittingOrder = 2
 
 	def ApplyConfig(self, config):
@@ -25,7 +23,6 @@ class TransformedGridPropagator(PropagatorBase):
 		
 	def ApplyConfigSection(self, configSection): 
 		self.__Base.ApplyConfigSection(self, configSection)
-		configSection.Apply(self.Propagator)
 
 		if hasattr(configSection, "include_potential"):
 			if configSection.include_potential:
@@ -33,6 +30,13 @@ class TransformedGridPropagator(PropagatorBase):
 				print "This is only implented as a test, and should not be used for production runs. "
 				print "Interface may change"
 				self.IncludePotential = True
+
+		#instantiate transforms		
+		propagatorClass = "core.TransformedGridPropagator"
+		if hasattr(configSection, "propagator_class"):
+			propagatorClass = configSection.propagator_class
+		self.Propagator = CreateInstanceRank(propagatorClass, 1)
+		configSection.Apply(self.Propagator)
 		
 	def SetupStep(self, dt):
 		print "        Setup Potential"
@@ -44,7 +48,7 @@ class TransformedGridPropagator(PropagatorBase):
 
 		else:
 			raise "invalid splitting order"
-		self.SetupPotential(dt)
+		self.SetupPotential(effectiveDt)
 	
 		print "        Setup Propagator"
 		gridParam = self.psi.GetRepresentation().Range.Param
@@ -52,7 +56,7 @@ class TransformedGridPropagator(PropagatorBase):
 
 		if self.IncludePotential:
 			#Include the first potential in the propagator
-			pot = self.PotentialList[0].GetPotential(dt)
+			pot = self.PotentialList[0].GetPotential(effectiveDt)
 			#Make sure we don't apply it later
 			del self.PotentialList[0]
 

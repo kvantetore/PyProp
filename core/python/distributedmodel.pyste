@@ -1,3 +1,14 @@
+import sys
+if not '-DSINGLEPROC' in sys.argv:
+	ArrayTranspose = Template("ArrayTranspose", "mpi/blitztranspose.h")
+	AT_1 = ArrayTranspose("1")
+	AT_2 = ArrayTranspose("2")
+	AT_3 = ArrayTranspose("3")
+	AT_4 = ArrayTranspose("4")
+	use_shared_ptr(AT_1)
+	use_shared_ptr(AT_2)
+	use_shared_ptr(AT_3)
+	use_shared_ptr(AT_4)
 
 DistributedModel = Template("DistributedModel", "mpi/distributedmodel.h")
 DM_1 = DistributedModel("1")
@@ -9,12 +20,3 @@ use_shared_ptr(DM_2)
 use_shared_ptr(DM_3)
 use_shared_ptr(DM_4)
 
-ArrayTranspose = Template("ArrayTranspose", "mpi/blitztranspose.h")
-AT_1 = ArrayTranspose("1")
-AT_2 = ArrayTranspose("2")
-AT_3 = ArrayTranspose("3")
-AT_4 = ArrayTranspose("4")
-use_shared_ptr(AT_1)
-use_shared_ptr(AT_2)
-use_shared_ptr(AT_3)
-use_shared_ptr(AT_4)

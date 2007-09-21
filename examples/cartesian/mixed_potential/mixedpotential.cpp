@@ -20,6 +20,9 @@ template<int Rank>
 class MixedPotentialBase : public PotentialBase<Rank>
 {
 public:
+	MixedPotentialBase() {}
+	virtual ~MixedPotentialBase() {}
+
 	//Potential parameters
 	double omega;
 	double A0;
@@ -59,6 +62,9 @@ template<int Rank>
 class MixedPotentialX : public MixedPotentialBase<Rank>
 {
 public:
+	MixedPotentialX() {}
+	virtual ~MixedPotentialX() {}
+
 	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
 		MixedPotentialBase<Rank>::ApplyConfigSection(config);
@@ -69,7 +75,7 @@ public:
 		//Kinetic energy
 		double p_x = pos(0);
 
-		double kineticEnergy = p_x * p_x / (2.0 * M);
+		double kineticEnergy = p_x * p_x / (2.0 * this->M);
 		
 		return kineticEnergy; 
 	}
@@ -84,6 +90,9 @@ template<int Rank>
 class MixedPotentialY : public MixedPotentialBase<Rank>
 {
 public:
+	MixedPotentialY() {}
+	virtual ~MixedPotentialY() {}
+
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		MixedPotentialBase<Rank>::ApplyConfigSection(config);
@@ -95,9 +104,9 @@ public:
 		double x = pos(0);
 		double p_y = pos(1);
 
-		double kineticEnergy = p_y * p_y / (2.0 * M);
-		cplx fieldEnergy  = I * qTilde/my * A0 * sin(omega * CurTime) * p_y;
-		cplx fieldEnergy2 = qMerket / (my * c) * I * p_y * E0 * cos(omega * CurTime) * x;
+		double kineticEnergy = p_y * p_y / (2.0 * this->M);
+		cplx fieldEnergy  = I * this->qTilde/this->my * this->A0 * sin(this->omega * this->CurTime) * p_y;
+		cplx fieldEnergy2 = this->qMerket / (this->my * c) * I * p_y * this->E0 * cos(this->omega * this->CurTime) * x;
 		
 		return kineticEnergy + fieldEnergy + fieldEnergy2;
 	}
@@ -110,6 +119,9 @@ template<int Rank>
 class GridPotential : public MixedPotentialBase<Rank> 
 {
 public:
+	GridPotential() {}
+	virtual ~GridPotential() {}
+
 	double SoftRadius;
 
 	void ApplyConfigSection(const ConfigSection &config)
@@ -122,13 +134,13 @@ public:
 	{
 		double x = pos(0);
 		double y = pos(1);
-		double r = sqrt(x*x + y*y + SoftRadius*SoftRadius);
+		double r = sqrt(x*x + y*y + this->SoftRadius*this->SoftRadius);
 		//r = max(r, minimumR);
 		
-		double coloumbEnergy = q1 * q2 / r ;
+		double coloumbEnergy = this->q1 * this->q2 / r ;
 		
-		double fieldStrength = A0 * E0 * sin(omega * CurTime) * cos(omega * CurTime) * x;
-		double fieldEnergy = (1.0/c) * qTilde * (Q/M + qMerket/my) * fieldStrength;
+		double fieldStrength = this->A0 * this->E0 * sin(this->omega * this->CurTime) * cos(this->omega * this->CurTime) * x;
+		double fieldEnergy = (1.0/c) * this->qTilde * (this->Q/this->M + this->qMerket/this->my) * fieldStrength;
 		
 		return coloumbEnergy + fieldEnergy;
 	}

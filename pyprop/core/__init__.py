@@ -1,5 +1,6 @@
 from libcore import *
 from libredirect import *
+from libexpokit import *
 
 def EnumerateRankClasses(baseName):
 	for className, classObject in dict(globals()).iteritems():

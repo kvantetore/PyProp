@@ -25,5 +25,26 @@ inline bool IncIndex(const blitz::TinyVector<int, Rank>& extent, blitz::TinyVect
 	return true;
 }
 
+/* Example usage
+ 
+   typedef blitz::TinyVector<int, Rank> IndexType
+
+   IndexType startIndex = 0;     //The current index
+   IndexTyp  endIndex = 0;
+   int skipDimension = r;   //The dimension (rank) which we should not iterate over
+
+   
+
+   do 
+   {
+   	   endIndex = startIndex;
+	   endIndex(skipDimension) = data.extent(skipDimension) - 1;
+       blitz::Range
+       blitz::Array<cplx, N> = slice;
+   } while (IncIndex(data.shape(), index, N-1, skipDimension)
+
+
+*/
+
 #endif
 

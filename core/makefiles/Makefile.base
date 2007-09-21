@@ -9,6 +9,7 @@ OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
 #due to a required change in pyste. Any base class must be
 #exported before its subclasses
 PYSTEFILES = \
+	python/cranknicholson.pyste \
 	python/representation.pyste \
 	python/orthopolrepresentation.pyste \
 	python/orthopoltransform.pyste \

@@ -69,6 +69,9 @@ public:
 	/* Get a reference to a buffer */
 	DataArray& GetData(int bufferName);
 	const DataArray& GetData(int bufferName) const;
+
+	/* Set the current buffer name to reference another data buffer*/
+	void SetData(DataArray &newData);
 	
 	int GetRank() const
 	{

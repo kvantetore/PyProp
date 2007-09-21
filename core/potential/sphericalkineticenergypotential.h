@@ -4,6 +4,7 @@
 #include "../common.h"
 #include "../wavefunction.h"
 #include "sphericaldynamicpotentialevaluator.h"
+#include "dynamicpotentialevaluator.h"
 
 
 /*

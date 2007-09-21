@@ -6,6 +6,7 @@ BOOST_INCLUDE   = $(IF, $(BOOST_ROOT), -I$(BOOST_ROOT), )
 INCLUDE         = -I. $(NUMPY_INCLUDE) $(PYTHON_INCLUDE) $(BOOST_INCLUDE)
 MAKE_DEPENDENCIES := -MD
 STATIC_LINK_DIR    = -Wl,-rpath=$(1)
+ABS_PATH           = $(shell python -c "import os; print os.path.abspath('$(1)'.strip())")
 LD_SHARED         := -shared
 
 

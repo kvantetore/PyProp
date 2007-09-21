@@ -1,0 +1,2 @@
+zhexpv.o: zhexpv.cpp f2c.h
+zhexpv.cpp f2c.h :

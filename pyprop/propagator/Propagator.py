@@ -35,6 +35,9 @@ class PropagatorBase:
 		if self.RenormalizeActive:
 			self.psi.Normalize()
 
+	def MultiplyHamiltonian(self, destPsi, t, dt):
+		raise "MultiplyHamiltonian should be implemented by inheriting class %s, but it's not" % (self.__class__) 
+
 	#Basic functionality that inheriting classes should use.
 	def SetupPotential(self, dt):
 		for potential in self.PotentialList:
@@ -47,6 +50,13 @@ class PropagatorBase:
 
 		for potential in self.PotentialList:
 			potential.AdvanceStep(t, dt)
+
+	def MultiplyPotential(self, destPsi, t, dt):
+		if dt == None:
+			dt = self.TimeStep
+
+		for potential in self.PotentialList:
+			potential.MultiplyPotential(destPsi, t, dt)
 			
 			
 	

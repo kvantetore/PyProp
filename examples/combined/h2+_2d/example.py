@@ -43,9 +43,9 @@ def FindGroundstate(**args):
 	#propagate
 	silent = False
 	if 'silent' in args: silent = args['silent']
-	for t in prop.Advance(20):
+	for t in prop.Advance(10):
 		if not silent:
-			print "t = ", t, ", E = ", prop.GetEnergy(), "E2 = ", prop.GetEnergyExpectationValue()
+			print "t = ", t, ", E = ", prop.GetEnergyExpectationValue()
 
 	return prop
 

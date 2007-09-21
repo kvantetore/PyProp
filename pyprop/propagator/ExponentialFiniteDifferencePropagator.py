@@ -16,6 +16,10 @@ class ExponentialFiniteDifferencePropagator(PropagatorBase):
 
 	The finite difference evaluation is implemented in a special potential evaluator
 	found in core/finitediff/exponentialfinitedifference.h.
+
+	An alternative to the exponential finite difference propagator, is the crank-nicholson finte
+	difference scheme. To use this propagator, use a different potential evaulator: 
+	core/finitediff/cranknicholson.h
 	"""
 	
 	def __init__(self, psi):
@@ -35,5 +39,9 @@ class ExponentialFiniteDifferencePropagator(PropagatorBase):
 	def AdvanceStep(self, t, dt):
 		#Apply potential
 		self.ApplyPotential(t, dt)
+		#self.AdvanceStepKrylov(t, dt)
+
+	def MultiplyHamiltonian(self, destPsi, t, dt):
+		self.MultiplyPotential(destPsi, t, dt)
 
 

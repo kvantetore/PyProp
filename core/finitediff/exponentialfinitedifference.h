@@ -114,6 +114,16 @@ public:
 			EXPFD_UpdateBlock(pot1, pot2, psi.Data(i), psi.Data(i+1), dx, dt);
 		}
 	}
+
+	/*
+	 * Applies the differentiation operator + potential operator to the wavefunction
+	 * useful for calculating expecation values and possibly finding eigenstates
+	 */
+	void MultiplyOperator(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, double t, const cplx &dt)
+	{
+		throw std::runtime_error("MultiplyOperator is not implemented yet");
+	}
+
 };
 
 /* Local function definitions. */

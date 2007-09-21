@@ -14,6 +14,10 @@ class CartesianRadialPropagator:
 	def ApplyConfigSection(self, configSection):
 		self.Mass = configSection.mass
 
+		self.ForceOriginZero = True
+		if hasattr(configSection, "force_origin_zero"):
+			self.ForceOriginZero = configSection.force_origin_zero
+
 	def SetupStep(self, dt):
 		#setup representation
 		self.RadialRepresentation = self.psi.GetRepresentation().GetRepresentation(self.TransformRank)
@@ -21,7 +25,7 @@ class CartesianRadialPropagator:
 
 		# transform radial into fourier space
 		print "	       Setup Forward Radial Transform"
-		self.TransformRadialForward()
+		self.TransformRadialForward(self.psi)
 		
 		# set up potential
 		print "	       Setup Radial Kinetic Potential"
@@ -29,30 +33,42 @@ class CartesianRadialPropagator:
 
 		# transform radial into grid space
 		print "	       Setup Inverse Radial Transform"
-		self.TransformRadialInverse()
+		self.TransformRadialInverse(self.psi)
 
 		#Get index of origin
-		self.OriginIndex = self.GetOriginIndex()
+		if self.ForceOriginZero:
+			self.OriginIndex = self.GetOriginIndex()
 
 	def AdvanceStep(self, t, dt):
 		# transform the radial into fourier space
-		self.TransformRadialForward()
+		self.TransformRadialForward(self.psi)
 	
 		# apply radial kinetic energy potential
 		self.RadialKineticPotential.AdvanceStep(t, dt)
 		
 		# transform back into real space
-		self.TransformRadialInverse()
+		self.TransformRadialInverse(self.psi)
 
 		#For imaginary time propagation, set origin to 0 to keep symmetry
-		if 1.0j * imag(dt) == dt and self.OriginIndex != None:
+		if 1.0j * imag(dt) == dt and self.ForceOriginZero:
 			self.SetValue(self.OriginIndex, 0)
+
+	def MultiplyHamiltonian(self, dstPsi, t, dt):
+		# Calculates dstPsi += - 1/(2m) d^2/dx^2 psi
+		self.TransformRadialForward(self.psi)
+		self.TransformRadialForward(dstPsi)
+		self.RadialKineticPotential.MultiplyPotential(dstPsi, t, dt)
+		self.TransformRadialInverse(dstPsi)
+		self.TransformRadialInverse(self.psi)
 	
 	def SetupStepConjugate(self, dt):
 		pass
 
 	def AdvanceStepConjugate(self, t, dt):
 		self.AdvanceStep(t, dt)
+
+	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
+		pass
 			
 	def GetOriginIndex(self):
 		grid = self.psi.GetRepresentation().GetLocalGrid(self.TransformRank)
@@ -78,13 +94,13 @@ class CartesianRadialPropagator:
 
 		data[index] = value
 
-	def TransformRadialForward(self):
-		self.RadialTransform.ForwardTransform(self.psi, self.TransformRank)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialFourierRepresentation)
+	def TransformRadialForward(self, psi):
+		self.RadialTransform.ForwardTransform(psi, self.TransformRank)
+		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialFourierRepresentation)
 
-	def TransformRadialInverse(self):
-		self.RadialTransform.InverseTransform(self.psi, self.TransformRank)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialRepresentation)
+	def TransformRadialInverse(self, psi):
+		self.RadialTransform.InverseTransform(psi, self.TransformRank)
+		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RadialRepresentation)
 	
 	# Helper class for kinetic energy potentials
 	class StaticEnergyConf(Section):

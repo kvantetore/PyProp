@@ -1,0 +1,2 @@
+dsexpv.o: dsexpv.cpp f2c.h
+dsexpv.cpp f2c.h :

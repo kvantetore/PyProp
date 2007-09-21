@@ -8,5 +8,6 @@ SphericalTransform("2")
 SphericalTransform("3")
 
 RadialTransform = Template("RadialTransform", "transform/radialtransform.h")
+RadialTransform("1")
 RadialTransform("2")
 RadialTransform("3")

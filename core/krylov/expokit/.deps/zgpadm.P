@@ -1,0 +1,2 @@
+zgpadm.o: zgpadm.cpp f2c.h
+zgpadm.cpp f2c.h :

@@ -89,6 +89,15 @@ const typename Wavefunction<Rank>::DataArray& Wavefunction<Rank>::GetData(int bu
 	return *WavefunctionData[bufferName];
 }
 
+
+template<int Rank>
+void Wavefunction<Rank>::SetData(Wavefunction<Rank>::DataArray &newData)
+{
+	WavefunctionData[GetActiveBufferName()]->reference(newData);
+	Data.reference(newData);
+}
+
+
 template<int Rank>
 Wavefunction<Rank>* 
 Wavefunction<Rank>::Copy() const

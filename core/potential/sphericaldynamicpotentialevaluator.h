@@ -66,24 +66,32 @@ class SphericalDynamicPotentialEvaluator
 {
 public:
 	typedef ApplyPotentialClass<Rank> ApplyClass;
+	typedef MultiplyPotentialClass<Rank> MultiplyClass;
 	typedef UpdatePotentialClass<Rank> UpdateClass;
 	typedef GetPotentialClass<Rank> GetClass;
 	
 	PotentialClass Potential;
-	SphericalDynamicPotentialEvaluatorBase< ApplyClass, Rank> Apply;
-	SphericalDynamicPotentialEvaluatorBase< UpdateClass, Rank> Update;
-	SphericalDynamicPotentialEvaluatorBase< GetClass, Rank> Get;
-
+	SphericalDynamicPotentialEvaluatorBase< ApplyClass, Rank> Apply;       //Calculates exp(V)psi -> psi
+	SphericalDynamicPotentialEvaluatorBase< MultiplyClass, Rank> Multiply; //Calculates V psi -> psi
+	SphericalDynamicPotentialEvaluatorBase< UpdateClass, Rank> Update;     //Updates a static potential	with exp(V)
+	SphericalDynamicPotentialEvaluatorBase< GetClass, Rank> Get;	       //Returns V
 	
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		Potential.ApplyConfigSection(config);
 	}
 
-	/** Updates propagates the wavefunction a step with this dynamic potential **/
+	/** Propagates the wavefunction a step with this dynamic potential **/
 	void ApplyPotential(Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
 	{
 		Apply.IterateAction(Potential, psi, psi.GetData(), timeStep, curTime);
+	}
+
+	/** Multiplies the wavefunction with this potential. Useful for eigenproblems and expectation values **/
+	void MultiplyPotential(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, const cplx &timeStep, const double &curTime)
+	{
+		Multiply.DestIterator = dstPsi.GetData().begin();
+		Multiply.IterateAction(Potential, srcPsi, srcPsi.GetData(), timeStep, curTime);
 	}
 
 	/** Updates a static potential with the expotential of the potential of this dynamic potential. */

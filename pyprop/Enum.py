@@ -4,6 +4,7 @@ class PotentialType:
 	Static = 1
 	Dynamic = 3
 	FiniteDifference = 4
+	CrankNicholson = 5
 	
 #Initial condition types
 class InitialConditionType:

@@ -39,6 +39,18 @@ public:
 		VectorElementMultiply(psi.Data, PotentialData, psi.Data);
 	}
 
+	void MultiplyPotential(Wavefunction<Rank> &psi, Wavefunction<Rank> &destPsi, const cplx &dt)
+	{
+		ValidatePsi(psi);
+		const cplx imaginaryUnit = cplx(0.0, 1.0);
+		cplx scale = - 1.0 / (imaginaryUnit * dt);
+		typename Wavefunction<Rank>::DataArray dest(destPsi.GetData());
+		typename Wavefunction<Rank>::DataArray src(psi.GetData());
+		dest += log(PotentialData) * scale * src;
+	}
+
+
+
 private:
 	void ValidatePsi(const Wavefunction<Rank> &psi)
 	{

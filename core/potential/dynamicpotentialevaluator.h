@@ -17,9 +17,10 @@ template<class ActionClass, int Rank>
 class DynamicPotentialEvaluatorBase : public ActionClass
 {
 public:
+	typedef blitz::Array<cplx, Rank> DataArray;
 	/** Updates propagates the wavefunction a step with this dynamic potential **/
 	template<class DynamicPotentialClass>
-	void IterateAction(DynamicPotentialClass &potential, const Wavefunction<Rank> &psi, blitz::Array<cplx, Rank> updateData, const cplx &timeStep, const double &curTime)
+	void IterateAction(DynamicPotentialClass &potential, const Wavefunction<Rank> &psi, DataArray updateData, const cplx &timeStep, const double &curTime)
 	{
 		//Set up PotentialClass
 		potential.CurTime = curTime;
@@ -55,23 +56,32 @@ class DynamicPotentialEvaluator
 {
 public:
 	typedef ApplyPotentialClass<Rank> ApplyClass;
+	typedef MultiplyPotentialClass<Rank> MultiplyClass;
 	typedef UpdatePotentialClass<Rank> UpdateClass;
 	typedef GetPotentialClass<Rank> GetClass;
 	
 	PotentialClass Potential;
-	DynamicPotentialEvaluatorBase< ApplyClass, Rank> Apply;
-	DynamicPotentialEvaluatorBase< UpdateClass, Rank> Update;
-	DynamicPotentialEvaluatorBase< GetClass, Rank> Get;
+	DynamicPotentialEvaluatorBase< ApplyClass, Rank> Apply;       //Calculates exp(V)psi -> psi
+	DynamicPotentialEvaluatorBase< MultiplyClass, Rank> Multiply; //Calculates V psi -> psi
+	DynamicPotentialEvaluatorBase< UpdateClass, Rank> Update;     //Updates a static potential	with exp(V)
+	DynamicPotentialEvaluatorBase< GetClass, Rank> Get;	          //Returns V
 	
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		Potential.ApplyConfigSection(config);
 	}
 
-	/** Updates propagates the wavefunction a step with this dynamic potential **/
+	/** Propagates the wavefunction a step with this dynamic potential **/
 	void ApplyPotential(Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
 	{
 		Apply.IterateAction(Potential, psi, psi.GetData(), timeStep, curTime);
+	}
+
+	/** Multiplies the wavefunction with this potential. Useful for eigenproblems and expectation values **/
+	void MultiplyPotential(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, const cplx &timeStep, const double &curTime)
+	{
+		Multiply.DestIterator = dstPsi.GetData().begin();
+		Multiply.IterateAction(Potential, srcPsi, srcPsi.GetData(), timeStep, curTime);
 	}
 
 	/** Updates a static potential with the expotential of the potential of this dynamic potential. */
@@ -84,10 +94,12 @@ public:
 	/** 
    	  * Returns an array containing this dynamic potential at the given time. 
 	  * WARNING: This method allocates and returns a new blitz array in the same size as the wavefunction
-	  */
+	  *
+	  * In a multiproc environment this returns the local portion of the potential corresponding to 
+	  * the current distribution of the wavefunction.
+  */
 	blitz::Array<cplx, Rank> GetPotential(const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
 	{
-		//TODO: Fix for multiproc
 		blitz::Array<cplx, Rank> potentialData(psi.Data.shape());
 		Get.IterateAction(Potential, psi, potentialData, timeStep, curTime);
 		return potentialData;

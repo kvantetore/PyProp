@@ -3,13 +3,8 @@
 #include <complex>
 #include <fftw3.h>
 
-#include "../common.h"
-//#include "../index.h"
-//#include "../wavefunction.h"
-//#include "../representation/representation.h"
-//#include "../mpi/distributedmodel.h"
-
-#define FFT_FLAG FFTW_MEASURE
+#define FFT_FLAG FFTW_ESTIMATE
+//#define FFT_FLAG FFTW_MEASURE <--- Dangerous.
 
 
 /* --------------- General Routines -----------------------  */

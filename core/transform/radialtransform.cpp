@@ -29,6 +29,7 @@ void RadialTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi, int rank)
 }
 
 
+template class RadialTransform<1>;
 template class RadialTransform<2>;
 template class RadialTransform<3>;
 

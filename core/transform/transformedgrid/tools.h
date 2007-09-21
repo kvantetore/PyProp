@@ -12,9 +12,15 @@ namespace TransformedGrid
 	 */
 	enum TransformType
 	{
-		Transform1 = 1, // x(r) = (L - r) / (L + r)
-		Transform2 = 2, // x(r) = 4/pi * atan(r/L) - 1
-		Transform3 = 3  // x(r) = 1 - 2 * exp( - r / L )
+		TransformTypeAlgebraic = 1,      // x(r) = (L - r) / (L + r)
+		TransformTypeTrigonometric = 2,  // x(r) = 4/pi * atan(r/L) - 1
+		TransformTypeLogarithmic = 3     // x(r) = 1 - 2 * exp( - r / L )
+	};
+
+	enum TransformRange
+	{
+		TransformRangeRadial = 1,        // r = [0, \infty)
+		TransformRangeCartesian = 2      // r = (-\infty, \infty)
 	};
 	
 	/*
@@ -23,7 +29,10 @@ namespace TransformedGrid
 	struct Parameter
 	{
 	    TransformType Type;
+		TransformRange Range;
 		double Scaling;
+
+		Parameter() : Type(TransformTypeAlgebraic), Range(TransformRangeRadial) {}
 	};
 	
 	/*

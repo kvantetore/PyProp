@@ -1,0 +1,8 @@
+
+ExpokitPropagator = Template("krylov::ExpokitPropagator", "expokitpropagator.h");
+exclude(ExpokitPropagator.Psi);
+exclude(ExpokitPropagator.TempPsi);
+exclude(ExpokitPropagator.MultiplyCallback);
+
+ExpokitPropagator("1");
+ExpokitPropagator("2");

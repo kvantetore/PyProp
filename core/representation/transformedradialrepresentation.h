@@ -72,7 +72,15 @@ public:
 		config.Get("transform_type", type);
 		param.Type = static_cast<TransformedGrid::TransformType>(type);
 		config.Get("transform_scaling", param.Scaling);
+
+		if (config.HasValue("transform_range"))
+		{
+			int transformRange;
+			config.Get("transform_range", transformRange);
+			param.Range = static_cast<TransformedGrid::TransformRange>(transformRange);
 		
+		}
+
 		Range = TransformedRange(param, N);
 	}
 

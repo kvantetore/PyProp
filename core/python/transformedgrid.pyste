@@ -3,6 +3,7 @@
 Parameter = Class("TransformedGrid::Parameter", "transform/transformedgrid/tools.h")
 rename(Parameter, "TransformedGridParameter")
 TransformType = Enum("TransformedGrid::TransformType", "transform/transformedgrid/tools.h")
+TransformRange = Enum("TransformedGrid::TransformRange", "transform/transformedgrid/tools.h")
 
 #range
 TransformedRange = Class("TransformedRange", "representation/transformedrange.h")

@@ -1,5 +1,7 @@
 import signal
 
+RedirectInterrupt = False
+
 #----------------------------------------------------------------------------------------------------
 # Problem
 #----------------------------------------------------------------------------------------------------
@@ -10,6 +12,7 @@ class Problem:
 	"""
 
 	def __init__(self, config):
+		self.TempPsi = None
 		self.Config = config
 		try:
 			#Enable redirect
@@ -103,6 +106,12 @@ class Problem:
 
 		self.PropagatedTime += abs(self.TimeStep)
 
+	def MultiplyHamiltonian(self, dstPsi):
+		"""
+		Applies the Hamiltonian to the wavefunction H psi -> psi
+		"""
+		self.Propagator.MultiplyHamiltonian(dstPsi, self.PropagatedTime, self.TimeStep )
+
 	def Advance(self, yieldCount, duration=0):
 		"""
 		Returns a generator for advancing the wavefunction a number of timesteps. 
@@ -124,10 +133,11 @@ class Problem:
 			yieldStep = int((duration / abs(self.TimeStep)) / yieldCount)
 
 		#Modify the interrupt signal handler
-		try:
-			InterruptHandler.UnRegister()
-		except: pass
-		InterruptHandler.Register()
+		if RedirectInterrupt:
+			try:
+				InterruptHandler.UnRegister()
+			except: pass
+			InterruptHandler.Register()
 	
 		index = 0
 		while self.PropagatedTime < duration:
@@ -135,16 +145,50 @@ class Problem:
 			self.AdvanceStep()
 
 			#check keyboard interrupt
-			if InterruptHandler.IsInterrupted():
-				InterruptHandler.ProcessInterrupt()
+			if RedirectInterrupt:
+				if InterruptHandler.IsInterrupted():
+					InterruptHandler.ProcessInterrupt()
 			
 			index += 1
 			if index % yieldStep == 0:
 				yield self.PropagatedTime
-			
-		InterruptHandler.UnRegister()
-				
+	
+		if RedirectInterrupt:
+			InterruptHandler.UnRegister()
+
 	def GetEnergy(self):
+		if isreal(self.TimeStep):
+			return self.GetEnergyExpectationValue()
+		else:
+			return self.GetEnergyImTime()
+
+	def GetEnergyExpectationValue(self):
+		"""
+		Calculates the total energy of the problem by finding the expectation value 
+		of the Hamiltonian
+		"""
+		#TODO: Make this more efficient by not allocating a new data set every time
+		self.psi.Normalize()
+
+		#Make copy of wavefunction
+		if self.TempPsi == None:
+			self.TempPsi = self.psi.CopyDeep()
+		self.TempPsi.GetData()[:] = 0
+
+		#Apply the Hamiltonian to the wavefunction
+		self.MultiplyHamiltonian(self.TempPsi)
+
+		#Calculate the inner product between the applied psi and the original psi
+		energy = self.psi.InnerProduct(self.TempPsi)
+
+		#Check that the energy is real
+		if not hasattr(self, "IgnoreWarningRealEnergy"):
+			if abs(imag(energy)) > 1e-10:
+				print "Warning: Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy)
+				self.IgnoreWarningRealEnergy = True
+		return real(energy)
+	
+	def GetEnergyImTime(self):
 		"""
 		Advance one timestep without normalization and imaginary time.
 		we can then find the energy by looking at the norm of the decaying
@@ -168,6 +212,7 @@ class Problem:
 		self.Propagator.RenormalizeActive = renorm
 		
 		norm = self.psi.GetNorm()
+		self.psi.GetData()[:] /= sqrt(norm)
 		energy = - log(norm) / (2 * abs(self.TimeStep))
 		return energy
 	
@@ -293,10 +338,10 @@ class Problem:
 		self.LoadWavefunctionData(arr)
 
 	def LoadWavefunctionHDF(self, filename, datasetPath):
-		serialization.LoadWavefunctionHDF(filename, datasetPath, self)
+		serialization.LoadWavefunctionHDF(filename, datasetPath, self.psi)
 
 	def SaveWavefunctionHDF(self, filename, datasetPath):
-		serialization.SaveWavefunctionHDF(filename, datasetPath, self)
+		serialization.SaveWavefunctionHDF(filename, datasetPath, self.psi)
 
 	def SaveWavefunctionAscii(self, filename):
 		pylab.save(filename, self.psi.GetData())
