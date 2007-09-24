@@ -55,10 +55,13 @@ class CartesianPropagator(PropagatorBase):
 		if IsSingleProc():
 			self.FFTTransform.ForwardTransform(psi)
 		else:
-			for rank in range(1, psi.GetRank()):
-				self.TransformRank(rank, self.FFT_FORWARD, psi)
+			distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
+			for rank in range(0, psi.GetRank()):
+				if rank not in distribRanks:
+					self.TransformRank(rank, self.FFT_FORWARD, psi)
 			self.Transpose(1, psi)
-			self.TransformRank(0, self.FFT_FORWARD, psi)
+			for rank in distribRanks:
+				self.TransformRank(rank, self.FFT_FORWARD, psi)
 
 		self.ChangeRepresentation(psi)
 
@@ -67,11 +70,15 @@ class CartesianPropagator(PropagatorBase):
 		if IsSingleProc():
 			self.FFTTransform.InverseTransform(psi)
 		else:
-			self.TransformRank(0, self.FFT_BACKWARD, psi)
+			distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
+			for rank in range(0, psi.GetRank()):
+				if rank not in distribRanks:
+					self.TransformRank(rank, self.FFT_BACKWARD, psi)
 			self.Transpose(2, psi)
-			for rank in range(1, psi.GetRank()):
+			for rank in distribRanks:
 				self.TransformRank(rank, self.FFT_BACKWARD, psi)
 			self.TransformNormalize(psi)
+
 		self.ChangeRepresentation(psi)
 
 
@@ -122,7 +129,7 @@ class CartesianPropagator(PropagatorBase):
 			transpose = distrModel.GetTranspose()
 			#Setup shape	
 			fullShape = self.psi.GetRepresentation().GetFullShape()
-			self.Distribution2 = array([1])
+			self.Distribution2 = array([0])
 			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
 			#allocate wavefunction
 			self.TransposeBuffer1 = self.psi.GetActiveBufferName()

@@ -1,7 +1,4 @@
-try:
-	from pylab import *
-except:
-	pass
+import pylab
 from numpy import * 
 
 import sys
@@ -13,50 +10,13 @@ sys.path.insert(1, os.path.abspath(pyprop_path))
 import pyprop
 pyprop = reload(pyprop)
 
+#import local modules
 from libhydrogen import *
 
-conf = pyprop.Load("config.ini")
-
-def ModifyConf(conf, dx=None, dt=None, soft=None):
-
-	if dx != None:
-		#Modify grid
-		confSection = conf.Representation
-		xmin = confSection.xmin
-		xmax = confSection.xmax
-		nx = int((xmax - xmin) / dx)
-		#pyprop does not take dx as parameter, but rather
-		#the number of grid points, from which the effective
-		#dx is computed.
-		effectiveDx = (xmax - xmin) / nx
-
-		#in order to maximize the distance between the two points 
-		#clostest to the origin, we translate the grid by delta.
-		#x0 is the point closest to the origin on the negative side.
-		x0 = xmin - effectiveDx * floor(xmin/effectiveDx)
-		delta = x0 + effectiveDx / 2.0
-
-		#x = r_[xmin+delta : xmax+delta : effectiveDx]
-		#print "min(x) =", min(abs(x)/effectiveDx), "dx"
-		
-		for rank in r_[0:4]:
-			range = [xmin + delta, xmax + delta, nx]
-			confSection.Set('rank' + str(rank), range)
-
-	if dt != None:
-		conf.Propagation.timestep = dt
-
-	if soft != None:
-		conf.GridPotential.soft = soft
-	
-	return conf	
-
-def FindGroundState(conf):
+def FindGroundstate(**args):
 	#setup propagator
-	conf.Propagation.timestep = -1.0j * abs(conf.Propagation.timestep)
-	conf.Propagation.renormalization = True
-	prop = pyprop.Problem(conf)
-	prop.SetupStep()
+	args['imtime'] = True
+	prop = SetupProblem(**args)
 	
 	#propagate with imaginary time to find groundstate
 	for t in prop.Advance(10): 
@@ -64,40 +24,36 @@ def FindGroundState(conf):
 
 	return prop 
 
-def FindPropagatedState(conf, initialCondition):
+def FindPropagatedState(initialPsi, **args):
 	#setup propagator
-	conf.Propagation.timestep = abs(conf.Propagation.timestep)
-	conf.Propagation.renormalization = False
-	prop = pyprop.Problem(conf)
-	prop.SetupStep()
+	args['imtime'] = False
+	prop = SetupProblem(**args)
 
 	#Load initial condition
-	prop.psi.GetData()[:] = initialCondition.GetData()
+	prop.psi.GetData()[:] = initialPsi.GetData()
 	
 	#propagate with real time to find advanced state
-	for t in prop.Advance(10): pass
+	for t in prop.Advance(10): 
+		print "t = ", t
 
 	return prop
 
-def Measure(dx, dt, soft):
-	conf = pyprop.Load("config.ini")
-	conf = ModifyConf(conf, dx, dt, soft)
-
+def Measure(**args):
+	
 	#Find ground state
-	groundstate = FindGroundState(conf)
+	groundstate = FindGroundstate(**args)
 
 	#Use ground state to propagate in time
-	propagation = FindPropagatedState(conf, groundstate.psi)
+	propagation = FindPropagatedState(groundstate.psi, **args)
 
-	#Find correlation on ground state (should be 1 if propagation
-	#was exact)
+	#Find correlation on ground state (should be 1 if propagation was exact)
 	corr = abs(groundstate.psi.InnerProduct(propagation.psi))**2
 
 	#Find energy of the ground state. For soft == 0.0 this should be
 	#E0 = -2.0 a.u.
 	energy = groundstate.GetEnergy()
 
-	print "dx =", dx, ", dt =", dt, ", soft =", soft
+	print "dx = %(dx)s, dt = %(dt)s, soft = %(soft)s" % args
 	print "E =", energy, ", corr =", corr
 
 	return  energy, corr
@@ -131,7 +87,7 @@ def run():
 			for k in r_[0:len(dtList)]:
 				dt = dtList[k]
 				#mesure this point
-				energy, corr = Measure(dx, dt, soft)
+				energy, corr = Measure(dx=dx, dt=dt, soft=soft)
 				#update array
 				energyArray[i,j,k] = energy
 				corrArray[i,j,k] = corr
@@ -167,3 +123,47 @@ def plot_energy_dt():
 		for j in r_[0:len(dxList)]:
 			plot(dtList, energy[j, :, i], label="dx = " + str(dxList[j]))
 		legend()
+
+
+def SetupConfig(**args):
+	conf = pyprop.Load("config.ini")
+
+	if 'dx' in args:	
+		dx = args['dx']
+
+		#Modify grid
+		confSection = conf.Representation
+		xmin = confSection.rank0[0]
+		xmax = confSection.rank0[1]
+		nx = int((xmax - xmin) / dx)
+
+		for rank in r_[0:4]:
+			range = [xmin, xmax, nx]
+			confSection.Set('rank' + str(rank), range)
+
+	if 'dt' in args:
+		dt = args['dt']
+		conf.Propagation.timestep = dt
+
+	if 'soft' in args:
+		soft = args['soft']
+		conf.GridPotential.soft = soft
+
+	if 'imtime' in args:
+		imtime = args['imtime']
+		if imtime:
+			conf.Propagation.timestep = -1.0j * abs(conf.Propagation.timestep)
+			conf.Propagation.renormalization = True
+		else:
+			conf.Propagation.timestep = abs(conf.Propagation.timestep)
+			conf.Propagation.renormalization = True
+	        	
+	return conf	
+
+def SetupProblem(**args):
+	conf = SetupConfig(**args)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	return  prop
+
+
