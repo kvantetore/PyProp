@@ -344,10 +344,13 @@ class Problem:
 		serialization.SaveWavefunctionHDF(filename, datasetPath, self.psi)
 
 	def SaveWavefunctionAscii(self, filename):
-		pylab.save(filename, self.psi.GetData())
-	
+		psiData = self.psi.GetData()
+		assert(len(psiData.shape) <= 1, "SaveWavefunctionAscii only supports 1D wavefunction data")
+		pylab.save(filename, transpose((psiData.real ,psiData.imag)), delimiter=' ')	
+
 	def LoadWavefunctionAscii(self, filename):
-		arr = pylab.load(filename)
+		r, c = pylab.load(filename, unpack=True)
+		arr = r + 1.0j*c
 		self.LoadWavefunctionData(arr)
 		
 	
