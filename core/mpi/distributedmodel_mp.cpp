@@ -31,16 +31,28 @@ DistributedModel<Rank>::DistributedModel(DistributionPtr distrib)
 	SetupMPI();
 
 	int procRank = distrib->GetProcRank();
-	Transpose = TransposePtr( new ArrayTranspose<Rank>(procRank));
+	if (!IsSingleProc())
+	{
+		Transpose = TransposePtr( new ArrayTranspose<Rank>(procRank));
+	}
 	CurrentDistribution = distrib;
 }
 
 template<int Rank>
 void DistributedModel<Rank>::SetupMPI()
 {
-	MPI_Comm_rank(MPI_COMM_WORLD, &this->ProcId);
-	MPI_Comm_size(MPI_COMM_WORLD, &this->ProcCount);
-	std::cout << "Proc " << (1+ProcId) << "/" << ProcCount << std::endl;
+	if (MPIDisabled)
+	{
+		this->ProcId = 0;
+		this->ProcCount = 1;
+		std::cout << "MPI Disabled" << endl;
+	}
+	else
+	{
+		MPI_Comm_rank(MPI_COMM_WORLD, &this->ProcId);
+		MPI_Comm_size(MPI_COMM_WORLD, &this->ProcCount);
+		std::cout << "Proc " << (1+ProcId) << "/" << ProcCount << std::endl;
+	}
 }
 
 
@@ -50,7 +62,10 @@ void DistributedModel<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 	//How many dimensions in the processor array
 	int procRank = -1;
 	cfg.Get("proc_array_rank", procRank);
-	Transpose = TransposePtr( new TransposeType(procRank) );
+	if (!IsSingleProc())
+	{
+		Transpose = TransposePtr( new TransposeType(procRank) );
+	}
 
 	//How is the initial distribution
 	CurrentDistribution = DistributionPtr( new Distribution(procRank) );
@@ -65,7 +80,11 @@ void DistributedModel<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 template<int Rank>
 blitz::TinyVector<int, Rank> DistributedModel<Rank>::CreateInitialShape(const blitz::TinyVector<int, Rank> &fullShape)
 {
-	cout << "Creating distributed shape to " << fullShape;
+	if (IsSingleProc())
+	{
+		return fullShape;
+	}
+
 	return Transpose->CreateDistributedShape(fullShape, CurrentDistribution->GetDistribution());
 }
 
@@ -104,6 +123,11 @@ bool DistributedModel<Rank>::IsDistributedRank(int rank)
 template<int Rank>
 void DistributedModel<Rank>::ChangeDistribution(Wavefunction<Rank> &psi, const Distribution::DataArray &newDistrib, int destBufferName)
 {
+	if (IsSingleProc())
+	{
+		throw std::runtime_error("Error! Should not call ChangeDistribution if we are singleproc.");
+	}
+
 	typename Wavefunction<Rank>::DataArray src(psi.GetData());
 	typename Wavefunction<Rank>::DataArray dst(psi.GetData(destBufferName));
 	typename Wavefunction<Rank>::IndexVector fullShape(psi.GetRepresentation().GetFullShape());
@@ -128,6 +152,11 @@ void DistributedModel<1>::ChangeDistribution(Wavefunction<1> &psi, const Distrib
 template<int Rank>
 int DistributedModel<Rank>::GetLocalStartIndex(int globalSize, int currentRank)
 {
+	if (IsSingleProc())
+	{
+		return 0;
+	}
+
 	Distribution::DataArray distrib(CurrentDistribution->GetDistribution());
 	for (int i=0; i<CurrentDistribution->GetProcRank(); i++)
 	{
@@ -146,6 +175,11 @@ int DistributedModel<Rank>::GetLocalStartIndex(int globalSize, int currentRank)
 template<int Rank>
 blitz::Range DistributedModel<Rank>::GetLocalIndexRange(int globalSize, int currentRank)
 {
+	if (IsSingleProc())
+	{
+		return blitz::Range(0, globalSize-1);
+	}
+
 	Distribution::DataArray distrib(CurrentDistribution->GetDistribution());
 	for (int i=0; i<CurrentDistribution->GetProcRank(); i++)
 	{
@@ -161,6 +195,11 @@ blitz::Range DistributedModel<Rank>::GetLocalIndexRange(int globalSize, int curr
 template<int Rank>
 double DistributedModel<Rank>::GetGlobalSum(double localValue)
 {
+	if (IsSingleProc())
+	{
+		return localValue;
+	}
+
 	double globalValue = 0;
 	MPI_Allreduce(&localValue, &globalValue, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	return globalValue;
@@ -169,6 +208,11 @@ double DistributedModel<Rank>::GetGlobalSum(double localValue)
 template<int Rank>
 cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 {
+	if (IsSingleProc())
+	{
+		return localValue;
+	}
+
 	cplx globalValue = 0;
 	MPI_Allreduce(&localValue, &globalValue, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	return globalValue;
@@ -177,7 +221,10 @@ cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 template<int Rank>
 void DistributedModel<Rank>::GlobalBarrier()
 {
-	MPI_Barrier(MPI_COMM_WORLD);
+	if (!IsSingleProc())
+	{
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 }
 
 

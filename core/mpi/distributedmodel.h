@@ -52,6 +52,8 @@ private:
 	
 	DistributionPtr CurrentDistribution;
 	TransposePtr Transpose;
+
+	static bool MPIDisabled;
 	
 public:
 	int ProcId;
@@ -101,6 +103,11 @@ public:
 		return array(GetLocalIndexRange(array.extent(0), rank));
 	}
 
+	static void ForceSingleProc()
+	{
+		MPIDisabled = true;
+	}
+
 	void SetupMPI();
 	blitz::TinyVector<int, Rank> CreateInitialShape(const blitz::TinyVector<int, Rank> &fullShape);
 	int GetLocalStartIndex(int globalSize, int currentRank);
@@ -118,7 +125,8 @@ public:
 	static void FinalizeMPI();
 };
 
-
+template<int Rank>
+bool DistributedModel<Rank>::MPIDisabled = false;
 
 #endif
 
