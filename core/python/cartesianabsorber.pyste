@@ -5,4 +5,10 @@ AbsorbingPotential("2", "CartesianAbsorbingPotential_2")
 AbsorbingPotential("3", "CartesianAbsorbingPotential_3")
 AbsorbingPotential("4", "CartesianAbsorbingPotential_4")
 
+AbsorbingPotential = Template("CartesianBoundaryAbsorbingPotential", "potential/cartesianabsorber.h")
+AbsorbingPotential("1", "CartesianBoundaryAbsorbingPotential_1")
+AbsorbingPotential("2", "CartesianBoundaryAbsorbingPotential_2")
+AbsorbingPotential("3", "CartesianBoundaryAbsorbingPotential_3")
+AbsorbingPotential("4", "CartesianBoundaryAbsorbingPotential_4")
+
 
