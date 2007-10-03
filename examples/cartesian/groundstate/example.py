@@ -94,8 +94,9 @@ def FindEigenvalues():
 	print "Eigenvalues = ", solver.Solver.GetEigenvalues()
 	return solver
 
-def GetEigenvalue(prop, solver, num):
-	
+def GetEigenvalue(solver, num):
+
+	prop = solver.BaseProblem
 	psi = prop.psi
 	psi.GetData()[:] = solver.Solver.GetEigenvectors()[num,:].reshape(psi.GetData().shape)
 	psi.Normalize()
