@@ -24,6 +24,12 @@ def FindGroundstate(**args):
 
 	return prop 
 
+def CreateArpackSolver(**args):
+	prop = SetupProblem(**args)
+	solver = pyprop.ArpackSolver(prop)
+	solver.Solve()
+	return prop, solver
+
 def FindPropagatedState(initialPsi, **args):
 	#setup propagator
 	args['imtime'] = False

@@ -1,6 +1,11 @@
+import sys
 from libcore import *
 from libredirect import *
 from libexpokit import *
+try:
+	from libarpack import *
+except:
+	print "Warning: could not load ARPACK wrapper (%s)" % sys.exc_info()[1]
 
 def EnumerateRankClasses(baseName):
 	for className, classObject in dict(globals()).iteritems():

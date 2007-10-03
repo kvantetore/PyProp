@@ -4,22 +4,14 @@
 #include <core/common.h>
 #include <core/wavefunction.h>
 
-#ifndef __GCCXML__
-#include <boost/python.hpp>
-using namespace boost::python;
-#else
-//UGLY hack to make pyste parse this file. 
-struct object
-{
-//	int a;
-};
-#endif
+#include "../krylovbase.h"
+#include <core/utility/boostpythonhack.h>
 
 namespace krylov
 {
 
 template<int Rank>
-class ExpokitPropagator
+class ExpokitPropagator : public KrylovBase<Rank>
 {
 public:
 	typedef blitz::TinyVector<int, Rank> DataVector;
@@ -30,13 +22,6 @@ private:
 	blitz::Array<int, 1> IntegerWorkspace;
 
 public:
-	Wavefunction<Rank> *Psi;
-	Wavefunction<Rank> *TempPsi;
-	object MultiplyCallback;
-	double CurTime;
-	double TimeStep;
-	bool ImaginaryTime;
-
 	int BasisSize;
 	double Tolerance;
 	double MatrixNorm;

@@ -15,8 +15,8 @@ import sys
 import os
 
 #numerical modules
-#from pylab import *
 from numpy import *
+import pylab
 
 #home grown modules
 pyprop_path = "../../../"
@@ -73,16 +73,37 @@ def FindGroundstate():
 
 	#propagate to find ground state
 	for t in prop.Advance(10):
-		print "t =", t, "E =", prop.GetEnergyExpectationValue()
+		print "t =", t, "E =", prop.GetEnergy()
 	
 	#save groundstate to disk
-	prop.SaveWavefunction("groundstate.dat")
+	prop.SaveWavefunctionHDF("groundstate.h5", "groundstate")
 
 	#Find energy
 	energy = prop.GetEnergy()
 	print "Groundstate energy:", energy, "a.u."
 
 	return prop, energy
+
+def FindEigenvalues():
+	conf = pyprop.Load("find_groundstate.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	solver = pyprop.ArpackSolver(prop)
+	solver.Solve()
+
+	print "Eigenvalues = ", solver.Solver.GetEigenvalues()
+	return solver
+
+def GetEigenvalue(prop, solver, num):
+	
+	psi = prop.psi
+	psi.GetData()[:] = solver.Solver.GetEigenvectors()[num,:].reshape(psi.GetData().shape)
+	psi.Normalize()
+
+	pyprop.Plot2DFull(prop)
+	print "Energy = %s" % prop.GetEnergy()
+
+
 
 def Propagate():
 	conf = pyprop.Load("propagation.ini")

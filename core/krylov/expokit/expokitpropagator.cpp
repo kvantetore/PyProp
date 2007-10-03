@@ -1,9 +1,9 @@
 #include "expokitpropagator.h"
-#include "expokit/expokit.h"
+#include "f2c/expokit.h"
 
 #include <core/wavefunction.h>
 
-#include "krylovcommon.h"
+#include "../krylovcommon.h"
 
 namespace krylov
 {
@@ -54,18 +54,18 @@ void ExpokitPropagator<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &p
 	}
 
 	//Set up class variables needed for callback
-	Psi = &psi;
-	TempPsi = &tempPsi;
-	MultiplyCallback = callback;
+	this->Psi = &psi;
+	this->TempPsi = &tempPsi;
+	this->MultiplyCallback = callback;
 	//Set up timestep
-	TimeStep = sqrt(sqr(imag(dt) + sqr(real(dt))));
-	cout << "Using timestep " << TimeStep << endl;
-	ImaginaryTime = false;
+	this->TimeStep = sqrt(sqr(imag(dt) + sqr(real(dt))));
+	cout << "Using timestep " << this->TimeStep << endl;
+	this->ImaginaryTime = false;
 	if (abs(imag(dt)) > 1e-10)
 	{
-		ImaginaryTime = true;
+		this->ImaginaryTime = true;
 	}
-	CurTime = t;
+	this->CurTime = t;
 
 	int wspSize = Workspace.size();
 	int iwspSize = IntegerWorkspace.size();
@@ -73,7 +73,7 @@ void ExpokitPropagator<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &p
 	expokit::zgexpv( 
 		&n, 
 		&m, 
-		&TimeStep, 
+		&this->TimeStep, 
 		in, 
 		out, 
 		&Tolerance, 

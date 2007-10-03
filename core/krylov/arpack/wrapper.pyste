@@ -1,0 +1,3 @@
+ArpackPropagator = Template("krylov::ArpackPropagator", "arpackpropagator.h");
+ArpackPropagator("1");
+ArpackPropagator("2");

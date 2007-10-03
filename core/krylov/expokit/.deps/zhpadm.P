@@ -1,2 +1,0 @@
-zhpadm.o: zhpadm.cpp f2c.h
-zhpadm.cpp f2c.h :

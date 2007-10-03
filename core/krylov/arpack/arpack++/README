@@ -1,0 +1,5 @@
+Files in this folder is copied from the arpack++ project, and modified to
+fit into pyprop. arpack++ can be found at
+http://www.ime.unicamp.br/~chico/arpack++/
+ARPACK can be found at
+http://www.caam.rice.edu/software/ARPACK/

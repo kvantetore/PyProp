@@ -2,6 +2,8 @@
 #define KRYLOVCOMMON_H
 
 #include <core/common.h>
+#include <core/utility/boostpythonhack.h>
+#include "krylovbase.h"
 
 namespace krylov
 {
@@ -23,7 +25,7 @@ void MultiplyHamiltonian(void *data, cplx *inBuffer, cplx *outBuffer)
 	}
 
 	//Some local variables for simplicity
-	ExpokitPropagator<Rank> *propagator = static_cast<ExpokitPropagator<Rank>*>(data);
+	KrylovBase<Rank> *propagator = static_cast<KrylovBase<Rank>*>(data);
 	Wavefunction<Rank> *psi = propagator->Psi;
 	Wavefunction<Rank> *tempPsi = propagator->TempPsi;
 

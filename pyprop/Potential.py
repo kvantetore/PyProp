@@ -138,7 +138,7 @@ class DynamicPotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Potential.ApplyPotential(self.psi, dt, t)
 
-	def MultiplyPotential(self, t, destPsi, dt):
+	def MultiplyPotential(self, destPsi, t, dt):
 		self.Potential.MultiplyPotential(self.psi, destPsi, dt, t)
 
 	def GetExpectationValue(self, t, dt):

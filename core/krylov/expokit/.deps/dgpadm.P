@@ -1,2 +1,0 @@
-dgpadm.o: dgpadm.cpp f2c.h
-dgpadm.cpp f2c.h :

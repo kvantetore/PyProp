@@ -1,2 +1,0 @@
-dspadm.o: dspadm.cpp f2c.h
-dspadm.cpp f2c.h :
