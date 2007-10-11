@@ -20,7 +20,9 @@ def FindGroundstate(**args):
 	
 	#propagate with imaginary time to find groundstate
 	for t in prop.Advance(10): 
-		print "t = ", t, ", E = ", prop.GetEnergy()
+		E = prop.GetEnergy()
+		if pyprop.ProcId == 0:
+			print "t = ", t, ", E = ", E
 
 	return prop 
 
@@ -133,6 +135,13 @@ def plot_energy_dt():
 
 def SetupConfig(**args):
 	conf = pyprop.Load("config.ini")
+
+	if 'silent' in args:
+		silent = args['silent']
+	else:
+		silent = pyprop.ProcId != 0
+	conf.Propagation.silent=silent
+
 
 	if 'dx' in args:	
 		dx = args['dx']
