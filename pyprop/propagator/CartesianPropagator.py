@@ -147,7 +147,7 @@ class CartesianPropagator(PropagatorBase):
 		
 	#Transforms one rank of psi between grid space and fourier space
 	def TransformRank(self, rank, direction, psi):
-		self.FFTTransform.TransformRank(psi, rank, direction)
+		self.FFTTransform.TransformRank(psi, int(rank), direction)
 		
 	def TransformNormalize(self, psi):
 		self.FFTTransform.Renormalize(psi)
