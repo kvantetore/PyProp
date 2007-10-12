@@ -148,7 +148,7 @@ def GetFileSlab(psi):
 	localStartIndex = numpy.zeros(len(fullShape), dtype=int)
 	rank = len(fullShape)
 	for i in range(rank):
-		localStartIndex[i] = distr.GetLocalStartIndex(fullShape[i], i)
+		localStartIndex[i] = distr.GetLocalStartIndex(int(fullShape[i]), i)
 	localStartIndex = tuple(localStartIndex)
 		
 	#set up hyperslabs
