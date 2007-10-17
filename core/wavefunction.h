@@ -33,9 +33,9 @@ public:
 		Repr = repr;
 	}
 
-	Representation<Rank>& GetRepresentation() const
+	RepresentationPtr GetRepresentation() const
 	{
-		return *Repr;
+		return Repr;
 	}
 	
 	blitz::Array<cplx, Rank> GetData()

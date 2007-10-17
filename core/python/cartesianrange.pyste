@@ -2,6 +2,7 @@
 
 CartesianRepresentation = Template("CartesianRepresentation", "representation/cartesianrepresentation.h")
 no_virtual(CartesianRepresentation)
+use_shared_ptr(CartesianRepresentation)
 CartesianRepresentation("1")
 CartesianRepresentation("2")
 CartesianRepresentation("3")

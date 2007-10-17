@@ -2,8 +2,6 @@
 SphericalTransformTensorGrid = Class("SphericalTransformTensorGrid", "transform/shtools.h")
 
 SphericalTransform = Template("SphericalTransform", "transform/sphericaltransform.h")
-#set_policy(SphericalTransform3D.CreateSphericalHarmonicRepr, return_value_policy(manage_new_object))
-#set_policy(SphericalTransform3D.CreateAngularRepresentation, return_value_policy(manage_new_object))
 SphericalTransform("2")
 SphericalTransform("3")
 

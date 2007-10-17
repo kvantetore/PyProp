@@ -16,11 +16,18 @@ namespace ReducedSpherical
 class ReducedSphericalHarmonicRepresentation : public Representation<1>
 {
 public:
+	typedef shared_ptr<ReducedSphericalHarmonicRepresentation> Ptr;
+	
 	LRange Range;
 
 	//Constructors
 	ReducedSphericalHarmonicRepresentation() {}
 	virtual ~ReducedSphericalHarmonicRepresentation() {}
+
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new ReducedSphericalHarmonicRepresentation(*this));
+	}
 
 	void SetupRepresentation(int maxL)
 	{
@@ -54,7 +61,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong sphharm rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 	
 	/** 

@@ -1,7 +1,6 @@
 
 Include("representation/representation.h")
 Wavefunction = Template("Wavefunction", "wavefunction.h")
-set_policy(Wavefunction.GetRepresentation, return_internal_reference())
 set_policy(Wavefunction.Copy, return_value_policy(manage_new_object))
 set_policy(Wavefunction.CopyDeep, return_value_policy(manage_new_object))
 set_policy(Wavefunction.GetData, return_value_policy(return_by_value))

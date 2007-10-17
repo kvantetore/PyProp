@@ -130,7 +130,7 @@ void DistributedModel<Rank>::ChangeDistribution(Wavefunction<Rank> &psi, const D
 
 	typename Wavefunction<Rank>::DataArray src(psi.GetData());
 	typename Wavefunction<Rank>::DataArray dst(psi.GetData(destBufferName));
-	typename Wavefunction<Rank>::IndexVector fullShape(psi.GetRepresentation().GetFullShape());
+	typename Wavefunction<Rank>::IndexVector fullShape(psi.GetRepresentation()->GetFullShape());
 
 	Transpose->Transpose(fullShape, src, CurrentDistribution->GetDistribution(), dst, newDistrib);
 

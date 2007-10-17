@@ -11,8 +11,7 @@ class CartesianPropagator(PropagatorBase):
 
 		rank = psi.GetRank()
 		self.FFTTransform = CreateInstanceRank("core.CartesianFourierTransform", rank)
-
-		self.RepresentationMapping = dict()
+		self.__WavefunctionData = {}
 
 	def ApplyConfig(self, config): 
 		PropagatorBase.ApplyConfig(self, config)
@@ -24,12 +23,6 @@ class CartesianPropagator(PropagatorBase):
 			self.Mass = configSection.mass
 
 	def SetupStep(self, dt):
-		#representation mappings		
-		startRepr = self.psi.GetRepresentation()
-		fftRepr = self.FFTTransform.CreateFourierRepresentation(startRepr)
-		self.RepresentationMapping[startRepr] = fftRepr
-		self.RepresentationMapping[fftRepr] = startRepr
-
 		# set up potential
 		self.SetupPotential(dt/2.)
 
@@ -63,7 +56,7 @@ class CartesianPropagator(PropagatorBase):
 			for rank in distribRanks:
 				self.TransformRank(rank, self.FFT_FORWARD, psi)
 
-		self.ChangeRepresentation(psi)
+		self.SetFourierRepresentation(psi)
 
 	def TransformInverse(self, psi):
 		# transform back into real space
@@ -79,7 +72,7 @@ class CartesianPropagator(PropagatorBase):
 				self.TransformRank(rank, self.FFT_BACKWARD, psi)
 			self.TransformNormalize(psi)
 
-		self.ChangeRepresentation(psi)
+		self.SetGridRepresentation(psi)
 
 
 	def AdvanceKineticEnergy(self, t, dt):
@@ -94,9 +87,21 @@ class CartesianPropagator(PropagatorBase):
 
 	def MultiplyKineticEnergy(self, destPsi, t, dt):
 		# transform into fourier space
+		if ProcId == 0:
+			pass
+#			print "1 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+#			print "1 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 		self.TransformForward(self.psi)
+		if ProcId == 0:
+			pass
+#			print "2 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+#			print "2 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 		self.TransformForward(destPsi)
-		
+		if ProcId == 0:
+			pass
+#			print "3 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+#			print "3 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+	
 		# apply kinetic energy potential
 		self.KineticPotential.MultiplyPotential(destPsi, t, dt) 
 		
@@ -151,25 +156,42 @@ class CartesianPropagator(PropagatorBase):
 		
 	def TransformNormalize(self, psi):
 		self.FFTTransform.Renormalize(psi)
-		
-	def ChangeRepresentation(self, psi, direction=1):
-		oldRepr = psi.GetRepresentation()
 
-		#forward change of representation
-		if direction == 1:
-			if not self.RepresentationMapping.has_key(oldRepr):
-				raise "Unknown representation ", oldRepr
-				
-			newRepr = self.RepresentationMapping[oldRepr]
-			psi.SetRepresentation(newRepr)
-		
-		#Reverse change of representation
-		if direction == -1:
-			for key, value in self.RepresentationMapping.items():
-				if value == oldRepr:
-					psi.SetRepresentation(key)
-					return
-		
-			raise "Unknown representation", oldRepr
+	def __GetPropagatorData(self, psi):
+		class PropagatorData(object):
+			def __init__(self):
+				self.GridRepresentation = None
+				self.FourierRepresentation = None
+
+		if not psi in self.__WavefunctionData:
+			propagatorData = PropagatorData()
+			self.__WavefunctionData[psi] = propagatorData
+
+		return self.__WavefunctionData[psi]
+
+	def SetGridRepresentation(self, psi):
+		data = self.__GetPropagatorData(psi)
+		if data.GridRepresentation == None:
+			raise RuntimeError("Grid Representation is not set. Can not continue")
+	
+		repr = data.GridRepresentation
+		#keep the current distributed model
+		distrib = psi.GetRepresentation().GetDistributedModel()
+		repr.SetDistributedModel(distrib)
+		psi.SetRepresentation(repr)
+
+	def SetFourierRepresentation(self, psi):
+		data = self.__GetPropagatorData(psi)
+		if data.FourierRepresentation == None:
+			gridRepr = psi.GetRepresentation()
+			fourierRepr = self.FFTTransform.CreateFourierRepresentation(gridRepr)
+			data.GridRepresentation = gridRepr
+			data.FourierRepresentation = fourierRepr
+	
+		repr = data.FourierRepresentation
+		#keep the current distributed model
+		distrib = psi.GetRepresentation().GetDistributedModel()
+		repr.SetDistributedModel(distrib)
+		psi.SetRepresentation(repr)
 
 

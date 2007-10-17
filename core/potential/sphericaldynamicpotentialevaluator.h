@@ -26,7 +26,7 @@ public:
 		potential.TimeStep = timeStep;
 
 		//Get representations
-		SphRepr *repr = static_cast<SphRepr*>(&psi.GetRepresentation());
+		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
 		for (int i=0; i<Rank-1; i++)
@@ -126,7 +126,7 @@ public:
 		Potential.TimeStep = timeStep;
 
 		//Get representations
-		SphRepr *repr = static_cast<SphRepr*>(&psi.GetRepresentation());
+		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
 		for (int i=0; i<Rank; i++)

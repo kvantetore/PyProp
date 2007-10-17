@@ -6,7 +6,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-typedef boost::shared_ptr< Representation<1> > Representation1DPtr;
+typedef Representation<1>::Ptr Representation1DPtr;
 
 template<int Rank>
 class CombinedRepresentation : public Representation<Rank>
@@ -17,9 +17,16 @@ private:
 	blitz::Array<double, 1> LocalGrid[Rank];
 
 public:
+	typedef shared_ptr< CombinedRepresentation<Rank> > Ptr;
+
 	//Constructors
 	CombinedRepresentation() {}
 	virtual ~CombinedRepresentation() {}
+
+	virtual typename Representation<Rank>::RepresentationPtr Copy()
+	{
+		return typename Representation<Rank>::RepresentationPtr(new CombinedRepresentation<Rank>(*this));
+	}
 
 	//Get/Set the representation of the specified rank
 	Representation1DPtr GetRepresentation(int rank);

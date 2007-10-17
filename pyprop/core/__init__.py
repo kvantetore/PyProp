@@ -18,7 +18,10 @@ def RepresentationHash(self):
 	return self.GetId()
 
 def RepresentationEq(self,other):
-	return self.GetId() == other.GetId()
+	if hasattr(other, "GetId"):
+		return self.GetId() == other.GetId()
+	else:
+		return False
 	
 for classObject in EnumerateRankClasses('Representation'):
 	classObject.__hash__ = RepresentationHash

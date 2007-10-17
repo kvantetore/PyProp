@@ -34,7 +34,7 @@ public:
 	void UpdateWavefunction(Wavefunction<Rank> &psi, double t, cplx dt, int parity)
 	{
 		//Get dx
-		CartesianRepresentation<1>* repr = (CartesianRepresentation<1>*)&psi.GetRepresentation();
+		typename CartesianRepresentation<1>::Ptr repr = dynamic_pointer_cast< CartesianRepresentation<1> >(psi.GetRepresentation());	
 		double dx = repr->GetRange(0).Dx;
 		double startx = repr->GetRange(0).Min;
 
@@ -43,8 +43,8 @@ public:
 		this->CurTime = t;
 	
 		//Get this procs position in the global scheme of things...
-		DistributedModel<1>* distr = & psi.GetRepresentation().GetDistributedModel();
-		int fullSize = psi.GetRepresentation().GetFullShape()(0);
+		typename DistributedModel<1>::Ptr distr = repr->GetDistributedModel();
+		int fullSize = repr->GetFullShape()(0);
 		int globalStartIndex = distr->GetLocalStartIndex(fullSize, 0);
 	
 		//If we do not start on the beginning of a block

@@ -12,8 +12,8 @@ void ReducedSphericalTransform<Rank>::SetupStep(const Wavefunction<Rank> &psi, i
 	// uses the representation of the wavefunction to get MaxL
 	typedef CombinedRepresentation<Rank> CmbRepr;
 	typedef ReducedSphericalHarmonicRepresentation SphHarmRepr;
-	CmbRepr* reprComb = dynamic_cast< CmbRepr* >(&psi.GetRepresentation());
-	SphHarmRepr* reprAngular = dynamic_cast< SphHarmRepr*>(&(*reprComb->GetRepresentation(sphRank)));
+	typename CmbRepr::Ptr reprComb = dynamic_pointer_cast< CmbRepr >(psi.GetRepresentation());
+	SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast< SphHarmRepr >(reprComb->GetRepresentation(sphRank));
 	if (reprAngular == 0) 
 	{
 		std::cout << "Invalid wavefunction representation, must be ReducedSphericalHarmonicRepresentation" << std::endl;

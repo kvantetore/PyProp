@@ -32,6 +32,9 @@ class ExpokitPropagator(PropagatorBase):
 		#We need an additional wavefunction to perform matrix-vector muls
 		self.TempPsi = self.psi.CopyDeep()
 
+		self.PsiDistrib = self.psi.GetRepresentation().GetDistributedModel()
+		self.TempDistrib = self.TempPsi.GetRepresentation().GetDistributedModel()
+
 	def MultiplyHamiltonian(self, destPsi, t, dt):
 		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
 
@@ -43,6 +46,9 @@ class ExpokitPropagator(PropagatorBase):
 		#assert tempPsi == self.TempPsi
 		
 		#inN = psi.GetNorm()
+	
+		self.psi.GetRepresentation().SetDistributedModel(self.PsiDistrib)
+		tempPsi.GetRepresentation().SetDistributedModel(self.TempDistrib)
 
 		self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
 

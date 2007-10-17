@@ -17,6 +17,11 @@ public:
 	OrthoPolRadialRepresentation() {}
 	virtual ~OrthoPolRadialRepresentation() {}
 
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new OrthoPolRadialRepresentation(*this));
+	}
+
 	blitz::Array<double, 1> GetFullGrid()
 	{
 		return Range.GetGrid();
@@ -38,7 +43,7 @@ public:
 	 */
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
-		blitz::Array<double, 1> weights(this->GetDistributedModel().GetLocalArray(Range.GetWeights(), GetBaseRank()));
+		blitz::Array<double, 1> weights(this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), GetBaseRank()));
 
 		cplx innerProd = sum(weights * conj(w1.Data) * w2.Data);
 		return innerProd;
@@ -62,7 +67,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 
 	/** Apply config, and set up Range

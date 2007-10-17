@@ -36,6 +36,11 @@ public:
 			Range(i) = range(i);
 		}
 	}
+
+	virtual typename Representation<Rank>::RepresentationPtr Copy()
+	{
+		return typename Representation<Rank>::RepresentationPtr(new CartesianRepresentation<Rank>(*this));
+	}
 	
 	//Range functions:
 	/**
@@ -63,7 +68,7 @@ public:
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
 	{
 		int effectiveRank = rank - this->GetBaseRank();
-		return this->GetDistributedModel().GetLocalArray(Range(effectiveRank).GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range(effectiveRank).GetWeights(), rank);
 	}	
 
 	//Implementation of the Representation interface.

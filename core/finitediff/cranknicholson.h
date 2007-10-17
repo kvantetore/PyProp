@@ -68,7 +68,7 @@ public:
 		this->CurTime = t;
 		
 		//Get dx
-		CartesianRepresentation<1>* repr = this->GetRepresentation(psi);
+		CartesianRepresentation<1>::Ptr repr = this->GetRepresentation(psi);
 		double dx = repr->GetRange(0).Dx;
 		double startx = repr->GetRange(0).Min;
 		int gridSize = repr->GetRange(0).Count;
@@ -129,7 +129,7 @@ public:
 		this->CurTime = t;
 
 		//Get dx
-		CartesianRepresentation<1>* repr = this->GetRepresentation(srcPsi);
+		CartesianRepresentation<1>::Ptr repr = this->GetRepresentation(srcPsi);
 		double dx = repr->GetRange(0).Dx;
 		double startx = repr->GetRange(0).Min;
 		int gridSize = repr->GetRange(0).Count;
@@ -163,9 +163,9 @@ public:
 
 
 private:
-	CartesianRepresentation<1>* GetRepresentation(Wavefunction<Rank> &psi)
+	CartesianRepresentation<1>::Ptr GetRepresentation(Wavefunction<Rank> &psi)
 	{
-		return (CartesianRepresentation<1>*)&psi.GetRepresentation();
+		return dynamic_pointer_cast< CartesianRepresentation<1> >(psi.GetRepresentation());
 	}
 
 	void SolveForward(DataArray &diag, DataArray &upperDiag, DataArray &lowerDiag, DataArray &in, DataArray &out)

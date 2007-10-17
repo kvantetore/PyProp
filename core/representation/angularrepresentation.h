@@ -16,11 +16,18 @@ typedef Representation<1> Representation1D;
 class AngularRepresentation : public Representation1D
 {
 public:
+	typedef shared_ptr<AngularRepresentation> Ptr;
+
 	OmegaRange Range;                          //The points chosen for the angular grid
 
 	//Constructors:
 	AngularRepresentation() {}
 	virtual ~AngularRepresentation() {}
+
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new AngularRepresentation(*this));
+	}
 
 	void SetupRepresentation(int maxL);
 
@@ -62,7 +69,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 
 	/** 
@@ -73,16 +80,15 @@ public:
 		blitz::Array<double, 2> omegaGrid( Range.GetOmegaGrid() );
 		int size = omegaGrid.extent(0);
 
-		blitz::Range indexRange = this->GetDistributedModel().GetLocalIndexRange(size, GetBaseRank());
+		blitz::Range indexRange = this->GetDistributedModel()->GetLocalIndexRange(size, GetBaseRank());
 		return omegaGrid(indexRange, blitz::Range::all());
 	}
 	
 	/** Apply config, and set up Range
 	  */
 	virtual void ApplyConfigSection(const ConfigSection &config);
-};
 
-typedef boost::shared_ptr<AngularRepresentation> AngularRepresentationPtr;
+};
 
 #endif
 

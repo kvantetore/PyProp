@@ -34,8 +34,8 @@ public:
 		// uses the representation of the wavefunction to get MaxL
 		typedef SphericalRepresentation<Rank> SphRepr;
 		typedef SphericalHarmonicRepresentation SphHarmRepr;
-		SphRepr* reprSphere = dynamic_cast< SphRepr* >(&psi.GetRepresentation());
-		SphHarmRepr* reprAngular = dynamic_cast<SphHarmRepr*>(&(*reprSphere->GetAngularRepresentation()));
+		typename SphRepr::Ptr reprSphere = dynamic_pointer_cast<SphRepr>(psi.GetRepresentation());
+		SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast<SphHarmRepr>(reprSphere->GetAngularRepresentation());
 		if (reprAngular == 0) 
 		{
 			std::cout << "Invalid wavefunction representation, must be SphericalHarmonicRepresentation" << std::endl;
@@ -109,17 +109,17 @@ public:
 	}
 
 	// Creates a spherical harmonic representation based on an Angular representation
-	SphericalHarmonicRepresentationPtr CreateSphericalHarmonicRepr()
+	SphericalHarmonicRepresentation::Ptr CreateSphericalHarmonicRepr()
 	{
-		SphericalHarmonicRepresentationPtr repr(new SphericalHarmonicRepresentation());
+		SphericalHarmonicRepresentation::Ptr repr(new SphericalHarmonicRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
 		repr->SetBaseRank( Rank - 1 );
 		return repr;
 	}
 
-	boost::shared_ptr<AngularRepresentation> CreateAngularRepresentation()
+	AngularRepresentation::Ptr CreateAngularRepresentation()
 	{
-		AngularRepresentationPtr repr(new AngularRepresentation());
+		AngularRepresentation::Ptr repr(new AngularRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
 		repr->SetBaseRank( Rank - 1 );
 		return repr;

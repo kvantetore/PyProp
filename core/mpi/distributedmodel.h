@@ -12,19 +12,31 @@
 class Distribution
 {
 public:
+	typedef shared_ptr< Distribution > Ptr;
 	typedef blitz::Array<int, 1> DataArray;
+
+	Distribution() : Distrib(0) {}
 
 	Distribution(int procRank)
 	{
 		Distrib.resize(procRank);
 	}
 
-	int GetProcRank()
+	Distribution(const Distribution &other)
+	{
+		if (other.Distrib.size() > 0)
+		{
+			this->Distrib.resize(other.Distrib.shape());
+			this->Distrib = other.Distrib;
+		}
+	}
+
+	int GetProcRank() const
 	{
 		return Distrib.extent(0);
 	}
 		
-	const DataArray GetDistribution()
+	const DataArray GetDistribution() const
 	{
 		return Distrib;
 	}
@@ -45,32 +57,42 @@ template<int Rank> class ArrayTranspose;
 template<int Rank>
 class DistributedModel
 {
-private:
+public:
+	typedef shared_ptr< DistributedModel<Rank> > Ptr;
 	typedef ArrayTranspose<Rank> TransposeType;
-	typedef boost::shared_ptr<TransposeType> TransposePtr;
-	typedef boost::shared_ptr< DistributedModel<1> > DistributedModel1dPtr;
-	
-	DistributionPtr CurrentDistribution;
+	typedef shared_ptr<TransposeType> TransposePtr;
+	typedef shared_ptr< DistributedModel<1> > DistributedModel1DPtr;
+
+private:
+	Distribution::Ptr CurrentDistribution;
 	TransposePtr Transpose;
 
 	static bool MPIDisabled;
 	
 public:
+
 	int ProcId;
 	int ProcCount;
 	
 	//constructor
 	DistributedModel();
 	DistributedModel(DistributionPtr distrib);
+	DistributedModel(const DistributedModel &other)
+	{
+		this->CurrentDistribution = DistributionPtr(new Distribution(*other.CurrentDistribution));
+		this->Transpose = other.Transpose;
+		this->ProcCount = other.ProcCount;
+		this->ProcId = other.ProcId;
+	}
 
 	/*
 	 * Create a 1D distributed model sharing CurrentDistribution with this DistributedModel
 	 * This is used by CombinedRepresentation to construct lower dimensional representations which
 	 * still knows the correct distribution
 	 */
-	DistributedModel1dPtr CreateSubDistributedModel()
+	DistributedModel1DPtr CreateSubDistributedModel()
 	{
-		return DistributedModel1dPtr( new DistributedModel<1>(CurrentDistribution) );
+		return DistributedModel1DPtr( new DistributedModel<1>(CurrentDistribution) );
 	}
 
 	bool IsSingleProc()

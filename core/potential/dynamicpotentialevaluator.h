@@ -27,7 +27,7 @@ public:
 		potential.TimeStep = timeStep;
 
 		//Get representations
-		Representation<Rank> *repr = &psi.GetRepresentation();
+		typename Representation<Rank>::Ptr repr = psi.GetRepresentation();
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
 		for (int i=0; i<Rank; i++)
@@ -114,7 +114,7 @@ public:
 		Potential.TimeStep = timeStep;
 
 		//Get representations
-		Representation<Rank> *repr = &psi.GetRepresentation();
+		typename Representation<Rank>::Ptr repr = psi.GetRepresentation();
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
 		for (int i=0; i<Rank; i++)

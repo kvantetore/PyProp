@@ -5,7 +5,7 @@
 template<int Rank>
 void CartesianFourierTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int direction)
 {
-	if (psi.GetRepresentation().GetDistributedModel().IsDistributedRank(rank))
+	if (psi.GetRepresentation()->GetDistributedModel()->IsDistributedRank(rank))
 	{
 		std::cout << "Cannot execute fourier transform along distributed rank." << std::endl;
 		throw std::runtime_error("Cannot execute fourier transform along distributed rank.");
@@ -48,7 +48,7 @@ void CartesianFourierTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi)
 template<int Rank>
 void CartesianFourierTransform<Rank>::FourierTransform(Wavefunction<Rank> &psi, int direction)
 {
-	if (psi.GetRepresentation().GetDistributedModel().ProcCount == 1)
+	if (psi.GetRepresentation()->GetDistributedModel()->ProcCount == 1)
 	{
 		//For one processor, we can execute a full Rank-D FFT 
 		FftAll(psi.Data, direction);
@@ -104,7 +104,7 @@ template <int Rank>
 void FftScale(Wavefunction<Rank> &psi)
 {
 	double scale = 1.0;
-	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation().GetFullShape();
+	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation()->GetFullShape();
 	for (int dimension=0; dimension<Rank; dimension++)
 	{
 		scale /= fullShape(dimension);
@@ -120,7 +120,7 @@ template <int Rank>
 void FftScaleRank(Wavefunction<Rank> &psi, int rank)
 {
 	double scale = 1.0;
-	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation().GetFullShape();
+	blitz::TinyVector<int, Rank> fullShape = psi.GetRepresentation()->GetFullShape();
 	scale /= fullShape(rank);
 	psi.Data = psi.Data * scale;		
 }

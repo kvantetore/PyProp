@@ -13,11 +13,18 @@
 class TransformedRadialRepresentation : public Representation<1>
 {
 public:
+	typedef shared_ptr<TransformedRadialRepresentation> Ptr;
 	TransformedRange Range;
 
 	//Constructors
 	TransformedRadialRepresentation() {}
 	virtual ~TransformedRadialRepresentation() {}
+
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new TransformedRadialRepresentation(*this));
+	}
+
 
 	/* ---------- Implementation of Representation<1> interface ----------- */
 		
@@ -34,7 +41,7 @@ public:
 	 */
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
-		blitz::Array<double, 1> weights(this->GetDistributedModel().GetLocalArray(Range.GetWeights(), GetBaseRank()));
+		blitz::Array<double, 1> weights(this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), GetBaseRank()));
 
 		cplx innerProd = sum(weights * conj(w1.Data) * w2.Data);
 		return innerProd;
@@ -58,7 +65,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 
 	/** Apply config, and set up Range
@@ -85,7 +92,5 @@ public:
 	}
 
 };
-
-typedef boost::shared_ptr<TransformedRadialRepresentation> TransformedRadialRepresentationPtr;
 
 #endif

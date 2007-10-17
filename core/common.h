@@ -12,6 +12,8 @@
 #define sqr(x) ((x)*(x))
 
 using boost::shared_ptr;
+using boost::dynamic_pointer_cast;
+
 using std::cout;
 using std::endl;
 

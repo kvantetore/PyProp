@@ -17,8 +17,8 @@ public:
 	{
 		//Set up grid
 		blitz::TinyVector< blitz::Array<double, 1>, Rank> grid;
-		Representation<Rank> *reprBasic = &psi.GetRepresentation();
-		CartesianRepresentation<Rank> *repr = (CartesianRepresentation<Rank>*) reprBasic;
+		typename Representation<Rank>::Ptr reprBasic = psi.GetRepresentation();
+		typename CartesianRepresentation<Rank>::Ptr repr = dynamic_pointer_cast< CartesianRepresentation<Rank> >(reprBasic);
 		for (int curRank = 0; curRank<Rank; curRank++)
 		{
 			grid(curRank).reference(repr->GetLocalGrid(curRank));
@@ -76,8 +76,8 @@ public:
 	{
 		//Set up grid
 		GridVector grid;
-		Representation<Rank> *reprBasic = &psi.GetRepresentation();
-		CartesianRepresentation<Rank> *repr = (CartesianRepresentation<Rank>*) reprBasic;
+		typename Representation<Rank>::Ptr reprBasic = psi.GetRepresentation();
+		typename CartesianRepresentation<Rank>::Ptr repr = dynamic_pointer_cast< CartesianRepresentation<Rank> >(reprBasic);
 		for (int curRank = 0; curRank<Rank; curRank++)
 		{
 			grid(curRank).reference(repr->GetLocalGrid(curRank));

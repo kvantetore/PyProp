@@ -26,7 +26,7 @@ template<int Rank>
 void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavefunction<Rank> &psi, int rank)
 {
 	//Set class parameters
-	N = psi.GetRepresentation().GetFullShape()(rank);
+	N = psi.GetRepresentation()->GetFullShape()(rank);
 	PropagateRank = rank;
 	Param = param;
 	

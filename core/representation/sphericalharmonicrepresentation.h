@@ -13,11 +13,18 @@
 class SphericalHarmonicRepresentation : public Representation<1>
 {
 public:
+	typedef shared_ptr<SphericalHarmonicRepresentation> Ptr;
+
 	LmRange Range;
 
 	//Constructors
 	SphericalHarmonicRepresentation() {}
 	virtual ~SphericalHarmonicRepresentation() {}
+
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new SphericalHarmonicRepresentation(*this));
+	}
 
 	void SetupRepresentation(int maxL)
 	{
@@ -61,7 +68,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong sphharm rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 	
 	/** 
@@ -84,7 +91,7 @@ public:
 		blitz::Array<double, 2> lmGrid( Range.GetLmGrid() );
 		int size = lmGrid.extent(0);
 
-		blitz::Range indexRange = this->GetDistributedModel().GetLocalIndexRange(size, GetBaseRank());
+		blitz::Range indexRange = this->GetDistributedModel()->GetLocalIndexRange(size, GetBaseRank());
 		return lmGrid(indexRange, blitz::Range::all());
 	}
 	

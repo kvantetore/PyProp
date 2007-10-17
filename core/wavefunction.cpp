@@ -104,7 +104,7 @@ Wavefunction<Rank>::Copy() const
 {
 	/* Set up representations and stuff */
 	Wavefunction<Rank>* newPsi = new Wavefunction();
-	newPsi->SetRepresentation(this->Repr);
+	newPsi->SetRepresentation(this->Repr->Copy());
 	
 	/* Allocate data */
 	int bufferName = newPsi->AllocateData(Data.shape());
@@ -122,7 +122,7 @@ Wavefunction<Rank>::CopyDeep() const
 {
 	/* Set up representations and stuff */
 	Wavefunction<Rank>* newPsi = new Wavefunction();
-	newPsi->SetRepresentation(this->Repr);
+	newPsi->SetRepresentation(this->Repr->Copy());
 	
 	/* Allocate data */
 	for (size_t i = 0; i < this->WavefunctionData.size(); i++)
@@ -150,26 +150,26 @@ template<int Rank>
 double Wavefunction<Rank>::GetNorm() const
 {
 	double localNorm = GetLocalNorm();
-	return GetRepresentation().GetDistributedModel().GetGlobalSum(localNorm);
+	return GetRepresentation()->GetDistributedModel()->GetGlobalSum(localNorm);
 }
 
 template<int Rank>
 double Wavefunction<Rank>::GetLocalNorm() const
 {
-	return GetRepresentation().InnerProduct(*this, *this).real();
+	return GetRepresentation()->InnerProduct(*this, *this).real();
 }
 
 template<int Rank>
 cplx Wavefunction<Rank>::InnerProduct(const Wavefunction<Rank> &psi) const
 {
 	cplx localInnerProd = LocalInnerProduct(psi);
-	return GetRepresentation().GetDistributedModel().GetGlobalSum(localInnerProd);
+	return GetRepresentation()->GetDistributedModel()->GetGlobalSum(localInnerProd);
 }
 
 template<int Rank>
 cplx Wavefunction<Rank>::LocalInnerProduct(const Wavefunction<Rank> &psi) const
 {
-	return GetRepresentation().InnerProduct(psi, *this);
+	return GetRepresentation()->InnerProduct(psi, *this);
 }
 
 

@@ -4,8 +4,8 @@
 #include <core/utility/fortran.h>
 
 #include "../krylovcommon.h"
-#include "arpack++/caupp.h"
-#include "arpack++/ceupp.h"
+#include "arpack++/pcaupp.h"
+#include "arpack++/pceupp.h"
 #include "arpack++/debug.h"
 
 namespace krylov
@@ -90,7 +90,8 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	do 
 	{
 		i = i+1;
-		caupp( 
+		pcaupp(
+			MPI_COMM_WORLD, 
 			iterationAction,             // Which action to take after this call (ido)
 			matrixType,                  // What type of problem s this (bmat)
 			matrixSize,                  // Size of matrix (matrixSize)x(matrixSize) (n)
@@ -152,7 +153,8 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 
 	//call zneupd to postprocess data
 	//OMG! for en j**** lang liste parametere//
-	ceupp( 
+	pceupp( 
+		MPI_COMM_WORLD, 
 		findEigenvectors,           // (rvec)
 		'A',                        // 
 		Eigenvalues.data(),         // (d)

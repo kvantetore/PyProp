@@ -10,7 +10,9 @@ template<int Rank>
 class Representation
 {
 public:
-	typedef boost::shared_ptr< DistributedModel<Rank> > DistributedModelPtr;
+	typedef shared_ptr< Representation<Rank> > Ptr;
+	typedef typename DistributedModel<Rank>::Ptr DistributedModelPtr;
+	typedef boost::shared_ptr< Representation<Rank> > RepresentationPtr;
 	
 private:
 	DistributedModelPtr Distrib;	//Knows how the wavefunction is distributed
@@ -18,26 +20,31 @@ private:
 									//All rank parameters will use the global rank. It is the responsibility
 									//of each representation class to translate down to the effective rank
 									//(subtract BaseRank)
-
 public:
 	//Constructors
 	Representation () : BaseRank(0) {}
 	virtual ~Representation() {}
-	
+
+	Representation(const Representation<Rank> &other)
+	{
+		this->Distrib = DistributedModelPtr( new DistributedModel<Rank>(*other.Distrib) );
+		this->BaseRank = other.BaseRank;
+	}
+
 	inline void SetDistributedModel(DistributedModelPtr distrib)
 	{
 		Distrib = distrib;
 	}
 	
-	inline DistributedModel<Rank>& GetDistributedModel()
+	inline DistributedModelPtr GetDistributedModel()
 	{
-		return *Distrib;
+		return Distrib;
 	}
 	
 	blitz::TinyVector<int, Rank> GetInitialShape() 
 	{
 		blitz::TinyVector<int, Rank> fullShape = GetFullShape();
-		return GetDistributedModel().CreateInitialShape(fullShape);
+		return GetDistributedModel()->CreateInitialShape(fullShape);
 	}
 
 	int GetBaseRank()
@@ -57,7 +64,7 @@ public:
 
 	virtual blitz::Array<double, 1> GetLocalGrid(int rank)
 	{
-		return this->GetDistributedModel().GetLocalArray(GetGlobalGrid(rank), rank);
+		return this->GetDistributedModel()->GetLocalArray(GetGlobalGrid(rank), rank);
 	}
 
 	//Must override
@@ -66,7 +73,7 @@ public:
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank) = 0;
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank) = 0;
 	virtual void ApplyConfigSection(const ConfigSection &config) = 0;
-
+	virtual RepresentationPtr Copy() = 0;
 };
 
 #endif

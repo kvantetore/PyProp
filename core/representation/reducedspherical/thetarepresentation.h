@@ -24,6 +24,11 @@ public:
 	ThetaRepresentation() {}
 	virtual ~ThetaRepresentation() {}
 
+	virtual Representation<1>::RepresentationPtr Copy()
+	{
+		return Representation<1>::RepresentationPtr(new ThetaRepresentation(*this));
+	}
+
 	void SetupRepresentation(int maxL);
 
 	//Returns the size of the grid
@@ -63,7 +68,7 @@ public:
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel().GetLocalArray(Range.GetWeights(), rank);
+		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
 	}
 
 	/** Apply config, and set up Range

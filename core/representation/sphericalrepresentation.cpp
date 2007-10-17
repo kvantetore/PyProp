@@ -9,14 +9,14 @@ template<int Rank>
 blitz::Array<double, 2> SphericalRepresentation<Rank>::GetLocalAngularGrid()
 {
 	blitz::Array<double, 2> grid;
-	AngularRepresentationPtr angRepr = dynamic_pointer_cast<AngularRepresentation>(GetAngularRepresentation());
+	AngularRepresentation::Ptr angRepr = dynamic_pointer_cast<AngularRepresentation>(GetAngularRepresentation());
 	if (angRepr)
 	{
 		grid.reference(angRepr->GetLocalOmegaGrid());
 	}
 	else
 	{
-		SphericalHarmonicRepresentationPtr sphRepr = dynamic_pointer_cast<SphericalHarmonicRepresentation>(GetAngularRepresentation()); 
+		SphericalHarmonicRepresentation::Ptr sphRepr = dynamic_pointer_cast<SphericalHarmonicRepresentation>(GetAngularRepresentation()); 
 		if (sphRepr)
 		{
 			grid.reference(sphRepr->GetLocalLmGrid());

@@ -12,5 +12,6 @@ set_policy(OrthoPolRange.GetGrid, return_value_policy(return_by_value))
 #representation
 OrthoPolRadialRepresentation = Class("OrthoPol::OrthoPolRadialRepresentation", "representation/orthopol/orthopolradialrepresentation.h")
 no_virtual(OrthoPolRadialRepresentation)
+use_shared_ptr(OrthoPolRadialRepresentation)
 
 

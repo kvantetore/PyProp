@@ -22,9 +22,16 @@ template<int Rank>
 class SphericalRepresentation : public CombinedRepresentation<Rank>
 {
 public:
+	typedef boost::shared_ptr<SphericalRepresentation> Ptr;
+
 	//Constructors
 	SphericalRepresentation() {}
 	virtual ~SphericalRepresentation() {}
+
+	virtual typename Representation<Rank>::RepresentationPtr Copy()
+	{
+		return typename Representation<Rank>::RepresentationPtr(new SphericalRepresentation<Rank>(*this));
+	}
 
 	Representation1DPtr GetAngularRepresentation()
 	{

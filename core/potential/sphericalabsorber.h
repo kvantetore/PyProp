@@ -53,7 +53,7 @@ public:
 	void ApplyPotential(Wavefunction<Rank> &psi, cplx timeStep, double curTime)
 	{
 		//Set up grid
-		SphericalRepresentation<Rank> *repr = static_cast< SphericalRepresentation<Rank>* >(&psi.GetRepresentation());
+		typename SphericalRepresentation<Rank>::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > scaling;

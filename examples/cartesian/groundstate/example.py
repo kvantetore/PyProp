@@ -52,9 +52,6 @@ def FindEnergy(prop):
 	prop.psi.GetData()[:] = psi.GetData()
 
 
-	
-	
-
 def FindGroundstate():
 	"""
 	Loads the configuration file "find_groundstate.ini", which contains information
@@ -84,14 +81,25 @@ def FindGroundstate():
 
 	return prop, energy
 
+def Test():
+	conf = pyprop.Load("find_groundstate.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	
+	print prop.GetEnergyExpectationValue()
+	print prop.GetEnergyExpectationValue()
+
+
+
 def FindEigenvalues():
 	conf = pyprop.Load("find_groundstate.ini")
+	conf.Propagation.silent = pyprop.ProcId != 0
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	solver = pyprop.ArpackSolver(prop)
 	solver.Solve()
 
-	print "Eigenvalues = ", solver.Solver.GetEigenvalues()
+	print "Eigenvalues = ", solver.Solver.GetEigenvalues().real
 	return solver
 
 def GetEigenvalue(solver, num):

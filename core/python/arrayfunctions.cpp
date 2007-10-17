@@ -12,7 +12,7 @@ void SetWavefunctionFromGridFunction(Wavefunction<Rank> &psi, object& function, 
 {
 	//Set up grid
 	blitz::TinyVector< blitz::Array<double, 1>, Rank> grid;
-	Representation<Rank> *repr = &psi.GetRepresentation();
+	typename Representation<Rank>::Ptr repr = psi.GetRepresentation();
 	for (int curRank = 0; curRank<Rank; curRank++)
 	{
 		grid(curRank).reference(repr->GetLocalGrid(curRank));
