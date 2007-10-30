@@ -122,6 +122,9 @@ def CreatePotentialFromSection(potentialConfig, potentialName, psi):
 	elif potentialConfig.type == PotentialType.CrankNicholson:
 		potential = CrankNicholsonPotentialWrapper(psi)
 	
+	elif potentialConfig.type == PotentialType.Matrix:
+		potential = MatrixPotentialWrapper(psi)
+	
 	else:
 		raise "Unknown potential type", potentialConfig.type
 

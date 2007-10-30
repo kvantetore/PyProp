@@ -16,6 +16,7 @@ PYSTEFILES = \
 	python/orthopolpotentials.pyste \
 	python/reducedsphericalrepresentation.pyste \
 	python/reducedsphericaltransform.pyste \
+	python/vectorrepresentation.pyste \
 	python/arrayfunctions.pyste \
 	python/blitzwrapper.pyste \
 	python/cartesianabsorber.pyste \

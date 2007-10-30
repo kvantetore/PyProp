@@ -1,0 +1,9 @@
+
+VectorRepresentation = Class("VectorRepresentation", "representation/vectorrepresentation.h")
+no_virtual(VectorRepresentation)
+use_shared_ptr(VectorRepresentation)
+
+Class("SparseMatrixPotentialEvaluator", "potential/sparsematrixpotentialevaluator.h")
+Class("DenseMatrixPotentialEvaluator", "potential/densematrixpotentialevaluator.h")
+Class("DiagonalMatrixPotentialEvaluator", "potential/diagonalmatrixpotentialevaluator.h")
+

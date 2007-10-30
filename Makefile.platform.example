@@ -7,6 +7,11 @@ CPPFLAGS       := $(CPPFLAGS) -DSINGLEPROC -DPYPROP_USE_BLAS
 MPICXX         := g++
 LAPACK_LIBS    := -llapack_pic -lf77blas -lcblas -latlas
 
+FC             := f95
+FORTRAN_FLAGS  := -ffree-form -implicit-none
+FORTRAN_LIBS   := -lg2c -lgfortran
+
+
 #pyprop CPPFLAGS:
 # -DSINGLEPROC  
 #    compile for single processor only. No MPI calls are made when this flag

@@ -8,6 +8,11 @@ try:
 except:
 	print "Warning: Unable to load matplotlib. Plotting will not be available"
 
+try:
+	import tables
+except:
+	print "Warning: Could not load module tables (pytables). Serialization to HDF files will not be available"
+
 import numpy
 from numpy import *
 

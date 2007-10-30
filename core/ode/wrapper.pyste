@@ -1,0 +1,8 @@
+
+OdeWrapper = Template("ODE::OdeWrapper", "odewrapper.h");
+exclude(OdeWrapper.Psi);
+exclude(OdeWrapper.TempPsi);
+exclude(OdeWrapper.MultiplyCallback);
+
+OdeWrapper("1");
+OdeWrapper("2");

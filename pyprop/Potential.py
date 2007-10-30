@@ -27,7 +27,6 @@ def CreateDynamicPotentialInstance(className, rank):
 
 	return potential
 
-
 def CreateFiniteDifferencePotentialInstance(className, rank, evaluatorPrefix="core.ExponentialFiniteDifferenceEvaluator"):
 	#Create globals
 	glob = dict(sys.modules['__main__'].__dict__)
@@ -183,4 +182,94 @@ class CrankNicholsonPotentialWrapper(PotentialWrapper):
 		self.Evaluator.MultiplyOperator(self.psi, dstPsi, t, dt)
 
 
+class SparseMatrixParticle(tables.IsDescription):
+	RowIndex = tables.Int32Col(pos=1)
+	ColIndex = tables.Int32Col(pos=2)
+	MatrixElement = tables.ComplexCol(itemsize=16, pos=3)
+
+class MatrixType:
+	Sparse = "Sparse"
+	Dense = "Dense"
+	Diagonal = "Diagonal"
+
+class MatrixPotentialWrapper(PotentialWrapper):
+
+	def __init__(self, psi):
+		self.psi = psi
+
+	def LoadMatrixPotential(self, conf):
+		self.MatrixType = conf.matrix_type 
+		
+		if hasattr(conf, "matrix_function"):
+			self.LoadMatrixPotentialFunction(conf)
+
+		elif hasattr(conf, "filename"):
+			self.LoadMatrixPotentialFile(conf)
+
+		else:
+			raise NotImplementedException("Missing load-matrix information in Potential")
+
+
+	def LoadMatrixPotentialFunction(self, conf):
+		func = conf.matrix_function
+
+		if self.MatrixType == MatrixType.Sparse:
+			row, col, matrixElement = func()
+			self.Potential.SetMatrixData(row, col, matrixElement)
+
+		if self.MatrixType == MatrixType.Dense or self.MatrixType == MatrixType.Diagonal:
+			data = func()
+			self.Potential.SetMatrixData(data)
+
+
+	def LoadMatrixPotentialFile(self, conf):
+		filename = conf.filename
+		dataset = conf.dataset
+
+		file = tables.openFile(filename, "r")
+		try:
+			node = file.getNode(dataset)
+			if self.MatrixType == MatrixType.Sparse:
+				row = node.cols.RowIndex[:]
+				col = node.cols.ColIndex[:]
+				matrixElement = node.cols.MatrixElement[:]
+				self.Potential.SetMatrixData(row, col, matrixElement)
+
+			if self.MatrixType == MatrixType.Dense or self.MatrixType == MatrixType.Diagonal:
+				data = node[:]
+				self.Potential.SetMatrixData(data)
+		finally:
+			file.close()
+
+	def ApplyConfigSection(self, configSection):
+		PotentialWrapper.ApplyConfigSection(self, configSection)
+		rank = self.psi.GetRank()
+
+		if configSection.matrix_type == MatrixType.Sparse:
+			self.Potential = core.SparseMatrixPotentialEvaluator()
+		elif configSection.matrix_type == MatrixType.Dense:
+			self.Potential = core.DenseMatrixPotentialEvaluator()
+		elif configSection.matrix_type == MatrixType.Diagonal:
+			self.Potential = core.DiagonalMatrixPotentialEvaluator()
+		else:
+			raise NotImplementedException("Invalid MatrixType %s" % configSection.MatrixType)
+		configSection.Apply(self.Potential)
+
+		self.LoadMatrixPotential(configSection)
+
+		self.TimeFunction = configSection.time_function
+
+	def AdvanceStep(self, t, dt):
+		raise NotImplementetException("Matrix potential does not support AdvanceStep()")
+
+	def MultiplyPotential(self, destPsi, t, dt):
+		self.Potential.MultiplyPotential(self.psi, destPsi)
+		destPsi.GetData()[:] *= self.GetTimeValue(t)
+
+
+	def GetExpectationValue(self, t, dt):
+		return self.GetTimeValue(t) * self.Potential.CalculateExpectationValue(self.psi)
+
+	def GetTimeValue(self, t):
+		return self.TimeFunction(self.ConfigSection, t)
 

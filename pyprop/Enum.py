@@ -5,6 +5,7 @@ class PotentialType:
 	Dynamic = 3
 	FiniteDifference = 4
 	CrankNicholson = 5
+	Matrix = 6
 	
 #Initial condition types
 class InitialConditionType:
