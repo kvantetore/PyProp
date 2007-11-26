@@ -16,16 +16,13 @@ private:
 public:
 	int Count;
 	OrthoPol::Parameter Param;
-	double Alpha;
 	
 	//Constructors--------------------------------
 	OrthoPolRange() :
-		Count(0),
-		Alpha(0.0)
+		Count(0)
 	{}
 
-	OrthoPolRange(const Parameter &param, int N) : 
-		Alpha(0.0)
+	OrthoPolRange(const Parameter &param, int N) 
 	{
 		Initialize(param, N);
 	}
@@ -43,7 +40,7 @@ public:
 
 	void Initialize(const Parameter &param, int n)
 	{
-		GridAndWeights(n, param, Grid, Weights, Alpha);
+		ScaledGridAndWeights(n, param, Grid, Weights);
 		Count = n;
 		Param = param;
 	}

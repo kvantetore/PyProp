@@ -33,6 +33,13 @@ def SetupProblem(**args):
 
 	return prop
 
+def FindEigenvalues(**args):
+	prop = SetupProblem(**args)
+	solver = pyprop.ArpackSolver(prop)
+	solver.Solve()
+	print solver.Solver.GetEigenvalues().real
+	return solver
+
 def FindGroundstate(**args):
 	#for finding ground state, we always use imaginary time
 	args['imTime'] = True  #Remember: Arguments are case sensitive

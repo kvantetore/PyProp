@@ -118,12 +118,15 @@ def CreatePotentialFromSection(potentialConfig, potentialName, psi):
 	
 	elif potentialConfig.type == PotentialType.FiniteDifference:
 		potential = FiniteDifferencePotentialWrapper(psi)
-	
+		
 	elif potentialConfig.type == PotentialType.CrankNicholson:
 		potential = CrankNicholsonPotentialWrapper(psi)
 	
 	elif potentialConfig.type == PotentialType.Matrix:
 		potential = MatrixPotentialWrapper(psi)
+	
+	elif potentialConfig.type == PotentialType.RankOne:
+		potential = RankOnePotentialWrapper(psi)
 	
 	else:
 		raise "Unknown potential type", potentialConfig.type

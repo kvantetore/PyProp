@@ -2,10 +2,13 @@
 
 #include <core/wavefunction.h>
 #include <core/utility/fortran.h>
+#include <core/utility/blitztricks.h>
 
 #include "../krylovcommon.h"
-#include "arpack++/pcaupp.h"
-#include "arpack++/pceupp.h"
+//#include "arpack++/pcaupp.h"
+//#include "arpack++/pceupp.h"
+#include "arpack++/caupp.h"
+#include "arpack++/ceupp.h"
 #include "arpack++/debug.h"
 
 namespace krylov
@@ -21,6 +24,7 @@ void ArpackPropagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	config.Get("krylov_tolerance", Tolerance);
 	config.Get("krylov_eigenvalue_count", EigenvalueCount);
 	config.Get("krylov_max_iteration_count", MaxIterationCount);
+	config.Get("krylov_use_random_start", RandomStart);
 }
 
 
@@ -30,7 +34,7 @@ void ArpackPropagator<Rank>::Setup(const Wavefunction<Rank> &psi)
 	int matrixSize = psi.GetData().size();
 
 	//Allocate workspace
-	double size = sizeof(cplx) * matrixSize * 4;
+	double size = sizeof(cplx) * matrixSize * (4 + BasisSize);
 	cout << "Allocating ARPACK workspace ~ " << size/(1024*1024) << " MB" << endl;
 	WorkSelect.resize(BasisSize+1);
 	WorkVectors.resize(3 * matrixSize);
@@ -38,8 +42,8 @@ void ArpackPropagator<Rank>::Setup(const Wavefunction<Rank> &psi)
 	WorkData.resize(3 * sqr(BasisSize) + 5 * BasisSize);
 	WorkResidual.resize(matrixSize);
 	WorkReal.resize(3 * BasisSize);
-
-	WorkResidual = 0;
+	IterationParameters.resize(12);
+	IterationParameters = 0;
 
 	Eigenvalues.resize(EigenvalueCount);
 	Eigenvectors.resize(BasisSize, matrixSize);
@@ -60,6 +64,17 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	int errorNumber      = 0;                      // ierr
 	cplx sigma           = 0;                      // ?
 
+	if (RandomStart)
+	{
+		WorkResidual = 0;
+		iterationInfo = 0;
+	}
+	else
+	{
+		WorkResidual = MapToRank1(psi.GetData());
+		iterationInfo = 1;
+	}
+
 
 	//Set debug info
 	int digit = -3;
@@ -74,10 +89,9 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	cTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd);
 
 
-	blitz::Array<int, 1> iterationParameters(12);  // ? 
-	iterationParameters(0) = 1;					//shift strategy 
-	iterationParameters(2) = MaxIterationCount; //max number of iterations
-	iterationParameters(6) = 1;                 //mode1 of znaupd is used...
+	IterationParameters(1 - 1) = 1;					//shift strategy 
+	IterationParameters(3 - 1) = MaxIterationCount; //max number of iterations
+	IterationParameters(7 - 1) = 1;                 //mode1 of znaupd is used...
 
 	//Preserve the original psi and tempPsi
 	DataArray origPsiData(psi.GetData());
@@ -90,8 +104,9 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	do 
 	{
 		i = i+1;
-		pcaupp(
-			MPI_COMM_WORLD, 
+		//pcaupp(
+		//	MPI_COMM_WORLD, 
+		caupp(
 			iterationAction,             // Which action to take after this call (ido)
 			matrixType,                  // What type of problem s this (bmat)
 			matrixSize,                  // Size of matrix (matrixSize)x(matrixSize) (n)
@@ -102,7 +117,7 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 			BasisSize,                   // number of arnoldi vectors to use (ncv)
 			Eigenvectors.data(),         // eigenvectors (v)
 			matrixSize,                  // length of eigenvectors (ldv)
-			iterationParameters.data(),  // (iparam)
+			IterationParameters.data(),  // (iparam)
 			iterationPointer.data(),     // (ipntr)
 			WorkVectors.data(),          // (Workd)
 			WorkData.data(),             // (Workl)
@@ -153,8 +168,9 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 
 	//call zneupd to postprocess data
 	//OMG! for en j**** lang liste parametere//
-	pceupp( 
-		MPI_COMM_WORLD, 
+	//pceupp( 
+	//	MPI_COMM_WORLD, 
+	ceupp(
 		findEigenvectors,           // (rvec)
 		'A',                        // 
 		Eigenvalues.data(),         // (d)
@@ -171,7 +187,7 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 		BasisSize,                  // (ncv)
 		Eigenvectors.data(),        // (v)
 		matrixSize,                 // (ldv)
-		iterationParameters.data(), // (iparam)
+		IterationParameters.data(), // (iparam)
 		iterationPointer.data(),    // (ipntr)
 		WorkVectors.data(),         // (Workd)
 		WorkData.data(),            // (Workl)
@@ -184,8 +200,8 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 
 template class ArpackPropagator<1>;
 template class ArpackPropagator<2>;
-//template class ArpackPropagator<3>;
-//template class ArpackPropagator<4>;
+template class ArpackPropagator<3>;
+template class ArpackPropagator<4>;
 
 } //Namespace
 	

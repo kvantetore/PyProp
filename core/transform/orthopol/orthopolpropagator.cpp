@@ -31,7 +31,38 @@ void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavef
 	Param = param;
 	
 	// Call setup routines to create propagation matrix
-	OrthoPolSetup(N, Param, dt, PropagationMatrix);
+	Array<double, 1> x;
+	Array<double, 1> w;
+	OrthoPolSetup(N, Param, Eigenvalues, Eigenvectors, x, w);
+
+/*
+	for (int i=0; i<N; i+=2)
+	{
+		Eigenvectors(i, Range::all()) = 0;
+	}
+*/
+
+	PropagationMatrix.resize(N,N);
+	PropagationMatrix = 0;
+	DiffMatrix.resize(N,N);
+	DiffMatrix = 0;
+	cplx diffDot = 0;
+	cplx expDot = 0;
+	for (int i=0; i<N; i++)
+	{
+		for (int j=0; j<N; j++)
+		{
+			diffDot = 0;
+			expDot = 0;
+			for (int k=0; k<N; k++)
+			{
+				expDot += Eigenvectors(k,i) * exp(- I * dt * Eigenvalues(k)) * Eigenvectors(k,j);
+				diffDot += Eigenvectors(k,i) * Eigenvalues(k) * Eigenvectors(k,j);
+			}
+			PropagationMatrix(i,j) = expDot * w(j);
+			DiffMatrix(i, j) = diffDot * w(j);
+		}
+	}
 
 	// Allocate temp data
 	TempData.resize(N);
@@ -69,6 +100,31 @@ void Propagator<Rank>::ApplyPropagationMatrix(Array<cplx, 3> &data)
 	}
 }
 
+template<int Rank>
+void Propagator<Rank>::ApplyDifferentiationMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
+{
+	//Map the data to a 3D array, where the radial part is the 
+	//middle rank
+	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, PropagateRank, 1);
+	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, PropagateRank, 1);
+	Array<cplx, 2> matrix = GetDifferentiationMatrix();
+
+	//iterate over the array direction which is not propagated by this
+	//propagator
+	Array<cplx, 1> temp(srcData.extent(1));
+	for (int i=0; i<srcData.extent(0); i++)
+	{
+		for (int j=0; j<srcData.extent(2); j++)
+		{
+			Array<cplx, 1> v = srcData(i, Range::all(), j);
+			Array<cplx, 1> w = dstData(i, Range::all(), j);
+
+			MatrixVectorMultiply(matrix, v, temp);
+			w += temp;
+		}
+	}
+
+}
 
 template class Propagator<1>;
 template class Propagator<2>;

@@ -1,5 +1,6 @@
 #include "orthopoltools.h"
 #include "../../utility/orthogonalpolynomial.h"
+#include "../../utility/gamma.h"
 
 namespace OrthoPol
 {
@@ -13,14 +14,14 @@ void LaguerreQuad(int N, const double &m, Array<double, 1> &X, Array<double, 1> 
 	
 	Array<double, 2> quadrature = OrthogonalPolynomial::CalculateQuadrature(N, D, E);
 	X = quadrature(Range::all(), 0);
-	W = quadrature(Range::all(), 1) * 1.772453850905516 / 2.0;
+	W = quadrature(Range::all(), 1) * Gamma(1 + m) / 2.0;
 }
 
 void LaguerreMatrix(int N, const double &m, const Array<double, 1> &X, Array<double, 2> &L)
 {
 	Array<double,2> l(N+1, N);
 	l=0;
-	l(1,Range::all())=exp(-(X/2))/sqrt(1.772453850905516); // 1.772453850905516 = gamma(0.5)
+	l(1,Range::all())=exp(-(X/2))/sqrt(Gamma(1 + m)); // 1.772453850905516 = gamma(0.5)
 	
 	for (int i=1; i<N; i++)
 	{
@@ -46,7 +47,7 @@ void HermiteMatrix(int N, const Array<double, 1> &X, Array<double, 2> &H)
 {
 	Array<double,2> h(N+1, N);
 	h=0;
-	h(1,Range::all())=exp(-(sqr(X)/2))/sqrt(sqrt(3.141592653589793));
+	h(1,Range::all())=exp(-(sqr(X)/2))/sqrt(sqrt(M_PI));
 
 	for (int i=1; i<N; i++)
 	{
@@ -55,118 +56,30 @@ void HermiteMatrix(int N, const Array<double, 1> &X, Array<double, 2> &H)
 	H=h(Range(1,N),Range::all());
 }
 
-void SetupLaguerre(int N, const cplx &dt, const double &cutoff, Array<cplx, 2> &P)
-{
-	Array<double, 1> w(N);
-	Array<double, 1> X(N);
-	Array<double, 2> L(N, N);
-	
-	// Ass. Laguerre: L^(m) (x).
-	double m = -0.5;
-
-	// Find Quadrature points and weights.
-	LaguerreQuad(N, m, X, w);
-	
-	// Compute Laguerre Functions.
-	LaguerreMatrix(N, m, X, L);
-	
-	// Stretch variable.
-	double alpha = sqrt(max(X))*2/cutoff;
-	
-	// Compute Propagation Matrix, P.
-	Array<cplx, 1> d(N);
-	w *= exp(X);
-	for (int i=0; i<N; i++)
-	{
-		d(i) = exp(-I*dt*sqr(alpha)*(double)i/2.0);
-	}
-	cplx dot = 0;
-	
-	for (int i=0; i<N; i++)
-	{
-		for (int j=0; j<N; j++)
-		{
-			for (int k=0; k<N; k++)
-			{
-				dot += L(k,i)*d(k)*L(k,j);
-			}
-			dot *= w(j);
-			P(i,j) = dot;
-			dot = 0;
-		}
-	}
-}	
-
-
-void SetupHermite(int N, const cplx &dt, const double &cutoff, Array<cplx, 2> &P)
-{
-	
-	Array<double, 1> w(N);
-	Array<double, 1> X(N);
-	Array<double, 2> H(N, N);
-	
-	// Find Quadrature points and weights.
-	HermiteQuad(N, X, w);
-
-	// Compute Hermite Functions.
-	HermiteMatrix(N, X, H);
-	
-	// Stretch variable.
-	double alpha = max(X)/cutoff;
-	
-	// Compute Propagation Matrix, P.
-	Array<cplx, 1> d(N);
-	w *= exp(sqr(X));
-	for (int i=0; i<N; i++)
-	{
-		d(i) = exp(-I*dt*sqr(alpha)*(double)i);
-	}
-	cplx dot = 0;
-	for (int i=0; i<N; i++)
-	{
-		for (int j=0; j<N; j++)
-		{
-			dot = 0;
-			for (int k=0; k<N; k++)
-			{
-				dot += H(k,i)*d(k)*H(k,j);
-			}
-			dot *= w(j);
-			P(i,j) = dot;
-		}
-	}
-}
-
-
 /*
  * Calculates grid and weights for orthopol representation
  * Input parameters:
  * 	- N:        Number of grid points
- * 	- Param:    Parameters to the orthogonal polynomial
+ * 	- param:    Parameters to the orthogonal polynomial
  * Output parameters:
  *  - X:        Quadrature grid points (resized to N)
  *  - W:        Quadrature weights (resized to N)
- *  - Alpha:    Grid scaling
  */
-void GridAndWeights(int N, const Parameter &Param, Array<double, 1> &X, Array<double, 1> &W, double &Alpha)
+void GridAndWeights(int N, const Parameter &param, Array<double, 1> &X, Array<double, 1> &W)
 {
 	X.resize(N);
 	W.resize(N);
-	double L = Param.Cutoff;
-	if (Param.Type == HermiteTransform)
+	if (param.Type == HermitePolynomial)
 	{
 		HermiteQuad(N, X, W);
-		Alpha = max(X) / L;
 		W *= exp(X*X);
-		X  = X / Alpha; // new X defined on [-L,L]
 	}
-	else if (Param.Type == LaguerreTransform)
+	else if (param.Type == LaguerrePolynomial)
 	{
-		double m = -0.5;
+		//double m = -0.5;
+		double m = param.HypersphericalRank/2.0 - 1.0;
 		LaguerreQuad(N, m, X, W);
-		W *= exp(X)*pow(X,-m);
-		Alpha = 2 * sqrt(max(X)) / L;
-		X  = 2 * sqrt(X) / Alpha; // new X defined on (0,L]
+		W *= exp(X); //*pow(X,-m);
 	}
 	else 
 	{ 
@@ -174,21 +87,63 @@ void GridAndWeights(int N, const Parameter &Param, Array<double, 1> &X, Array<do
 	}
 }
 
-void OrthoPolSetup(int N, const Parameter &Param, const cplx &dt, Array<cplx, 2> &P)
+/*
+ * Scales the grid x according to param.Scaling
+ */
+void ScaleGrid(const Parameter &param, Array<double, 1> &x)
 {
-	P.resize(N,N);
-	if (Param.Type== HermiteTransform)
+	if (param.Type == HermitePolynomial)
 	{
-		SetupHermite(N, dt, Param.Cutoff, P);
+		x  = x / param.Scaling; 
 	}
-	else if (Param.Type== LaguerreTransform)
+	else if (param.Type == LaguerrePolynomial)
 	{
-		SetupLaguerre(N, dt, Param.Cutoff, P);
+		x  = sqrt(x) * 2 / param.Scaling; 
+		//x = x / param.Scaling;
 	}
 	else 
 	{ 
 		cout << "Illegal parameter type!" << endl; 
 	}
+}
+
+void ScaledGridAndWeights(int N, const Parameter &param, Array<double, 1> &x, Array<double, 1> &w)
+{
+	GridAndWeights(N, param, x, w);
+	ScaleGrid(param, x);
+}
+
+void OrthoPolSetup(int N, const Parameter &param, Array<double, 1> &eigenvalues, Array<double, 2> &eigenvectors, Array<double, 1> &x, Array<double, 1> &w)
+{
+	eigenvectors.resize(N,N);
+	eigenvalues.resize(N);
+
+	// Calculate Eigenvalues
+	eigenvalues = sqr(param.Scaling) * tensor::i;
+
+	// Find Quadrature points and weights.
+	GridAndWeights(N, param, x, w);
+
+	//Calculate the sampled functions by 
+	if (param.Type== HermitePolynomial)
+	{
+		HermiteMatrix(N, x, eigenvectors);
+	}
+	else if (param.Type== LaguerrePolynomial)
+	{
+		//double m = -0.5;
+		double m = param.HypersphericalRank/2.0 - 1.0;
+		LaguerreMatrix(N, m, x, eigenvectors);
+		eigenvalues /= 2.0;
+	}
+	else 
+	{ 
+		cout << "Illegal parameter type!" << endl; 
+	}
+
+	//Scale the grid
+	ScaleGrid(param, x);
+	
 }	
 
 }; //Namespae

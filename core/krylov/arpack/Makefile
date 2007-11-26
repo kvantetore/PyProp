@@ -1,7 +1,7 @@
 PYPROP_ROOT  := ../../..
 
 ARPACK_LIB   = $(ARPACK_DIR)/libarpack.a
-PARPACK_LIB   = $(ARPACK_DIR)/libparpack.a
+#PARPACK_LIB   = $(ARPACK_DIR)/libparpack.a
 
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform

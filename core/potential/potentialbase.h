@@ -23,6 +23,7 @@ public:
 	cplx TimeStep;
 
 	void CurTimeUpdated() {}
+	bool IsTimeDependent() { return true; }
 
 	/* Inheriting classes should implement one of the two
 	 *     double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)

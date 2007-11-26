@@ -18,6 +18,7 @@ PYSTEFILES = \
 	python/reducedsphericaltransform.pyste \
 	python/vectorrepresentation.pyste \
 	python/arrayfunctions.pyste \
+	python/orthopolfunctions.pyste \
 	python/blitzwrapper.pyste \
 	python/cartesianabsorber.pyste \
 	python/cartesianfouriertransform.pyste \
@@ -33,6 +34,7 @@ PYSTEFILES = \
 	python/sphericalrepresentation.pyste \
 	python/sphericaltransform.pyste \
 	python/staticpotential.pyste \
+	python/polarpotential.pyste \
 	python/transformedgrid.pyste \
 	python/reducedsphericalkineticpotential.pyste \
 	python/wavefunction.pyste \
@@ -52,6 +54,7 @@ SOURCES= \
 	transform/reducedspherical/reducedsphericaltransform.cpp \
 	utility/blitzblas.cpp \
 	utility/orthogonalpolynomial.cpp \
+	utility/gamma.cpp \
 	transform/transformedgridpropagator.cpp \
 	transform/transformedgrid/tgridweights.cpp \
 	transform/transformedgrid/tgridcheb.cpp \

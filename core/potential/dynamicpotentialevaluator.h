@@ -54,7 +54,7 @@ public:
 template <class PotentialClass, int Rank>
 class DynamicPotentialEvaluator
 {
-public:
+private:
 	typedef ApplyPotentialClass<Rank> ApplyClass;
 	typedef MultiplyPotentialClass<Rank> MultiplyClass;
 	typedef UpdatePotentialClass<Rank> UpdateClass;
@@ -66,6 +66,7 @@ public:
 	DynamicPotentialEvaluatorBase< UpdateClass, Rank> Update;     //Updates a static potential	with exp(V)
 	DynamicPotentialEvaluatorBase< GetClass, Rank> Get;	          //Returns V
 	
+public:
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		Potential.ApplyConfigSection(config);

@@ -1,4 +1,4 @@
-#include ../../Makefile.platform
+include ../../Makefile.platform
 
 SUBDIRS = expokit
 

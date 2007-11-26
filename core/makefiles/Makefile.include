@@ -12,7 +12,7 @@ LD_SHARED         := -shared
 
 #libraries
 LAPACK_LIBS = -llapack_pic -lf77blas -lcblas -latlas
-BOOST_LIBS  = -lboost_python-gcc
+BOOST_LIBS  = -lboost_python
 LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS)
 
 #propgrams

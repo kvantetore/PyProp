@@ -162,6 +162,11 @@ class Problem:
 		else:
 			return self.GetEnergyImTime()
 
+	def GetTempPsi(self):
+		if self.TempPsi == None:
+			self.TempPsi = self.psi.CopyDeep()
+		return self.TempPsi
+
 	def GetEnergyExpectationValue(self):
 		"""
 		Calculates the total energy of the problem by finding the expectation value 
@@ -171,15 +176,14 @@ class Problem:
 		self.psi.Normalize()
 
 		#Make copy of wavefunction
-		if self.TempPsi == None:
-			self.TempPsi = self.psi.CopyDeep()
-		self.TempPsi.GetData()[:] = 0
+		tempPsi = self.GetTempPsi()
+		tempPsi.GetData()[:] = 0
 
 		#Apply the Hamiltonian to the wavefunction
-		self.MultiplyHamiltonian(self.TempPsi)
+		self.MultiplyHamiltonian(tempPsi)
 
 		#Calculate the inner product between the applied psi and the original psi
-		energy = self.psi.InnerProduct(self.TempPsi)
+		energy = self.psi.InnerProduct(tempPsi)
 
 		#Check that the energy is real
 		if not hasattr(self, "IgnoreWarningRealEnergy"):

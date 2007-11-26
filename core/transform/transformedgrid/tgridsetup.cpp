@@ -98,7 +98,14 @@ void setup (int N, const Parameter &param, Array<double, 1> &WR, Array<double,2>
 		}
    }
 
+
 // Add radialpart of non-time dependent potential here
+/* 2D radial
+	for (int i=0; i<A.extent(0); i++)
+   {
+		A(i, i) += 0.25 / (r(i)*r(i));
+   }
+*/
 
 // Compute eigen decomposition
 

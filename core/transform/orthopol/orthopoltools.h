@@ -11,10 +11,10 @@ using namespace blitz;
 /*
  * Available transformation types
  */
-enum TransformType
+enum PolynomialType
 {
-	HermiteTransform = 1,
-	LaguerreTransform = 2
+	HermitePolynomial = 1,
+	LaguerrePolynomial = 2
 };
 
 /*
@@ -22,8 +22,8 @@ enum TransformType
  */
 struct Parameter
 {
-	TransformType Type;
-	double Cutoff;
+	PolynomialType Type;
+	double Scaling;
 	int HypersphericalRank;
 };
 
@@ -67,43 +67,24 @@ void HermiteQuad(int N, Array<double, 1> &X, Array<double, 1> &W);
 void HermiteMatrix(int N, const Array<double, 1> &X, Array<double, 2> &H);
 
 /*
- * Sets up the propagation scheme for the Laguerre transform, 
- * by computing the propagation matrix and the gridpoints.
- *	N      (input): number of gridpoints/functions
- *	cutoff (input): all quadrature points will be less or equal to this
- * 	P     (output): propagation matrix
- */
-void SetupLaguerre(int N, const cplx &dt, const double &cutoff, Array<cplx, 2> &P);
-
-/*
- * Sets up the propagation scheme for the Hermite transform, 
- * by computing the propagation matrix and the gridpoints.
- *	N      (input): number of gridpoints/functions
- *	dim    (input): the dimension of the problem
- *	cutoff (input): all quadrature points will be less or equal to this
- * 	P     (output): propagation matrix
- */
-void SetupHermite(int N, const cplx &dt, const double &cutoff, Array<cplx, 2> &P);
-
-/*
  *	Computes gridpoints and quadrature weights for either
  *	Hermite or Laguerre transforms. 
  * 	N     (input): number of gridpoints
  *	Param (input): transform parametres
  *	X    (output): quadrature points/abscissas
  *	W    (output): quadrature weights
+ *
+ *  Remarks: The Grid is scaled according to param.Scaling
  */
-void GridAndWeights(int N, const Parameter &Param, Array<double, 1> &X, Array<double, 1> &W, double &Alpha);
+void ScaledGridAndWeights(int N, const Parameter &param, Array<double, 1> &X, Array<double, 1> &W);
    
+
 /*
- * Computes Associated Laguerre quadrature points and weights by 
- * solving a tridiagonal matrix.
- * 	N     (input): number of gridpoints
- *	Param (input): transform parametres
- *	dt    (input): time step
- *	P    (output): propagation matrix
+ * Calculates all information needed to construct a propagator for the
+ * orthogonal polynomial described in param
  */
-void OrthoPolSetup(int N, const Parameter &Param, const cplx &dt, Array<cplx, 2> &P);
+void OrthoPolSetup(int N, const Parameter &param, Array<double, 1> &eigenvalues, Array<double, 2> &eigenvectors, Array<double, 1> &x, Array<double, 1> &w);
+
        
 }; //Namespace
 

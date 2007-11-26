@@ -21,6 +21,7 @@ class CombinedPropagator(PropagatorBase):
 				print "Propagator for rank %i is %s" % (i, prop)
 			
 				#Apply config to sub propagator
+				config.Apply(prop)
 				section.Apply(prop)
 				
 				self.SubPropagators.append(prop)
@@ -127,6 +128,10 @@ class CombinedPropagator(PropagatorBase):
 				distrModel.ChangeDistribution(self.psi, self.Distribution1, self.TransposeBuffer1)
 			else:
 				raise "Invalid stage %i" % stage
+
+	def GetBasisFunction(self, rank, basisIndex):
+		prop = self.SubPropagators[rank]
+		return prop.GetBasisFunction(rank, basisIndex)
 
 
 	

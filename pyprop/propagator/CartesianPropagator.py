@@ -87,20 +87,8 @@ class CartesianPropagator(PropagatorBase):
 
 	def MultiplyKineticEnergy(self, destPsi, t, dt):
 		# transform into fourier space
-		if ProcId == 0:
-			pass
-#			print "1 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-#			print "1 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 		self.TransformForward(self.psi)
-		if ProcId == 0:
-			pass
-#			print "2 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-#			print "2 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 		self.TransformForward(destPsi)
-		if ProcId == 0:
-			pass
-#			print "3 distribtuion (psi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-#			print "3 distribtuion (tempPsi) = ", self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 	
 		# apply kinetic energy potential
 		self.KineticPotential.MultiplyPotential(destPsi, t, dt) 
@@ -180,18 +168,22 @@ class CartesianPropagator(PropagatorBase):
 		repr.SetDistributedModel(distrib)
 		psi.SetRepresentation(repr)
 
-	def SetFourierRepresentation(self, psi):
+	def GetFourierRepresentation(self, psi):
 		data = self.__GetPropagatorData(psi)
 		if data.FourierRepresentation == None:
 			gridRepr = psi.GetRepresentation()
 			fourierRepr = self.FFTTransform.CreateFourierRepresentation(gridRepr)
 			data.GridRepresentation = gridRepr
 			data.FourierRepresentation = fourierRepr
-	
-		repr = data.FourierRepresentation
+		return data.FourierRepresentation
+		
+	def SetFourierRepresentation(self, psi):
+		repr = self.GetFourierRepresentation(psi)
+		
 		#keep the current distributed model
 		distrib = psi.GetRepresentation().GetDistributedModel()
 		repr.SetDistributedModel(distrib)
+
 		psi.SetRepresentation(repr)
 
 

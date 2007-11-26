@@ -11,7 +11,6 @@ class OrthoPolRadialPropagator:
 
 	def ApplyConfigSection(self, configSection):
 		configSection.Apply(self.Propagator)
-		self.HypersphericalDimensions = configSection.hyperspherical_dimensions
 
 	# Helper class for effective potential
 	class StaticEnergyConf(Section):
@@ -19,27 +18,28 @@ class OrthoPolRadialPropagator:
 			self.type = type
 			self.classname = classname
 
-	def GetPolynomialType(self):
-		return self.psi.GetRepresentation().GetRepresentation(self.TransformRank).Range.Param.Type
+	def GetSubRepresentation(self, psi):
+		return psi.GetRepresentation().GetRepresentation(self.TransformRank)
+
+	def GetParam(self, psi):
+		return self.GetSubRepresentation(psi).Range.Param
 
 	def SetupAddedPotential(self, dt):
-		if self.GetPolynomialType() == core.OrthoPolType.HermiteTransform:
+		if self.GetParam(self.psi).Type == PolynomialType.HermitePolynomial:
 			potentialName = "AddedHermitePotential"
-		elif self.GetPolynomialType() == core.OrthoPolType.LaguerreTransform:
+		elif self.GetParam(self.psi).Type == core.OrthoPolType.LaguerrePolynomial:
 			potentialName = "AddedLaguerrePotential"
 		else:
 			raise "Invalid potential type"
 		
-		conf = self.StaticEnergyConf(PotentialType.Static, potentialName)
+		conf = self.StaticEnergyConf(PotentialType.RankOne, potentialName)
 		conf.radial_rank = self.TransformRank
-		conf.hyperspherical_dimensions = self.HypersphericalDimensions
-		conf.alpha = self.psi.GetRepresentation().GetRepresentation(self.TransformRank).Range.Alpha
+		conf.potential_rank = self.TransformRank
+		conf.hyperspherical_dimensions = self.GetParam(self.psi).HypersphericalRank
+		conf.scaling = self.psi.GetRepresentation().GetRepresentation(self.TransformRank).Range.Param.Scaling
 		potential = CreatePotentialFromSection(conf, "AddedPotential", self.psi)
 		potential.SetupStep(dt)
 		self.AddedPotential = potential
-
-	def ApplyAddedPotential(self, t, dt):
-		self.AddedPotential.AdvanceStep(t, dt)
 
 	def SetupStep(self, dt):
 		print "	Setup Potential"
@@ -48,7 +48,7 @@ class OrthoPolRadialPropagator:
 		print "	Setup Propagator"
 		param = self.psi.GetRepresentation().GetRepresentation(self.TransformRank).Range.Param
 		print "	param.Type = ", param.Type
-		print "	param.Cutoff = ", param.Cutoff
+		print "	param.Scaling = ", param.Scaling
 		print "	param.HypersphericalRank = ", param.HypersphericalRank
 		print "	TransformRank = ", self.TransformRank
 		self.Propagator.Setup(param, dt, self.psi, self.TransformRank)
@@ -57,19 +57,22 @@ class OrthoPolRadialPropagator:
 		pass
 
 	def AdvanceStep(self, t, dt):
-		#self.AddedPotential.AdvanceStep(t, dt)
+		self.AddedPotential.AdvanceStep(t, dt)
 		self.Propagator.AdvanceStep(self.psi)
 
 	def AdvanceStepConjugate(self, t, dt):
 		self.Propagator.AdvanceStep(self.psi)
-		#self.AddedPotential.AdvanceStep(t, dt)
+		self.AddedPotential.AdvanceStep(t, dt)
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
-		self.AddedPotential.MultiplyPotential(t, dt)
+		self.AddedPotential.MultiplyPotential(dstPsi, t, dt)
 
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
 		pass
+
+	def GetBasisFunction(self, rank, basisIndex):
+		return self.Propagator.GetEigenvectors()[basisIndex,:]
 
 
 

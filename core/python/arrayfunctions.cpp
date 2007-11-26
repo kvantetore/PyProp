@@ -4,6 +4,7 @@
 #include "../wavefunction.h"
 #include "../representation/representation.h"
 #include "../potential/staticpotential.h"
+#include "../utility/blitztricks.h"
 
 using namespace boost::python;
 
@@ -73,3 +74,14 @@ void SetPotentialFromGridFunction(StaticPotential<Rank> &potential, cplx timeSte
 	}
 }
 
+template<class T, int Rank>
+void PythonOuterProduct(object listFunction1D, blitz::Array<T, Rank> out)
+{
+	blitz::TinyVector< blitz::Array<T, 1>, Rank > in;
+	for (int i=0; i<Rank; i++)
+	{
+		in(i).reference( extract< blitz::Array<T, 1> >(listFunction1D[i]) );
+	}
+	
+	OuterProduct(in, out);
+}

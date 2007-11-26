@@ -1,0 +1,12 @@
+
+Include("python/orthopolfunctions.cpp")
+Include("utility/gamma.h")
+module_code('def("LaguerreQuad", PythonLaguerreQuad);\n')
+module_code('def("LaguerreMatrix", PythonLaguerreMatrix);\n')
+module_code('def("HermiteQuad", PythonHermiteQuad);\n')
+module_code('def("HermiteMatrix", PythonHermiteMatrix);\n')
+module_code('def("ScaledGridAndWeights", PythonScaledGridAndWeights);\n')
+module_code('def("OrthoPolSetup", PythonOrthoPolSetup);\n')
+module_code('def("Gamma", Gamma);\n')
+
+

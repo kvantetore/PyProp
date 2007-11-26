@@ -1,8 +1,8 @@
 #parameter
 Parameter = Class("OrthoPol::Parameter", "transform/orthopol/orthopoltools.h")
 rename(Parameter, "OrthoPolParameter")
-TransformType = Enum("OrthoPol::TransformType", "transform/orthopol/orthopoltools.h")
-rename(TransformType, "OrthoPolType")
+PolynomialType = Enum("OrthoPol::PolynomialType", "transform/orthopol/orthopoltools.h")
+rename(PolynomialType, "OrthoPolType")
 
 #range
 OrthoPolRange = Class("OrthoPol::OrthoPolRange", "representation/orthopol/orthopolrange.h")

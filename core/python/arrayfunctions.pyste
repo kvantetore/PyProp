@@ -9,3 +9,13 @@ module_code('def("SetPotentialFromGridFunction_1", SetPotentialFromGridFunction<
 module_code('def("SetPotentialFromGridFunction_2", SetPotentialFromGridFunction<2>);\n')
 module_code('def("SetPotentialFromGridFunction_3", SetPotentialFromGridFunction<3>);\n')
 module_code('def("SetPotentialFromGridFunction_4", SetPotentialFromGridFunction<4>);\n')
+
+module_code('def("OuterProduct_1", PythonOuterProduct<cplx, 1>);\n')
+module_code('def("OuterProduct_2", PythonOuterProduct<cplx, 2>);\n')
+module_code('def("OuterProduct_3", PythonOuterProduct<cplx, 3>);\n')
+module_code('def("OuterProduct_4", PythonOuterProduct<cplx, 4>);\n')
+
+module_code('def("OuterProduct_1", PythonOuterProduct<double, 1>);\n')
+module_code('def("OuterProduct_2", PythonOuterProduct<double, 2>);\n')
+module_code('def("OuterProduct_3", PythonOuterProduct<double, 3>);\n')
+module_code('def("OuterProduct_4", PythonOuterProduct<double, 4>);\n')

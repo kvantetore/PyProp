@@ -79,8 +79,8 @@ public:
 		OrthoPol::Parameter param;
 		config.Get("n", N);
 		config.Get("polynomial_type", type);
-		param.Type = static_cast<OrthoPol::TransformType>(type);
-		config.Get("cutoff", param.Cutoff);
+		param.Type = static_cast<OrthoPol::PolynomialType>(type);
+		config.Get("scaling", param.Scaling);
 		config.Get("hyperspherical_rank", param.HypersphericalRank);
 		
 		Range.Initialize(param, N);

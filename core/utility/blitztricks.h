@@ -102,5 +102,66 @@ blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, 
 }
 
 
+template <class T, int Rank>
+blitz::Array<T, 1> MapToRank1(blitz::Array<T, Rank> array)
+{
+	using namespace blitz;
+
+	TinyVector<int, 1> shape( array.size() );
+	TinyVector<int, 1> stride( 1 );
+
+	Array<T, 1> ret(array.data(), shape, stride, neverDeleteData);
+
+	return ret;
+}
+
+template <class T, int Rank>
+void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, Rank> &in, blitz::Array<T, Rank> &out)
+{
+	cout << "Error: OuterProduct is not implemented for rank = " << Rank << endl;
+	throw std::runtime_error("Outer Product not implemented for this rank");
+}
+
+
+/*
+ * OuterProduct is the N-dimensional extension of the numpy method outer.
+ * It takes N 1-dimensional arrays in(0)...in(n) and forms the outer product
+ *
+ * out(x0, ..., xn) = in(0)(x0) * ... * in(n)(xn)
+ *
+ * the shape of in and out should be such that
+ * extent(i) = in(i).size()
+ */
+
+template <class T>
+void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, 1> &in, blitz::Array<T, 1> &out)
+{
+	out = in(0)(blitz::tensor::i);
+}
+
+template <class T>
+void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, 2> &in, blitz::Array<T, 2> &out)
+{
+	out = in(0)(blitz::tensor::i) 
+		* in(1)(blitz::tensor::j);
+}
+
+template <class T>
+void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, 3> &in, blitz::Array<T, 3> &out)
+{
+	out = in(0)(blitz::tensor::i) 
+		* in(1)(blitz::tensor::j)
+		* in(2)(blitz::tensor::k);
+}
+
+template <class T>
+void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, 4> &in, blitz::Array<T, 4> &out)
+{
+	out = in(0)(blitz::tensor::i) 
+		* in(1)(blitz::tensor::j)
+		* in(2)(blitz::tensor::k)
+		* in(3)(blitz::tensor::k);
+}
+
 #endif
 

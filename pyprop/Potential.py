@@ -1,39 +1,45 @@
-#Create an instance of a DynamicPotentialEvaluator. Try to guess
-#the python name of the class from a descriptive classname.
-#className can be either the full name of the potential except the rank, 
-#as specified in the corresponding pyste file.
-#Optionally, classname can be just the name of the classname of the dynamic potential
-#(without the "DynamicPotentialEvaluator_..."), if it was not renamed in the pyste
-#file. 
-def CreateDynamicPotentialInstance(className, rank):
+"""
+This file contains python functions for all potentials. 
+A potential is usually based on a C++ class implementing the GetPotentialValue 
+method. GetPotentialValue returns the potential value in a given coordinate.
+
+Then this class is used as a parameter for a PotentialEvaluator class. The 
+potential evaluator knows how to loop over all grid points in a wavefunction, 
+and also knows how to perform potential exponentiation, mulitply the potential
+with a wavefunction, etc. 
+
+The wrappers in this file create a uniform interface to python for all kinds of
+potentials. Apart from special types of potentials like the CrankNicholsonPotential,
+there are two main potential types: Dynamic and Static.
+
+Dynamic potentials can, as the name suggests, change value during the course of
+propagation, while static potentials remain the same for all values of t. 
+Moreover, currently the optimizations made in the static potentials prevents
+changing the timestep during the course of propagation. To change the timestep, 
+the user must call the UpdateStaticPotential method. This may be changed in the
+future.
+"""
+
+def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None):
+	"""
+	Create an instance of a PotentialEvaluator. Tries to guess
+	the python name of the class from a descriptive classname.
+	className can be either the full name of the potential except the rank, 
+	as specified in the corresponding pyste file.
+	Optionally, classname can be just the name of the classname of the dynamic potential
+	(without the "DynamicPotentialEvaluator_..."), if it was not renamed in the pyste
+	file. 
+	"""
+
 	#Create globals
+	if potentialRank == None:
+		potentialRank = rank
+
 	glob = dict(sys.modules['__main__'].__dict__)
 	glob.update(globals())
 	
 	potential = None
-	longClassName = str("core.DynamicPotentialEvaluator") + "_" + className + "_" + str(rank) + "_" + str(rank)
-	try:
-		potential = eval(longClassName + "()", glob)
-	except: pass
-	
-	if potential == None:
-		shortClassName = className + "_" + str(rank)
-		try:
-			potential = eval(shortClassName + "()", glob)
-		except: pass
-
-	if potential == None:
-		raise "Unknown potential", className 
-
-	return potential
-
-def CreateFiniteDifferencePotentialInstance(className, rank, evaluatorPrefix="core.ExponentialFiniteDifferenceEvaluator"):
-	#Create globals
-	glob = dict(sys.modules['__main__'].__dict__)
-	glob.update(globals())
-	
-	potential = None
-	longClassName = evaluatorPrefix + "_" + className + "_" + str(rank) + "_" + str(rank)
+	longClassName = evaluatorPrefix + "_" + className + "_" + str(potentialRank) + "_" + str(rank)
 	try:
 		potential = eval(longClassName + "()", glob)
 	except: pass
@@ -55,28 +61,60 @@ def CreateFiniteDifferencePotentialInstance(className, rank, evaluatorPrefix="co
 
 	return potential
 
+
+
+
 #Potential Wrapper interface
 class PotentialWrapper:
 	def ApplyConfigSection(self, configSection):
+		"""
+		ApplyConfigSection gives the potential the possibiltiy to read properties
+		from the associated config section
+		"""
 		self.ConfigSection = configSection
 		self.Type = configSection.type
 	
 	def SetupStep(self, timestep):
+		"""
+		SetupStep will be called once to set up the potential. All memory allocations
+		and similar one-time actions should be performed here
+		"""
 		pass
 		
 	def AdvanceStep(self, t, timestep):
+		"""
+		Advances the solution according to the potential. That is, applies the exponential
+		of the potential V. This is used by the split-step based propagators
+
+		psi = exp(- i dt V ) psi
+		"""
 		pass
 
 	def MultiplyPotential(self, destPsi, t, timestep):
+		"""
+		Performs "Matrix"-vector multiplication between the potential and the wavefunction. 
+		For diagonal potentials this is simply an element-wise multiplication. This
+		is used by ODE-based and krylov-based propagators.
+
+		destPsi += V psi
+		"""
 		raise "MultiplyPotential is not implemented for class %s" % (self.__class__)
 	
 	def GetExpectationValue(self, t, timestep):
+		"""
+		Calculates the expectation value of the wavefunction for the given potential.
+		This can also be done with MultiplyPotential, but by using GetExpectationValue, 
+		it can be done faster and with less memory requirements.
+		"""
 		raise "GetExpectationValue is not implemented for class %s" % (self.__class__)
 
-#Wrapper for a static potential. The potential is set up during
-#SetupStep, and never changed. Timestep must be fixed during 
-#propagation.
+
 class StaticPotentialWrapper(PotentialWrapper):
+	"""
+	Wrapper for a static potential. The potential is set up during
+	SetupStep, and never changed. Timestep must be fixed during 
+	propagation.
+	"""
 
 	def __init__(self, psi):
 		self.Potential = CreateInstanceRank("core.StaticPotential", psi.GetRank())
@@ -95,16 +133,35 @@ class StaticPotentialWrapper(PotentialWrapper):
 			updateFunc(self.Potential, timeStep, self.psi, self.psi.GetRepresentation(), func, self.ConfigSection)
 
 		elif hasattr(self.ConfigSection, "classname"):
-			potentialEvaluator = CreateDynamicPotentialInstance(self.ConfigSection.classname, self.psi.GetRank())
+			evaluatorPrefix = "core.DynamicPotentialEvaluator"
+			potentialEvaluator = CreatePotentialInstance(self.ConfigSection.classname, self.psi.GetRank(), evaluatorPrefix)
 			self.ConfigSection.Apply(potentialEvaluator)
-			potentialEvaluator.UpdateStaticPotential(self.Potential, self.psi, timeStep, 0.0)
 			self.PotentialEvaluator = potentialEvaluator
-			print "dt = ", timeStep
+
+			#update the potential
+			self.UpdateStaticPotential(0.0, timeStep)
 
 		else:
 			raise "Invalid potential config. Must specify either 'classname' or 'function'"
-		
-		
+
+	def UpdateStaticPotential(self, t, dt):
+		"""
+		Updates the potential using the PotentialEvaluator created during SetupStep, to use
+		the given time and timestep.
+
+		If the potentialevaulator has a function called UpdateStaticPotential, this will be used
+		to create the potential. Otherwise, the wavefunction will be set to 1, the potential will be
+		applied, and the resulting wavefunction will be used as potential-multiplier.
+		"""
+
+		pot = self.PotentialEvaluator
+		if hasattr(pot, "UpdateStaticPotential"):
+			pot.UpdateStaticPotential(self.Potential, self.psi, dt, 0.0)
+		else:
+			self.psi.GetData()[:] = 1
+			pot.ApplyPotential(self.psi, dt, t)
+			self.Potential.GetPotentialData()[:] = self.psi.GetData()[:]
+				
 	def AdvanceStep(self, t, dt):
 		self.Potential.ApplyPotential(self.psi)
 
@@ -112,17 +169,47 @@ class StaticPotentialWrapper(PotentialWrapper):
 		self.PotentialEvaluator.MultiplyPotential(self.psi, destPsi, dt, t)
 
 	def GetExpectationValue(self, t, dt):
-		return self.PotentialEvaluator.CalculateExpectationValue(self, dt, t)
+		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)
 
 	def GetPotential(self, dt):
 		return real(log(self.Potential.GetPotentialData()) / (- 1.0j * dt))
 		
 
-#Wrapper for dynamic potentials. Dynamic potentials are classes implemented in 
-#C++, and wrapped by DynamicPotentialEvaluator to make evaluation simple.
-#Dynamic potentials have no large memory footprint, and can change each timestep,
-#and also timeStep may change any time.
 class DynamicPotentialWrapper(PotentialWrapper):
+	"""
+	Wrapper for dynamic potentials. Dynamic potentials are classes implemented in 
+	C++, and wrapped by DynamicPotentialEvaluator to make evaluation simple.
+	Dynamic potentials have no large memory footprint, and can change each timestep,
+	and also timeStep may change any time.
+	"""
+	
+	def __init__(self, psi):
+		self.psi = psi
+
+	def ApplyConfigSection(self, configSection):
+		PotentialWrapper.ApplyConfigSection(self, configSection)
+		rank = self.psi.GetRank()
+
+		evaluatorPrefix = "core.DynamicPotentialEvaluator"
+		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
+		configSection.Apply(self.Evaluator)
+	
+	def AdvanceStep(self, t, dt):
+		self.Evaluator.ApplyPotential(self.psi, dt, t)
+
+	def MultiplyPotential(self, destPsi, t, dt):
+		self.Evaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+
+	def GetExpectationValue(self, t, dt):
+		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
+
+
+class RankOnePotentialWrapper(PotentialWrapper):
+	"""
+	Wrapper for dynamic and static potentials only dependent on the grid in one rank. 
+	In this case, a number of optimization techniques are used to speed up the potential
+	evaluation
+	"""
 
 	def __init__(self, psi):
 		self.psi = psi
@@ -131,17 +218,18 @@ class DynamicPotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 		rank = self.psi.GetRank()
 	
-		self.Potential = CreateDynamicPotentialInstance(configSection.classname, rank)
-		configSection.Apply(self.Potential)
+		evaluatorPrefix = "core.RankOnePotentialEvaluator"
+		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix, potentialRank=1)
+		configSection.Apply(self.Evaluator)
 	
 	def AdvanceStep(self, t, dt):
-		self.Potential.ApplyPotential(self.psi, dt, t)
+		self.Evaluator.ApplyPotential(self.psi, dt, t)
 
 	def MultiplyPotential(self, destPsi, t, dt):
-		self.Potential.MultiplyPotential(self.psi, destPsi, dt, t)
+		self.Evaluator.MultiplyPotential(self.psi, destPsi, dt, t)
 
 	def GetExpectationValue(self, t, dt):
-		return self.Potential.CalculateExpectationValue(self, dt, t)
+		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
 
 
 class FiniteDifferencePotentialWrapper(PotentialWrapper):
@@ -153,7 +241,7 @@ class FiniteDifferencePotentialWrapper(PotentialWrapper):
 		rank = self.psi.GetRank()
 
 		evaluatorPrefix = "core.ExponentialFiniteDifferenceEvaluator"
-		self.Evaluator = CreateFiniteDifferencePotentialInstance(configSection.classname, rank, evaluatorPrefix)
+		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
 		configSection.Apply(self.Evaluator)
 	
 	def AdvanceStep(self, t, dt):
@@ -172,7 +260,7 @@ class CrankNicholsonPotentialWrapper(PotentialWrapper):
 		rank = self.psi.GetRank()
 
 		evaluatorPrefix = "core.CrankNicholsonEvaluator"
-		self.Evaluator = CreateFiniteDifferencePotentialInstance(configSection.classname, rank, evaluatorPrefix)
+		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
 		configSection.Apply(self.Evaluator)
 	
 	def AdvanceStep(self, t, dt):

@@ -52,6 +52,7 @@ class Config:
 			if sectionName in ["GetSection"]:
 				raise Exception, "Invalid sectionName %s" % sectionName
 			section = Section(sectionName, cfg)
+			section.Config = self
 			self.__dict__[sectionName] = section
 
 	def GetSection(self, sectionName):

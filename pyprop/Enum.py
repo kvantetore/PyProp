@@ -6,6 +6,10 @@ class PotentialType:
 	FiniteDifference = 4
 	CrankNicholson = 5
 	Matrix = 6
+	RankOne = 7
+
+#Matches core/representation/orthopol/orthopoltools.h PolynomialType
+PolynomialType = core.OrthoPolType
 	
 #Initial condition types
 class InitialConditionType:

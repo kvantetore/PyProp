@@ -59,6 +59,8 @@ execfile(__path__[0] + "/Utility.py")
 execfile(__path__[0] + "/Redirect.py")
 execfile(__path__[0] + "/Interrupt.py")
 
+execfile(__path__[0] + "/BasisExpansion.py")
+
 #Load propagators
 execfile(__path__[0] + "/propagator/init.py")
 
