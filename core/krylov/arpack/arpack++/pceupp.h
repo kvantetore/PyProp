@@ -1,5 +1,5 @@
-#ifndef CEUPP_H
-#define CEUPP_H
+#ifndef PCEUPP_H
+#define PCEUPP_H
 
 #include <mpi.h>
 #include <stddef.h>
@@ -70,4 +70,5 @@ inline void pceupp(MPI_Comm comm, bool rvec, char HowMny, arcomplex<float> d[],
 
 } // ceupp (arcomplex<float>).
 
-#endif // CEUPP_H
+#endif // PCEUPP_H
+

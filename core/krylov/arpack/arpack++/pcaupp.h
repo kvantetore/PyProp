@@ -1,5 +1,5 @@
-#ifndef CAUPP_H
-#define CAUPP_H
+#ifndef PCAUPP_H
+#define PCAUPP_H
 
 #include <mpi.h>
 #include "arpackwrapper.h"
@@ -31,7 +31,7 @@ inline void pcaupp(MPI_Comm comm, int& ido, char bmat, int n, char* which, int n
 
 } // caupp (arcomplex<float>).
 
-#endif // CAUPP_H
+#endif // PCAUPP_H
 
 
 
