@@ -37,6 +37,7 @@ public:
 	int MaxIterationCount;
 	int EigenvalueCount;
 	bool RandomStart;
+	bool UseParpack;
 
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Wavefunction<Rank> &psi);

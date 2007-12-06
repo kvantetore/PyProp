@@ -5,8 +5,8 @@
 #include <core/utility/blitztricks.h>
 
 #include "../krylovcommon.h"
-//#include "arpack++/pcaupp.h"
-//#include "arpack++/pceupp.h"
+#include "arpack++/pcaupp.h"
+#include "arpack++/pceupp.h"
 #include "arpack++/caupp.h"
 #include "arpack++/ceupp.h"
 #include "arpack++/debug.h"
@@ -25,6 +25,16 @@ void ArpackPropagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	config.Get("krylov_eigenvalue_count", EigenvalueCount);
 	config.Get("krylov_max_iteration_count", MaxIterationCount);
 	config.Get("krylov_use_random_start", RandomStart);
+
+	UseParpack = false;
+	if (config.HasValue("krylov_use_parpack"))
+	{
+		config.Get("krylov_use_parpack", UseParpack);
+	}
+	if (UseParpack)
+	{
+		cout << "ARPACK: Using Parallel ARPACK" << endl;
+	}
 }
 
 
@@ -104,26 +114,49 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	do 
 	{
 		i = i+1;
-		//pcaupp(
-		//	MPI_COMM_WORLD, 
-		caupp(
-			iterationAction,             // Which action to take after this call (ido)
-			matrixType,                  // What type of problem s this (bmat)
-			matrixSize,                  // Size of matrix (matrixSize)x(matrixSize) (n)
-			eigenvalueRange,             // Which eigenvalues to find (which)
-			EigenvalueCount,             // How many eigenvalues to get (nev)
-			Tolerance,                   // accuracy on eigenvalues (rol)
-			WorkResidual.data(),         // residual (resid)
-			BasisSize,                   // number of arnoldi vectors to use (ncv)
-			Eigenvectors.data(),         // eigenvectors (v)
-			matrixSize,                  // length of eigenvectors (ldv)
-			IterationParameters.data(),  // (iparam)
-			iterationPointer.data(),     // (ipntr)
-			WorkVectors.data(),          // (Workd)
-			WorkData.data(),             // (Workl)
-			WorkData.size(),             // (lWorkl)
-			WorkReal.data(),             // (rWork)
-			iterationInfo);
+		if (UseParpack)
+		{
+			pcaupp(
+				MPI_COMM_WORLD, 
+				iterationAction,             // Which action to take after this call (ido)
+				matrixType,                  // What type of problem s this (bmat)
+				matrixSize,                  // Size of matrix (matrixSize)x(matrixSize) (n)
+				eigenvalueRange,             // Which eigenvalues to find (which)
+				EigenvalueCount,             // How many eigenvalues to get (nev)
+				Tolerance,                   // accuracy on eigenvalues (rol)
+				WorkResidual.data(),         // residual (resid)
+				BasisSize,                   // number of arnoldi vectors to use (ncv)
+				Eigenvectors.data(),         // eigenvectors (v)
+				matrixSize,                  // length of eigenvectors (ldv)
+				IterationParameters.data(),  // (iparam)
+				iterationPointer.data(),     // (ipntr)
+				WorkVectors.data(),          // (Workd)
+				WorkData.data(),             // (Workl)
+				WorkData.size(),             // (lWorkl)
+				WorkReal.data(),             // (rWork)
+				iterationInfo);
+		}
+		else
+		{
+			caupp(
+				iterationAction,             // Which action to take after this call (ido)
+				matrixType,                  // What type of problem s this (bmat)
+				matrixSize,                  // Size of matrix (matrixSize)x(matrixSize) (n)
+				eigenvalueRange,             // Which eigenvalues to find (which)
+				EigenvalueCount,             // How many eigenvalues to get (nev)
+				Tolerance,                   // accuracy on eigenvalues (rol)
+				WorkResidual.data(),         // residual (resid)
+				BasisSize,                   // number of arnoldi vectors to use (ncv)
+				Eigenvectors.data(),         // eigenvectors (v)
+				matrixSize,                  // length of eigenvectors (ldv)
+				IterationParameters.data(),  // (iparam)
+				iterationPointer.data(),     // (ipntr)
+				WorkVectors.data(),          // (Workd)
+				WorkData.data(),             // (Workl)
+				WorkData.size(),             // (lWorkl)
+				WorkReal.data(),             // (rWork)
+				iterationInfo);
+		}
 			
 		if (abs(iterationAction) == 1)
 		{
@@ -168,33 +201,61 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 
 	//call zneupd to postprocess data
 	//OMG! for en j**** lang liste parametere//
-	//pceupp( 
-	//	MPI_COMM_WORLD, 
-	ceupp(
-		findEigenvectors,           // (rvec)
-		'A',                        // 
-		Eigenvalues.data(),         // (d)
-		Eigenvectors.data(),        // (v)
-		matrixSize,                 // (ldv)
-		sigma,                      // (sigma)
-		WorkVectors2.data(),        // (Workev)
-		matrixType,                 // (bmat)
-		matrixSize,                 // (n)
-		eigenvalueRange,            // (which)
-		EigenvalueCount,            // (nev)
-		Tolerance,                  // (tol)
-		WorkResidual.data(),        // (resit)
-		BasisSize,                  // (ncv)
-		Eigenvectors.data(),        // (v)
-		matrixSize,                 // (ldv)
-		IterationParameters.data(), // (iparam)
-		iterationPointer.data(),    // (ipntr)
-		WorkVectors.data(),         // (Workd)
-		WorkData.data(),            // (Workl)
-		WorkData.size(),            // (lWorkl)
-		WorkReal.data(),            // (rWork)
-		errorNumber);               // (ierr)
-		
+	if (UseParpack)
+	{
+		pceupp( 
+			MPI_COMM_WORLD, 
+			findEigenvectors,           // (rvec)
+			'A',                        // 
+			Eigenvalues.data(),         // (d)
+			Eigenvectors.data(),        // (v)
+			matrixSize,                 // (ldv)
+			sigma,                      // (sigma)
+			WorkVectors2.data(),        // (Workev)
+			matrixType,                 // (bmat)
+			matrixSize,                 // (n)
+			eigenvalueRange,            // (which)
+			EigenvalueCount,            // (nev)
+			Tolerance,                  // (tol)
+			WorkResidual.data(),        // (resit)
+			BasisSize,                  // (ncv)
+			Eigenvectors.data(),        // (v)
+			matrixSize,                 // (ldv)
+			IterationParameters.data(), // (iparam)
+			iterationPointer.data(),    // (ipntr)
+			WorkVectors.data(),         // (Workd)
+			WorkData.data(),            // (Workl)
+			WorkData.size(),            // (lWorkl)
+			WorkReal.data(),            // (rWork)
+			errorNumber);               // (ierr)
+	}
+	else
+	{
+		ceupp(
+			findEigenvectors,           // (rvec)
+			'A',                        // 
+			Eigenvalues.data(),         // (d)
+			Eigenvectors.data(),        // (v)
+			matrixSize,                 // (ldv)
+			sigma,                      // (sigma)
+			WorkVectors2.data(),        // (Workev)
+			matrixType,                 // (bmat)
+			matrixSize,                 // (n)
+			eigenvalueRange,            // (which)
+			EigenvalueCount,            // (nev)
+			Tolerance,                  // (tol)
+			WorkResidual.data(),        // (resit)
+			BasisSize,                  // (ncv)
+			Eigenvectors.data(),        // (v)
+			matrixSize,                 // (ldv)
+			IterationParameters.data(), // (iparam)
+			iterationPointer.data(),    // (ipntr)
+			WorkVectors.data(),         // (Workd)
+			WorkData.data(),            // (Workl)
+			WorkData.size(),            // (lWorkl)
+			WorkReal.data(),            // (rWork)
+			errorNumber);               // (ierr)
+	}	
 
 }
 
