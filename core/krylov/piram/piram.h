@@ -22,7 +22,10 @@ template <class T, class OP>
 class pIRAM
 {
 public:
+	//Helper types
+	typedef double NormType;
 	typedef blitz::Array<T, 1> VectorType;
+	typedef blitz::Array<NormType, 1> NormVectorType;
 	typedef blitz::Array<int, 1> IntVectorType;
 	typedef blitz::Array<T, 2> MatrixType;
 	typedef blitz::linalg::LAPACK<T> LAPACK;
@@ -34,21 +37,31 @@ public:
 	int EigenvalueCount;
 	int MatrixSize;
 	int BasisSize;
-	double Tolerance;
+	NormType Tolerance;
+	bool UseRandomStart;
+
+	//Options
 	MPI_Comm CommBase;
-	//...
+	bool DisableMPI;
+
+	//Operator class, must implement operator()(VectorType &in, VectorType &out)
+	OP matrixOperator;
 
 	//Constructor
 	pIRAM() 
 	{
-		//TODO: Implement default values
+		Tolerance = std::numeric_limits<NormType>::epsilon();
+		CommBase = MPI_COMM_WORLD;
+		DisableMPI = false;
+		UseRandomStart;
 	}
 
 private:
-	OP matrixOperator;
 	LAPACK lapack;
 	BLAS blas;
 
+	int ProcId;
+	int ProcCount;
 
 	//Iteration variables
 	/*
@@ -73,7 +86,7 @@ private:
 	VectorType Reflectors;
 	VectorType Eigenvalues;
 	IntVectorType EigenvalueOrdering;
-	VectorType ErrorEstimates;
+	NormVectorType ErrorEstimates;
 	//Scalars
 	int CurrentArnoldiStep;
 	bool IsConverged;
@@ -85,11 +98,36 @@ private:
 	int RestartCount;
 
 	//Private methods
+	void MultiplyOperator(VectorType &in, VectorType &out);
+	void PerformArnoldiStep();
 	void PerformOrthogonalization(T originalNorm, T residualNorm);
 	void UpdateEigenvalues();
 	void PerformRestartStep();
 	void SortVector(VectorType &vector, IntVectorType &ordering);
 	void RecreateArnoldiFactorization();
+	//Post-processing:
+	void CalculateEigenvectors()
+	{
+		/* 
+		 * If A V = V H is a an arnoldi factorization of A, 
+		 * and H = X L inv(X) is an eigenvector factorization of H,
+		 * A V X = V X L => Y = V X => A Y = Y L is an approximation 
+		 * to a truncated eigenvector factorization of A
+		 */
+
+		/* 
+		 * In order to save memory, we calculate Y = V X row-wise, and put the
+		 * result back in ArnoldiVectors
+		 */
+		for (int i=0; i<MatrixSize; i++)
+		{
+			VectorType arnoldiRow = ArnoldiVectors(blitz::Range(0, BasisSize-1), i);
+			//Use overlap as temporary vector and calculate the i-th row of Y
+			blas.MultiplyMatrixVector(MatrixTranspose::Transpose, HessenbergEigenvectors, 1.0, arnoldiRow, 0.0, Overlap);
+			arnoldiRow = Overlap;
+		}
+	}
+
 	T CalculateGlobalNorm(VectorType &vector)
 	{
 		return sqrt(CalculateGlobalInnerProduct(vector, vector));
@@ -97,33 +135,90 @@ private:
 	
 	T CalculateGlobalInnerProduct(VectorType &x, VectorType &y)
 	{
-		//T localNorm = blas.VectorNorm(vector);
 		T localValue = blas.InnerProduct(x, y);
-		T globalValue;
+		if (DisableMPI)
+		{
+			return localValue;
+		}
 
+		T globalValue;
 		MPITraits<T> traits;
-		int status = MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, CommBase);
 
 		return globalValue;
 	}
 
 	void GlobalAddVector(VectorType &in, VectorType &out)
 	{
+		if (DisableMPI)
+		{
+			out = in;
+		}
+
 		MPITraits<T> traits;
-		int status = MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, CommBase);
 	}
 
 public:
-	void Solve();
 	void Setup();
+	void Solve();
+	void Postprocess()
+	{
+		CalculateEigenvectors();
+	}
+
 	void SetupResidual();
-	void MultiplyOperator(VectorType &in, VectorType &out);
-	void PerformArnoldiStep();
+
+	//Accessor functions:
+	int GetConvergedEigenvaluesCount()
+	{
+		return count(ErrorEstimates <= 1.0);
+	}
+	
+	VectorType GetEigenvalues()
+	{
+		return Eigenvalues(blitz::Range(0, EigenvalueCount-1));
+	}
+
+	VectorType GetEigenvector(int eigenvectorIndex)
+	{
+		int sortedIndex = EigenvalueOrdering(eigenvectorIndex);
+		return ArnoldiVectors(sortedIndex, blitz::Range(0, MatrixSize-1));
+	}
+
+	int GetOrthogonalizationCount()
+	{
+		return OrthogonalizationCount;
+	}
+
+	int GetRestartCount()
+	{
+		return RestartCount;
+	}
+
+	int GetOperatorCount()
+	{
+		return OperatorCount;
+	}
+		
 };
 
 template <class T, class OP>
 void pIRAM<T, OP>::Setup()
 {
+	//Setup MPI
+	if (!DisableMPI)
+	{	
+		MPI_Comm_rank(CommBase, &ProcId);
+		MPI_Comm_size(CommBase, &ProcCount);
+	}
+	else
+	{
+		ProcId = 0;
+		ProcCount = 1;
+	}
+
+	//Allocate workspace-memory
 	ArnoldiVectors.resize(BasisSize, MatrixSize);
 	Residual.resize(MatrixSize);
 	TempVector.resize(MatrixSize);
@@ -196,23 +291,7 @@ void pIRAM<T, OP>::PerformArnoldiStep()
 	PerformOrthogonalization(origNorm, residualNorm);
 	
 	//Update the Hessenberg Matrix
-	//TODO: Use CopyVector
 	HessenbergMatrix(j+1, blitz::Range(0, j+1)) = currentOverlap;
-
-	/*
-	int procId, procCount;
-	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	MPI_Comm_size(MPI_COMM_WORLD, &procCount);
-	for (int j=0; j<procCount; j++)
-	{
-		if (procId == j)
-		{
-			cout << "ProcId = " << procId << ", Hessenberg = " << real(HessenbergMatrix) << endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	throw std::runtime_error("hei");
-	*/
 
 	CurrentArnoldiStep++;
 }
@@ -304,20 +383,21 @@ void pIRAM<T,OP>::UpdateEigenvalues()
 	 * Check if solution is converged. See ARPACK Users Guide for information
 	 * about the convergence cirterium
 	 */
-	double tol = Tolerance;
-	double eps = std::numeric_limits<double>::epsilon();
-	double normHessenberg = 0; //TODO: calculate some norm here
-	double normResidual = std::abs(CalculateGlobalNorm(Residual));
+	NormType tol = Tolerance;
+	NormType normResidual = std::abs(CalculateGlobalNorm(Residual));
+	NormType eps = std::numeric_limits<NormType>::epsilon();
+	NormType eps23 = std::pow(eps, 2.0/3.0);
 
 	IsConverged = true;
 	for (int i=0; i<EigenvalueCount; i++)
 	{
 		int sortedIndex = EigenvalueOrdering(i);
-		double ritzError = std::abs(HessenbergEigenvectors(sortedIndex, BasisSize-1));
-		double ritzValue = std::abs(Eigenvalues(i));
-		double convergenceCrit = ritzError * normResidual - std::max(eps * normHessenberg , tol * ritzValue);
-		ErrorEstimates(i) = convergenceCrit;
-		IsConverged = IsConverged && convergenceCrit<0;
+		NormType ritzError = std::abs(HessenbergEigenvectors(sortedIndex, BasisSize-1));
+		NormType ritzValue = std::abs(Eigenvalues(i));
+		NormType errorBounds = ritzError * normResidual;
+		NormType accuracy = tol * std::max(eps23, tol * ritzValue);
+		ErrorEstimates(i) = errorBounds / accuracy;
+		IsConverged = IsConverged && (ErrorEstimates(i) <= 1);
 	}
 }
 
@@ -411,7 +491,7 @@ void pIRAM<T, OP>::SetupResidual()
 	UniformClosed<double> rand;
 
 	int procId, procCount;
-	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	MPI_Comm_rank(CommBase, &procId);
 	MPI_Comm_size(MPI_COMM_WORLD, &procCount);
 
 	int localStart = procId * MatrixSize;
@@ -438,30 +518,8 @@ void pIRAM<T, OP>::SetupResidual()
 		i++;
 	}
 
-	/*
-	cout << "i = " << i << ", localIndex = " << localIndex << endl;
-
-	for (int j=0; j<procCount; j++)
-	{
-		if (procId == j)
-		{
-			cout << "ProcId = " << procId << ", Residual = " << real(Residual) << endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-
-
-	if (procCount == 1)
-	{
-		VectorType v1 = Residual(blitz::Range(0, MatrixSize/2-1));
-		VectorType v2 = Residual(blitz::Range(MatrixSize/2, MatrixSize));
-		cout << "firstNorm = " << CalculateGlobalNorm(v1) << ", secondNorm = " << CalculateGlobalNorm(v2) << endl;
-	}
-	*/
-
 	T norm = CalculateGlobalNorm(Residual);
 	blas.ScaleVector(Residual, 1.0/norm);
-	//throw std::runtime_error("hei");
 	
 	file.close();
 }
@@ -488,49 +546,38 @@ void pIRAM<T, OP>::Solve()
 
 		if (IsConverged)
 		{
-			int procId, procCount;
-			MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-			MPI_Comm_size(MPI_COMM_WORLD, &procCount);
+			break;
+		}
 
-			if (procId == 0)
-			{
-				cout << "Converged!" << endl;
-				cout << "Eigenvalues  = " << Eigenvalues(blitz::Range(0, EigenvalueCount-1)) << endl;
-				cout << "OpCount      = " << OperatorCount << endl;
-				cout << "RestartCount = " << RestartCount << endl;
-				cout << "ReOrthoCOunt = " << OrthogonalizationCount << endl;
-			}
+		if (RestartCount >= MaxRestartCount)
+		{
 			break;
 		}
 
 		PerformRestartStep();
 		RecreateArnoldiFactorization();
 	}
+
+
+	if (ProcId == 0)
+	{
+		if (IsConverged)
+		{
+			cout << "All eigenvalues are converged!" << endl;
+		}
+		else
+		{
+			cout << "WARNING: Not all eigenvalues are converged" << endl;
+			blitz::Array<bool, 1> conv (blitz::where(ErrorEstimates <= 1.0, true, false));
+			cout << "    Converged Eigenvalues   = " << conv << endl;
+			cout << "    Error Estimates (< 1.0) = " << ErrorEstimates << endl;
+		}
+		cout << "    Eigenvalues  = " << GetEigenvalues() << endl;
+		cout << "    OpCount      = " << OperatorCount << endl;
+		cout << "    RestartCount = " << RestartCount << endl;
+		cout << "    ReOrthoCOunt = " << OrthogonalizationCount << endl;
+	}
 }
-
-
-
-
-/*
- * BLAS:
- * CopyVector
- * VectorNorm
- * MatrixNorm //Check with ARPACK
- * InnerProduct
- * AddVector
- * ScaleVector
- * MultiplyMatrixVector //Check wheter these two can be performed in-place
- * MultiplyMatrixMatrix //
- *
- *
- * LAPACK:
- * CalculateEigenvectorFactorization
- * CalculateQR
- *
- * OTHER:
- * GetMachinePrecision
- * SortVector
- */
 
 } //Namespace
 

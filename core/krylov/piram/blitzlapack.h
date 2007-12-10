@@ -120,16 +120,6 @@ void LAPACK<T>::PreconditionCalculateQRFactorization(MatrixType &matrix, VectorT
 	BZPRECONDITION(matrix.stride(1) == 1);
 }
 
-/*
-template<class T>
-void LAPACK<T>::PreconditionCompleteQRFactorization(MatrixType R, VectorType reflectors, MatrixType Q)
-{
-	BZPRECONDITION(Q.extent(0) == R.extent(0));
-	BZPRECONDITION(Q.extent(1) == R.extent(1));
-	BZPRECONDITION(reflectors.extent(0) == std::min(R.extent(0), R.extent(1)));
-}
-*/
-
 template<class T>
 void LAPACK<T>::PreconditionCompleteQRFactorization(MatrixType &matrix, VectorType &reflectors)
 {

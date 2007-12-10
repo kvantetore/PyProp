@@ -159,6 +159,7 @@ void BLAS<T>::PreconditionVectorNorm(VectorType &x)
 template<class T>
 void BLAS<T>::PreconditionMultiplyMatrixVector(MatrixTranspose transpose, MatrixType &matrix, T srcScaling, VectorType &src, T dstScaling, VectorType &dst)
 {
+#ifdef BZ_DEBUG
 	int rows = matrix.extent(1);
 	int cols = matrix.extent(0);
 
@@ -173,6 +174,7 @@ void BLAS<T>::PreconditionMultiplyMatrixVector(MatrixTranspose transpose, Matrix
 		BZPRECONDITION(rows == src.extent(0));
 	}
 	BZPRECONDITION(matrix.stride(1) == 1);
+#endif
 }
 
 //NOTE: Matrices are supposed to be in col-major (fortran) format
@@ -180,6 +182,7 @@ void BLAS<T>::PreconditionMultiplyMatrixVector(MatrixTranspose transpose, Matrix
 template<class T>
 void BLAS<T>::PreconditionMultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixTranspose transposeB, T srcScaling, MatrixType &a, MatrixType &b, T dstScaling, MatrixType &dst)
 {
+#ifdef BZ_DEBUG
 	int rowsA = a.extent(1);
 	int colsA = a.extent(0);
 	int rowsB = b.extent(1);
@@ -220,6 +223,7 @@ void BLAS<T>::PreconditionMultiplyMatrixMatrix(MatrixTranspose transposeA, Matri
 
 	BZPRECONDITION(a.stride(1) == 1);
 	BZPRECONDITION(b.stride(1) == 1);
+#endif
 }
 
 
