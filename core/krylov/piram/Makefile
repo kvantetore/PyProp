@@ -20,11 +20,13 @@ MODULENAME   := libarpack
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 PYPROP_LIB_PATH := $(DESTDIR)
 LIBS         := -lcore $(PARPACK_LIB) $(ARPACK_LIB) 
-all: $(MODULEFILE)
+#all: $(MODULEFILE)
 
-arpacktest: arpacktest.cpp
-	mpicxx  -I/opt/blitz/include -DPYPROP_USE_BLAS   -DBZ_DEBUG -g -I. -I/usr/lib/python2.5/site-packages/numpy/core/include -I/usr/include/python2.5  -I../../../ -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB -fPIC -D__GCCXML__  -MD -MF arpacktest.d -c arpacktest.cpp -o arpacktest.o
-	mpicxx  -DBZ_DEBUG -g  -L/opt/blitz/lib -fPIC  -o arpacktest arpacktest.o  /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -lgfortran  -L/home/tore/prog/pyprop/pyprop/core -Wl,-rpath=/home/tore/prog/pyprop/pyprop/core -llapack -lblas -lblitz
+piramtest: piramtest.o
+	$(MPICXX) $(LDFLAGS) -o piramtest piramtest.o -lblitz -lblas -llapack
+
+test: test.o
+	$(MPICXX) $(LDFLAGS) -o test test.o -lblitz -lblas -llapack
 
 $(MODULEFILE): $(OBJECTS)
 	rm -f $(MODULEFILE)
