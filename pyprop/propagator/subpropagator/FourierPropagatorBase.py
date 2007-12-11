@@ -24,7 +24,7 @@ class FourierPropagatorBase:
 		#Create default fourier potential
 		self.FourierPotentials.append(self.CreateDefaultFourierPotential())
 
-
+		#Default is to not set origin to zero when imageinary time is used
 		self.ForceOriginZero = False
 
 	

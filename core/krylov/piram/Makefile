@@ -1,8 +1,5 @@
 PYPROP_ROOT  := ../../..
 
-ARPACK_LIB   = $(ARPACK_DIR)/libarpack.a
-#PARPACK_LIB   = $(ARPACK_DIR)/libparpack.a
-
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 
@@ -10,23 +7,16 @@ INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
 DESTDIR      := $(call ABS_PATH,$(PYPROP_ROOT)/pyprop/core)
 
 PYSTEFILES   := wrapper.pyste
-ARPACK_SOURCE  := \
-			arpackpropagator.cpp \
+SOURCEFILES  := \
+			piramsolver.cpp \
 			wrapper.cpp
-SOURCEFILES  := $(ARPACK_SOURCE)
 
 OBJECTS      := $(SOURCEFILES:.cpp=.o)
-MODULENAME   := libarpack
+MODULENAME   := libpiram
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 PYPROP_LIB_PATH := $(DESTDIR)
-LIBS         := -lcore $(PARPACK_LIB) $(ARPACK_LIB) 
-#all: $(MODULEFILE)
-
-piramtest: piramtest.o
-	$(MPICXX) $(LDFLAGS) -o piramtest piramtest.o -lblitz -lblas -llapack
-
-test: test.o
-	$(MPICXX) $(LDFLAGS) -o test test.o -lblitz -lblas -llapack
+LIBS         := $(LIBS) -lcore 
+all: $(MODULEFILE)
 
 $(MODULEFILE): $(OBJECTS)
 	rm -f $(MODULEFILE)

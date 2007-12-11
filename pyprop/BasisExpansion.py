@@ -37,6 +37,7 @@ class BasisFunctionGenerator(object):
 		for basisIndex in IndexIterator(self.BasisShape):
 			curFuncs = [ self.basisFun[i][basisIndex[i]] for i in xrange(rank) ]
 			OuterProduct(curFuncs, psi.GetData()[:])
+			psi.Normalize()
 
 			yield basisCount
 			basisCount += 1
@@ -53,8 +54,8 @@ def GetBasisExpansionMatrix(prop):
 
 	for j in basisFuncs.Iterate(prop.psi):
 		#calculate |tempPsi> = H | prop.psi >
-		tempPsi.GetData()[:] = prop.psi.GetData()
-		#prop.MultiplyHamiltonian(tempPsi)
+		tempPsi.GetData()[:] = 0 
+		prop.MultiplyHamiltonian(tempPsi)
 
 		for i in basisFuncs.Iterate(psi):
 			#calculate < psi | H | prop.psi > = < psi | tempPsi >

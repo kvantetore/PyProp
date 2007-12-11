@@ -27,20 +27,20 @@ def FindGroundstate(**args):
 def FindEigenvalues(**args):
 	prop = SetupProblem(**args)
 
-	solver = pyprop.ArpackSolver(prop)
+	solver = pyprop.PiramSolver(prop)
+	print "Solving..."
 	solver.Solve()
 
 	print sort(solver.GetEigenvalues().real)
 
 	evCount = len(solver.GetEigenvalues())
-	eigenvectors = solver.GetEigenvectors()
 
 	sortIndex = argsort(solver.GetEigenvalues())
 
 	m = 0
 	for i in sortIndex:
 		shape = prop.psi.GetData().shape
-		prop.psi.GetData()[:] = reshape(eigenvectors[i,:], shape)
+		prop.psi.GetData()[:] = reshape(solver.GetEigenvector(i), shape)
 		prop.psi.Normalize()
 		print "E%i = %s" % (m, prop.GetEnergyExpectationValue())
 		m += 1

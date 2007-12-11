@@ -6,7 +6,10 @@ try:
 	from libarpack import *
 except:
 	print "Warning: could not load ARPACK wrapper (%s)" % sys.exc_info()[1]
-
+try:
+	from libpiram import *
+except:
+	print "Warning: could not load pIRAM wrapper (%s)" % sys.exc_info()[1]
 try:
 	from libode import *
 except:

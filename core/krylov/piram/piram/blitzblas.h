@@ -1,5 +1,5 @@
-#ifndef BLITZBLAS_H
-#define BLITZBLAS_H
+#ifndef PIRAM_BLITZBLAS_H
+#define PIRAM_BLITZBLAS_H
 
 #include <blitz/array.h>
 #include <complex>
@@ -231,7 +231,7 @@ void BLAS<T>::PreconditionMultiplyMatrixMatrix(MatrixTranspose transposeA, Matri
 
 // xCOPY: dst = src
 template<>
-void BLAS<cplx>::CopyVector(VectorType &src, VectorType &dst)
+inline void BLAS<cplx>::CopyVector(VectorType &src, VectorType &dst)
 {
 	PreconditionCopyVector(src, dst);
 
@@ -240,7 +240,7 @@ void BLAS<cplx>::CopyVector(VectorType &src, VectorType &dst)
 
 // xSCAL: vector *= scaling
 template<>
-void BLAS<cplx>::ScaleVector(VectorType &vector, cplx scaling)
+inline void BLAS<cplx>::ScaleVector(VectorType &vector, cplx scaling)
 {
 	PreconditionScaleVector(vector, scaling);
 
@@ -249,7 +249,7 @@ void BLAS<cplx>::ScaleVector(VectorType &vector, cplx scaling)
 
 // xAXPY: dst += scaling * src
 template<>
-void BLAS<cplx>::AddVector(VectorType &src, cplx scaling, VectorType &dst)
+inline void BLAS<cplx>::AddVector(VectorType &src, cplx scaling, VectorType &dst)
 {
 	PreconditionAddVector(src, scaling, dst);
 
@@ -258,7 +258,7 @@ void BLAS<cplx>::AddVector(VectorType &src, cplx scaling, VectorType &dst)
 
 // xDOTy: sum( conj(x) * y )
 template<>
-cplx BLAS<cplx>::InnerProduct(VectorType &x, VectorType &y)
+inline cplx BLAS<cplx>::InnerProduct(VectorType &x, VectorType &y)
 {
 	PreconditionInnerProduct(x, y);
 
@@ -269,7 +269,7 @@ cplx BLAS<cplx>::InnerProduct(VectorType &x, VectorType &y)
 
 // xDOTy: sum( conj(x) * y )
 template<>
-cplx BLAS<cplx>::VectorNorm(VectorType &x)
+inline cplx BLAS<cplx>::VectorNorm(VectorType &x)
 {
 	PreconditionVectorNorm(x);
 
@@ -279,7 +279,7 @@ cplx BLAS<cplx>::VectorNorm(VectorType &x)
 //NOTE: Matrices are supposed to be in col-major (fortran) format
 // xGEMV: sum( matrix(i, j) * vector(i), i)
 template<>
-void BLAS<cplx>::MultiplyMatrixVector(MatrixTranspose transpose, MatrixType &matrix, cplx srcScaling, VectorType &src, cplx dstScaling, VectorType &dst)
+inline void BLAS<cplx>::MultiplyMatrixVector(MatrixTranspose transpose, MatrixType &matrix, cplx srcScaling, VectorType &src, cplx dstScaling, VectorType &dst)
 {
 	PreconditionMultiplyMatrixVector(transpose, matrix, srcScaling, src, dstScaling, dst);
 	
@@ -296,7 +296,7 @@ void BLAS<cplx>::MultiplyMatrixVector(MatrixTranspose transpose, MatrixType &mat
 //NOTE: Matrices are supposed to be in col-major (fortran) format
 // xGEMM: sum( a(i, j) *  b(k, i), i)
 template<>
-void BLAS<cplx>::MultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixTranspose transposeB, cplx srcScaling, MatrixType &a, MatrixType &b, cplx dstScaling, MatrixType &dst)
+inline void BLAS<cplx>::MultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixTranspose transposeB, cplx srcScaling, MatrixType &a, MatrixType &b, cplx dstScaling, MatrixType &dst)
 {
 	PreconditionMultiplyMatrixMatrix(transposeA, transposeB, srcScaling, a, b, dstScaling, dst);
 	

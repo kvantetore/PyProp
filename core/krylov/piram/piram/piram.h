@@ -15,10 +15,40 @@
 
 namespace piram
 {
-
 using namespace blitz::linalg;
 
-template <class T, class OP>
+/* 
+ * Abstract functor class to implement matrix-vector multiplication
+ */
+template<class T>
+class OperatorFunctor
+{
+public:
+	typedef boost::shared_ptr< OperatorFunctor > Ptr;
+
+	virtual ~OperatorFunctor() {}
+	virtual void operator()(blitz::Array<T, 1> &in, blitz::Array<T, 1> &out) = 0;
+};
+
+/*
+ * Abstract functor class to implement initialization of residual
+ */
+template<class T>
+class SetupResidualFunctor
+{
+public:
+	typedef boost::shared_ptr< SetupResidualFunctor > Ptr;
+
+	virtual ~SetupResidualFunctor() {}
+	virtual void operator()(blitz::Array<T, 1> &residual) = 0;
+};
+
+
+
+/*
+ * Main pIRAM-class
+ */
+template <class T>
 class pIRAM
 {
 public:
@@ -45,15 +75,17 @@ public:
 	bool DisableMPI;
 
 	//Operator class, must implement operator()(VectorType &in, VectorType &out)
-	OP matrixOperator;
+	typename OperatorFunctor<T>::Ptr MatrixOperator;
+	typename SetupResidualFunctor<T>::Ptr SetupResidual;
 
 	//Constructor
 	pIRAM() 
 	{
+		MaxOrthogonalizationCount = 3;
 		Tolerance = std::numeric_limits<NormType>::epsilon();
 		CommBase = MPI_COMM_WORLD;
 		DisableMPI = false;
-		UseRandomStart;
+		UseRandomStart = true;
 	}
 
 private:
@@ -99,12 +131,14 @@ private:
 
 	//Private methods
 	void MultiplyOperator(VectorType &in, VectorType &out);
+	void PerformInitialArnoldiStep();
 	void PerformArnoldiStep();
 	void PerformOrthogonalization(T originalNorm, T residualNorm);
 	void UpdateEigenvalues();
 	void PerformRestartStep();
 	void SortVector(VectorType &vector, IntVectorType &ordering);
 	void RecreateArnoldiFactorization();
+	void SetupRandomResidual();
 	//Post-processing:
 	void CalculateEigenvectors()
 	{
@@ -167,12 +201,11 @@ public:
 		CalculateEigenvectors();
 	}
 
-	void SetupResidual();
 
 	//Accessor functions:
-	int GetConvergedEigenvaluesCount()
+	int GetConvergedEigenvalueCount()
 	{
-		return count(ErrorEstimates <= 1.0);
+		return count(ErrorEstimates <= 0.0);
 	}
 	
 	VectorType GetEigenvalues()
@@ -203,8 +236,8 @@ public:
 		
 };
 
-template <class T, class OP>
-void pIRAM<T, OP>::Setup()
+template <class T>
+void pIRAM<T>::Setup()
 {
 	//Setup MPI
 	if (!DisableMPI)
@@ -244,18 +277,50 @@ void pIRAM<T, OP>::Setup()
 	CurrentArnoldiStep = 0;
 	IsConverged = false;
 
+	NormType eps = numeric_limits<NormType>::epsilon();
+	if (Tolerance < eps)
+	{
+		Tolerance = eps;
+	}
+
+}
+
+template <class T>
+void pIRAM<T>::PerformInitialArnoldiStep()
+{
 	//Perform initial arnoldi step
-	SetupResidual();
+	if (UseRandomStart)
+	{
+		SetupRandomResidual();
+	}
+	else
+	{
+		(*SetupResidual)(Residual);
+	}
+
+
+	//Normalize Residual
+	T norm = CalculateGlobalNorm(Residual);
+
+	cout << "Norm = " << norm;
+
+	blas.ScaleVector(Residual, 1.0/norm);
+
+	//First Arnoldi Vector is the init residual
 	VectorType v0(ArnoldiVectors(0, blitz::Range::all()));
 	blas.CopyVector(Residual, v0);
+
+	//Apply operator
 	MultiplyOperator(v0, Residual);
+
+	//Update Hessenberg Matrix
 	T alpha = CalculateGlobalInnerProduct(v0, Residual);
 	blas.AddVector(v0, -alpha, Residual);
 	HessenbergMatrix(0,0) = alpha;
 }
 
-template <class T, class OP>
-void pIRAM<T, OP>::PerformArnoldiStep()
+template <class T>
+void pIRAM<T>::PerformArnoldiStep()
 {
 	//Define some shortcuts
 	int j = CurrentArnoldiStep;
@@ -296,8 +361,8 @@ void pIRAM<T, OP>::PerformArnoldiStep()
 	CurrentArnoldiStep++;
 }
 
-template <class T, class OP>
-void pIRAM<T, OP>::PerformOrthogonalization(T originalNorm, T residualNorm)
+template <class T>
+void pIRAM<T>::PerformOrthogonalization(T originalNorm, T residualNorm)
 {
 	//Define some shortcuts
 	int j = CurrentArnoldiStep;
@@ -319,8 +384,9 @@ void pIRAM<T, OP>::PerformOrthogonalization(T originalNorm, T residualNorm)
 
 		if (curOrthoCount > MaxOrthogonalizationCount)
 		{
-			cout << "WARNING: Maximum orthogonalization steps for one Arnoldi iteration has been reached" << endl;
-			cout << "         Spurious eigenvalues may occur in the solution" << endl;
+			cout << "WARNING: Maximum orthogonalization steps for one Arnoldi iteration has been " << endl
+				 << "         reached (" << MaxOrthogonalizationCount << "), "
+				 << "Spurious eigenvalues may occur in the solution" << endl;
 			break;
 		}
 
@@ -339,8 +405,8 @@ void pIRAM<T, OP>::PerformOrthogonalization(T originalNorm, T residualNorm)
 }
 
 
-template <class T, class OP>
-void pIRAM<T, OP>::SortVector(VectorType &vector, IntVectorType &ordering)
+template <class T>
+void pIRAM<T>::SortVector(VectorType &vector, IntVectorType &ordering)
 {
 	BZPRECONDITION(vector.extent(0) == ordering.extent(0));
 	ordering = blitz::tensor::i;
@@ -367,11 +433,10 @@ void pIRAM<T, OP>::SortVector(VectorType &vector, IntVectorType &ordering)
 }
 
 
-template <class T, class OP>
-void pIRAM<T,OP>::UpdateEigenvalues()
+template <class T>
+void pIRAM<T>::UpdateEigenvalues()
 {
 	MatrixType emtpyMatrix(1,1);
-
 
 	//Calculate eigenvalues with the eigenvector factorization
 	//CalculateEigenvectorFactorization destroys the input matrix, so we make a copy
@@ -396,13 +461,13 @@ void pIRAM<T,OP>::UpdateEigenvalues()
 		NormType ritzValue = std::abs(Eigenvalues(i));
 		NormType errorBounds = ritzError * normResidual;
 		NormType accuracy = tol * std::max(eps23, tol * ritzValue);
-		ErrorEstimates(i) = errorBounds / accuracy;
-		IsConverged = IsConverged && (ErrorEstimates(i) <= 1);
+		ErrorEstimates(i) = errorBounds - accuracy;
+		IsConverged = IsConverged && (ErrorEstimates(i) <= 0.0);
 	}
 }
 
-template <class T, class OP>
-void pIRAM<T,OP>::PerformRestartStep()
+template <class T>
+void pIRAM<T>::PerformRestartStep()
 {
 	//Update statistics
 	RestartCount++;
@@ -471,61 +536,33 @@ void pIRAM<T,OP>::PerformRestartStep()
 }
 
 
-template<class T, class OP>
-void pIRAM<T, OP>::MultiplyOperator(VectorType &in, VectorType &out)
+template<class T>
+void pIRAM<T>::MultiplyOperator(VectorType &in, VectorType &out)
 {
 	//Update statistics
 	OperatorCount++;
 
 	//Perform matrix-vector multiplication
-	matrixOperator(in, out);
+	(*MatrixOperator)(in, out);
 }
 
 
-template<class T, class OP>
-void pIRAM<T, OP>::SetupResidual()
+template<class T>
+void pIRAM<T>::SetupRandomResidual()
 {
 	using namespace ranlib;
 	using namespace std;
 
 	UniformClosed<double> rand;
 
-	int procId, procCount;
-	MPI_Comm_rank(CommBase, &procId);
-	MPI_Comm_size(MPI_COMM_WORLD, &procCount);
-
-	int localStart = procId * MatrixSize;
-	cout << "proc " << procId <<": LocalStart = " << localStart << endl;
-
-	ifstream file;
-	file.open("init.dat", ios::in);
-
-	int i=0;
-	int localIndex = 0;
-	while (! file.eof() && file.is_open())
+	for (int i=0; i<MatrixSize; i++)
 	{
-		
-		char line[256];
-		file.getline(line, 256);
-
-		if (i>=localStart && i<localStart+MatrixSize)
-		{
-			std::istrstream lineStream(line);
-			lineStream >> Residual(localIndex);;
-			localIndex++;
-		}
-		
-		i++;
+		Residual(i) = rand.getUniform();
 	}
-
-	T norm = CalculateGlobalNorm(Residual);
-	blas.ScaleVector(Residual, 1.0/norm);
-	
-	file.close();
 }
 
-template<class T, class OP>
-void pIRAM<T, OP>::RecreateArnoldiFactorization()
+template<class T>
+void pIRAM<T>::RecreateArnoldiFactorization()
 {
 	//Make sure we have a BasisSize-step arnoldi iteration
 	while (CurrentArnoldiStep < BasisSize-1)
@@ -535,9 +572,11 @@ void pIRAM<T, OP>::RecreateArnoldiFactorization()
 }
 
 
-template<class T, class OP>
-void pIRAM<T, OP>::Solve()
+template<class T>
+void pIRAM<T>::Solve()
 {
+	PerformInitialArnoldiStep();
+
 	RecreateArnoldiFactorization();
 
 	while (true)
@@ -568,9 +607,9 @@ void pIRAM<T, OP>::Solve()
 		else
 		{
 			cout << "WARNING: Not all eigenvalues are converged" << endl;
-			blitz::Array<bool, 1> conv (blitz::where(ErrorEstimates <= 1.0, true, false));
+			blitz::Array<bool, 1> conv (blitz::where(ErrorEstimates <= 0.0, true, false));
 			cout << "    Converged Eigenvalues   = " << conv << endl;
-			cout << "    Error Estimates (< 1.0) = " << ErrorEstimates << endl;
+			cout << "    Error Estimates (< 0.0) = " << ErrorEstimates << endl;
 		}
 		cout << "    Eigenvalues  = " << GetEigenvalues() << endl;
 		cout << "    OpCount      = " << OperatorCount << endl;

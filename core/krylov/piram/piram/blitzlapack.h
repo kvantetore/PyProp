@@ -1,5 +1,5 @@
-#ifndef BLITZLAPACK_H
-#define BLITZLAPACK_H
+#ifndef PIRAM_BLITZLAPACK_H
+#define PIRAM_BLITZLAPACK_H
 
 #include <blitz/array.h>
 #include <complex>
@@ -138,7 +138,7 @@ void LAPACK<T>::PreconditionApplyQRTransformation( MultiplicationSide side, Mult
  */
 
 template<>
-int LAPACK<cplx>::CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
+inline int LAPACK<cplx>::CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 		MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
 		MatrixType &rightEigenvectors)
 {
@@ -200,7 +200,7 @@ int LAPACK<cplx>::CalculateEigenvectorFactorization(bool calculateLeft, bool cal
 
 
 template<>
-int LAPACK<cplx>::CalculateQRFactorization(MatrixType &matrix, VectorType &reflectors)
+inline int LAPACK<cplx>::CalculateQRFactorization(MatrixType &matrix, VectorType &reflectors)
 {
 	PreconditionCalculateQRFactorization(matrix, reflectors);
 
@@ -234,7 +234,7 @@ int LAPACK<cplx>::CalculateQRFactorization(MatrixType &matrix, VectorType &refle
 }
 
 template<>
-int LAPACK<cplx>::CompleteQRFactorization(MatrixType &matrix, VectorType &reflectors)
+inline int LAPACK<cplx>::CompleteQRFactorization(MatrixType &matrix, VectorType &reflectors)
 {
 	PreconditionCompleteQRFactorization(matrix, reflectors);
 
@@ -270,7 +270,7 @@ int LAPACK<cplx>::CompleteQRFactorization(MatrixType &matrix, VectorType &reflec
 
 
 template<>
-int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix )
+inline int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix )
 {
 	PreconditionApplyQRTransformation(side, transpose, qrMatrix, reflectors, matrix);
 
@@ -305,7 +305,7 @@ int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, Multiplication
 }
 
 template<>
-int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, VectorType &vector )
+inline int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, VectorType &vector )
 {
 	blitz::TinyVector<int, 2> shape(1, vector.extent(0));
 	blitz::TinyVector<int, 2> stride(vector.extent(0)*vector.stride(0), vector.stride(0));

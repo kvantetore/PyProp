@@ -96,7 +96,7 @@ def FindEigenvalues():
 	conf.Propagation.silent = pyprop.ProcId != 0
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
-	solver = pyprop.ArpackSolver(prop)
+	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 
 	print "Eigenvalues = ", solver.Solver.GetEigenvalues().real
