@@ -1,0 +1,5 @@
+ArpackPropagator = Template("krylov::PiramSolver", "piramsolver.h");
+ArpackPropagator("1");
+ArpackPropagator("2");
+ArpackPropagator("3");
+ArpackPropagator("4");
