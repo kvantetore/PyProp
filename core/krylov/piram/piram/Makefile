@@ -11,7 +11,7 @@ qrtest: qrtest.o
 	$(MPICXX) $(LDFLAGS) -o qrtest qrtest.o -lblitz -lblas -llapack
 
 piramtest: piramtest.o
-	$(MPICXX) $(LDFLAGS) -o piramtest piramtest.o -lblitz -lblas -llapack
+	$(MPICXX) $(LDFLAGS) -o piramtest piramtest.o $(LAPACK_LIBS)
 
 test: test.o
 	$(MPICXX) $(LDFLAGS) -o test test.o -lblitz -lblas -llapack

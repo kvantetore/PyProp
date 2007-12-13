@@ -10,7 +10,7 @@ using namespace blitz;
 #ifndef PYPROP_USE_BLAS
 #include "blitzblas_ref.cpp"
 #else 
-#if PYPROP_USE_BLAS == ACML
+#ifdef PYPROP_USE_BLAS_ACML
 #include "blitzblas_acml.cpp"
 #else
 #include "blitzblas_cblas.cpp"

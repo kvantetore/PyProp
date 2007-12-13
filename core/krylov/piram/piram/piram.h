@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <strstream>
+#include <sstream>
 
 #include <mpi.h>
 #include <map>
@@ -230,6 +230,7 @@ private:
 	}
 
 public:
+	double EstimateMemoryUsage();
 	void Setup();
 	void Solve();
 	void Postprocess()
@@ -271,6 +272,15 @@ public:
 	}
 		
 };
+
+template <class T>
+double pIRAM<T>::EstimateMemoryUsage()
+{
+	double largeSize = MatrixSize * (BasisSize + 3)
+	double smallSize = BasisSize * (3*BasisSize + 7);
+	return (largeSize + smallSize) * sizeof(T) / (1024.*1024);
+}
+
 
 template <class T>
 void pIRAM<T>::Setup()
@@ -338,8 +348,6 @@ void pIRAM<T>::PerformInitialArnoldiStep()
 
 	//Normalize Residual
 	T norm = CalculateGlobalNorm(Residual);
-
-	cout << "Norm = " << norm << endl;
 
 	blas.ScaleVector(Residual, 1.0/norm);
 
@@ -467,7 +475,7 @@ void pIRAM<T>::SortVector(VectorType &vector, IntVectorType &ordering)
 	{
 		for (int j=i+1; j<n; j++)
 		{
-			if (std::abs(vector(i)) > std::abs(vector(j)))
+			if (std::real(vector(i)) > std::real(vector(j)))
 			{
 				T temp = vector(i);
 				vector(i) = vector(j);

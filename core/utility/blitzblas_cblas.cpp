@@ -8,7 +8,7 @@
 //Use cblas interface
 extern "C"
 {
-#if PYPROP_USE_BLAS == MKL
+#if PYPROP_USE_BLAS_MKL
 #include <mkl_cblas.h>
 #else
 #include <cblas.h>
@@ -148,7 +148,16 @@ void MatrixVectorMultiply(const Array<double, 2> &A, const Array<double, 1> &v, 
 template<class T, int Rank>
 void VectorElementMultiplyTemplate(const Array<T, Rank> &u, const Array<T, Rank> &v, Array<T, Rank> &w)
 {
-	w = u * v;
+	//w = u * v;
+	int size = u.size();
+	
+	const T* a = u.data();
+	const T* b = v.data();
+	T* c = w.data();
+	for (int i=0; i<size; i++)
+	{
+		*c++ = *a++ * *b++;
+	}
 }
 
 template<int Rank>

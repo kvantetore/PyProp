@@ -19,7 +19,7 @@ OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libarpack
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 PYPROP_LIB_PATH := $(DESTDIR)
-LIBS         := -lcore $(PARPACK_LIB) $(ARPACK_LIB) 
+LIBS         := -lcore $(PARPACK_LIB) $(ARPACK_LIB) $(FORTRAN_LIBS)
 all: $(MODULEFILE)
 
 arpacktest: arpacktest.cpp

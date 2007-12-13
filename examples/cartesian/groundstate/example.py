@@ -52,7 +52,7 @@ def FindEnergy(prop):
 	prop.psi.GetData()[:] = psi.GetData()
 
 
-def FindGroundstate():
+def FindGroundstate(**args):
 	"""
 	Loads the configuration file "find_groundstate.ini", which contains information
 	on how to find the ground state of 2d hydrogen, by imaginary time propagation.
@@ -65,19 +65,26 @@ def FindGroundstate():
 	
 	#load config
 	conf = pyprop.Load("find_groundstate.ini")
+	silent = False
+	if 'silent' in args:
+		silent = args['silent']
+		conf.Propagation.silent = silent
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 
 	#propagate to find ground state
 	for t in prop.Advance(10):
-		print "t =", t, "E =", prop.GetEnergy()
+		E = prop.GetEnergy()
+		if not silent:
+			print "t =", t, "E =", E
 	
 	#save groundstate to disk
 	prop.SaveWavefunctionHDF("groundstate.h5", "groundstate")
 
 	#Find energy
 	energy = prop.GetEnergy()
-	print "Groundstate energy:", energy, "a.u."
+	if not silent:
+		print "Groundstate energy:", energy, "a.u."
 
 	return prop, energy
 

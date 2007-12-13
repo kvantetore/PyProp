@@ -348,15 +348,6 @@ Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &i
 		groupRank(procRank) = i;
 		inDistrShapeProc(i) = CreateDistributedShape(fullShape, fullDistr, groupRank);
 		outDistrShapeProc(i) = CreateDistributedShape(fullShape, outFullDistr, groupRank);
-#if false
-		if (WorldRank == 0)
-		{
-			cout << "groupRank = " << ToString(groupRank) << endl;
-			cout << "in shape  " << i << " = " << ToString2(inDistrShapeProc(i)) << endl;
-			cout << "out shape " << i << " = " << ToString2(outDistrShapeProc(i)) << endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-#endif 
 	}
 
 
@@ -378,24 +369,6 @@ Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &i
 		int fromProcStart = recvSize * fromProc;
 		int fromProcSize = CreateDistributedShape(inSizeFull, procRank, fromProc);
 
-#if false
-		for (int i=0; i<Np; i++)
-		{
-			if (curProc == i)
-			{
-				cout << "Proc " << curProc << endl
-					 << "  toProc   = " << toProc << endl
-					 << "  fromProc = " << fromProc << endl
-					 << "  toProcStart   = " << toProcStart << endl
-					 << "  toProcSize    = " << toProcSize << endl
-					 << "  fromProcStart = " << fromProcStart << endl
-					 << "  fromProcSize  = " << fromProcSize << endl
-					 ;
-
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
-#endif
 
 		//read
 		if (toProcSize > 0 && inData.size() > 0)
@@ -410,22 +383,7 @@ Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &i
 			DataArray sendView = inData(readDomain);
 			BlitzMPI<cplx, DataRank> sendMPI(sendView);
 
-#if false
-			for (int i=0; i<Np; i++)
-			{
-				if (curProc == i)
-				{
-					cout << "Proc " << curProc << endl
-						 << "  send start  = " << ToString2(lboundRead)  << endl
-						 << "  send end    = " << ToString2(uboundRead)  << endl
-						 << "  send data   = " << sendView << endl;
-						 ;
 	
-				}
-				MPI_Barrier(MPI_COMM_WORLD);
-			}
-#endif
-		
 			sendRequest = sendMPI.ISend(sendView, toProc, 0, GroupComm(procRank));
 			sendActive = true;
 		}
@@ -443,21 +401,6 @@ Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &i
 			recvView.reference(outData(recvDomain));
 			BlitzMPI<cplx, DataRank> recvMPI(recvView);
 
-#if false
-			for (int i=0; i<Np; i++)
-			{
-				if (curProc == i)
-				{
-					cout << "Proc " << curProc << endl
-						 << "  recv start  = " << ToString2(lboundRecv)  << endl
-						 << "  recv end    = " << ToString2(uboundRecv)  << endl
-						 ;
-	
-				}
-				MPI_Barrier(MPI_COMM_WORLD);
-			}
-#endif
-
 			recvRequest = recvMPI.IRecv(recvView, fromProc, 0, GroupComm(procRank));
 			recvActive = true;
 		}
@@ -473,21 +416,7 @@ Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &i
 		{
 			MPI_Status status;
 			MPI_Wait(&recvRequest, &status);
-#if false
-			for (int i=0; i<Np; i++)
-			{
-				if (curProc == i)
-				{
-					cout << "Proc " << curProc << endl
-						 << "  recv data   = " << outData << endl;
-						 ;
-	
-				}
-				MPI_Barrier(MPI_COMM_WORLD);
-			}
-#endif
 		}	
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 }

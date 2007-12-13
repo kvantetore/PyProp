@@ -4,7 +4,12 @@
 #include <blitz/array.h>
 #include <complex>
 
+#ifdef PYPROP_USE_BLAS_MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
+
 #define BLAS_NAME(x) cblas_ ## x
 
 #include <core/common.h>

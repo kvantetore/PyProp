@@ -4,7 +4,7 @@ include ../Makefile.platform
 SUBDIRS = redirect krylov ode
 
 #A small rule to compile only a selected few pyste files
-TESTFILES :=  python/representation.pyste
+TESTFILES :=  python/distributedmodel.pyste
 
 test: test
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(TESTFILES)

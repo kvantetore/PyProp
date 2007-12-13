@@ -1,7 +1,12 @@
 import sys
 from libcore import *
 from libredirect import *
-from libexpokit import *
+
+try:
+	from libexpokit import *
+except:
+	print "Warning: could not load EXPOKIT wrapper (%s)" % sys.exc_info()[1]
+
 try:
 	from libarpack import *
 except:

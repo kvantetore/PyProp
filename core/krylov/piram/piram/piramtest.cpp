@@ -166,7 +166,8 @@ int main(int argc, char** argv)
 
 	piram.MatrixOperator = op;
 	piram.SetupResidual = setup;
-	piram.UseRandomStart = true;
+	piram.UseRandomStart = false;
+	piram.DisableMPI = true;
 
 	piram.MaxRestartCount = 10;
 	piram.MaxOrthogonalizationCount = 3;

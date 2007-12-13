@@ -9,7 +9,6 @@
 #include "blitzblas.h"
 
 
-#include <clapack.h>
 #define LAPACK_NAME(x) x ## _
 
 namespace blitz

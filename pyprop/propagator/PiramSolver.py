@@ -5,9 +5,13 @@ class PiramSolver:
 	There were some problems with calling P_ARPACK from C, and i could not
 	figure out what was wrong, so I implemented it from scratch in C++.
 
+	As a bonus, it is much easier to read than ARPACK, which due to the 
+	reverse communication interface, is rather hard to read.
+
 	see core/krylov/piram for more details
 
-	It works by using the matrix-vector product functionality of the Propagator
+	It works by using the matrix-vector product functionality of the Problem-object
+	supplied in the constructor
 
 	"""
 
@@ -23,6 +27,9 @@ class PiramSolver:
 
 		configSection = prop.Config.Arpack
 		configSection.Apply(self.Solver)
+		memoryUsage = self.Solver.EstimateMemoryUsage()
+		if ProcId == 0:
+			print "Approximate pIRAM memory usage = %sMB" % memoryUsage
 		self.Solver.Setup(prop.psi)
 
 		self.Debug = False
@@ -75,10 +82,9 @@ class PiramSolver:
 		Sets psi to the eigenvector specified by eigenvetorIndex
 		if normalize == True, psi will be normalized
 		"""
-		eigenvectors = self.GetEigenvectors()
 		shape = psi.GetData().shape
-		psi.GetData()[:] = numpy.reshape(eigenvectors[eigenvectorIndex, :], shape)
+		psi.GetData()[:] = numpy.reshape(self.GetEigenvector(eigenvectorIndex), shape)
 		if normalize:
 			psi.Normalize()
-
-
+???
+???

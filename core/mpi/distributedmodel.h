@@ -2,6 +2,7 @@
 #define DISTRIBUTEDMODEL_H
 
 #include "../common.h"
+#include "../wavefunction.h"
 #include "distribution.h"
 
 //Forward declaration of arraytranspose
