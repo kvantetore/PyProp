@@ -12,6 +12,34 @@
 #include <fstream>
 #include <strstream>
 
+#include <mpi.h>
+#include <map>
+
+
+class Timer
+{
+private:
+	double time;
+
+public:
+	Timer() : time(0) {}
+
+	void Start()
+	{
+		time -= MPI_Wtime();
+	}
+
+	void Stop()
+	{
+		time += MPI_Wtime();
+	}
+
+	operator double() const
+	{
+		return time;
+	}
+};
+
 
 namespace piram
 {
@@ -61,6 +89,8 @@ public:
 	typedef blitz::linalg::LAPACK<T> LAPACK;
 	typedef blitz::linalg::BLAS<T> BLAS;
 
+	typedef std::map< std::string, Timer > TimerMap;
+
 	//Parameters
 	int MaxRestartCount;
 	int MaxOrthogonalizationCount;
@@ -108,6 +138,7 @@ private:
 	MatrixType ArnoldiVectors;
 	VectorType Residual;
 	VectorType TempVector;
+	VectorType TempVector2;
 	//Small matrices/vectors (~ size of BasisSize)
 	MatrixType HessenbergMatrix;
 	MatrixType HessenbergEigenvectors;
@@ -128,6 +159,7 @@ private:
 	int OperatorCount;
 	int OrthogonalizationCount;
 	int RestartCount;
+	TimerMap Timers;
 
 	//Private methods
 	void MultiplyOperator(VectorType &in, VectorType &out);
@@ -177,7 +209,9 @@ private:
 
 		T globalValue;
 		MPITraits<T> traits;
+		Timers["MPI"].Start();
 		MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, CommBase);
+		Timers["MPI"].Stop();
 
 		return globalValue;
 	}
@@ -190,7 +224,9 @@ private:
 		}
 
 		MPITraits<T> traits;
+		Timers["MPI2"].Start();
 		MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, CommBase);
+		Timers["MPI2"].Stop();
 	}
 
 public:
@@ -255,6 +291,7 @@ void pIRAM<T>::Setup()
 	ArnoldiVectors.resize(BasisSize, MatrixSize);
 	Residual.resize(MatrixSize);
 	TempVector.resize(MatrixSize);
+	TempVector2.resize(MatrixSize);
 	HessenbergMatrix.resize(BasisSize, BasisSize);
 	HessenbergEigenvectors.resize(BasisSize, BasisSize);
 	HessenbergTriangular.resize(BasisSize, BasisSize);
@@ -302,7 +339,7 @@ void pIRAM<T>::PerformInitialArnoldiStep()
 	//Normalize Residual
 	T norm = CalculateGlobalNorm(Residual);
 
-	cout << "Norm = " << norm;
+	cout << "Norm = " << norm << endl;
 
 	blas.ScaleVector(Residual, 1.0/norm);
 
@@ -322,6 +359,8 @@ void pIRAM<T>::PerformInitialArnoldiStep()
 template <class T>
 void pIRAM<T>::PerformArnoldiStep()
 {
+	Timers["Arnoldi Step"].Start();
+
 	//Define some shortcuts
 	int j = CurrentArnoldiStep;
 	VectorType currentArnoldiVector(ArnoldiVectors(j+1, blitz::Range::all()));
@@ -336,7 +375,9 @@ void pIRAM<T>::PerformArnoldiStep()
 	HessenbergMatrix(j, j+1) = beta;
 
 	//Expand the krylov supspace with 1 dimension
+	Timers["Arnoldi Step"].Stop();
 	MultiplyOperator(currentArnoldiVector, Residual);
+	Timers["Arnoldi Step"].Start();
 	T origNorm = CalculateGlobalNorm(Residual);
 
 	//Perform Gram Schmidt to remove components of Residual 
@@ -353,17 +394,23 @@ void pIRAM<T>::PerformArnoldiStep()
 
 	//If necessary, perform any reorthogonalization steps to ensure that all 
 	//arnoldi vectors are orthogonal
+	Timers["Arnoldi Step"].Stop();
 	PerformOrthogonalization(origNorm, residualNorm);
+	Timers["Arnoldi Step"].Start();
 	
 	//Update the Hessenberg Matrix
 	HessenbergMatrix(j+1, blitz::Range(0, j+1)) = currentOverlap;
 
 	CurrentArnoldiStep++;
+
+	Timers["Arnoldi Step"].Stop();
 }
 
 template <class T>
 void pIRAM<T>::PerformOrthogonalization(T originalNorm, T residualNorm)
 {
+	Timers["Orthogonalization"].Start();
+
 	//Define some shortcuts
 	int j = CurrentArnoldiStep;
 	VectorType currentArnoldiVector(ArnoldiVectors(j+1, blitz::Range::all()));
@@ -402,6 +449,8 @@ void pIRAM<T>::PerformOrthogonalization(T originalNorm, T residualNorm)
 		originalNorm = residualNorm;
 		residualNorm = CalculateGlobalNorm(Residual);		
 	}
+
+	Timers["Orthogonalization"].Stop();
 }
 
 
@@ -436,6 +485,8 @@ void pIRAM<T>::SortVector(VectorType &vector, IntVectorType &ordering)
 template <class T>
 void pIRAM<T>::UpdateEigenvalues()
 {
+	Timers["Update Eigenvalues"].Start();
+
 	MatrixType emtpyMatrix(1,1);
 
 	//Calculate eigenvalues with the eigenvector factorization
@@ -464,18 +515,28 @@ void pIRAM<T>::UpdateEigenvalues()
 		ErrorEstimates(i) = errorBounds - accuracy;
 		IsConverged = IsConverged && (ErrorEstimates(i) <= 0.0);
 	}
+
+	Timers["Update Eigenvalues"].Stop();
 }
 
 template <class T>
 void pIRAM<T>::PerformRestartStep()
 {
 	//Update statistics
+	Timers["Restart Step"].Start();
 	RestartCount++;
 
 	//We need q for the restarted residual
 	VectorType q(BasisSize);
 	q = 0.0;
 	q(BasisSize-1) = 1.0;
+
+	MatrixType Q(BasisSize, BasisSize);
+	Q = 0;
+	for (int i=0; i<BasisSize; i++)
+	{
+		Q(i,i) = 1;
+	}
 
 	//Use the p=BasisSize - EigenvalueCount eigenvalues of the Hessenberg matrix
 	//as shifts in a truncated shifted QR algorithm, in order to compress the 
@@ -502,8 +563,13 @@ void pIRAM<T>::PerformRestartStep()
 		//the lower triangular part are the vectors v forming Q by HH reflections
 
 		//Apply the unitary transformation on HessenbergMatrix, ArnoldiVectors and q
+		/*
+		Timers["Apply QR Transformation"].Start();
 		lapack.ApplyQRTransformation(LAPACK::MultiplyRight, LAPACK::TransposeNone, HessenbergTriangular, Reflectors, ArnoldiVectors);
+		Timers["Apply QR Transformation"].Stop();
+		*/
 		lapack.ApplyQRTransformation(LAPACK::MultiplyLeft, LAPACK::TransposeConjugate, HessenbergTriangular, Reflectors, q);
+		lapack.ApplyQRTransformation(LAPACK::MultiplyRight, LAPACK::TransposeNone, HessenbergTriangular, Reflectors, Q);
 		q = conj(q);
 
 		//Clear the subdiagonals on HessenbergMatrix
@@ -517,10 +583,37 @@ void pIRAM<T>::PerformRestartStep()
 		{
 			HessenbergMatrix(j, j) += shift;
 		}
-	
 	}
 
-//		cout << "Hessenberg = " << real(HessenbergMatrix) << endl;
+	//Update the BasisSize+1 first cols of ArnoldiVectors using Hessenberg-like structure
+	//of Q
+	//
+	//
+	
+	Timers["Apply QR Transformation"].Start();
+	VectorType qRow( Q(EigenvalueCount, blitz::Range::all()) );
+	blas.MultiplyMatrixVector(ArnoldiVectors, qRow, TempVector2);
+
+	for (int i=0; i<EigenvalueCount; i++)
+	{
+		qRow.reference(Q(EigenvalueCount-i-1, blitz::Range(0, BasisSize-i-1)));
+		MatrixType arnoldiView(ArnoldiVectors(blitz::Range(0, BasisSize-i-1), blitz::Range::all()));
+
+		blas.MultiplyMatrixVector(arnoldiView, qRow, TempVector);
+
+		//Copy vector back
+		ArnoldiVectors(BasisSize-i-1, blitz::Range::all()) = TempVector;
+	}
+	
+	for (int i=0; i<EigenvalueCount; i++)
+	{
+		ArnoldiVectors(EigenvalueCount-i-1, blitz::Range::all()) = ArnoldiVectors(BasisSize-i-1, blitz::Range::all());
+	}
+
+	ArnoldiVectors(EigenvalueCount, blitz::Range::all()) = TempVector2;
+	Timers["Apply QR Transformation"].Stop();
+			
+	//cout << "Hessenberg = " << real(HessenbergMatrix) << endl;
 	//Restart the arnoldi iteration on step k
 	int k = EigenvalueCount-1;
 	CurrentArnoldiStep = k;
@@ -533,17 +626,23 @@ void pIRAM<T>::PerformRestartStep()
 	blas.AddVector(arnoldiVector, beta, Residual);
 	//Clear the last p cols in HessenbergMatrix to make it hessenberg
 	HessenbergMatrix( blitz::Range(k+1, BasisSize-1), blitz::Range::all() ) = 0;
+
+	Timers["Restart Step"].Stop();
 }
 
 
 template<class T>
 void pIRAM<T>::MultiplyOperator(VectorType &in, VectorType &out)
 {
+	Timers["Operator"].Start();
+
 	//Update statistics
 	OperatorCount++;
 
 	//Perform matrix-vector multiplication
 	(*MatrixOperator)(in, out);
+
+	Timers["Operator"].Stop();
 }
 
 
@@ -615,7 +714,16 @@ void pIRAM<T>::Solve()
 		cout << "    OpCount      = " << OperatorCount << endl;
 		cout << "    RestartCount = " << RestartCount << endl;
 		cout << "    ReOrthoCOunt = " << OrthogonalizationCount << endl;
+		cout << endl;
+		cout << "Timers: " << endl;
+		
+		for (TimerMap::iterator p=Timers.begin(); p!=Timers.end(); ++p)
+		{
+			cout << "    " << p->first << " = " << (double)p->second << endl;
+		}
 	}
+
+
 }
 
 } //Namespace

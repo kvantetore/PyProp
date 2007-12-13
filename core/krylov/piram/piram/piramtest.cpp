@@ -168,7 +168,7 @@ int main(int argc, char** argv)
 	piram.SetupResidual = setup;
 	piram.UseRandomStart = true;
 
-	piram.MaxRestartCount = 1000;
+	piram.MaxRestartCount = 10;
 	piram.MaxOrthogonalizationCount = 3;
 	piram.EigenvalueCount = 5;
 	piram.MatrixSize = localSize;

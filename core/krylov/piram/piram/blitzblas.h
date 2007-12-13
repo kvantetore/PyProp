@@ -102,6 +102,10 @@ public:
 	//NOTE: Matrices are supposed to be in col-major (fortran) format
 	// xGEMM: dst = dstScaling * dst + srcScaling * sum( op(a)(i, j) *  op(b)(k, i), i)
 	void MultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixTranspose transposeB, T srcScaling, MatrixType &a, MatrixType &b, T dstScaling, MatrixType &dst);
+	void MultiplyMatrixMatrix(MatrixType &a, MatrixType &b, MatrixType &dst)
+	{
+		MultiplyMatrixMatrix(MatrixTranspose::None, MatrixTranspose::None, 1.0, a, b, 0.0, dst);
+	}
 
 private:
 	// Precondition checks to cotrol that valid parameters have been passed to the 

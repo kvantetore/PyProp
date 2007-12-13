@@ -5,6 +5,11 @@ include $(PYPROP_ROOT)/Makefile.platform
 
 INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
 
+all: piramtest
+
+qrtest: qrtest.o
+	$(MPICXX) $(LDFLAGS) -o qrtest qrtest.o -lblitz -lblas -llapack
+
 piramtest: piramtest.o
 	$(MPICXX) $(LDFLAGS) -o piramtest piramtest.o -lblitz -lblas -llapack
 
