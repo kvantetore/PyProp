@@ -53,8 +53,11 @@ class PiramSolver:
 		self.Count += 1
 		if self.Debug and ProcId == 0:
 			if self.Count % 100 == 0:
+				print ""
 				print "Count = ", self.Count
-				print "EV = ", self.Solver.GetEigenvalues()
+				print "EV = ", real(self.Solver.GetEigenvalues())
+				print "Error = ", self.Solver.GetErrorEstimates()
+				print "Convergence = ", self.Solver.GetConvergenceEstimates()
 
 
 	def GetEigenvalues(self):
@@ -86,5 +89,4 @@ class PiramSolver:
 		psi.GetData()[:] = numpy.reshape(self.GetEigenvector(eigenvectorIndex), shape)
 		if normalize:
 			psi.Normalize()
-???
-???
+

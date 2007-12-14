@@ -47,10 +47,13 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 		#let the processors save their part one by one
 		procCount = distr.ProcCount
 		procId = distr.ProcId
+		distr.GlobalBarrier()
+		if procId==0: print "Saving..."
 		for i in range(procCount):
 			if procId == i:
 				SaveLocalSlab(filename, datasetPath, psi)
 			distr.GlobalBarrier();
+		if procId==0: print "Done."
 	
 
 def SaveLocalSlab(filename, datasetPath, psi):
@@ -198,7 +201,7 @@ def CreateDataset(f, datasetPath, fullShape):
 	groupName, datasetName = GetDatasetName(datasetPath)
 	group = f.getNode(groupName)
 	atom = tables.ComplexAtom(itemsize=16)
-	filters = tables.Filters(complevel=1)
+	filters = tables.Filters(complevel=0)
 	dataset = f.createCArray(group, datasetName, atom, fullShape, filters=filters)
 
 	return dataset

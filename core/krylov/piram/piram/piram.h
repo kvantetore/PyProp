@@ -149,6 +149,7 @@ private:
 	VectorType Reflectors;
 	VectorType Eigenvalues;
 	IntVectorType EigenvalueOrdering;
+	NormVectorType ConvergenceEstimates;
 	NormVectorType ErrorEstimates;
 	//Scalars
 	int CurrentArnoldiStep;
@@ -159,6 +160,7 @@ private:
 	int OperatorCount;
 	int OrthogonalizationCount;
 	int RestartCount;
+	int InnerProductCount;
 	TimerMap Timers;
 
 	//Private methods
@@ -201,7 +203,12 @@ private:
 	
 	T CalculateGlobalInnerProduct(VectorType &x, VectorType &y)
 	{
+		//Update Statistics
+		InnerProductCount++;
+
+		Timers["Local InnerProduct"].Start();
 		T localValue = blas.InnerProduct(x, y);
+		Timers["Local InnerProduct"].Stop();
 		if (DisableMPI)
 		{
 			return localValue;
@@ -242,7 +249,17 @@ public:
 	//Accessor functions:
 	int GetConvergedEigenvalueCount()
 	{
-		return count(ErrorEstimates <= 0.0);
+		return count(ConvergenceEstimates <= 0.0);
+	}
+
+	NormVectorType GetErrorEstimates()
+	{
+		return ErrorEstimates;
+	}
+
+	NormVectorType GetConvergenceEstimates()
+	{
+		return ConvergenceEstimates;
 	}
 	
 	VectorType GetEigenvalues()
@@ -253,7 +270,7 @@ public:
 	VectorType GetEigenvector(int eigenvectorIndex)
 	{
 		int sortedIndex = EigenvalueOrdering(eigenvectorIndex);
-		return ArnoldiVectors(sortedIndex, blitz::Range(0, MatrixSize-1));
+		return ArnoldiVectors(sortedIndex, blitz::Range::all());
 	}
 
 	int GetOrthogonalizationCount()
@@ -266,6 +283,11 @@ public:
 		return RestartCount;
 	}
 
+	int GetInnerProductCount()
+	{
+		return InnerProductCount;
+	}
+
 	int GetOperatorCount()
 	{
 		return OperatorCount;
@@ -276,7 +298,7 @@ public:
 template <class T>
 double pIRAM<T>::EstimateMemoryUsage()
 {
-	double largeSize = MatrixSize * (BasisSize + 3)
+	double largeSize = MatrixSize * (BasisSize + 3);
 	double smallSize = BasisSize * (3*BasisSize + 7);
 	return (largeSize + smallSize) * sizeof(T) / (1024.*1024);
 }
@@ -311,11 +333,13 @@ void pIRAM<T>::Setup()
 	Eigenvalues.resize(BasisSize);
 	EigenvalueOrdering.resize(BasisSize);
 	Reflectors.resize(BasisSize);
+	ConvergenceEstimates.resize(EigenvalueCount);
 	ErrorEstimates.resize(EigenvalueCount);
 
 	//Reset statistcs
 	OperatorCount = 0;
 	RestartCount = 0;
+	InnerProductCount = 0;
 	OrthogonalizationCount = 0;
 
 	//Reset arnoldi factorization
@@ -519,9 +543,10 @@ void pIRAM<T>::UpdateEigenvalues()
 		NormType ritzError = std::abs(HessenbergEigenvectors(sortedIndex, BasisSize-1));
 		NormType ritzValue = std::abs(Eigenvalues(i));
 		NormType errorBounds = ritzError * normResidual;
+		ErrorEstimates(i) = errorBounds;
 		NormType accuracy = tol * std::max(eps23, tol * ritzValue);
-		ErrorEstimates(i) = errorBounds - accuracy;
-		IsConverged = IsConverged && (ErrorEstimates(i) <= 0.0);
+		ConvergenceEstimates(i) = errorBounds - accuracy;
+		IsConverged = IsConverged && (ConvergenceEstimates(i) <= 0.0);
 	}
 
 	Timers["Update Eigenvalues"].Stop();
@@ -714,13 +739,14 @@ void pIRAM<T>::Solve()
 		else
 		{
 			cout << "WARNING: Not all eigenvalues are converged" << endl;
-			blitz::Array<bool, 1> conv (blitz::where(ErrorEstimates <= 0.0, true, false));
+			blitz::Array<bool, 1> conv (blitz::where(ConvergenceEstimates <= 0.0, true, false));
 			cout << "    Converged Eigenvalues   = " << conv << endl;
-			cout << "    Error Estimates (< 0.0) = " << ErrorEstimates << endl;
+			cout << "    Error Estimates (< 0.0) = " << ConvergenceEstimates << endl;
 		}
 		cout << "    Eigenvalues  = " << GetEigenvalues() << endl;
 		cout << "    OpCount      = " << OperatorCount << endl;
 		cout << "    RestartCount = " << RestartCount << endl;
+		cout << "    InnerProduct = " << InnerProductCount << endl;
 		cout << "    ReOrthoCOunt = " << OrthogonalizationCount << endl;
 		cout << endl;
 		cout << "Timers: " << endl;

@@ -95,12 +95,6 @@ void PiramSolver<Rank>::ApplyConfigSection(const ConfigSection &config)
 	config.Get("krylov_eigenvalue_count", Solver.EigenvalueCount);
 	config.Get("krylov_max_iteration_count", Solver.MaxRestartCount);
 	config.Get("krylov_use_random_start", Solver.UseRandomStart);
-
-	cout << "Using random start = " << Solver.UseRandomStart << endl;
-	cout << "Tolerance          = " << Solver.Tolerance << endl;
-	cout << "Eigenvalue count   = " << Solver.EigenvalueCount << endl;
-	cout << "Max restart count  = " << Solver.MaxRestartCount << endl;
-	cout << "Basis Size         = " << Solver.BasisSize << endl;
 }
 
 

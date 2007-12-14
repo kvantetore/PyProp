@@ -53,6 +53,23 @@ public:
 		return Solver.GetEigenvector(eigenvectorIndex);
 	}
 
+	double EstimateMemoryUsage()
+	{
+		return Solver.EstimateMemoryUsage();
+	}
+
+	blitz::Array<double, 1> GetErrorEstimates()
+	{
+		return Solver.GetErrorEstimates();
+	}
+
+
+	blitz::Array<double, 1> GetConvergenceEstimates()
+	{
+		return Solver.GetConvergenceEstimates();
+	}
+
+
 	/*
 	 * Returns the number of converged eigenvalues
 	 * <= EigenvalueCount
