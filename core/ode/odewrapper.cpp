@@ -94,7 +94,8 @@ void OdeWrapper<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &psi, Wav
 	this->TempPsi = &tempPsi;
 	this->MultiplyCallback = callback;
 
-	double tout = t + sqrt(sqr(imag(dt) + sqr(real(dt))));
+	//double tout = t + sqrt(sqr(imag(dt) + sqr(real(dt))));
+	double tout = t + real(dt);
 
 	cOde(MultiplyHamiltonian<Rank>, this, n, in, this->OutputTime, tout, this->RelativeError, this->AbsoluteError, this->Flag, this->Work.data(), this->Iwork.data());
 

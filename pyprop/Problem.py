@@ -104,7 +104,8 @@ class Problem:
 		if self.Propagator.RenormalizeActive:
 			self.psi.Normalize()
 
-		self.PropagatedTime += abs(self.TimeStep)
+		self.PropagatedTime += abs(self.TimeStep) * sign(real(self.TimeStep))
+
 
 	def MultiplyHamiltonian(self, dstPsi):
 		"""

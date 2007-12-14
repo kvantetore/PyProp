@@ -44,7 +44,7 @@ def Propagate():
 
 	#pylab.plot(times, corr)
 
-	return times, array(corr)
+	return prop
 
 
 #class SparseMatrix(tables.IsDescription):

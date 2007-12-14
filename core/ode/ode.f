@@ -119,7 +119,7 @@ subroutine ode ( f, ptr, neqn, y, t, tout, relerr, abserr, iflag, work, iwork )
 !    * 3, integration did not reach TOUT because the error tolerances 
 !      were too small.  But RELERR and ABSERR were increased appropriately
 !      for continuing;
-!    * 4, integration did not reach TOUT because more than 500 steps were taken;
+!    * 4, integration did not reach TOUT because more than 5000 steps were taken;
 !    * 5, integration did not reach TOUT because the equations appear to 
 !      be stiff;
 !    * 6, invalid input parameters (fatal error).
@@ -268,7 +268,7 @@ subroutine de ( f, ptr, neqn, y, t, tout, relerr, abserr, iflag, yy, wt, p, yp, 
 !    * 3, integration did not reach TOUT because the error tolerances were
 !         too small.
 !         But RELERR and ABSERR were increased appropriately for continuing;
-!    * 4, integration did not reach TOUT because more than 500 steps were taken;
+!    * 4, integration did not reach TOUT because more than 5000 steps were taken;
 !    * 5, integration did not reach TOUT because the equations appear to be
 !         stiff;
 !    * 6, invalid input parameters (fatal error).

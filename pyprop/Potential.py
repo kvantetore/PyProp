@@ -313,7 +313,6 @@ class MatrixPotentialWrapper(PotentialWrapper):
 	def LoadMatrixPotentialFile(self, conf):
 		filename = conf.filename
 		dataset = conf.dataset
-
 		file = tables.openFile(filename, "r")
 		try:
 			node = file.getNode(dataset)
@@ -323,8 +322,14 @@ class MatrixPotentialWrapper(PotentialWrapper):
 				matrixElement = node.cols.MatrixElement[:]
 				self.Potential.SetMatrixData(row, col, matrixElement)
 
-			if self.MatrixType == MatrixType.Dense or self.MatrixType == MatrixType.Diagonal:
-				data = node[:]
+			if self.MatrixType == MatrixType.Dense:
+				wavefunctionSize = self.psi.GetData().size
+				data = node[:wavefunctionSize, :wavefunctionSize]
+				self.Potential.SetMatrixData(data)
+
+			if self.MatrixType == MatrixType.Diagonal:
+				wavefunctionSize = self.psi.GetData().size
+				data = node[:wavefunctionSize]
 				self.Potential.SetMatrixData(data)
 		finally:
 			file.close()
