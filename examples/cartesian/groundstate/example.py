@@ -5,8 +5,9 @@ and the configuration files.
 Calling FindGroundstate() will calculate the ground state of 2d hydrogen in cartesian
 coordinates, and save the final state to disk.
 
-Calling Propagate() will load this state from disk, and propagate it further to 
-demonstrate that it is in fact an eigenstate of the system
+Calling Propagate() will load this state from disk to a larger grid, using a custom
+initial condition, and propagate it further to demonstrate that it is in fact an 
+eigenstate of the system
 
 """
 
@@ -18,11 +19,90 @@ import os
 from numpy import *
 import pylab
 
+#hdf5
+import tables
+
 #home grown modules
 pyprop_path = "../../../"
 sys.path.insert(1, os.path.abspath(pyprop_path))
 import pyprop
 pyprop = reload(pyprop)
+
+def CustomInitialCondition(psi, conf):
+	"""
+	Loads a smaller wavefunction of same grid size into the current
+	wavefunction
+	"""
+	filename = conf.filename
+	dataset = conf.dataset
+	rank = psi.GetRank()
+	psi.GetData()[:] = 0
+
+	localShape = psi.GetData().shape
+
+	localSlice = []
+	originalSlice = []
+
+	repr = psi.GetRepresentation()
+	distr = repr.GetDistributedModel()
+	eps = 1e-10
+
+	for i in range(psi.GetRank()):
+		#size and shape of the original wavefunction
+		origRank = conf.Get("orig_rank%i" % i)
+		origMin = origRank[0]
+		origMax = origRank[1]
+		origCount = origRank[2]
+		origDx =  (origMax - origMin) / float(origCount)
+
+		#size and shape of the current wavefunction
+		curRange = repr.GetRange(i)
+		curDx = curRange.Dx
+	
+		if abs(origDx - curDx) > eps:
+			raise Exception("Grid spacing in original file (%s) is different from current dx (%s) in rank %i" % (origDx, curDx, i))
+		dx = curDx
+	
+		#origIndex is the start/stop index of the loaded wavefunction in the
+		#global index space
+		origStartIndex = int( (origMin - curRange.Min) / dx )
+		origEndIndex = origStartIndex + origCount
+	
+		#localIndex is the start/stop index of the local processor in the
+		#global index space
+		localStartIndex = distr.GetLocalStartIndex(curRange.Count, i)
+		localEndIndex = localStartIndex + localShape[i]
+	
+		#startIndex, endIndex are indices in the global index space
+		startIndex = maximum(localStartIndex, origStartIndex)
+		endIndex = minimum(localEndIndex, origEndIndex)
+	
+		#Check if any piece of the wavefunction is in
+		if startIndex < localEndIndex and endIndex >= localStartIndex : 
+			#indices in the procesor local index space
+			siLocalNew  = startIndex - localStartIndex
+			eiLocalNew  = endIndex - localStartIndex
+			localSlice.append(slice(siLocalNew, eiLocalNew))
+	
+			#indices in the original index space
+			siOrig = startIndex - origStartIndex
+			eiOrig = endIndex - origStartIndex
+			originalSlice.append(slice(siOrig, eiOrig))
+	
+		else:	
+			#We don't have any overlap between the original grid and the
+			#processor local grid, and can therefore terminate
+			return
+	
+	#If we're here, we have at least some overlap between
+	#the processor local grid and the original grid
+	f = tables.openFile(filename, "r")
+	try:
+		origData = f.getNode(dataset)
+		psi.GetData()[localSlice] = origData[tuple(originalSlice)]
+	finally:
+		f.close()
+
 
 def FindEnergy(prop):
 	prop.psi.Normalize()
@@ -79,7 +159,10 @@ def FindGroundstate(**args):
 			print "t =", t, "E =", E
 	
 	#save groundstate to disk
-	prop.SaveWavefunctionHDF("groundstate.h5", "groundstate")
+	if pyprop.ProcId == 0:
+		if os.path.exists("groundstate.h5"):
+			os.unlink("groundstate.h5")
+	prop.SaveWavefunctionHDF("groundstate.h5", "wavefunction")
 
 	#Find energy
 	energy = prop.GetEnergy()
@@ -118,7 +201,7 @@ def GetEigenvalue(solver, num):
 
 	pyprop.Plot2DFull(prop)
 	print "Energy = %s" % prop.GetEnergy()
-
+	
 
 
 def Propagate():
@@ -133,9 +216,10 @@ def Propagate():
 	#Propagate the system to the time specified in propagation.ini,
 	#printing the autocorrelation function, and plotting the wavefunction
 	#10 evenly spaced times during the propagation
-	for t in prop.Advance(10):
+	for t in prop.Advance(100):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
-		print "t = ", t, ", P(t) = ", corr
+		if pyprop.ProcId == 0:
+			print "t = ", t, ", P(t) = ", corr
 		#pyprop.Plot2DFull(prop)
 
 	
