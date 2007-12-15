@@ -104,7 +104,10 @@ class Problem:
 		if self.Propagator.RenormalizeActive:
 			self.psi.Normalize()
 
-		self.PropagatedTime += abs(self.TimeStep) * sign(real(self.TimeStep))
+		if abs(real(self.TimeStep)) < 1e-10:
+			self.PropagatedTime += abs(self.TimeStep)
+		else:
+			self.PropagatedTime += real(self.TimeStep)
 
 
 	def MultiplyHamiltonian(self, dstPsi):
@@ -245,6 +248,8 @@ class Problem:
 			self.SetupWavefunctionFile(self.Config)
 		elif type == InitialConditionType.Class:
 			self.SetupWavefunctionClass(self.Config, self.psi)
+		elif type == InitialConditionType.Custom:
+			self.SetupWavefunctionCustom(self.Config)
 		else:
 			raise "Invalid InitialConditionType: " + config.InitialCondition.type
 			
@@ -328,6 +333,20 @@ class Problem:
 		else:
 			raise "Invalid file format: " + format
 	
+	def SetupWavefunctionCustom(self, config):
+		"""
+		Initializes the wavefunction from a function specified in the InitialCondition
+		section of config. The function refrence config.InitialCondition.function 
+		is evaulated called once, with the wavefunction as the first parameter, and
+		the configSection as the second.
+
+		REMARK: This function should probably not be called on directly. Use SetupWavefunction()
+		instead. That function will automatically determine the type of initial condition to be used.		
+		"""
+		func = config.InitialCondition.function
+		conf = config.InitialCondition
+		func(self.psi, conf)
+
 	#(de)serialization---------------------------------------------
 	def LoadWavefunctionData(self, newdata):
 		data = self.psi.GetData()

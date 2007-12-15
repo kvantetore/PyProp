@@ -16,6 +16,7 @@ class InitialConditionType:
 	Function = 1
 	File = 2
 	Class = 3
+	Custom = 4
 
 class WavefunctionFileFormat:
 	Ascii  = 1
