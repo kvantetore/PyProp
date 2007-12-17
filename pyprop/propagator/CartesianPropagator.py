@@ -122,7 +122,7 @@ class CartesianPropagator(PropagatorBase):
 			transpose = distrModel.GetTranspose()
 			#Setup shape	
 			fullShape = self.psi.GetRepresentation().GetFullShape()
-			self.Distribution2 = array([0])
+			self.Distribution2 = array([1])
 			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
 			#allocate wavefunction
 			self.TransposeBuffer1 = self.psi.GetActiveBufferName()

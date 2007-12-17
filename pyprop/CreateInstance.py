@@ -19,7 +19,7 @@ def CreateDistribution(config, rank=None):
 	#hack in initial distribution into configuration
 	#TODO: Get initial distribution from propagator
 	config.Distribution.proc_array_rank = 1
-	config.Distribution.initial_distribution = array([rank-1], dtype=int)
+	config.Distribution.initial_distribution = array([0], dtype=int)
 
 	#apply configuration
 	config.Distribution.Apply(distrib)
