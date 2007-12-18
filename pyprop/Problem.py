@@ -2,6 +2,33 @@ import signal
 
 RedirectInterrupt = False
 
+def CreateWavefunction(config):
+	"""
+	Creates a Wavefunction from a config file. Use this function if
+	you only need a wavefunction and not a complete proapagator.
+
+	The wavefunction will have one data buffer allocated, and the content
+	is unspecified.
+
+	ex:
+	conf = pyprop.Load("config.ini")
+	psi = CreateWavefunction(config)
+	x = psi.GetData().GetRepresentation().GetLocalGrid(0)
+	psi.GetData()[:] = x * exp(- x**2)
+	"""
+
+	print "Creating DistributionModel..."
+	distribution = CreateDistribution(config)
+
+	print "Creating Representation..."
+	representation = CreateRepresentation(config, self.Distribution)
+
+	print "Creating Wavefunction..."
+	psi = CreateWavefunction(config, self.Representation)
+
+	return psi
+	
+
 #----------------------------------------------------------------------------------------------------
 # Problem
 #----------------------------------------------------------------------------------------------------

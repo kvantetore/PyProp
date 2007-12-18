@@ -1,7 +1,10 @@
 include makefiles/Makefile.base
 include ../Makefile.platform
 
-SUBDIRS = redirect krylov ode
+SUBDIRS := redirect krylov
+ifdef PYPROP_USE_ODE
+SUBDIRS := $(SUBDIRS) ode
+endif
 
 #A small rule to compile only a selected few pyste files
 TESTFILES :=  python/distributedmodel.pyste

@@ -1,16 +1,21 @@
 include ../../Makefile.platform
 
-SUBDIRS = expokit
+SUBDIRS := 
+ifdef PYPROP_USE_EXPOKIT
+SUBDIRS := $(SUBDIRS) expokit
+endif
+
+ifdef PYPROP_USE_ARPACK
+SUBDIRS := $(SUBDIRS) arpack
+endif
+
+ifdef PYPROP_USE_PIRAM
+SUBDIRS := $(SUBDIRS) piram
+endif
 
 all:
-ifdef PYPROP_USE_ARPACK
-	cd arpack; $(MAKE) $@
-endif
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 
 clean:
-ifdef PYPROP_USE_ARPACK
-	cd arpack; $(MAKE) $@
-endif
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 
