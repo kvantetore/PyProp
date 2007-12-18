@@ -74,7 +74,7 @@ def CreateSubRepresentations(combinedRepr, config):
 		combinedRepr.SetRepresentation(i, repr)
 
 	
-def CreateWavefunction(config, representation):
+def CreateWavefunctionInstance(config, representation):
 	#Create instance
 	print "    Creating instance"
 	rank = config.Representation.rank

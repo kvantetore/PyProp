@@ -24,7 +24,7 @@ def CreateWavefunction(config):
 	representation = CreateRepresentation(config, self.Distribution)
 
 	print "Creating Wavefunction..."
-	psi = CreateWavefunction(config, self.Representation)
+	psi = CreateWavefunctionInstance(config, self.Representation)
 
 	return psi
 	
@@ -49,15 +49,9 @@ class Problem:
 				self.Silent = False
 
 			Redirect.Enable(self.Silent)
-			
-			print "Creating DistributionModel..."
-			self.Distribution = CreateDistribution(config)
 		
-			print "Creating Representation..."
-			self.Representation = CreateRepresentation(config, self.Distribution)
-		
-			print "Creating Wavefunction..."
-			self.psi = CreateWavefunction(config, self.Representation)
+			#Create wavefunction
+			self.psi = CreateWavefunction(config)
 		
 			print "Creating Propagator..."
 			self.Propagator = CreatePropagator(config, self.psi)
