@@ -5,7 +5,8 @@ from libredirect import *
 try:
 	from libexpokit import *
 except:
-	print "Warning: could not load EXPOKIT wrapper (%s)" % sys.exc_info()[1]
+	#print "Warning: could not load EXPOKIT wrapper (%s)" % sys.exc_info()[1]
+	pass
 
 try:
 	from libarpack import *

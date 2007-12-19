@@ -21,10 +21,10 @@ def CreateWavefunction(config):
 	distribution = CreateDistribution(config)
 
 	print "Creating Representation..."
-	representation = CreateRepresentation(config, self.Distribution)
+	representation = CreateRepresentation(config, distribution)
 
 	print "Creating Wavefunction..."
-	psi = CreateWavefunctionInstance(config, self.Representation)
+	psi = CreateWavefunctionInstance(config, representation)
 
 	return psi
 	

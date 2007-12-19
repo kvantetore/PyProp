@@ -1,5 +1,6 @@
 import numpy 
 import os
+import time
 
 def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 	"""
@@ -41,17 +42,25 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 
 	distr = psi.GetRepresentation().GetDistributedModel()
 	if distr.IsSingleProc():
+		t = - time.time()
 		SaveLocalSlab(filename, datasetPath, psi)
+		t += time.time()
+		print "Duration: %.10fs" % t
 
 	else:
 		#let the processors save their part one by one
 		procCount = distr.ProcCount
 		procId = distr.ProcId
+		localSize = psi.GetData().nbytes / 1024.**2
 		distr.GlobalBarrier()
-		if procId==0: print "Saving..."
+		if procId==0: print "Saving %s..." % filename
 		for i in range(procCount):
 			if procId == i:
+				print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
+				t = - time.time()
 				SaveLocalSlab(filename, datasetPath, psi)
+				t += time.time()
+				print "    Duration: %.10fs" % t
 			distr.GlobalBarrier();
 		if procId==0: print "Done."
 	
