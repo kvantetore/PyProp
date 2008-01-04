@@ -28,17 +28,20 @@ public:
 		this->MatrixElement = matrixElement;
 	}
 	
-	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi)
+	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi, double scaling)
 	{
-		DataArray in = psi.GetData();
-		DataArray out = destPsi.GetData();
+		DataArray in(psi.GetData());
+		DataArray out(destPsi.GetData());
 
 		for (int i=0; i<RowIndex.size(); i++)
 		{
 			int r = RowIndex(i);
 			int c = ColIndex(i);
-			out(r) += MatrixElement(i) * in(c);
+			out(r) += scaling * MatrixElement(i) * in(c);
+			out(c) += scaling * conj(MatrixElement(i)) * in(r);
 		}
+
+		//cout << "In = " << in << endl;
 	}
 
 	cplx CalculateExpectationValue(Wavefunction<1> &psi)
@@ -51,6 +54,7 @@ public:
 			int r = RowIndex(i);
 			int c = ColIndex(i);
 			out += conj(in(r)) * MatrixElement(i) * in(c);
+			out += conj(in(c)) * conj(MatrixElement(i)) * in(r);
 		}
 
 		return out;

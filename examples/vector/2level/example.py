@@ -19,8 +19,13 @@ c = 0.1
 d = 0.005
 e = 0.15
 
-def GetMatrix():
-	return array([[0, c, d], [c, 0, e], [d,e,0]], dtype=complex)
+def GetSparseMatrix():
+	matrix = pylab.load("d130_50stk-matel")
+	row = array(matrix[:,0], dtype=int) - 1
+	col = array(matrix[:,1], dtype=int) - 1
+	matelem = array(matrix[:,2], dtype=complex)
+
+	return row, col, matelem
 
 def GetDiagonalElements():
 	data = pylab.load('energies.dat')
@@ -36,12 +41,16 @@ def Propagate():
 	times = []
 	corr.append(abs(prop.psi.GetData()[:])**2)
 	times += [0]
-	for t in prop.Advance(400):
+	
+	for t in prop.Advance(True):
 		#corr += [abs(prop.psi.InnerProduct(init))**2]
 		corr.append(abs(prop.psi.GetData()[:])**2)
 		times += [t]
 		print "Time = ", t, ", initial state correlation = ", corr[-1][0]
 
+	corr.append(abs(prop.psi.GetData()[:])**2)
+	times += [prop.PropagatedTime]
+	print "Time = ", prop.PropagatedTime, ", initial state correlation = ", corr[-1][0]
 	#pylab.plot(times, corr)
 
 	return prop

@@ -23,12 +23,12 @@ public:
 		this->TempData.resize(diagonalElement.extent(0));
 	}
 	
-	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi)
+	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi, double scaling)
 	{
 		VectorArray in = psi.GetData();
 		VectorArray out = destPsi.GetData();
 
-		out += in * DiagonalElement;
+		out += in * scaling * DiagonalElement;
 	}
 
 	cplx CalculateExpectationValue(Wavefunction<1> &psi)

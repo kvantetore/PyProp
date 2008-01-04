@@ -50,7 +50,7 @@ void MultiplyHamiltonian(double *t, cplx *inBuffer, cplx *outBuffer, void *data)
 
 	//Perform Hamilton-Wavefunction multiplication
 	object callback = propagator->MultiplyCallback;
-	callback(*psi, *tempPsi, *t);
+	callback(psi, tempPsi, *t);
 
 	//Restore the databuffers of psi and tempPsi
 	psi->SetData(psiOrigData);
@@ -58,25 +58,48 @@ void MultiplyHamiltonian(double *t, cplx *inBuffer, cplx *outBuffer, void *data)
 
 	//Scale with negative imaginary unit since this is not done by matrix-vector routine
 	outData *= cplx(0.0, -1.0);
+
+	//cout << "Output2 = " << outData << endl;
+	//throw std::runtime_error("STOP!");
 }
 
 
 template<int Rank>
 void OdeWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
+	this->RelativeError = 1e-9;
+	if (config.HasValue("relative_error"))
+	{
+		config.Get("relative_error", this->RelativeError);
+		cout << "Using Relative error " << this->RelativeError << endl;
+	}
+	else
+	{
+		cout << "Using Default Relative error " << this->RelativeError << endl;
+	}
+
+	this->AbsoluteError = 1e-9;
+	if (config.HasValue("absolute_error"))
+	{
+		config.Get("absolute_error", this->AbsoluteError);
+		cout << "Using Absolute error " << this->AbsoluteError << endl;
+	}
+	else
+	{
+		cout << "Using Default Absolute error " << this->AbsoluteError << endl;
+	}
 }
 
 
 template<int Rank>
 void OdeWrapper<Rank>::Setup(const Wavefunction<Rank> &psi)
 {
-	int n = psi.GetData().size();
+	int n = 20000 * psi.GetData().size();
 	int workspaceSize = 100 + 21 * n;
 	cout << "Allocating ODE workspace of " << (double) workspaceSize * sizeof(cplx) / (1024.0*1024.0) << " MB" << endl;
 	this->Work.resize(workspaceSize);
+	this->Iwork.resize(50);
 	this->Flag = 1;
-	this->RelativeError = 1e-9;
-	this->AbsoluteError = 1e-9;
 	this->OutputTime = 0;
 }
 

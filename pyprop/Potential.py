@@ -356,9 +356,8 @@ class MatrixPotentialWrapper(PotentialWrapper):
 		raise NotImplementetException("Matrix potential does not support AdvanceStep()")
 
 	def MultiplyPotential(self, destPsi, t, dt):
-		self.Potential.MultiplyPotential(self.psi, destPsi)
-		destPsi.GetData()[:] *= self.GetTimeValue(t)
-
+		print "t = %.17g" % t
+		self.Potential.MultiplyPotential(self.psi, destPsi, self.GetTimeValue(t))
 
 	def GetExpectationValue(self, t, dt):
 		return self.GetTimeValue(t) * self.Potential.CalculateExpectationValue(self.psi)

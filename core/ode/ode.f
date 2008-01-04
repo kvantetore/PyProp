@@ -808,6 +808,12 @@ subroutine step ( x, y, f, ptr, neqn, h, eps, wt, start, hold, k, kold, crash, &
       absh = 0.25D+00 * sqrt ( eps / total )
     end if
     h = sign ( max ( absh, fouru * abs ( x ) ), h )
+    !write(*,*) " h = ", h, ", absh = ", absh, ", fouru = ", fouru, ", x = ", x, ", eps = ", eps, ", total = ", total, ", neqn = ", neqn
+
+    !write(*,*) ""
+    !write(*,*) yp
+    !write(*,*) ""
+
     hold = 0.0D+00
     k = 1
     kold = 0

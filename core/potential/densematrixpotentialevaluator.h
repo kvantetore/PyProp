@@ -24,7 +24,7 @@ public:
 		this->TempData.resize(matrixElement.extent(0));
 	}
 	
-	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi)
+	void MultiplyPotential(Wavefunction<1> &psi, Wavefunction<1> &destPsi, double scaling)
 	{
 		VectorArray in = psi.GetData();
 		VectorArray out = destPsi.GetData();
@@ -33,7 +33,7 @@ public:
 
 		MatrixVectorMultiply(MatrixElement, in, TempData);
 
-		out += TempData;
+		out += scaling*TempData;
 
 	}
 

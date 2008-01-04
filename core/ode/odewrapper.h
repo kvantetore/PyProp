@@ -24,13 +24,18 @@ private:
 	double AbsoluteError;
 	int Flag;
 	DataArray1D Work;
-	blitz::TinyVector<int, 5> Iwork;
+	blitz::Array<int, 1> Iwork;
 	double OutputTime;
 
 public:
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Wavefunction<Rank> &psi);
 	void AdvanceStep(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi, cplx dt, double t);
+
+	double GetPropagatedTime()
+	{
+		return OutputTime;
+	}
 };
 
 }

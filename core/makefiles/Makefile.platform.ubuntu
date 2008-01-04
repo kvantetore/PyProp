@@ -3,17 +3,33 @@
 #Compiler options set here will be included by makefiles in all subdirs
 
 #Use these flags for speed
-#CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -O3 -ffast-math -funroll-loops
-#CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT  -DPYPROP_USE_BLAS 
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -O3 -funroll-loops 
+#CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG -g -Wall
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS 
+LDFLAGS        := $(LDFLAGS) 
 
 #Use these flags for debugging
-CXXFLAGS       := $(CXXFLAGS) -Wall -O0
-CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT -DBZ_DEBUG -DPYPROP_USE_BLAS 
+#CXXFLAGS       := $(CXXFLAGS) -Wall -O0 -g
+#CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT -DBZ_DEBUG -DPYPROP_USE_BLAS 
 
 MPICXX         := mpicxx
 BOOST_LIBS     := -lboost_python
-PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
-PYSTE_INCLUDE  := -I/usr/local/include/openmpi
+#PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
+PYSTE_INCLUDE  := -I/opt/openmpi/include
+LAPACK_LIBS = -llapack -lblas
+
+PYPROP_USE_ARPACK  := 1
+PYPROP_USE_PIRAM   := 1
+PYPROP_USE_EXPOKIT := 1
+PYPROP_USE_ODE     := 1
+
+
+ARPACK_LIB        = /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -lgfortran
+
+FC             := gfortran
+FORTRAN_FLAGS  := -ffree-form -implicit-none -ffree-line-length-none -fPIC
+FORTRAN_LIBS   := -lg2c -lgfortran
+
 
 #pyprop CPPFLAGS:
 # -DSINGLEPROC  
@@ -29,3 +45,8 @@ PYSTE_INCLUDE  := -I/usr/local/include/openmpi
 #  	 vector-vector operations.
 #  	 see core/utility/blitzblas.cpp for details
 #
+#
+# PYPROP_USE_ARPACK
+#    set to 1 to compile ARPACK wrapper for pyprop
+#    ARPACK_LIB must then also be set to point to libarpack.a compiled with -fPIC options on platforms that require
+#    position independent code for shared libraries

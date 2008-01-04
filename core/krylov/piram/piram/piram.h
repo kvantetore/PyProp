@@ -298,9 +298,9 @@ public:
 template <class T>
 double pIRAM<T>::EstimateMemoryUsage()
 {
-	double largeSize = MatrixSize * (BasisSize + 3);
-	double smallSize = BasisSize * (3*BasisSize + 7);
-	return (largeSize + smallSize) * sizeof(T) / (1024.*1024);
+	double largeSize = MatrixSize * (BasisSize + 3.0);
+	double smallSize = BasisSize * (3*BasisSize + 7.0);
+	return (largeSize + smallSize) * sizeof(T) / (1024.0*1024.0);
 }
 
 
