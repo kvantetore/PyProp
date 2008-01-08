@@ -134,10 +134,10 @@ def LoadLocalSlab(filename, datasetPath, psi):
 	fileSlab = GetFileSlab(psi)
 	
 	#load data
-	print "loading data of shape ", dataset.shape, " into wavefunction of shape ", tuple(psi.GetData().shape)
-	print "current slab = ", fileSlab
+	#print "loading data of shape ", dataset.shape, " into wavefunction of shape ", tuple(psi.GetData().shape)
+	#print "current slab = ", fileSlab
 	data = dataset[fileSlab]
-	print "datashape = ", data.shape
+	#print "datashape = ", data.shape
 	psi.GetData()[:] = data
 
 	#close file

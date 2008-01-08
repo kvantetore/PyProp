@@ -64,7 +64,7 @@ class Config:
 			other.ApplyConfig(self)
 	
 			
-def Load(fileName):
+def Load(fileName, silent=True):
 	#Find all imported files in the config files
 	#hierarchy
 	configFiles = []
@@ -74,7 +74,8 @@ def Load(fileName):
 		localFile = curDir.rstrip("/") + "/" + curFile
 		absFile = os.path.abspath(os.path.expanduser(os.path.expandvars(localFile)))
 		absDir = os.path.dirname(absFile)
-		print "Using config file", absFile
+		if not silent:
+			print "Using config file", absFile
 		configFiles.insert(0, absFile)
 		
 		#find Import statements from curFile
