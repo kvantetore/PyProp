@@ -25,6 +25,7 @@ public:
 		//Set up PotentialClass
 		potential.CurTime = curTime;
 		potential.TimeStep = timeStep;
+		potential.CurTimeUpdated();
 
 		//Get representations
 		typename Representation<Rank>::Ptr repr = psi.GetRepresentation();
@@ -113,6 +114,7 @@ public:
 		//Set up PotentialClass
 		Potential.CurTime = curTime;
 		Potential.TimeStep = timeStep;
+		Potential.CurTimeUpdated();
 
 		//Get representations
 		typename Representation<Rank>::Ptr repr = psi.GetRepresentation();

@@ -40,6 +40,7 @@ private:
 		//Set up PotentialClass
 		Potential.CurTime = curTime;
 		Potential.TimeStep = timeStep;
+		Potential.CurTimeUpdated();
 
 		bool isFirstTime = (PotentialBuffer.size() == 0);
 		bool isTimeDependent = Potential.IsTimeDependent();

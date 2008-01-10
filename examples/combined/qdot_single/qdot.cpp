@@ -52,7 +52,8 @@ public:
 		double V2 = 0.5 * sqr(Omega) * (sqr(fabs(x2) - Separation/2) + sqr(y2));
 		double V12 = Interaction * 1 / sqrt( sqr(x1 - x2) + sqr(y1 - y2) + sqr(Softing));
 
-		return V1 + V2 + V12;
+		//return V1 + V2 + V12;
+		return - 1.0 / sqrt( sqr(pos(0)) + 0.01 );
 	}
 };
 

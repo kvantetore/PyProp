@@ -35,7 +35,7 @@ def SetupProblem(**args):
 
 def FindEigenvalues(**args):
 	prop = SetupProblem(**args)
-	solver = pyprop.ArpackSolver(prop)
+	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 	print solver.Solver.GetEigenvalues().real
 	return solver

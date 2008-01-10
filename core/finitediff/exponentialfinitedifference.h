@@ -41,6 +41,7 @@ public:
 		//Set up t and dt for the potential
 		this->TimeStep = dt;
 		this->CurTime = t;
+		this->CurTimeUpdated();
 	
 		//Get this procs position in the global scheme of things...
 		typename DistributedModel<1>::Ptr distr = repr->GetDistributedModel();

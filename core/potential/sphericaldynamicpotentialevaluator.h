@@ -24,6 +24,7 @@ public:
 		//Set up PotentialClass
 		potential.CurTime = curTime;
 		potential.TimeStep = timeStep;
+		potential.CurTimeUpdated();
 
 		//Get representations
 		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
@@ -125,6 +126,7 @@ public:
 		//Set up PotentialClass
 		Potential.CurTime = curTime;
 		Potential.TimeStep = timeStep;
+		Potential.CurTimeUpdated();
 
 		//Get representations
 		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());

@@ -66,6 +66,7 @@ public:
 		//Set up t and dt for the potential
 		this->TimeStep = dt;
 		this->CurTime = t;
+		this->CurTimeUpdated();
 		
 		//Get dx
 		CartesianRepresentation<1>::Ptr repr = this->GetRepresentation(psi);
@@ -127,6 +128,7 @@ public:
 		//Set up t and dt for the potential
 		this->TimeStep = dt;
 		this->CurTime = t;
+		this->CurTimeUpdated();
 
 		//Get dx
 		CartesianRepresentation<1>::Ptr repr = this->GetRepresentation(srcPsi);

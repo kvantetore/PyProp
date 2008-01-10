@@ -17,29 +17,29 @@ In this example, we will try to find the ground state energy of a 2D harmonic os
 We will perform all our calculations in cartesian coordinates.
 
 \subsection{Preparations}
-Create a new folder outside the pyprop folder, and copy the contents of \textit{examples/cartesian/groundstate/*} to
+Create a new folder outside the pyprop folder, and copy the contents of \inlinebash{examples/cartesian/groundstate/*} to
 the new folder. This keeps the pyprop source tree clutter free, and makes it easier to integrate upgrades to pyprop.
-\begin{verbatim}
+\begin{bash}
 	cd ..
 	mkdir example1
 	cd example1
 	cp ../pyprop/examples/cartesian/groundstate/* .
-\end{verbatim}
+\end{bash}
 Open the file example.py in your favourite editor, and on line 22, change pyprop\_path to point to your pyprop folder.
 If you followed the instructions above, the line should read
-\begin{verbatim}
+\begin{bash}
 	pyprop_path = "../pyprop/"
-\end{verbatim}
+\end{bash}
 
 \subsection{A very short introduction to Python}
-Start the python interpreter by executing \textit{ipython} on the command line.. If you do not have ipython installed, 
-you can start the standard python interpreter by calling \textit{python}. The standard python 
+Start the python interpreter by executing \inlinebash{ipython} on the command line.. If you do not have ipython installed, 
+you can start the standard python interpreter by calling \inlinebash{python}. The standard python 
 interpreter is rather lacking when it comes to advanced interactive features, like command completion, command history and more. When python has started, you can execute the contents of example.py with the execfile() function. When you are done, 
 and whish to exit python, press $<$CTRL$>$+D to mark EOF which causes the interpreter to terminate.
-\begin{verbatim}
+\begin{bash}
 	ipython
 	execfile("example.py")
-\end{verbatim}
+\end{bash}
 
 \subsubsection*{Execfile}
 The execfile() function has the same effect as typing every line in the file into the editor manually. I.e. much the 
@@ -339,15 +339,17 @@ lot faster and furthermore, due to some C++ template tricks, no function calls a
 
 \subsubsection*{Getting the template}
 In order to make compilation of potentials as easy as possible, a template is provided in the folder 
-\textit{pyprop/examples/template}. Copy this template to your project folder.
-\begin{verbatim}
+\inlinebash{pyprop/examples/template}. Copy this template to your project folder, and create a symlink
+to pyprop in the current folder called pyprop
+\begin{bash}
 	cp ../pyprop/examples/template/* .
-\end{verbatim}
+	ln -s ../pyprop pyprop
+\end{bash}
 This should give you three new files in the project folder: 
 \begin{itemize}
-	\item \textit{potential.cpp}, the source file containing the potential.
-	\item \textit{wrapper.pyste}, describing the python wrapper in pyste format.
-	\item \textit{Makefile}, one makefile to rule it all.
+	\item \inlinebash{potential.cpp}, the source file containing the potential.
+	\item \inlinebash{wrapper.pyste}, describing the python wrapper in pyste format.
+	\item \inlinebash{Makefile}, one makefile to rule it all.
 \end{itemize}
 
 \subsubsection*{potential.cpp}
@@ -380,13 +382,13 @@ different ranks. It is necessary to use the potential for each rank you whish to
 
 \subsubsection*{Makefile}
 The makefile is mostly set up correctly, you need only specify the path (may be a relative path) to where pyprop 
-is installed (../pyprop), and a name for the extention module. Call it \textit{libcpotential} or something else of your
+is installed (../pyprop), and a name for the extention module. Call it \inlinebash{libcpotential} or something else of your
 choice, so that line 11 in Makefile reads
 \begin{verbatim}
 	MODULENAME   := libcpotential
 \end{verbatim}
 
-The python module should now compile without errors or warnings if you type \textit{make} into the console.
+The python module should now compile without errors or warnings if you type \inlinebash{make} into the console.
 
 \subsubsection*{Loading the Python module}
 Add the following to the top of example.py:
@@ -417,7 +419,7 @@ the pyprop automatically appends the correct postfix for rank specified in the r
 
 You can now test that your new compiled potential gives the same energy as the python potential by running
 \inlinepy{FindGroundstate()} in the python interpreter. The performance impact of using dynamic instead of static potentials
-can be demonstrated by timing the call to \textit{FindGroundstate()}. If you have ipython, you can type
+can be demonstrated by timing the call to \inlinepy{FindGroundstate()}. If you have ipython, you can type
 \begin{python}
 	%prun FindGroundstate()
 \end{python}
@@ -426,7 +428,425 @@ Changing to dynamic potentials, by changing the type in CompiledPotential to
 \begin{python}
 	type = PotentialType.Dynamic
 \end{python}
-And timing \textit{FindGroundstate()} again. On my laptop this takes 7.1 seconds, and now the potential evaulation is 
+And timing \inlinepy{FindGroundstate()} again. On my laptop this takes 7.1 seconds, and now the potential evaulation is 
 by far the 
 task that consumes most time during propagation. This may be surprising as asymptotically the fourier transform should be more
 expensive ($n \log n$ instead of $n$).
+
+
+\section{A More Complicated Example}
+\subsection{Problem}
+In this section, we will try to find the ionization probability of hydrogen, when exposed to linear polarized light.
+To do that, we will first calculate the ground state of hydrogen using imaginary time propagation, and then use
+a dynamic potential to represent the laser, and an absorbing boundary to calculate the ionization probability.
+
+We will use spherical coordinates for our calculations. When using light polarized in the $z$ direction there is a
+$\phi$-symmetry in the system, and thus there is no need to actually include phi in the calculations. In pyprop this
+is known as the \inlinepy{ReducedSphericalRepresentation}. We will be using a \inlinepy{CombinedRepresentation} to combine
+the angular representation with a radial representation. This way it is possible to easily change the radial representation 
+from an equidistant representation (known as a CartesianRepresentation in pyprop) to a representation based on transformed
+grids or orthogonal polynomials.
+
+If you have not done so already, please read the previous section first, as this example will not explain any python basics
+and will not be as detailed in the description of configuration files and such. The entire example is also available in \inlinebash{pyprop/examples/combined/hydrogen_ionization}
+
+\subsection{Perparations}
+There are several steps that must be completed in order to calculate the ionization probability.
+\begin{itemize}
+ \item Set up a folder with a basic pyprop project
+ \item Create a configuration file with the correct representation, propagator etc.
+ \item Create a static potential for the Hydrogen problem
+ \item Find and save the ground state of our static problem
+ \item Create the dynamic laser potential
+ \item Load the ground state, and propagate to find the ionization probability
+ \item Repeat the previous step for different electric field strengths
+\end{itemize}
+
+\subsection{Create a basic pyprop project}
+At a minimum, a pyprop project usually contains a Makefile, a c++ potential file, a python wrapper file, a configuration file, 
+and a python file. Good templates for the Makefile, potential file and wrapper file can be found in \inlinebash{examples/template}.
+Create a folder and copy these files to it (this assumes pyprop and the project folder will be sibling folders).
+\begin{bash}
+	mkdir hydrogen_ionization
+	cd hydrogen_ionization
+	cp ../pyprop/examples/template/* .
+\end{bash}
+In order for your project to know where to find pyprop, create a symbolic link to the pyprop folder in the project folder, and 
+call it pyprop.
+\begin{bash}
+ 	ln -s ../pyprop pyprop
+\end{bash}
+We will also need a python file to contain our helper functions. Create a file called \inlinebash{example.py} and open it in your 
+favorite editor, and add the following lines (Please note that there should not be any whitespace to the left of the text).
+\begin{python}
+	#Import system modules
+	import sys
+	import os
+	from pylab import *
+	from numpy import *
+
+	#Load pyprop
+	sys.path.insert(1, os.path.abspath("./pyprop"))
+	import pyprop
+	pyprop = reload(pyprop)
+
+	#Load the project module
+	from libpotential import *
+\end{python}
+The first lines imports some common system modules, as well as pylab (plotting) and numpy (numeric arrays) which are nice to have. 
+available. The second paragraph adds \inlinebash{./pyprop} to the search path when loading modules, and imports pyprop. The last paragraph
+imports the module containing the potentials we will create for this project.
+
+We now have a basic pyprop project. In order to test it, we must first make the potential-module
+\begin{bash}
+	make clean
+	make
+\end{bash}
+To test that everything is working so far, start up python, and execute the example.py file
+\begin{bash}
+ 	ipython
+	execfile("example.py")
+\end{bash}
+
+\subsection{Create a configuration file}
+In order to tell pyprop what kind of problem to solve, we will need a configuration file. As described in the previous example, a configuration file has several sections, each having different configuration variables. We will use a 2D \inlinepy{CombinedRepresentation} for this project. rank 0 will be the radial rank, while rank 1 will be the angular rank. Create a file called \inlinebash{config.ini}, and open it in your favourite text editor, and add the following lines
+\begin{python}
+[Representation]
+rank = 2
+type = core.CombinedRepresentation_2
+representation0 = "RadialRepresentation"
+representation1 = "AngularRepresentation"
+
+[RadialRepresentation]
+type = core.CartesianRepresentation_1
+rank = 1
+rank0 = [-10, 10, 256]
+
+[AngularRepresentation]
+type = core.ReducedSphericalHarmonicRepresentation
+rank = 1
+maxl = 16
+
+[InitialCondition]
+type = InitialConditionType.Function
+function = lambda conf, x: x[0] * exp(- abs(x[0]))
+
+[Potential]
+type = PotentialType.Static
+classname = "CoulombPotential"
+charge = -1
+
+[Propagation]
+potential_evaluation = ["Potential"] 
+propagator = CombinedPropagator
+propagator0 = "RadialPropagator"
+propagator1 = "AngularPropagator"
+timestep = -0.01j
+duration = 15
+renormalization = True
+silent = False
+
+[RadialPropagator]
+propagator = CartesianRadialPropagator
+mass = 1.0
+
+[AngularPropagator]
+propagator = ReducedSphericalPropagator
+mass = 1.0
+radial_rank = 0
+\end{python}
+This will set up a representation with $L_{max} = 16$, and 256 radial grid points between $-10$ and $10$. The anti-symmetrization is due to the boundary conditions. The propagator is set up with effective mass = $1$, and to use imaginary time, and a potential called CoulombPotential which is expected to be found in the potential module of this project.
+
+\subsection{Set Up the Static Potential}
+We will use a static potential for the Coulomb potential, which will is expected to be found in the potential module. We must therefore set up this potential in \textit{potential.cpp}. Open up potential.cpp in your favourite editor, and make the following changes. 
+\begin{itemize}
+ \item On line 5, change the name of the class from \inlinec{PotentialTemplate} to \inlinec{CoulombPotential}
+ \item On line 13, rename the \inlinec{param} variable to \inlinec{charge} (The line should now read \inlinec{double charge;})
+ \item On line 22, change the line to read the config varable \textit{"charge"} into the C++ variable \textit{charge} (The line should now read \inlinec{config.Get("charge", charge);})
+ \item Finally, change the body of the method \inlinec{GetPotentialValue} to implement the Coulomb potential with a cutoff.
+\end{itemize}
+\begin{c++}
+inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+{
+	double r = std::abs(pos(0));
+	if (r < 10e-5)
+	{
+		return 0;
+	}
+	double V = charge / r;
+	return V;
+}
+\end{c++}
+
+In order to make this potential available to python, we must create a wrapper for it. This is done in wrapper.pyste. If you open
+wrapper.pyste in a text editor, there are two paragraphs. The first declares a potential evaluator, and the second uses that 
+potential evaluator to wrap the potential \inlinec{PotentialTemplate} in both a $1D$ and a $2D$ variant. For our purposes, we only
+need a $2D$ wrapper of \inlinec{CoulombPotential}. Replace the file to contain the following lines
+\begin{python}
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potential for 2D
+PotentialEvaluator("CoulombPotential<2> 2","PotentialTemplate_2")
+\end{python}
+Now, in order to use this potential in python, you must recompile the potential module
+\begin{bash}
+	make clean
+	make
+\end{bash}
+The make clean is necessary because we changed the wrapper file, otherwise, a simple \textit{make} would suffice.
+
+\subsection{Find the Ground State}
+We now have a configuration file and a potential, and need to tell pyprop to use these to calculate the groundstate. This will be done in steps
+\begin{itemize}
+ \item Load the configuration file 
+ \item Create a pyprop Problem object based on the configuration
+ \item Propagate
+\end{itemize}
+
+To load the configuration file, we use the command \inlinepy{pyprop.Load(filename)}, but because we want to extend this further later on, we will make a function that wraps this functionality. Add the following function to example.py
+\begin{python}
+def SetupConfig(**args):
+	#Decide which config file to use
+	configFile = "config.ini"
+	if "config" in args:
+		configFile = args["config"]
+
+	#Load the config file
+	conf = pyprop.Load(configFile)
+
+	#Modify the config
+	if "imtime" in args:
+		imtime = args["imtime"]
+		propSection = conf.Propagation
+		dt = abs(propSection.timestep)
+		renormalize = False
+		if imtime:
+			dt = -1.0j * dt
+			renormalize = True
+
+		propSection.timestep = dt
+		propSection.renormalization = renormalize
+	
+	return conf
+\end{python}
+The "Modify the config" part is not strictly necessary, but serves as an example of how the config can be modified after it has been loaded from file. If imtime is passed as a parameter to \inlinepy{SetupConfig}, it will override the timeste and renormalization values specified in the config file.
+
+Next, we will use the config object to create a pyprop Problem object, and set that up to be ready for propagation. Add the following function to your example.py
+\begin{python}
+def SetupProblem(**args):
+	conf = SetupConfig(**args)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	return prop
+\end{python}
+
+Finally, we will add a small function to propagate the solution for the duration specified in the configuration file, and print out
+energy estimates along the way.
+\begin{python}
+def FindGroundstate(**args):
+	args['imtime'] = True
+	prop = SetupProblem(**args)
+	
+	for t in prop.Advance(10):
+		E = prop.GetEnergy()
+		print "t = %f, E = %f" % (t, E)
+
+	E = prop.GetEnergy()
+	print "Ground State Energy = %f" % E
+
+	return prop
+\end{python}
+
+You can now find the ground state and energy of hydrogen by starting python and typing
+\begin{python}
+	execfile("example.py")
+	prop = FindGroundstate()
+\end{python}
+This should print out a ground state energy of $\approx -0.498258$, and return the problem object as the variable prop. You can use this variable to interact with the problem. 
+
+Whenever you make changes to example.py, you can run \inlinepy{execfile("example.py")} to reload the changes.
+
+You can get a copy of the raw wavefunction data by typing
+\begin{python}
+	data = prop.psi.GetData().copy()
+\end{python}
+And get the radial grid and l-indices by typing
+\begin{python}
+	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	l = prop.psi.GetRepresentation().GetLocalGrid(1)
+\end{python}
+The probability density can then be plotted in the r, l basis:
+\begin{python}
+	pcolor(l, r, abs(data)**2, shading='flat')
+\end{python}
+
+The wavefunction can also be saved to a HDF5 file, using 
+\begin{python}
+	prop.SaveWavefunctionHDF(filename, dataset) 
+\end{python}
+Usually, however, you will probably want to delete the file if it exists before saving it. To simplify that process, make the following function
+\begin{python}
+def SaveWavefunction(filename, dataset, psi):
+	if pyprop.ProcId == 0:
+		if os.path.exists(filename):
+			os.unlink(filename)
+	pyprop.serialization.SaveWavefunctionHDF(filename, dataset, psi)
+\end{python}
+Then the ground state can be saved with
+\begin{python}
+ 	SaveWavefunction("groundstate.h5", "/wavefunction", prop.psi)
+\end{python}
+
+\subsection{Creating the Dynamic Potential}
+In order to ionize anything, we will need a potential for the electric field. In this case, we will use linearly polarized light in the $z$ direction, and a $\sin^2$ shaped pulse. Add the following class to the \inlinebash{potential.cpp} file.
+\begin{c++}
+template<int Rank>
+class LaserPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double PulseDuration;
+	double Frequency;
+	double Amplitude;
+
+	//Calculated parameters
+	double convolutionFrequency;
+	double currentAmplitude;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("pulse_duration", PulseDuration);
+		config.Get("frequency", Frequency);
+		config.Get("amplitude", Amplitude);
+
+		convolutionFrequency = M_PI / PulseDuration;
+	}
+
+	/*
+	 * Called once every timestep
+	 */
+	void CurTimeUpdated()
+	{
+		if (CurTime > PulseDuration)
+		{
+			currentAmplitude = 0;
+		}
+		else
+		{
+			currentAmplitude = Amplitude;
+			currentAmplitude *= sqr(sin(CurTime * convolutionFrequency));
+			currentAmplitude *= cos(CurTime * Frequency);
+		}
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = std::abs(pos(0));
+		double theta = pos(1);
+
+		double z = r * cos(theta);
+		return currentAmplitude * z;
+	}
+};
+\end{c++}
+Similarly to the Coulomb potential, we must add a wrapper to it before we can use it in python. Open wrapper.pyste, and add the following line
+\begin{python}
+PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
+\end{python}
+and recompile the project.
+
+\subsection{Create a Propagation Problem}
+We now need a config file for the propagation problem, where we will not use imaginary time, and use the additional \inlinec{LaserPotential} as well as an absorbing boundary. We will create a \inlinebash{propagation.ini} for this purpose. This new configuration file will be very similar to \inlinebash{config.ini}, and instead of copying and modifying that file, we will rather use the import-features of the configuration files to base \inlinebash{propagation.ini} on \inlinebash{config.ini}. This enables
+us to use \inlinebash{config.ini} as a base, and only override certain config  variables. Create \inlinebash{propagation.ini} with the following content
+\begin{python}
+[Import]
+files = ["config.ini"]
+
+[InitialCondition]
+type = InitialConditionType.File
+format = WavefunctionFileFormat.HDF
+filename = "groundstate.h5"
+dataset = "/wavefunction"
+
+[DynamicPotential]
+type = PotentialType.Dynamic
+classname = "LaserPotential"
+pulse_duration = 10
+frequency = 1.0
+amplitude = 0.5
+
+[AbsorbingPotential]
+type = PotentialType.Static
+classname = "core.SphericalAbsorbingPotential"
+
+[Propagation]
+potential_evaluation = ["Potential","DynamicPotential","AbsorbingPotential"]
+timestep = 0.01
+duration = 20
+renormalization = False
+\end{python}
+In order to use this new config to propagate and calculate the ionization probability, we will create a function similar to the one finding the ground state
+\begin{python}
+def FindIonizationProbability(**args):
+	args['imtime'] = False
+	args['config'] = "propagation.ini"
+	prop = SetupProblem(**args)
+
+	initialPsi = prop.psi.Copy()
+
+	for t in prop.Advance(10):
+		norm = prop.psi.GetNorm()
+		corr = abs(prop.psi.InnerProduct(initialPsi))**2
+		print "t = %f, Norm = %f, Corr = %f" % (t, norm, corr)
+
+	norm = prop.psi.GetNorm()
+	corr = abs(prop.psi.InnerProduct(initialPsi))**2
+	print "Ionization Probability = %f" % norm
+	print "Initial state correlation = %f" % corr
+
+	return prop	
+\end{python}
+You can now find the ionization probability by typing
+\begin{python}
+	FindIonizationProbability()
+\end{python}
+Now, we want to find the ionization probability for different field strengths. Certainly, we can change the value in the config file and rerun \inlinepy{FindIonizationProbability}. We can even use a new config file, import \inlinebash{propagation.ini}, and only override the amplitude variable. A more elegant method, however, is to do it programatically. We can add a few lines to \inlinepy{SetupConfig}, and control the amplitude with function parameters. Add the following lines to \inlinepy{SetupConfig} before \inlinepy{return conf}
+\begin{python}
+	if "amplitude" in args:
+		amplitude = args["amplitude"]
+		conf.DynamicPotential.amplitude = amplitude	
+\end{python}
+To find the ionization probability for a given electric field strength, you can now type
+\begin{python}
+ 	FindIonizationProbability(amplitude=0.2)
+\end{python}
+For completeness, we will now make a function that calculates the ionization probability for field strengths between $0$ and $2$, and plots the results.
+\begin{python}
+def FindIonizationProbabilityAmplitude():
+	amplitudeList = r_[0:2:0.2]
+	ionizationList = zeros(len(amplitudeList), dtype=double)
+
+	for i in range(len(amplitudeList)):
+		prop = FindIonizationProbability(amplitude=amplitudeList[i])
+		ionizationList[i] = prop.psi.GetNorm()
+
+	plot(amplitudeList, ionizationList, label="Ionization Probability")
+	xlabel("Electric Field Strength")
+	ylabel("Ionization Probability")
+	legend()
+
+	return amplitudeList, ionizationList
+\end{python}

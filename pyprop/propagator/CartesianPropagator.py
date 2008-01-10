@@ -1,3 +1,9 @@
+def GetAnotherDistribution(distrib, rank):
+	if rank <= len(distrib):
+		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
+
+	ranks = [j for j in r_[0:rank] if j not in distrib]
+	return max(ranks)
 
 #----------------------------------------------------------------------------------------------------
 # Cartesian FFT Evaluator
@@ -117,12 +123,13 @@ class CartesianPropagator(PropagatorBase):
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
 			self.Distribution1 = distrModel.GetDistribution().copy()
+			self.Distribution2 = GetAnotherDistribution(self.Distribution1, self.Rank)
 			if len(self.Distribution1) > 1: 
 				raise "Does not support more than 1D proc grid"
+
 			transpose = distrModel.GetTranspose()
 			#Setup shape	
 			fullShape = self.psi.GetRepresentation().GetFullShape()
-			self.Distribution2 = array([1])
 			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
 			#allocate wavefunction
 			self.TransposeBuffer1 = self.psi.GetActiveBufferName()

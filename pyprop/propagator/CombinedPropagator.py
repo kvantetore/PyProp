@@ -108,12 +108,13 @@ class CombinedPropagator(PropagatorBase):
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
 			self.Distribution1 = distrModel.GetDistribution().copy()
+			self.Distribution2 = GetAnotherDistribution(self.Distribution1, self.Rank)
 			if len(self.Distribution1) > 1: 
 				raise "Does not support more than 1D proc grid"
+
 			transpose = distrModel.GetTranspose()
 			#Setup shape	
 			fullShape = self.psi.GetRepresentation().GetFullShape()
-			self.Distribution2 = array([0])
 			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
 			#allocate wavefunction
 			self.TransposeBuffer1 = self.psi.GetActiveBufferName()
@@ -124,10 +125,17 @@ class CombinedPropagator(PropagatorBase):
 		if not distrModel.IsSingleProc():
 			if stage == 1:
 				distrModel.ChangeDistribution(self.psi, self.Distribution2, self.TransposeBuffer2)
+				newDistrib = self.Distribution2
 			elif stage == 2:
 				distrModel.ChangeDistribution(self.psi, self.Distribution1, self.TransposeBuffer1)
+				newDistrib = self.Distribution1
 			else:
 				raise "Invalid stage %i" % stage
+		
+			for i in range(self.Rank):
+				subDistribModel = prop.psi.GetRepresentation().GetRepresentation(i).GetDistributedModel()
+				subDistribModel.SetDistribution(newDistrib)
+
 
 	def GetBasisFunction(self, rank, basisIndex):
 		prop = self.SubPropagators[rank]

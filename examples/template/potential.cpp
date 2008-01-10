@@ -2,7 +2,7 @@
 #include <core/potential/dynamicpotentialevaluator.h>
 
 template<int Rank>
-class PotentialTemplate
+class PotentialTemplate : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator

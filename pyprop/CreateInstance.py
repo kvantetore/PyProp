@@ -18,11 +18,19 @@ def CreateDistribution(config, rank=None):
 
 	#hack in initial distribution into configuration
 	#TODO: Get initial distribution from propagator
-	config.Distribution.proc_array_rank = 1
-	config.Distribution.initial_distribution = array([0], dtype=int)
+	class sec:
+		pass
+	
+	if hasattr(config, "Distribution"):
+		distrSection = config.Distribution
+	else:
+		distrSection = sec()
+
+	distrSection.proc_array_rank = 1
+	distrSection.initial_distribution = array([config.Representation.rank-1], dtype=int)
 
 	#apply configuration
-	config.Distribution.Apply(distrib)
+	distrib.ApplyConfigSection(distrSection)
 	
 	return distrib
 	

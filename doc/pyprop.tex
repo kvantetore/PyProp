@@ -8,7 +8,9 @@
 \definecolor{gray}{gray}{0.5} 
 \definecolor{key}{rgb}{0,0.5,0} 
 \newcommand{\setpython}{
-  \lstset{ 
+  \lstset{
+    basicstyle=\ttfamily\footnotesize,
+    tabsize=4, 
     language=python, 
     keywordstyle=\color{blue}, 
     stringstyle=\color{red}, 
@@ -18,6 +20,8 @@
 }
 \newcommand{\setc}{
   \lstset{ 
+    basicstyle=\ttfamily\footnotesize,
+    tabsize=4, 
     language=c++, 
     commentstyle=\color{gray}\slshape, 
 %     basicstyle=\ttfamily\small, 
@@ -29,6 +33,8 @@
 }
 \newcommand{\setbash}{
   \lstset{ 
+    basicstyle=\ttfamily\footnotesize,
+    tabsize=4, 
     language=bash, 
     commentstyle=\color{gray}\slshape, 
     keywordstyle=\color{blue}, 
@@ -46,8 +52,9 @@
   \setbash
 } {}
 
-\newcommand{\inlinepy}[1]{\setpython\lstinline[basicstyle=\bfseries]!#1!}
-\newcommand{\inlinec}[1]{\setc\lstinline[basicstyle=\bfseries]!#1!}
+\newcommand{\inlinepy}[1]{\setpython\lstinline!#1!}
+\newcommand{\inlinec}[1]{\setc\lstinline!#1!}
+\newcommand{\inlinebash}[1]{\setbash\lstinline!#1!}
 
 % Title Page
 \title{PyProp - A TDSE propagator}
