@@ -1,0 +1,11 @@
+AbsorberModel = Class("AbsorberModel", "potential/combinedabsorber.h")
+no_init(AbsorberModel)
+use_shared_ptr(AbsorberModel)
+
+AbsorbingPotential = Template("CombinedAbsorberPotential", "potential/combinedabsorber.h")
+AbsorbingPotential("1", "CombinedAbsorberPotential_1")
+AbsorbingPotential("2", "CombinedAbsorberPotential_2")
+AbsorbingPotential("3", "CombinedAbsorberPotential_3")
+AbsorbingPotential("4", "CombinedAbsorberPotential_4")
+
+
