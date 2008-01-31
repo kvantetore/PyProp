@@ -14,22 +14,21 @@ class RedirectClass:
 		self.redirect_cout = None
 
 	def Enable(self, silent):
-		if self.redirect_stdout != None:
-			raise Exception("Already redirected")
-
-		self.redirect_stdout = StdOut(sys.stdout, silent)
-		self.redirect_cout = core.redirect_cout()
-		sys.stdout = self.redirect_stdout
+		if silent:
+			if self.redirect_stdout != None:
+				raise Exception("Already redirected")
+	
+			self.redirect_stdout = StdOut(sys.stdout, silent)
+			self.redirect_cout = core.redirect_cout()
+			sys.stdout = self.redirect_stdout
 
 	def Disable(self):
-		if self.redirect_stdout == None:	
-			raise Exception("Not redirected")
-
-		core.restore_cout(self.redirect_cout)
-		sys.stdout = self.redirect_stdout.stdout 
-
-		self.redirect_stdout = None
-		self.redirect_cout = None
+		if self.redirect_stdout != None:	
+			core.restore_cout(self.redirect_cout)
+			sys.stdout = self.redirect_stdout.stdout 
+	
+			self.redirect_stdout = None
+			self.redirect_cout = None
 		
 	
 
