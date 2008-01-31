@@ -39,6 +39,8 @@ if __DisableMPI:
 	for name, obj in core.__dict__.iteritems():
 		if name.startswith("DistributedModel_"):
 			obj.ForceSingleProc()
+	
+StaticStorageModel = core.StaticPotential_1.StorageModel
 
 
 import utilities
@@ -50,6 +52,7 @@ reload(serialization)
 execfile(__path__[0] + "/Distribution.py")
 execfile(__path__[0] + "/Enum.py")
 execfile(__path__[0] + "/Potential.py")
+execfile(__path__[0] + "/Absorber.py")
 execfile(__path__[0] + "/Problem.py")
 
 execfile(__path__[0] + "/CreateInstance.py")

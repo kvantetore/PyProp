@@ -31,3 +31,7 @@ class TransformedRadialPropagator:
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
 		pass
 
+	def GetBasisFunction(self, rank, basisIndex):
+		return self.Propagator.GetEigenvectors()[basisIndex,:]
+
+

@@ -12,8 +12,8 @@ class CartesianRadialPropagator(FourierPropagatorBase):
 		#otherwise force_origin_zero should be set to False
 		self.ForceOriginZero = True
 		if hasattr(configSection, "force_origin_zero"):
-			print "Found force_origin_zero"
 			self.ForceOriginZero = configSection.force_origin_zero
+			print "Found force_origin_zero = ", self.ForceOriginZero
 
 	def CreateDefaultFourierPotential(self):
 		fourierPotentialConf = self.StaticEnergyConf(PotentialType.Static, "core.RadialKineticEnergyPotential")

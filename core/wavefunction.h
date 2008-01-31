@@ -89,7 +89,7 @@ public:
 	double Normalize()
 	{
 		double norm = GetNorm();
-		Data /= sqrt(norm);
+		Data /= norm;
 		return norm;
 	}
 	

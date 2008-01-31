@@ -48,7 +48,7 @@ class CombinedPropagator(PropagatorBase):
 			if prop.TransformRank == self.Rank-1:
 				self.Transpose(2)
 
-		distr = prop.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+		distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
 		if len(distr) != 1:
 			raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
 		if distr[0] != self.Rank-1:

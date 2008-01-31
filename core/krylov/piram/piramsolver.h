@@ -53,9 +53,9 @@ public:
 		return Solver.GetEigenvector(eigenvectorIndex);
 	}
 
-	double EstimateMemoryUsage()
+	double EstimateMemoryUsage(int matrixSize, int basisSize)
 	{
-		return Solver.EstimateMemoryUsage();
+		return Solver.EstimateMemoryUsage(matrixSize, basisSize);
 	}
 
 	blitz::Array<double, 1> GetErrorEstimates()

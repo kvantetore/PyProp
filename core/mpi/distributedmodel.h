@@ -100,6 +100,7 @@ public:
 
 	double GetGlobalSum(double localValue);
 	cplx GetGlobalSum(cplx localValue);
+	void GetGlobalSum(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out);
 	void GlobalBarrier();
 
 	bool IsDistributedRank(int rank);

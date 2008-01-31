@@ -150,7 +150,7 @@ template<int Rank>
 double Wavefunction<Rank>::GetNorm() const
 {
 	double localNorm = GetLocalNorm();
-	return GetRepresentation()->GetDistributedModel()->GetGlobalSum(localNorm);
+	return sqrt(GetRepresentation()->GetDistributedModel()->GetGlobalSum(localNorm));
 }
 
 template<int Rank>

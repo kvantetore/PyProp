@@ -18,6 +18,7 @@ from numpy import *
 class RadialGridType:
 	CARTESIAN = 1
 	TRANSFORMED = 2
+	ORTHOPOL = 3
 
 def SetupProblem(**args):
 	#load config file. hydrogen.ini uses ../sphericalbase.ini as a base
@@ -35,9 +36,31 @@ def SetupProblem(**args):
 
 def FindEigenvalues(**args):
 	prop = SetupProblem(**args)
+	tempPsi = prop.GetTempPsi()
+
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 	print solver.Solver.GetEigenvalues().real
+
+	#test if the find eigenvectors are really eigenvectors
+	for i in range(len(solver.Solver.GetEigenvalues())):
+		solver.SetEigenvector(prop.psi, i)
+
+		tempPsi.GetData()[:] = 0
+		prop.MultiplyHamiltonian(tempPsi)
+		n1 = tempPsi.GetNorm()
+		n2 = prop.psi.GetNorm()
+		lindep = prop.psi.InnerProduct(tempPsi) / (n1 * n2)
+
+		E = prop.GetEnergyExpectationValue()
+		
+		print "E = %f, cos(theta) = %f" % (E, abs(lindep))
+
+		#Propagate the eigenstate to see if it remains in the same state
+		#args['silent'] = True
+		#args['initPsi'] = prop.psi
+		#Propagate(**args)
+
 	return solver
 
 def FindGroundstate(**args):
@@ -56,6 +79,86 @@ def FindGroundstate(**args):
 
 	return prop
 
+def Propagate(**args):
+	args['imTime'] = False
+	prop = SetupProblem(**args)
+
+	if 'initPsi' in args:
+		initPsi = args['initPsi']
+	else:
+		initPsi = prop.psi.Copy()
+
+	initPsi.Normalize()
+	prop.psi.GetData()[:] = initPsi.GetData()
+
+	t = 0
+	norm = prop.psi.GetNorm()
+	corr = abs(prop.psi.InnerProduct(initPsi))**2
+	print "t = %f, N(t) = %f, C(t) = %f" % (t, norm, corr)
+
+
+	figure()
+	if prop.psi.GetRank() == 2:
+		pyprop.Plot2DRank(prop, 0)
+	else:
+		pyprop.Plot1D(prop)
+
+	for t in prop.Advance(10):
+		norm = prop.psi.GetNorm()
+		corr = abs(prop.psi.InnerProduct(initPsi))**2
+		print "t = %f, N(t) = %f, C(t) = %f" % (t, norm, corr)
+		if prop.psi.GetRank() == 2:
+			pyprop.Plot2DRank(prop, 0)
+		else:
+			pyprop.Plot1D(prop)
+
+def FindEigenvaluesImtime(**args):
+	eigenvalueCount = args['eigenvalueCount']
+	args['imTime'] = True
+	args['silent'] = True
+
+	eigenstates = []
+
+	for curEigenvalue in range(eigenvalueCount):
+		prop = SetupProblem(**args)
+		for t in prop.Advance(True):
+			#Remove projection on previous states
+			for state in eigenstates:
+				overlap = prop.psi.InnerProduct(state)
+				prop.psi.GetData()[:] -= overlap * state.GetData()
+			prop.psi.Normalize()
+
+			for state in eigenstates:
+				newOverlap = prop.psi.InnerProduct(state)
+				if abs(newOverlap) > 10e-15:
+					print "NewOverlap = %g" % abs(newOverlap)
+
+		E = prop.GetEnergy()
+
+		#Remove projection on previous states
+		for state in eigenstates:
+			overlap = prop.psi.InnerProduct(state)
+			prop.psi.GetData()[:] -= overlap * state.GetData()
+
+		#Check whether H |psi> is linearly dependent on |psi>
+		tempPsi = prop.GetTempPsi()
+		tempPsi.GetData()[:] = 0
+		prop.MultiplyHamiltonian(tempPsi)
+		n1 = tempPsi.GetNorm()
+		n2 = prop.psi.GetNorm()
+		lindep = prop.psi.InnerProduct(tempPsi) / (n1 * n2)
+
+		print "E = %f, cos(theta) = %f" % (E, abs(lindep))
+		eigenstates.append(prop.psi.Copy())
+		del prop
+
+	
+	for state in eigenstates:
+		args['initPsi'] = state
+		Propagate(**args)
+
+
+
 #---------------------------------------------------------------------------------
 
 def SetupConfig(**args):
@@ -65,7 +168,10 @@ def SetupConfig(**args):
 	will return a conf object loading h2p.ini, setting timestep to -0.04mj, and 
 	renormalization to True.
 	"""
-
+	silent = False
+	if 'silent' in args:
+		silent = args['silent']
+	
 	#config file
 	if 'configFile' in args:
 		configFile = args['config']
@@ -76,11 +182,12 @@ def SetupConfig(**args):
 	#Grid size
 	if 'gridSize' in args:
 		gridSize = args['gridSize']
-		print "Using Grid Size = ", gridSize
+		if not silent: print "Using Grid Size = ", gridSize
 		#set grid size of both representations, but we will
 		#only use one of them in a given run
 		conf.CartesianRadialRepresentation.rank0[2] = gridSize
 		conf.TransformedRadialRepresentation.n = gridSize
+		conf.OrthoPolRadialRepresentation.n = gridSize
 
 	#Grid type
 	if 'gridType' in args:
@@ -92,13 +199,13 @@ def SetupConfig(**args):
 	#TimeStep
 	if 'dt' in args:
 		dt = args['dt']
-		print "Using TimeStep = ", dt
+		if not silent: print "Using TimeStep = ", dt
 		conf.Propagation.timestep = abs(dt)
 
 	#Imaginary Time Propagation
 	if 'imTime' in args:
 		imTime = args['imTime']
-		print "Using ImaginaryTime = ", imTime
+		if not silent: print "Using ImaginaryTime = ", imTime
 		dt = conf.Propagation.timestep
 		if imTime:
 			conf.Propagation.renormalization = True
@@ -109,12 +216,12 @@ def SetupConfig(**args):
 
 	if 'softing' in args:
 		softing = args['softing']
-		print "Using softing ", softing
+		if not silent: print "Using softing ", softing
 		conf.Potential.softing = softing
 
 	if 'lmax' in args:
 		lmax = args['lmax']
-		print "Using LMax = ", lmax
+		if not silent: print "Using LMax = ", lmax
 		conf.AngularRepresentation.maxl = lmax
 
 	if 'duration' in args:
@@ -124,8 +231,15 @@ def SetupConfig(**args):
 	if 'orientation' in args:
 		orientation = args['orientation']
 		conf.Potential.nuclear_orientation = orientation
-		
+	
+	if 'separation' in args:
+		separation = args['separation']
+		conf.Potential.nuclear_separation = separation
 
+	if 'silent' in args:
+		silent = args['silent']
+		conf.Propagation.silent = silent
+		
 	print "Setup Config Complete"
 	print ""
 	return conf
@@ -148,6 +262,10 @@ def SetRadialGridType(conf, gridType):
 		conf.RadialRepresentation = conf.TransformedRadialRepresentation
 		conf.RadialPropagator.propagator = pyprop.TransformedRadialPropagator
 
+	elif gridType == RadialGridType.ORTHOPOL:
+		conf.RadialRepresentation = conf.OrthoPolRadialRepresentation
+		conf.RadialPropagator.propagator = pyprop.OrthoPolRadialPropagator
+
 	else:
 		raise "Invalid grid type ", gridType
 
@@ -155,4 +273,40 @@ def SetRadialGridType(conf, gridType):
 	conf.Representation.radialtype = conf.RadialRepresentation.type
 
 
+#Investigate the Condition Numbers of the different discretizations
+def Condition(matrix):
+	U, S, V = linalg.svd(matrix)
+	return S[0] / S[-1]
 
+def ConditionScaling(args, variableName, gridSizes):
+	args['silent'] = True
+	conditionNumbers = []
+
+	for gridSize in gridSizes:
+		args[variableName] = gridSize
+		prop = SetupProblem(**args)
+		M = pyprop.GetBasisExpansionMatrix(prop)
+		conditionNumber = Condition(M)
+		print "%s = %i, cond = %f" % (variableName, gridSize, conditionNumber)
+		conditionNumbers.append(conditionNumber)
+
+	return array(conditionNumbers)
+
+def ConditionScalingTransformed(**args):
+	if 'gridType' not in args:
+		args['gridType'] = RadialGridType.TRANSFORMED
+	args['lmax'] = 10
+
+	gridSizes = [2, 4, 8, 16, 32, 64]
+	conditionNumbers = ConditionScaling(args, "gridSize", gridSizes)
+
+	return gridSizes, conditionNumbers
+
+def ConditionScalingAngular(**args):
+	args['gridType'] = RadialGridType.TRANSFORMED
+	args['gridSize'] = 20
+
+	gridSizes = [2, 4, 8, 16, 32, 64]
+	conditionNumbers = ConditionScaling(args, "lmax", gridSizes)
+
+	return gridSizes, conditionNumbers

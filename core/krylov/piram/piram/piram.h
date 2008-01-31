@@ -2,76 +2,25 @@
 #define PIRAM_H
 
 #include <limits>
-#include <core/common.h>
-#include <core/mpi/mpitraits.h>
-#include <random/uniform.h>
-#include "blitzblas.h"
-#include "blitzlapack.h"
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
-#include <mpi.h>
 #include <map>
 
+#include <random/uniform.h>
 
-class Timer
-{
-private:
-	double time;
+#include <core/common.h>
+#include <core/mpi/mpitraits.h>
+#include <core/utility/blitzlapack.h>
+#include <core/utility/timer.h>
 
-public:
-	Timer() : time(0) {}
-
-	void Start()
-	{
-		time -= MPI_Wtime();
-	}
-
-	void Stop()
-	{
-		time += MPI_Wtime();
-	}
-
-	operator double() const
-	{
-		return time;
-	}
-};
+#include "blitzblas.h"
+#include "functors.h"
 
 
 namespace piram
 {
 using namespace blitz::linalg;
-
-/* 
- * Abstract functor class to implement matrix-vector multiplication
- */
-template<class T>
-class OperatorFunctor
-{
-public:
-	typedef boost::shared_ptr< OperatorFunctor > Ptr;
-
-	virtual ~OperatorFunctor() {}
-	virtual void operator()(blitz::Array<T, 1> &in, blitz::Array<T, 1> &out) = 0;
-};
-
-/*
- * Abstract functor class to implement initialization of residual
- */
-template<class T>
-class SetupResidualFunctor
-{
-public:
-	typedef boost::shared_ptr< SetupResidualFunctor > Ptr;
-
-	virtual ~SetupResidualFunctor() {}
-	virtual void operator()(blitz::Array<T, 1> &residual) = 0;
-};
-
-
 
 /*
  * Main pIRAM-class
@@ -107,6 +56,7 @@ public:
 	//Operator class, must implement operator()(VectorType &in, VectorType &out)
 	typename OperatorFunctor<T>::Ptr MatrixOperator;
 	typename SetupResidualFunctor<T>::Ptr SetupResidual;
+	typename IntegrationFunctor<T, NormType>::Ptr Integration;
 
 	//Constructor
 	pIRAM() 
@@ -116,6 +66,9 @@ public:
 		CommBase = MPI_COMM_WORLD;
 		DisableMPI = false;
 		UseRandomStart = true;
+
+		//Use blas for InnerProducts for now
+		Integration = typename IntegrationFunctor<T, NormType>::Ptr(new BLASIntegrationFunctor<T, NormType>(DisableMPI, CommBase));
 	}
 
 private:
@@ -198,7 +151,7 @@ private:
 
 	T CalculateGlobalNorm(VectorType &vector)
 	{
-		return sqrt(CalculateGlobalInnerProduct(vector, vector));
+		return Integration->Norm(vector);
 	}
 	
 	T CalculateGlobalInnerProduct(VectorType &x, VectorType &y)
@@ -206,38 +159,16 @@ private:
 		//Update Statistics
 		InnerProductCount++;
 
-		Timers["Local InnerProduct"].Start();
-		T localValue = blas.InnerProduct(x, y);
-		Timers["Local InnerProduct"].Stop();
-		if (DisableMPI)
-		{
-			return localValue;
-		}
-
-		T globalValue;
-		MPITraits<T> traits;
-		Timers["MPI"].Start();
-		MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, CommBase);
-		Timers["MPI"].Stop();
+		Timers["InnerProduct"].Start();
+		T globalValue = Integration->InnerProduct(x, y);
+		Timers["InnerProduct"].Stop();
 
 		return globalValue;
 	}
 
-	void GlobalAddVector(VectorType &in, VectorType &out)
-	{
-		if (DisableMPI)
-		{
-			out = in;
-		}
-
-		MPITraits<T> traits;
-		Timers["MPI2"].Start();
-		MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, CommBase);
-		Timers["MPI2"].Stop();
-	}
 
 public:
-	double EstimateMemoryUsage();
+	double EstimateMemoryUsage(int matrixSize, int basisSize);
 	void Setup();
 	void Solve();
 	void Postprocess()
@@ -296,10 +227,10 @@ public:
 };
 
 template <class T>
-double pIRAM<T>::EstimateMemoryUsage()
+double pIRAM<T>::EstimateMemoryUsage(int matrixSize, int basisSize)
 {
-	double largeSize = MatrixSize * (BasisSize + 3.0);
-	double smallSize = BasisSize * (3*BasisSize + 7.0);
+	double largeSize = matrixSize * (basisSize + 3.0);
+	double smallSize = basisSize * (3*basisSize + 7.0);
 	return (largeSize + smallSize) * sizeof(T) / (1024.0*1024.0);
 }
 
@@ -416,9 +347,8 @@ void pIRAM<T>::PerformArnoldiStep()
 	//which are linear combinations of the j first Arnoldi vectors
 	//- Calculate the projection of Residual into the range of currentArnoldiMatrix (B)
 	//  i.e. TempVector =  B* B Residual
-	blas.MultiplyMatrixVector(MatrixTranspose::Conjugate, currentArnoldiMatrix, 1.0, Residual, 0.0, currentOverlap2);
-	GlobalAddVector(currentOverlap2, currentOverlap);
-	
+	// Put the result in currentOverlap, use currentOverlap2 as temp buffer
+	Integration->InnerProduct(currentArnoldiMatrix, Residual, currentOverlap, currentOverlap2);
 	blas.MultiplyMatrixVector(currentArnoldiMatrix, currentOverlap, TempVector);
 	//- Remove the projection from the residual
 	blas.AddVector(TempVector, -1.0, Residual);
@@ -470,8 +400,8 @@ void pIRAM<T>::PerformOrthogonalization(T originalNorm, T residualNorm)
 		}
 
 		//Perform one step gram schmidt step to keep vectors orthogonal
-		blas.MultiplyMatrixVector(MatrixTranspose::Conjugate, currentArnoldiMatrix, 1.0, Residual, 0.0, currentOverlap2);
-		GlobalAddVector(currentOverlap2, currentOverlap3);
+		// Put the result in currentOverlap2, use currentOverlap2 as temp buffer
+		Integration->InnerProduct(currentArnoldiMatrix, Residual, currentOverlap3, currentOverlap2);
 		blas.MultiplyMatrixVector(currentArnoldiMatrix, currentOverlap3, TempVector);
 		//- Remove the projection from the residual
 		blas.AddVector(TempVector, -1.0, Residual);
@@ -589,7 +519,9 @@ void pIRAM<T>::PerformRestartStep()
 		//(by using bulge chase givens rotations or similar)
 		
 		//Calculate QR factorization of the shifted matrix
+		Timers["QR Factortization"].Start();
 		lapack.CalculateQRFactorization(HessenbergMatrix, Reflectors);
+		Timers["QR Factortization"].Stop();
 		HessenbergTriangular = HessenbergMatrix;
 
 		//the upper triangular part of HessenbergMatrix is now R, while
@@ -601,11 +533,14 @@ void pIRAM<T>::PerformRestartStep()
 		lapack.ApplyQRTransformation(LAPACK::MultiplyRight, LAPACK::TransposeNone, HessenbergTriangular, Reflectors, ArnoldiVectors);
 		Timers["Apply QR Transformation"].Stop();
 		*/
+		Timers["Apply QR Transformation (Q)"].Start();
 		lapack.ApplyQRTransformation(LAPACK::MultiplyLeft, LAPACK::TransposeConjugate, HessenbergTriangular, Reflectors, q);
 		lapack.ApplyQRTransformation(LAPACK::MultiplyRight, LAPACK::TransposeNone, HessenbergTriangular, Reflectors, Q);
 		q = conj(q);
+		Timers["Apply QR Transformation (Q)"].Stop();
 
 		//Clear the subdiagonals on HessenbergMatrix
+		Timers["Apply QR Transformation (H)"].Start();
 		for (int j=0; j<BasisSize-1; j++)
 		{
 			HessenbergMatrix(j, blitz::Range(j+1, BasisSize-1)) = 0;
@@ -616,6 +551,7 @@ void pIRAM<T>::PerformRestartStep()
 		{
 			HessenbergMatrix(j, j) += shift;
 		}
+		Timers["Apply QR Transformation (H)"].Stop();
 	}
 
 	//Update the BasisSize+1 first cols of ArnoldiVectors using Hessenberg-like structure
@@ -623,7 +559,7 @@ void pIRAM<T>::PerformRestartStep()
 	//
 	//
 	
-	Timers["Apply QR Transformation"].Start();
+	Timers["Apply QR Transformation (ArnoldiVectors)"].Start();
 	VectorType qRow( Q(EigenvalueCount, blitz::Range::all()) );
 	blas.MultiplyMatrixVector(ArnoldiVectors, qRow, TempVector2);
 
@@ -644,7 +580,7 @@ void pIRAM<T>::PerformRestartStep()
 	}
 
 	ArnoldiVectors(EigenvalueCount, blitz::Range::all()) = TempVector2;
-	Timers["Apply QR Transformation"].Stop();
+	Timers["Apply QR Transformation (ArnoldiVectors)"].Stop();
 			
 	//cout << "Hessenberg = " << real(HessenbergMatrix) << endl;
 	//Restart the arnoldi iteration on step k
@@ -652,6 +588,7 @@ void pIRAM<T>::PerformRestartStep()
 	CurrentArnoldiStep = k;
 
 	//Calculate residual for our restarted arnoldi iteration
+	Timers["Update Residual"].Start();
 	VectorType arnoldiVector(ArnoldiVectors(k+1, blitz::Range::all()));
 	T sigma = q(k);
 	T beta = HessenbergMatrix(k, k+1);
@@ -659,6 +596,7 @@ void pIRAM<T>::PerformRestartStep()
 	blas.AddVector(arnoldiVector, beta, Residual);
 	//Clear the last p cols in HessenbergMatrix to make it hessenberg
 	HessenbergMatrix( blitz::Range(k+1, BasisSize-1), blitz::Range::all() ) = 0;
+	Timers["Update Residual"].Stop();
 
 	Timers["Restart Step"].Stop();
 }

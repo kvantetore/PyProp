@@ -1,0 +1,7 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potential for 2D
+PotentialEvaluator("MorsePotential<1> 1","MorsePotential_1")
+PotentialEvaluator("MorsePotential<2> 2","MorsePotential_2")
+

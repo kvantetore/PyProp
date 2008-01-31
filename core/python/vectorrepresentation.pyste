@@ -4,6 +4,8 @@ no_virtual(VectorRepresentation)
 use_shared_ptr(VectorRepresentation)
 
 Class("SparseMatrixPotentialEvaluator", "potential/sparsematrixpotentialevaluator.h")
-Class("DenseMatrixPotentialEvaluator", "potential/densematrixpotentialevaluator.h")
-Class("DiagonalMatrixPotentialEvaluator", "potential/diagonalmatrixpotentialevaluator.h")
 
+Tplt = Template("DenseMatrixPotentialEvaluator", "potential/densematrixpotentialevaluator.h")
+Tplt("1", "DenseMatrixPotentialEvaluator_1")
+Tplt("2", "DenseMatrixPotentialEvaluator_2")
+Class("DenseMatrixPotentialEvaluatorOld", "potential/densematrixpotentialevaluator.h")

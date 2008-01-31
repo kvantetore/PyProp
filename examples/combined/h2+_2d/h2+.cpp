@@ -2,7 +2,7 @@
 #include <core/potential/dynamicpotentialevaluator.h>
 
 template<int Rank>
-class H2pPotential
+class H2pPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator
@@ -24,7 +24,7 @@ public:
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		//Coordinates
-		double r = fabs(pos(0));
+		double r = std::abs(pos(0));
 		double theta = pos(1);
 
 		double r2 = sqr(r) + sqr(NuclearSeparation) / 4 + sqr(Softing);
@@ -40,7 +40,7 @@ public:
 
 
 template<int Rank>
-class CoulombPotential
+class CoulombPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator

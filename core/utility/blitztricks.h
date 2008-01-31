@@ -163,5 +163,50 @@ void OuterProduct( const blitz::TinyVector< blitz::Array<T, 1>, 4> &in, blitz::A
 		* in(3)(blitz::tensor::k);
 }
 
+
+template<int Rank>
+inline bool IncIndex(const blitz::TinyVector<int, Rank>& extent, blitz::TinyVector<int, Rank> &index, int curDimension, int skipDimension)
+{
+/* Example usage
+ 
+   typedef blitz::TinyVector<int, Rank> IndexType
+
+   IndexType startIndex = 0;     //The current index
+   IndexType endIndex = 0;
+   int skipDimension = r;   //The dimension (rank) which we should not iterate over
+
+   
+
+   do 
+   {
+   	   endIndex = startIndex;
+	   endIndex(skipDimension) = data.extent(skipDimension) - 1;
+       blitz::Range
+       blitz::Array<cplx, N> = slice;
+   } while (IncIndex(data.shape(), index, N-1, skipDimension)
+
+*/
+
+
+	if (curDimension < 0) {
+		return false;
+	}
+	
+	if (skipDimension == curDimension)
+	{
+		return IncIndex(extent, index, curDimension - 1, skipDimension);
+	}
+	
+	index(curDimension)++;
+	if (index(curDimension) >= extent(curDimension))
+	{
+		index(curDimension) = 0;
+		return IncIndex(extent, index, curDimension - 1, skipDimension);
+	}
+	
+	return true;
+}
+
+
 #endif
 

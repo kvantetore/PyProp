@@ -2,6 +2,8 @@ import numpy
 import os
 import time
 
+DEBUG = False
+
 def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 	"""
 	Saves the wavefunction data to a dataset in a HDF file.
@@ -43,9 +45,10 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 	distr = psi.GetRepresentation().GetDistributedModel()
 	if distr.IsSingleProc():
 		t = - time.time()
+		RemoveExistingDataset(filename, datasetPath)
 		SaveLocalSlab(filename, datasetPath, psi)
 		t += time.time()
-		print "Duration: %.10fs" % t
+		if DEBUG: print "Duration: %.10fs" % t
 
 	else:
 		#let the processors save their part one by one
@@ -53,16 +56,36 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 		procId = distr.ProcId
 		localSize = psi.GetData().nbytes / 1024.**2
 		distr.GlobalBarrier()
-		if procId==0: print "Saving %s..." % filename
+		if procId==0 and DEBUG: print "Saving %s..." % filename
 		for i in range(procCount):
 			if procId == i:
-				print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
+				if procId == 0:
+					RemoveExistingDataset(filename, datasetPath)
+
+				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
 				SaveLocalSlab(filename, datasetPath, psi)
 				t += time.time()
-				print "    Duration: %.10fs" % t
+				if DEBUG: print "    Duration: %.10fs" % t
+
 			distr.GlobalBarrier();
-		if procId==0: print "Done."
+		if procId==0 and DEBUG: print "Done."
+
+def RemoveExistingDataset(filename, datasetPath):
+	if not os.path.exists(filename):
+		return
+
+	f = tables.openFile(filename, "a")
+	try:
+		groupName, datasetName = GetDatasetName(datasetPath)
+		try:
+			f.removeNode(groupName, datasetName)
+		except tables.NoSuchNodeError:
+			pass
+			
+	finally:
+		f.close()
+
 	
 
 def SaveLocalSlab(filename, datasetPath, psi):
@@ -112,7 +135,7 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 		procId = distr.ProcId
 		for i in range(procCount):
 			if procId == i:
-				print "Loading slab in proc ", procId
+				if DEBUG: print "Loading slab in proc ", procId
 				LoadLocalSlab(filename, datasetPath, psi)
 			distr.GlobalBarrier();
 	

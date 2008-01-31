@@ -35,39 +35,33 @@ void Propagator<Rank>::Setup(const Parameter &param, const cplx &dt, const Wavef
 	Param = param;
 
 	//create some temporary arrays
-	Array<double, 1> ewReal;    //eigenvalue 
-	Array<double, 2> evReal;    //eigenvector matrix
 	Array<double, 2> evInvReal; //inverse eigenvector matrix
 
 	//Call setup routines to get the eigenvector decomposition
-	setup(N, param, ewReal, evReal, evInvReal);
+	setup(N, param, Eigenvalues, Eigenvectors, evInvReal);
 
 	//We need the eigenvalues and vectors in complex format
-	Array<cplx, 1> ew(ewReal.shape());    //eigenvalue 
-	Array<cplx, 2> ev(evReal.shape());    //eigenvector matrix
-	Array<cplx, 2> evExp(evReal.shape());     //eigenvectors scaled by exp(ew)
-	Array<cplx, 2> evDiff(evReal.shape());    //eigenvectors scaled by ew
-	Array<cplx, 2> evInv(evInvReal.shape());  //inverse eigenvector matrix
+	Array<cplx, 2> evExp(Eigenvectors.shape());     //eigenvectors scaled by exp(eigenvalues)
+	Array<cplx, 2> evDiff(Eigenvectors.shape());    //eigenvectors scaled by eigenvalues
+	Array<cplx, 2> evInv(Eigenvectors.shape());  //inverse eigenvector matrix
 
-	ew = ewReal(tensor::i);
-	ev = evReal(tensor::i, tensor::j);
 	evInv = evInvReal(tensor::i, tensor::j);
 
 	//scale eigenvectors by complex rotation
 	//The missing minus sign in the exponent is included in the matrix.
-	evExp = ev(i,j) * exp( I * dt * ew(j) / (2.0 * Mass));
-	evDiff = - ev(i,j) * ew(j) / (2.0 * Mass);
+	evExp = Eigenvectors(i,j) * exp( I * dt * Eigenvalues(j) / (2.0 * Mass));
+	evDiff = - Eigenvectors(i,j) * Eigenvalues(j) / (2.0 * Mass);
 
 	//Create full matrix to propagate wavefunction
-	PropagationMatrix.resize(ev.shape());
+	PropagationMatrix.resize(Eigenvectors.shape());
 	MatrixMatrixMultiply(evExp, evInv, PropagationMatrix);
 
 	//Create full differentiation matrix
-	DiffMatrix.resize(ev.shape());
+	DiffMatrix.resize(Eigenvectors.shape());
 	MatrixMatrixMultiply(evDiff, evInv, DiffMatrix);
 
 	//Allocate temp data
-	TempData.resize(ew.extent(0));
+	TempData.resize(Eigenvalues.extent(0));
 }
 
 template<int Rank>

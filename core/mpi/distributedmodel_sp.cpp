@@ -114,6 +114,12 @@ cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 }
 
 template<int Rank>
+void DistributedModel<Rank>::GetGlobalSum(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out)
+{
+	out = in;
+}
+
+template<int Rank>
 void DistributedModel<Rank>::GlobalBarrier()
 {
 }

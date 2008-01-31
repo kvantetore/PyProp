@@ -215,7 +215,7 @@ class Problem:
 			if abs(imag(energy)) > 1e-10:
 				print "Warning: Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy)
 				self.IgnoreWarningRealEnergy = True
-		return real(energy)
+		return energy.real
 	
 	def GetEnergyImTime(self):
 		"""
@@ -241,8 +241,8 @@ class Problem:
 		self.Propagator.RenormalizeActive = renorm
 		
 		norm = self.psi.GetNorm()
-		self.psi.GetData()[:] /= sqrt(norm)
-		energy = - log(norm) / (2 * abs(self.TimeStep))
+		self.psi.GetData()[:] /= norm
+		energy = - log(norm**2) / (2 * abs(self.TimeStep))
 		return energy
 	
 	#Initialization-----------------------------------------------
@@ -271,6 +271,8 @@ class Problem:
 			self.SetupWavefunctionClass(self.Config, self.psi)
 		elif type == InitialConditionType.Custom:
 			self.SetupWavefunctionCustom(self.Config)
+		elif type == None:
+			pass
 		else:
 			raise "Invalid InitialConditionType: " + config.InitialCondition.type
 			

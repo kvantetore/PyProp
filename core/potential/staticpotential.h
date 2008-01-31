@@ -8,47 +8,73 @@
 template<int Rank>
 class StaticPotential
 {
+public:
+	enum StorageModel
+	{
+		StorageValue = 1,
+		StorageExpValue = 2
+	};
+
 private:
-	//Exponential form of the potential:
-	//PotentialData(x) = exp(- i * dt * V(x) )
+	StorageModel Storage;
 	blitz::Array<cplx, Rank> PotentialData;
 
 public:
-
 	StaticPotential() {}
 	
-	void InitializePotential(Wavefunction<Rank> &psi)
+	void InitializePotential(Wavefunction<Rank> &psi, StorageModel storage)
 	{
 		std::cout << "Allocating StaticPotential of shape " << psi.Data.shape() 
 		          << " (~" << blitz::product(psi.Data.shape()) * sizeof(cplx) / (1024*1024) <<
 			  "MB)" 
 			  << std::endl;
-		PotentialData.changeOrdering(psi.Data.ordering());
 		PotentialData.resize(psi.Data.shape());
+		Storage = storage;
 	}
 	
 	blitz::Array<cplx, Rank> GetPotentialData()
 	{
 		return PotentialData;
 	}
+
+	StorageModel GetStorageModel()
+	{
+		return Storage;
+	}
 	
-	void ApplyPotential(Wavefunction<Rank> &psi)
+	void ApplyPotential(Wavefunction<Rank> &psi, cplx dt)
 	{
 		ValidatePsi(psi);
 
-		VectorElementMultiply(psi.Data, PotentialData, psi.Data);
+		if (Storage == StorageExpValue)
+		{
+			VectorElementMultiply(psi.Data, PotentialData, psi.Data);
+		}
+		else
+		{
+			const cplx scaling = - cplx(0.0, 1.0) * dt;
+			psi.GetData() *= exp(scaling * PotentialData);
+		}
 	}
 
 	void MultiplyPotential(Wavefunction<Rank> &psi, Wavefunction<Rank> &destPsi, const cplx &dt)
 	{
 		ValidatePsi(psi);
-		const cplx imaginaryUnit = cplx(0.0, 1.0);
-		cplx scale = - 1.0 / (imaginaryUnit * dt);
+
 		typename Wavefunction<Rank>::DataArray dest(destPsi.GetData());
 		typename Wavefunction<Rank>::DataArray src(psi.GetData());
-		dest += log(PotentialData) * scale * src;
-	}
 
+		if (Storage == StorageExpValue)
+		{
+			const cplx imaginaryUnit = cplx(0.0, 1.0);
+			cplx scale = - 1.0 / (imaginaryUnit * dt);
+			dest += log(PotentialData) * scale * src;
+		}
+		else
+		{
+			dest += PotentialData * src;
+		}
+	}
 
 
 private:
@@ -72,3 +98,4 @@ private:
 };
 
 #endif
+

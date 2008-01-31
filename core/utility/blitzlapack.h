@@ -4,10 +4,8 @@
 #include <blitz/array.h>
 #include <complex>
 
-#include <core/common.h>
-
-#include "blitzblas.h"
-
+#include "../common.h"
+#include "fortran.h"
 
 #define LAPACK_NAME(x) x ## _
 
@@ -19,6 +17,7 @@ namespace linalg
 extern "C"
 {
 	void LAPACK_NAME(zgeev)( char* JOBVL, char* JOBVR, int* N, cplx* A, int* LDA, cplx* W, cplx* VL, int* LDVL, cplx* VR, int* LDVR, cplx* WORK, int* LWORK, double* RWORK, int* INFO );
+	void LAPACK_NAME(zheev)( char* JOBVZ, char* UPLO, int* N, cplx* A, int* LDA, double* W, cplx* WORK, int* LWORK, double* RWORK, int* INFO );
 	void LAPACK_NAME(zgeqrf)( int* M, int* N, cplx* A, int* LDA, cplx* TAU, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zungqr)( int* M, int* N, int *K, cplx* A, int* LDA, cplx* TAU, cplx* WORK, int* LWORK, int* INFO );
     void LAPACK_NAME(zunmqr)( char* SIDE, char* TRANS, int* M, int* N, int* K, cplx* A, int* LDA, cplx* TAU, cplx* C, int* LDC, cplx* WORK, int* LWORK, int* INFO );
@@ -33,6 +32,7 @@ class LAPACK
 
 public:
 	typedef Array<T, 1> VectorType;
+	typedef Array<double, 1> DoubleVectorType;
 	typedef Array<T, 2> MatrixType;
 
 	LAPACK()
@@ -55,9 +55,18 @@ public:
 		TransposeConjugate
 	};
 
+	enum HermitianStorage
+	{
+		HermitianUpper,
+		HermitianLower
+	};
+
 	int CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 			MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
 			MatrixType &rightEigenvectors);
+
+	int CalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
+			MatrixType &matrix, DoubleVectorType &eigenvalues);
 
 	int CalculateQRFactorization(MatrixType &matrix, VectorType &reflectors);
 	//void CompleteQRFactorization(MatrixType R, VectorType reflectors, MatrixType Q);
@@ -70,11 +79,12 @@ private:
 	Array<std::complex<float>, 1> complexSingleWork;
 	Array<double, 1> doubleWork;
 	Array<float, 1> singleWork;
-	BLAS<T> blas;
 
 	void PreconditionCalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 		MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
 		MatrixType &rightEigenvectors);
+	void PreconditionCalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
+			MatrixType &matrix, DoubleVectorType &eigenvalues);
 	
 	void PreconditionCalculateQRFactorization(MatrixType &A, VectorType &reflectors);
 	//void PreconditionCompleteQRFactorization(MatrixType R, VectorType reflectors, MatrixType Q);
@@ -87,6 +97,15 @@ private:
  * Check wheter all parameters are valid to the BLAS functions. 
  * This is type independent, and need only be written once
  */
+
+template<class T>
+void LAPACK<T>::PreconditionCalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
+			MatrixType &matrix, DoubleVectorType &eigenvalues)
+{
+	BZPRECONDITION(matrix.extent(0) == matrix.extent(1));
+	BZPRECONDITION(matrix.extent(0) == eigenvalues.extent(0));
+}
+	
 
 template<class T>
 void LAPACK<T>::PreconditionCalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
@@ -135,6 +154,52 @@ void LAPACK<T>::PreconditionApplyQRTransformation( MultiplicationSide side, Mult
 /*
  * Implementation for complex<double>
  */
+
+template<>
+inline int LAPACK<cplx>::CalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
+			MatrixType &matrix, DoubleVectorType &eigenvalues)
+{
+	PreconditionCalculateEigenvectorFactorizationHermitian(calculateEigenvectors, storage, matrix, eigenvalues);
+
+	char jobz = calculateEigenvectors ? 'V' : 'N';
+	char uplo = storage == HermitianUpper ? 'U' : 'L';
+
+	int N = matrix.extent(0);
+	int LDA = matrix.stride(0);
+
+	int info;
+	int workLength = -1;
+
+	//Make sure realwork is big enough
+	if (doubleWork.size() < std::max(1, 3*N-2))
+	{
+		doubleWork.resize(std::max(1, 3*N-2));
+	}
+
+	//First call: calculate optimal work array size
+	LAPACK_NAME(zheev)(&jobz, &uplo, &N, matrix.data(), &LDA, eigenvalues.data(), 
+		complexDoubleWork.data(), &workLength, doubleWork.data(), &info );
+
+	//Resize work arrays
+	int optimalWorkLength = (int) real(complexDoubleWork(0));
+	if (complexDoubleWork.size() < optimalWorkLength)
+	{
+		complexDoubleWork.resize(optimalWorkLength);
+	}
+
+	//Second call: calculate eigenvalues/vectors
+	workLength = complexDoubleWork.extent(0);//optimalWorkLength;
+	LAPACK_NAME(zheev)(&jobz, &uplo, &N, matrix.data(), &LDA, eigenvalues.data(), 
+		complexDoubleWork.data(), &workLength, doubleWork.data(), &info );
+
+
+	if (info != 0)
+	{
+		cout << "WARNING: zgeev could not find requested eigenvalues: " << info << endl;
+	}
+	return info;
+}
+
 
 template<>
 inline int LAPACK<cplx>::CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 

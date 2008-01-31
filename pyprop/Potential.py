@@ -55,7 +55,12 @@ def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None
 		try:
 			potential = eval(shortClassName + "()", glob)
 		except: pass
-		
+
+	if potential == None:
+		try:
+			potential = eval(className + "()", glob)
+		except: pass
+			
 	if potential == None:
 		raise "Unknown potential", className 
 
@@ -124,13 +129,25 @@ class StaticPotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 	
 	def SetupStep(self, timeStep):
-		#allocate memory
-		self.Potential.InitializePotential(self.psi)
-	
-		if hasattr(self.ConfigSection, "function"):
+		#Determine storage model
+		self.Storage = self.Potential.StorageModel.StorageExpValue
+		if hasattr(self.ConfigSection, "storage_model"):
+			self.Storage = self.Potential.StorageModel(self.ConfigSection.storage_model)
+			print "Using static potential storage model %s" % self.Storage
+
+		self.Potential.InitializePotential(self.psi, self.Storage)
+
+		if hasattr(self.ConfigSection, "grid_function"):
 			func = self.ConfigSection.function
 			updateFunc = eval("core.SetPotentialFromGridFunction_" + str(self.psi.GetRank()))
 			updateFunc(self.Potential, timeStep, self.psi, self.psi.GetRepresentation(), func, self.ConfigSection)
+	
+		if hasattr(self.ConfigSection, "function"):
+			func = self.ConfigSection.function
+			potentialData = self.Potential.GetPotentialData()
+			func(self.psi, self.ConfigSection, potentialData)
+			if self.Storage == self.Potential.StorageModel.StorageExpValue:	
+				potentialData[:] = exp(- 1.0j * timeStep * potentialData)
 
 		elif hasattr(self.ConfigSection, "classname"):
 			evaluatorPrefix = "core.DynamicPotentialEvaluator"
@@ -156,17 +173,25 @@ class StaticPotentialWrapper(PotentialWrapper):
 
 		pot = self.PotentialEvaluator
 		if hasattr(pot, "UpdateStaticPotential"):
-			pot.UpdateStaticPotential(self.Potential, self.psi, dt, 0.0)
+			pot.UpdateStaticPotential(self.Potential, self.psi, dt, 0.0, self.Storage)
 		else:
+			if self.Storage != StaticStorageModel.StorageExpValue:
+				raise Exception("PotentialEvaluators without UpdateStaticPotential must use storage model StorageExpValue")
+		
 			self.psi.GetData()[:] = 1
+			if hasattr(pot, "SetupStep"):
+				pot.SetupStep(self.psi, dt)
 			pot.ApplyPotential(self.psi, dt, t)
 			self.Potential.GetPotentialData()[:] = self.psi.GetData()[:]
 				
 	def AdvanceStep(self, t, dt):
-		self.Potential.ApplyPotential(self.psi)
+		self.Potential.ApplyPotential(self.psi, dt)
 
 	def MultiplyPotential(self, destPsi, t, dt):
-		self.PotentialEvaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+		if self.Storage == StaticStorageModel.StorageExpValue:
+			self.PotentialEvaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+		else:
+			self.Potential.MultiplyPotential(self.psi, destPsi, dt)
 
 	def GetExpectationValue(self, t, dt):
 		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)
@@ -278,7 +303,6 @@ class SparseMatrixParticle(tables.IsDescription):
 class MatrixType:
 	Sparse = "Sparse"
 	Dense = "Dense"
-	Diagonal = "Diagonal"
 
 class MatrixPotentialWrapper(PotentialWrapper):
 
@@ -302,13 +326,12 @@ class MatrixPotentialWrapper(PotentialWrapper):
 		func = conf.matrix_function
 
 		if self.MatrixType == MatrixType.Sparse:
-			row, col, matrixElement = func()
+			row, col, matrixElement = func(self.psi, conf)
 			self.Potential.SetMatrixData(row, col, matrixElement)
 
-		if self.MatrixType == MatrixType.Dense or self.MatrixType == MatrixType.Diagonal:
-			data = func()
-			self.Potential.SetMatrixData(data)
-
+		if self.MatrixType == MatrixType.Dense:
+			data = func(self.psi, conf)
+			self.Potential.SetMatrixData(data, self.MatrixRowRank, self.MatrixColRank)
 
 	def LoadMatrixPotentialFile(self, conf):
 		filename = conf.filename
@@ -323,14 +346,9 @@ class MatrixPotentialWrapper(PotentialWrapper):
 				self.Potential.SetMatrixData(row, col, matrixElement)
 
 			if self.MatrixType == MatrixType.Dense:
-				wavefunctionSize = self.psi.GetData().size
-				data = node[:wavefunctionSize, :wavefunctionSize]
-				self.Potential.SetMatrixData(data)
+				data = node[:]
+				self.Potential.SetMatrixData(data, self.MatrixRowRank, self.MatrixColRank)
 
-			if self.MatrixType == MatrixType.Diagonal:
-				wavefunctionSize = self.psi.GetData().size
-				data = node[:wavefunctionSize]
-				self.Potential.SetMatrixData(data)
 		finally:
 			file.close()
 
@@ -340,23 +358,34 @@ class MatrixPotentialWrapper(PotentialWrapper):
 
 		if configSection.matrix_type == MatrixType.Sparse:
 			self.Potential = core.SparseMatrixPotentialEvaluator()
+
 		elif configSection.matrix_type == MatrixType.Dense:
-			self.Potential = core.DenseMatrixPotentialEvaluator()
-		elif configSection.matrix_type == MatrixType.Diagonal:
-			self.Potential = core.DiagonalMatrixPotentialEvaluator()
+			self.Potential = CreateInstanceRank("core.DenseMatrixPotentialEvaluator", rank)
+			matrixColRank = None
+			matrixRowRank = None
+			if rank == 1:
+				matrixRowRank = 0
+				matrixColRank = 1
+			if hasattr(configSection, "matrix_column_rank"):
+				matrixColRank = configSection.matrix_column_rank
+			if hasattr(configSection, "matrix_row_rank"):
+				matrixRowRank = configSection.matrix_row_rank
+			if matrixColRank == None or matrixRowRank == None:
+				raise Exception("Must specify matrix_column_rank and matrix_row_rank for DenseMatrixPotential")
+			self.MatrixColRank = matrixColRank
+			self.MatrixRowRank = matrixRowRank
+
 		else:
 			raise NotImplementedException("Invalid MatrixType %s" % configSection.MatrixType)
+		
 		configSection.Apply(self.Potential)
-
 		self.LoadMatrixPotential(configSection)
-
 		self.TimeFunction = configSection.time_function
 
 	def AdvanceStep(self, t, dt):
-		raise NotImplementetException("Matrix potential does not support AdvanceStep()")
+		self.Potential.ApplyPotential(self.psi, dt, self.GetTimeValue(t))
 
 	def MultiplyPotential(self, destPsi, t, dt):
-		print "t = %.17g" % t
 		self.Potential.MultiplyPotential(self.psi, destPsi, self.GetTimeValue(t))
 
 	def GetExpectationValue(self, t, dt):

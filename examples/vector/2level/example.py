@@ -19,7 +19,7 @@ c = 0.1
 d = 0.005
 e = 0.15
 
-def GetSparseMatrix():
+def GetSparseMatrix(psi, config):
 	matrix = pylab.load("d130_50stk-matel")
 	row = array(matrix[:,0], dtype=int) - 1
 	col = array(matrix[:,1], dtype=int) - 1
@@ -27,9 +27,20 @@ def GetSparseMatrix():
 
 	return row, col, matelem
 
-def GetDiagonalElements():
-	data = pylab.load('energies.dat')
-	return array(data, dtype=complex)
+def GetDenseMatrix(psi, config):
+	row, col, matelem = GetSparseMatrix(psi, config)
+
+	N = max(col)+1
+	matrix = zeros((N, N), dtype=complex)
+	for i in range(len(row)):
+		r, c, v = row[i], col[i], matelem[i]
+		matrix[r, c] = v
+		matrix[c, r] = conj(v)
+
+	return matrix
+
+def GetDiagonalElements(psi, config, potential):
+	potential[:] = pylab.load('energies.dat')
 
 def Propagate():
 	conf = pyprop.Load("config.ini")
@@ -41,8 +52,8 @@ def Propagate():
 	times = []
 	corr.append(abs(prop.psi.GetData()[:])**2)
 	times += [0]
-	
-	for t in prop.Advance(True):
+
+	for t in prop.Advance(20):
 		#corr += [abs(prop.psi.InnerProduct(init))**2]
 		corr.append(abs(prop.psi.GetData()[:])**2)
 		times += [t]
@@ -52,6 +63,8 @@ def Propagate():
 	times += [prop.PropagatedTime]
 	print "Time = ", prop.PropagatedTime, ", initial state correlation = ", corr[-1][0]
 	#pylab.plot(times, corr)
+
+	print "refcount ", sys.getrefcount(init), sys.getrefcount(prop.Propagator)
 
 	return prop
 

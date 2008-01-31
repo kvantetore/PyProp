@@ -96,11 +96,17 @@ public:
 		Multiply.IterateAction(Potential, srcPsi, srcPsi.GetData(), timeStep, curTime);
 	}
 
-	/** Updates a static potential with the expotential of the potential of this dynamic potential. */
-	void UpdateStaticPotential(StaticPotential<Rank> &potential, const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
+	void UpdateStaticPotential(StaticPotential<Rank> &potential, const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime, typename StaticPotential<Rank>::StorageModel storage)
 	{
 		blitz::Array<cplx, Rank> potentialData( potential.GetPotentialData() );
-		Update.IterateAction(Potential, psi, potentialData, timeStep, curTime);
+		if (storage == StaticPotential<Rank>::StorageExpValue)
+		{
+			Update.IterateAction(Potential, psi, potentialData, timeStep, curTime);
+		}
+		else
+		{
+			Get.IterateAction(Potential, psi, potentialData, timeStep, curTime);
+		}
 	}
 
 	/** 

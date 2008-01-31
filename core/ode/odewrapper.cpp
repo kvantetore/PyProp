@@ -56,8 +56,15 @@ void MultiplyHamiltonian(double *t, cplx *inBuffer, cplx *outBuffer, void *data)
 	psi->SetData(psiOrigData);
 	tempPsi->SetData(tempPsiOrigData);
 
-	//Scale with negative imaginary unit since this is not done by matrix-vector routine
-	outData *= cplx(0.0, -1.0);
+	if (propagator->ImTime)
+	{
+		outData = -outData;
+	}
+	else
+	{
+		//Scale with negative imaginary unit since this is not done by matrix-vector routine
+		outData *= cplx(0.0, -1.0);
+	}
 
 	//cout << "Output2 = " << outData << endl;
 	//throw std::runtime_error("STOP!");
@@ -94,7 +101,7 @@ void OdeWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 template<int Rank>
 void OdeWrapper<Rank>::Setup(const Wavefunction<Rank> &psi)
 {
-	int n = 20000 * psi.GetData().size();
+	int n = psi.GetData().size();
 	int workspaceSize = 100 + 21 * n;
 	cout << "Allocating ODE workspace of " << (double) workspaceSize * sizeof(cplx) / (1024.0*1024.0) << " MB" << endl;
 	this->Work.resize(workspaceSize);
@@ -118,7 +125,8 @@ void OdeWrapper<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &psi, Wav
 	this->MultiplyCallback = callback;
 
 	//double tout = t + sqrt(sqr(imag(dt) + sqr(real(dt))));
-	double tout = t + real(dt);
+	this->ImTime = std::abs(imag(dt)) > 1e-10;
+	double tout = t + std::abs(dt);
 
 	cOde(MultiplyHamiltonian<Rank>, this, n, in, this->OutputTime, tout, this->RelativeError, this->AbsoluteError, this->Flag, this->Work.data(), this->Iwork.data());
 
@@ -128,6 +136,9 @@ void OdeWrapper<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &psi, Wav
 		cout << "ODE returned FLAG = " << this->Flag << endl;
 		throw std::runtime_error("ODE returned an error");
 	}
+
+	//Remove reference to callback to prevent locking memory on exit
+	this->MultiplyCallback = object();
 }
 
 template class OdeWrapper<1>;

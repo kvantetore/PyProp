@@ -38,7 +38,8 @@ PYSTEFILES = \
 	python/transformedgrid.pyste \
 	python/reducedsphericalkineticpotential.pyste \
 	python/wavefunction.pyste \
-	python/blitzblas.pyste 
+	python/blitzblas.pyste \
+	python/combinedabsorber.pyste
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
@@ -73,6 +74,7 @@ SOURCES= \
 	python/pysteoutput/_main.cpp \
 	finitediff/exponentialfinitedifference.cpp \
 	representation/sphericalrepresentation.cpp \
+	utility/timer.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 

@@ -27,9 +27,12 @@ class PiramSolver:
 
 		configSection = prop.Config.Arpack
 		configSection.Apply(self.Solver)
-		memoryUsage = self.Solver.EstimateMemoryUsage()
+
+		matrixSize = prop.psi.GetData().size
+		basisSize = configSection.krylov_basis_size
+		memoryUsage = self.Solver.EstimateMemoryUsage(matrixSize, basisSize)
 		if ProcId == 0:
-			print "Approximate pIRAM memory usage = %sMB" % memoryUsage
+			print "Approximate pIRAM memory usage = %.2fMB" % memoryUsage
 		self.Solver.Setup(prop.psi)
 
 		self.Debug = False

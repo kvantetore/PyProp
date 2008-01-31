@@ -1,5 +1,6 @@
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "h2+.cpp")
 
 PotentialEvaluator("H2pPotential<2> 2","H2pPotential_2")
+PotentialEvaluator("CoulombPotential<1> 1","CoulombPotential_1")
 PotentialEvaluator("CoulombPotential<2> 2","CoulombPotential_2")
 

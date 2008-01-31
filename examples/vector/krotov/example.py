@@ -6,17 +6,17 @@ import os
 import tables
 
 #Pyprop itself
+sys.path.append("pyprop")
 import pyprop; 
 
 #def GetMatrix():
 #	return array([[0, c, d], [c, 0, e], [d,e,0]], dtype=complex)
 
-def GetDiagonalElements():
+def GetDiagonalElements(psi, config, potential):
 	"""
 	A funtion to provide diagonal (energy) matrix elements
 	"""
-	data = pylab.load('energies.dat')
-	return array(data, dtype=complex)
+	potential[:] = pylab.load('energies.dat')
 
 def Setup():
 	"""

@@ -219,6 +219,20 @@ cplx DistributedModel<Rank>::GetGlobalSum(cplx localValue)
 }
 
 template<int Rank>
+void DistributedModel<Rank>::GetGlobalSum(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out)
+{
+	if (IsSingleProc())
+	{
+		out = in;
+	}
+	else
+	{
+		MPITraits<cplx> traits;
+		MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, MPI_COMM_WORLD);
+	}
+}
+
+template<int Rank>
 void DistributedModel<Rank>::GlobalBarrier()
 {
 	if (!IsSingleProc())

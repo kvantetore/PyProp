@@ -18,6 +18,7 @@ public:
 	Wavefunction<Rank> *Psi;
 	Wavefunction<Rank> *TempPsi;
 	object MultiplyCallback;
+	bool ImTime;
 
 private:
 	double RelativeError;

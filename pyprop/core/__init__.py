@@ -7,11 +7,11 @@ try:
 except:
 	#print "Warning: could not load EXPOKIT wrapper (%s)" % sys.exc_info()[1]
 	pass
-
 try:
 	from libarpack import *
 except:
-	print "Warning: could not load ARPACK wrapper (%s)" % sys.exc_info()[1]
+	#print "Warning: could not load ARPACK wrapper (%s)" % sys.exc_info()[1]
+	pass
 try:
 	from libpiram import *
 except:
@@ -20,7 +20,6 @@ try:
 	from libode import *
 except:
 	print "Warning: could not load ODE wrapper (%s)" % sys.exc_info()[1]
-
 
 
 def EnumerateRankClasses(baseName):

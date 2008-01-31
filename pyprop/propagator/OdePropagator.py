@@ -65,3 +65,6 @@ class OdePropagator(PropagatorBase):
 			raise Exception("STOP!")
 		self.MatVecCount += 1
 
+	def GetBasisFunction(self, rank, basisIndex):
+		return self.BasePropagator.GetBasisFunction(rank, basisIndex)
+
