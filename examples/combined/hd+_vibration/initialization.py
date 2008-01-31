@@ -78,6 +78,17 @@ def FindGroundstate(**args):
 
 	return prop
 
+def FindEigenvalues(**args):
+	prop = SetupProblem(**args)
+	solver = pyprop.PiramSolver(prop)
+	solver.Solve()
+	
+	for E in solver.GetEigenvalues():
+		print "%.17f" % E
+
+	return solver
+	
+
 def GetInputFile(**args):
 	if not "molecule" in args:
 		raise Exception("Please specify molecule")
