@@ -16,8 +16,13 @@ def PlotDelayScan(**args):
 			for node in f.listNodes(f.root):
 				name = node._v_name
 				if name.startswith("delay_"):
-					projList.append([node.eigenstateProjection[-1,:]])
-					timeList.append(float(name[len("delay_"):]))
+					try:
+						proj = node.eigenstateProjection[-1,:]
+						t = float(name[len("delay_"):])
+						projList.append(proj)
+						timeList.append(t)
+					except:
+						print "Could not process %s" % name
 		finally:
 			f.close()
 
