@@ -1,6 +1,30 @@
 import commands
 import pyprop.utilities.submitpbs as submit
 
+def PlotDelayScan(**args):
+	outputfile = args["outputfile"]
+	partitionCount = args["partitionCount"]
+
+	projList = []
+	timeList = []
+
+	for i in range(partitionCount):
+		filename = outputfile % i
+
+		f = tables.openFile(filename, "r")
+		try:
+			for node in f.listNodes(f.root):
+				name = node._v_name
+				if name.startswith("delay_"):
+					projList.append([node.eigenstateProjection[-1,:]])
+					timeList.append(float(name[len("delay_"):]))
+		finally:
+			f.close()
+
+	time = array(timeList)
+	proj= array(projList)
+
+	return time, proj
 
 def SubmitDelayScan(**args):
 	delayList = args["delayList"]
@@ -33,7 +57,7 @@ def RunDelayScan(**args):
 	print "USING OUTPUTFILE ", outputfile
 
 	for delay in delayList:
-		args["delay"] =	delay*femtosec_to_au
+		args["pulseDelay"] = delay*femtosec_to_au
 		args["outputpath"] = "/delay_%i" % (delay)
 		PropagateDelayScan(**args)
 
