@@ -15,9 +15,9 @@ def GetVibrationalPotential(psi, config, potential):
 		raise Exception("Unknown species '%s'" % config.species)
 
 	#mirror round r=0
-	grid = array(list(-grid[::-1]) + list(grid))
-	data1 = array(list(data1[::-1]) + list(data1))
-	data2 = array(list(data2[::-1]) + list(data2))
+	#grid = array(list(-grid[::-1]) + list(grid))
+	#data1 = array(list(data1[::-1]) + list(data1))
+	#data2 = array(list(data2[::-1]) + list(data2))
 
 	#Interpolate the potential
 	interp1 = spline.Interpolator(grid, data1)
@@ -26,11 +26,17 @@ def GetVibrationalPotential(psi, config, potential):
 	r = psi.GetRepresentation().GetLocalGrid(0)
 	dr = r[1] - r[0]
 	if psi.GetRank() == 1:
-		potential[:] = [interp1.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r]
+		innerIndex = where(r<=max(grid))
+		outerIndex = where(r>max(grid))
+		potential[innerIndex] = [interp1.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r[innerIndex]]
+		potential[outerIndex] = [-1 for x in r[outerIndex]]
+		print outerIndex
+		plot(r, potential)
 	
 	if psi.GetRank() == 2:
 		potential[:,0] = [interp1.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r]
 		potential[:,1] = [interp2.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r]
+		plot(r, potential)
 
 	#plot(r, potential)
 
