@@ -55,6 +55,10 @@ def SetupConfig(**args):
 	if "duration" in args:
 		duration = args["duration"]
 		conf.Propagation.duration = duration
+
+	if "silent" in args:
+		silent = args["silent"]
+		conf.Propagation.silent = silent
 		
 	return conf
 

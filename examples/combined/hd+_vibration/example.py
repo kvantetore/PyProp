@@ -67,7 +67,7 @@ def Propagate(**args):
 		#plot(r, abs(prop.psi.GetData())**2)
 
 	timeList.append(prop.PropagatedTime / femtosec_to_au)
-	corrList += [abs(GetEigenstateCorrelations)**2]
+	corrList += [abs(GetEigenstateCorrelations(prop, eigenstates))**2]
 
 	norm = prop.psi.GetNorm()
 	corr = abs(prop.psi.InnerProduct(initPsi))**2

@@ -30,13 +30,10 @@ def GetVibrationalPotential(psi, config, potential):
 		outerIndex = where(r>max(grid))
 		potential[innerIndex] = [interp1.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r[innerIndex]]
 		potential[outerIndex] = [-1 for x in r[outerIndex]]
-		print outerIndex
-		plot(r, potential)
 	
 	if psi.GetRank() == 2:
 		potential[:,0] = [interp1.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r]
 		potential[:,1] = [interp2.Evaluate(x) +  minimum(2./dr, 1./ abs(x)) for x in r]
-		plot(r, potential)
 
 	#plot(r, potential)
 

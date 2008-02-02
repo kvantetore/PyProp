@@ -1,6 +1,50 @@
 import commands
 import pyprop.utilities.submitpbs as submit
 
+def RepackDelayScan(**args):
+	outputfile = args["outputfile"]
+	partitionCount = args["partitionCount"]
+	repackFile = args["repackFile"]
+
+
+	projList = []
+	timeList = []
+	
+	for i in range(partitionCount):
+		filename = outputfile % i
+	
+		f = tables.openFile(filename, "r")
+		try:
+			for node in f.listNodes(f.root):
+				name = node._v_name
+				if name.startswith("delay_"):
+					try:
+
+						proj = node.eigenstateProjection[-1,:]
+						t = float(name[len("delay_"):])
+						projList.append(proj)
+						timeList.append(t)
+					except:
+						print "Could not process %s" % name
+		finally:
+			f.close()
+
+	sortedIndex = argsort(timeList)
+	time = array(timeList)[sortedIndex]
+	proj= array(projList)[sortedIndex]
+
+	output = tables.openFile(repackFile, "w")
+	try:
+		SaveArray(output, "/", "final_correlation", abs(proj)**2)
+		SaveArray(output, "/", "pulse_delay", time)
+
+	finally:
+		output.close()
+
+	return time, proj
+
+
+
 def PlotDelayScan(**args):
 	outputfile = args["outputfile"]
 	partitionCount = args["partitionCount"]
@@ -26,8 +70,9 @@ def PlotDelayScan(**args):
 		finally:
 			f.close()
 
-	time = array(timeList)
-	proj= array(projList)
+	sortedIndex = argsort(timeList)
+	time = array(timeList)[sortedIndex]
+	proj= array(projList)[sortedIndex]
 
 	return time, proj
 
@@ -45,12 +90,18 @@ def SubmitDelayScan(**args):
 		args["delayList"] = delayList[i*partitionSize:(i+1)*partitionSize]
 		args["outputfile"] = outputfile % i
 
-		executable = './run_delay_scan.py' + commands.mkarg(repr(args))  
+		executable = './run_delay_scan.py %s > /dev/null' % commands.mkarg(repr(args))  
 		plist.append(os.popen(executable))
 
-	for p in plist:
-		print p.readlines()
-		print p.close()
+	while len(plist) > 0:
+		for p in plist:
+			try: 
+				print p.next()
+			except StopIteration:
+				print p.close()
+				plist.remove(p)
+				break
+
 	
 
 def RunDelayScan(**args):
@@ -64,6 +115,7 @@ def RunDelayScan(**args):
 	for delay in delayList:
 		args["pulseDelay"] = delay*femtosec_to_au
 		args["outputpath"] = "/delay_%i" % (delay)
+		print "Propagating %s with pulse delay %ifs" % (molecule, delay)
 		PropagateDelayScan(**args)
 
 def PropagateDelayScan(**args):
@@ -156,9 +208,9 @@ def PropagateDelayScan(**args):
 			corrList.append(GetEigenstateCorrelations(prop, eigenstates))
 			initCorrList.append(prop.psi.InnerProduct(initPsi))
 			normList.append(prop.psi.GetNorm())
-			if index % 20 == 0:
-				psiTimeList.append(t)
-				psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
+			#if index % 20 == 0:
+			#	psiTimeList.append(t)
+			#	psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
 			index+=1
 		
 		
