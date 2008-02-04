@@ -1,0 +1,115 @@
+\documentclass[a4paper]{article}
+
+
+%opening
+\title{Notes on $HD^+$ Propagation}
+\author{Tore Birkeland}
+
+\begin{document}
+
+\maketitle
+
+\section{The Problem}
+We wish to simulate certain diatomic ionic molecules ($HD^+$, $H_2^+$, $D_2^+$) under a femtosecond laser pulse. 
+
+\subsection{Center of mass Coordinates}
+A diatomic molecule has the following hamiltonian in the laboaratory frame in atomic units
+\begin{equation}
+ H = - \frac{1}{2 M_1} \nabla^2_{R_1} - \frac{1}{2 M_2} \nabla^2_{R_2} - \frac{1}{2 m_e} \nabla^2_{r_e} + \frac{Z_1 Z_2}{|R_1 - R_2|} - \frac{Z_1}{|r_e - R_1|} - \frac{Z_2}{|r_e - R_2|}
+\end{equation}
+Which can be transformed into center of mass coordinates by the transformation
+\begin{eqnarray}
+	R_c &=& \frac{M_1 R_1  + M_2 R_2 + m_e r_e}{M_c} \\
+	R &=& R_1 - R_2 \\
+	r &=& r_e - \frac{M_1 R_1 + M_2 R_2}{M_1 + M_2}
+\end{eqnarray}
+The Hamiltonian in the new coordinates is then
+\begin{equation}
+\label{eqn:full-hamiltonian-cm}
+ H = - \frac{1}{2 M_c} \nabla^2_{R_c} - \frac{1}{2 M_n} \nabla^2_{R_n} - \frac{1}{2 \mu} \nabla^2_{r} + \frac{Z_1 Z_2}{|R|} - \frac{Z_1}{|r - \rho_1 R|} - \frac{Z_2}{|r - \rho_2 R|}
+\end{equation}
+where
+\begin{eqnarray*}
+ M_c &=& M_1 + M_2 + m_e \\
+ M_n &=& \frac{M_1 M_2}{M_1 + M_2} \\
+ \mu &=& \frac{m_e(M_1 + M_2)}{M_c} \\
+ \rho_i &=& \frac{M_i}{M_1 + M_2} 
+\end{eqnarray*}
+
+\subsection{Born Openheimer Approximation}
+We will neglect the effect of the laser on the center-of-mass system, and therefore the first term in \ref{eqn:full-hamiltonian-cm}, will separate out, and the system is reduced from a nine to six dimensions. Furthermore, we will assume the Born-Openheimer approximation, in which one assumes that movement in the $r$ direction will be instantaneous compared to movement in the $R$ direction, and one can therefore separate the equation into two three dimensional equations.
+\begin{equation}
+	\Psi(R, r) = \psi(R) \phi(r; R)
+\end{equation}
+\begin{equation}
+	H(R, r) = H_n(R) + H_e(r; R)
+\end{equation}
+Where
+\begin{eqnarray}
+	H_n(R) &=& - \frac{1}{2 M_n} \nabla^2_{R_n} + \frac{Z_1 Z_2}{|R|} \\
+	H_e(r; R) &=&  - \frac{1}{2 \mu} \nabla^2_{r} - \frac{Z_1}{|r - \rho_1 R|} - \frac{Z_2}{|r - \rho_2 R|}
+\end{eqnarray}
+
+One first solves the electronic system paramterically for R
+\begin{equation}
+	\label{eqn:electron-hamiltonian-bo}
+	H_e(r; R) \phi_i(r; R) = \epsilon_i(R) \phi_i(r; R)
+\end{equation}
+This gives a set of energy curves $\epsilon(R)$, which can be used to solve the the nuclear system
+for each electronic state $i$
+\begin{equation}
+	\label{eqn:nuclear-hamiltonian-bo}
+ 	H_n^i(R) \psi_{i,j}(R) = \left( H_n(R) + \epsilon_i(R) \right) \psi_{i,j}(R) = E_{i,j} \psi_{i,j}(R)
+\end{equation}
+
+
+\subsection{Laser Interaction}
+We will model the laser field with the usual semi classical model. For a polarized laser pulse in 
+the length gauge, this is in the laboratory frame
+\begin{equation}
+ H_l = e E(t) \varepsilon ( r - Z_1 R_1 - Z_2 R_2)
+\end{equation}
+Which in the center of mass frame is (with center of mass motion disregarded)
+\begin{equation}
+ H_l = E(t) \varepsilon ( \kappa_r r - \kappa_R R )
+\end{equation}
+\begin{eqnarray}
+	\kappa_r &=& \frac{(Z_1 + Z_2) m_e + (M_1 + M_2)}{M_c} \\
+	\kappa_R &=& \frac{Z_1 M_1 - Z_2 M_2}{M_1 + M_2]}
+\end{eqnarray}
+If the electronic system in the Born-Openheimer approximation is solved $\{ \phi_i(r; R) \}$, one can calculate the induced dipole moment 
+between two electronic states $\phi_i(r; R)$ and $\phi_j(t; R)$
+\begin{equation}
+	d_{i,j}(R) = \int \phi_i^*(r; R) r \phi_j(r, R) dr
+\end{equation}
+If we put this and eqn \ref{eqn:nuclear-hamiltonian-bo} into the time dependent Schrödinger equation, we get
+\begin{equation}
+ - \imath \frac{\partial}{\partial t} \psi_i = \left( H_n + \epsilon_i(R) \right) \psi_i + E(t) \varepsilon \left( \kappa_r \sum_j d_{i, j}(R) \psi_j + \kappa_R R \psi_i\right)
+\end{equation}
+Usually, however, only the two lowest electronic states have to be considered, in which case this simplifies to two coupled equations.
+
+
+\section{Numerical Method}
+We will use a standard splitting technique for time marching the TDSE. The Hamiltonian is split in three parts
+\begin{eqnarray}
+	H_1 &=& \frac{1}{2 M_n} \nabla^2_R \\
+	H_2 &=& \frac{Z_1 Z_2}{|R|} + \epsilon_i(R) \\
+	H_3 &=& E(t) \varepsilon \left( \kappa_r \sum_j d_{i, j}(R) + \kappa_R R \right)
+\end{eqnarray}
+\begin{equation}
+	- \imath \frac{\partial}{\partial t} \mathbf{\psi}(t) = (H_1 + H_2 + H_3) \mathbf{\psi}(t)
+\end{equation}
+A truncated Magnus expansion of the solution can be written as
+\begin{equation}
+ 	\psi(t + \Delta t) = \exp( - \imath \Delta t (H_1 + H_2 + H_3) ) \psi(t) + O(\Delta t^2)
+\end{equation}
+Since each of the sub-Hamiltonians can be solved accurately (see below), it makes sense to write the solution in terms of the propagators for the individual sub-Hamiltonians
+\begin{equation}
+	\psi(t + \Delta t) = \exp(- \imath \Delta t H_1) \exp(- \imath \Delta t H_2) \exp(- \imath \Delta t H_3) \psi(t) + O(\Delta t^2)
+\end{equation}
+The accuracy of this splitting can be increased by considering other splitting schemes such as the symmetric Strang splitting (REF)
+
+\subsection{Solving $H_1$}
+\subsection{Solving $H_2$}
+\subsection{Solving $H_3$}
+\end{document}
