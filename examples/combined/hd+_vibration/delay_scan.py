@@ -130,7 +130,7 @@ def RepackDelayScan(**args):
 	partitionCount = args["partitionCount"]
 	repackFile = args["repackFile"]
 
-	proj, time = GetScanDelayCorrelation(**args)
+	time, proj = GetScanDelayCorrelation(**args)
 	t, E, corr = GetScanDelayEnergyDistribution(**args)
 
 	output = tables.openFile(repackFile, "w")
@@ -162,6 +162,37 @@ def GetScanDelayCorrelation(**args):
 				if name.startswith("delay_"):
 					try:
 						proj = node.eigenstateProjection[-1,:]
+						t = float(name[len("delay_"):])
+						projList.append(proj)
+						timeList.append(t)
+					except:
+						print "Could not process %s" % name
+		finally:
+			f.close()
+
+	sortedIndex = argsort(timeList)
+	time = array(timeList)[sortedIndex]
+	proj= array(projList)[sortedIndex]
+
+	return time, proj
+
+def GetScanDelayNorm(**args):
+	outputfile = args["outputfile"]
+	partitionCount = args["partitionCount"]
+
+	projList = []
+	timeList = []
+
+	for i in range(partitionCount):
+		filename = outputfile % i
+
+		f = tables.openFile(filename, "r")
+		try:
+			for node in f.listNodes(f.root):
+				name = node._v_name
+				if name.startswith("delay_"):
+					try:
+						proj = node.norm[-1]
 						t = float(name[len("delay_"):])
 						projList.append(proj)
 						timeList.append(t)
