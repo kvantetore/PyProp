@@ -130,8 +130,14 @@ def RepackDelayScan(**args):
 	partitionCount = args["partitionCount"]
 	repackFile = args["repackFile"]
 
+	print "Repacking correlation"
 	time, proj = GetScanDelayCorrelation(**args)
+	print "Repacking energy distribution"
 	t, E, corr = GetScanDelayEnergyDistribution(**args)
+	print "Repacking norm"
+	t, norm = GetScanDelayNorm(**args)
+
+	
 
 	output = tables.openFile(repackFile, "w")
 	try:
@@ -140,6 +146,7 @@ def RepackDelayScan(**args):
 
 		SaveArray(output, "/", "final_correlation", abs(proj)**2)
 		SaveArray(output, "/", "energy_distribution", corr)
+		SaveArray(output, "/", "norm", norm)
 
 	finally:
 		output.close()
