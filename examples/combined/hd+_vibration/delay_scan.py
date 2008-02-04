@@ -1,51 +1,151 @@
 import commands
 import pyprop.utilities.submitpbs as submit
 
-def RepackDelayScan(**args):
+def GetScanDelayEnergyDistribution(**args):
+	molecule = args["molecule"]
 	outputfile = args["outputfile"]
 	partitionCount = args["partitionCount"]
-	repackFile = args["repackFile"]
+	threshold = -0.5
+	inputfile = GetInputFile(**args)
+
+	f = tables.openFile(inputfile, "r")
+	try:
+		E1 = f.root.complete.binding.eigenvalues[:]
+		V1 = f.root.complete.binding.eigenstates[:]
+		E2 = f.root.complete.unbinding.eigenvalues[:]
+		V2 = f.root.complete.unbinding.eigenstates[:]
+	finally:
+		f.close()
+
+	#We only project on certain states
+	maxIndex1 = max(where(E1<0)[0]) + 1
+	thresholdIndex = max(where(E1<=threshold)[0])
+	E1 = E1[thresholdIndex:maxIndex1]
+	V1 = conj(V1[:, thresholdIndex:maxIndex1].transpose())
+
+	maxIndex2 = max(where(E2<0)[0]) + 1
+	E2 = E2[:maxIndex2]
+	V2 = conj(V2[:, :maxIndex2].transpose())
+
+	#To add up the energies we must interpolate the values from 
+	#the E1 and E2 grids to a common E-grid
+	dE = average(diff(E2))
+	E = r_[-0.5:0:dE]
+
+	print "Using dE             = %.4f" % dE
+	print "Using thresholdIndex = %i" % thresholdIndex
 
 
 	projList = []
 	timeList = []
-	
+
 	for i in range(partitionCount):
 		filename = outputfile % i
-	
+
 		f = tables.openFile(filename, "r")
 		try:
 			for node in f.listNodes(f.root):
 				name = node._v_name
 				if name.startswith("delay_"):
+					psi = None
 					try:
-
-						proj = node.eigenstateProjection[-1,:]
+						psi = node.wavefunction[-1,:,:]
 						t = float(name[len("delay_"):])
-						projList.append(proj)
-						timeList.append(t)
 					except:
 						print "Could not process %s" % name
+					if psi != None:
+						proj = CalculateEnergyDistribution(psi, E, E1, V1, E2, V2) 
+	 					projList.append(proj)
+						timeList.append(t)
+
 		finally:
 			f.close()
 
 	sortedIndex = argsort(timeList)
 	time = array(timeList)[sortedIndex]
-	proj= array(projList)[sortedIndex]
+	proj= array(projList)[sortedIndex,:]
+
+	return time, E, proj
+
+
+
+def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
+	proj1 = dot(V1, psi[:,0])
+	proj2 = dot(V2, psi[:,1])
+
+	interp1 = spline.Interpolator(E1, abs(proj1)**2)
+	interp2 = spline.Interpolator(E2, abs(proj2)**2)
+
+	return array([interp1.Evaluate(e) + interp2.Evaluate(e) for e in outputEnergies])
+
+def MakeDelayScanPlots():
+	interactive = rcParams["interactive"]
+	rcParams["interactive"] = False
+
+	def Plot(filename):
+		t, c = GetScanDelayCorrelation(outputfile=filename, partitionCount=1)
+		figure()
+		ionization = 1 - sum(abs(c[:,:20])**2, axis=1)
+		plot(t, ionization, label="Ionization")
+		for i in range(10):
+			if i < 5:
+				label = "$n = %i$" % i
+			else:
+				label = "_nolegend_"
+			plot(t, abs(c[:,i])**2, label=label)
+		axis([0,50, 0,  0.8])
+		legend()
+		xlabel("Pulse Delay")
+		ylabel("Proabability")
+
+	Plot("outputfiles/hd+/delay_%i.h5")
+	title("$HD^+$")
+	
+	Plot("outputfiles/h2+/delay_%i.h5")
+	title("$H_2^+$")
+	
+	Plot("outputfiles/d2+/delay_%i.h5")
+	title("$D_2^+$")
+	
+	Plot("outputfiles/hd+/nodipole_delay_%i.h5")
+	title("$HD^+$ without static dipole moment")
+
+	#Plot the difference between HD+ with and without the static dipole term
+	figure()
+	t, c = GetScanDelayCorrelation(outputfile="outputfiles/hd+/delay_%i.h5", partitionCount=1)
+	t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/hd+/nodipole_delay_%i.h5", partitionCount=1)
+	plot(t, abs(c)**2 - abs(c2)**2)
+	title("Difference between HD+ with and without static dipole moment")
+	xlabel("Pulse Delay")
+	ylabel("Proabability difference")
+
+
+	#restore previous interactive setting
+	rcParams["interactive"] = interactive
+	show()
+
+
+def RepackDelayScan(**args):
+	outputfile = args["outputfile"]
+	partitionCount = args["partitionCount"]
+	repackFile = args["repackFile"]
+
+	proj, time = GetScanDelayCorrelation(**args)
+	t, E, corr = GetScanDelayEnergyDistribution(**args)
 
 	output = tables.openFile(repackFile, "w")
 	try:
-		SaveArray(output, "/", "final_correlation", abs(proj)**2)
 		SaveArray(output, "/", "pulse_delay", time)
+		SaveArray(output, "/", "energy", E)
+
+		SaveArray(output, "/", "final_correlation", abs(proj)**2)
+		SaveArray(output, "/", "energy_distribution", corr)
 
 	finally:
 		output.close()
 
-	return time, proj
-
-
-
-def PlotDelayScan(**args):
+	
+def GetScanDelayCorrelation(**args):
 	outputfile = args["outputfile"]
 	partitionCount = args["partitionCount"]
 

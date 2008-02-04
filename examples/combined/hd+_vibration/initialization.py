@@ -38,6 +38,10 @@ def SetupConfig(**args):
 			conf.ElectronicCoupling.static_dipole_moment = 1. / 3.
 		else:
 			raise Exception("Unknown molecule '%s'" % molecule)
+	
+	if "staticDipoleMoment" in args:
+		staticDipoleMoment = args["staticDipoleMoment"]
+		conf.ElectronicCoupling.static_dipole_moment = staticDipoleMoment
 
 	if 'radialScaling' in args:
 		radialScaling = args["radialScaling"]
@@ -59,6 +63,9 @@ def SetupConfig(**args):
 	if "silent" in args:
 		silent = args["silent"]
 		conf.Propagation.silent = silent
+
+	if "potentialSlope" in args:
+		conf.VibrationalPotential.potential_slope=args["potentialSlope"]
 		
 	return conf
 
@@ -152,10 +159,64 @@ def GetInputFile(**args):
 	return "inputfiles/%s_%i_%i.h5" % (molecule, gridSize, boxSize)
 
 
+def GetHamiltonMatrix(**args):
+	molecule = args["molecule"]
+	args["config"] = "groundstate.ini"
+	args["species"] = "ion"
+	prop = SetupProblem(**args)
+
+	size = prop.psi.GetData().size
+	matrix = zeros((size, size), dtype=complex)
+	tempPsi = prop.GetTempPsi()
+	for i in range(size):
+		prop.psi.GetData()[:] = 0
+		prop.psi.GetData()[i] = 1
+
+		tempPsi.GetData()[:] = 0
+		prop.MultiplyHamiltonian(tempPsi)
+		
+		matrix[:, i] = tempPsi.GetData()
+		
+	return matrix
+	
+def GetFullSpectrum(**args):
+	H = GetHamiltonMatrix(**args)
+	E, V = eig(H)
+
+	E = real(E)
+	index = argsort(E)
+	E = E[index]
+	V = V[:,index]
+	
+	return E, V
+
+def SetupFullSpectrum(**args):
+	outputfile = args["outputfile"]
+
+	#For the 1s_sigma_g
+	args["potentialSlope"] = 1
+	E1, V1 = GetFullSpectrum(**args)
+
+	#For the 2p_sigma_u
+	args["potentialSlope"] = 2
+	E2, V2 = GetFullSpectrum(**args)
+	f = tables.openFile(outputfile, "a")
+
+	try:
+		SaveArray(f, "/complete/binding", "eigenvalues", E1)
+		SaveArray(f, "/complete/binding", "eigenstates", V1)
+		SaveArray(f, "/complete/unbinding", "eigenvalues", E2)
+		SaveArray(f, "/complete/unbinding", "eigenstates", V2)
+
+	finally:
+		f.close()
+
+
 def SetupInputFile(**args):
 	outputfile = GetInputFile(**args)
 	args["outputfile"] = outputfile
-	SetupEigenstates(**args)
+	#SetupEigenstates(**args)
+	SetupFullSpectrum(**args)
 	SetupInitialState(**args)
 
 
