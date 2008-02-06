@@ -1,31 +1,57 @@
 import commands
 import pyprop.utilities.submitpbs as submit
 
-def GetScanDelayEnergyDistribution(**args):
-	molecule = args["molecule"]
-	outputfile = args["outputfile"]
-	partitionCount = args["partitionCount"]
-	threshold = -0.5
+def LoadEigenstates(**args):
 	inputfile = GetInputFile(**args)
+
+	conf = SetupConfig(**args)
+	c = conf.RadialRepresentation
+	dr = (c.rank0[1] - c.rank0[0]) / float(c.rank0[2])
 
 	f = tables.openFile(inputfile, "r")
 	try:
 		E1 = f.root.complete.binding.eigenvalues[:]
-		V1 = f.root.complete.binding.eigenstates[:]
+		V1 = conj(f.root.complete.binding.eigenstates[:].transpose())
 		E2 = f.root.complete.unbinding.eigenvalues[:]
-		V2 = f.root.complete.unbinding.eigenstates[:]
+		V2 = conj(f.root.complete.unbinding.eigenstates[:].transpose())
 	finally:
 		f.close()
 
-	#We only project on certain states
-	maxIndex1 = max(where(E1<0)[0]) + 1
+	return E1, V1*dr, E2, V2*dr
+
+def LoadBoundEigenstates(**args):	
+	threshold = -0.5
+	E1, V1, E2, V2 = LoadEigenstates(**args)
+
+	thresholdIndex = max(where(E1<=threshold)[0])
+	E1 = E1[:thresholdIndex]
+	V1 = V1[:thresholdIndex,:]
+
+	return E1, V1
+
+def LoadContinuumEigenstates(**args):
+	threshold = -0.5
+	upperThreshold = 0.0
+
+	E1, V1, E2, V2 = LoadEigenstates(**args)
+	
+	maxIndex1 = max(where(E1<=upperThreshold)[0]) + 1
 	thresholdIndex = max(where(E1<=threshold)[0])
 	E1 = E1[thresholdIndex:maxIndex1]
-	V1 = conj(V1[:, thresholdIndex:maxIndex1].transpose())
+	V1 = V1[thresholdIndex:maxIndex1, :]
 
-	maxIndex2 = max(where(E2<0)[0]) + 1
+	maxIndex2 = max(where(E2<=upperThreshold)[0]) + 1
 	E2 = E2[:maxIndex2]
-	V2 = conj(V2[:, :maxIndex2].transpose())
+	V2 = V2[:maxIndex2, :]
+
+	return E1, V1, E2, V2
+
+def GetScanDelayEnergyDistribution(**args):
+	molecule = args["molecule"]
+	outputfile = args["outputfile"]
+	partitionCount = args["partitionCount"]
+
+	E1, V1, E2, V2 = LoadContinuumEigenstates(**args)
 
 	#To add up the energies we must interpolate the values from 
 	#the E1 and E2 grids to a common E-grid
@@ -54,7 +80,7 @@ def GetScanDelayEnergyDistribution(**args):
 					except:
 						print "Could not process %s" % name
 					if psi != None:
-						proj = CalculateEnergyDistribution(psi, E, E1, V1, E2, V2) 
+						proj1, proj2 = CalculateEnergyDistribution(psi, E, E1, V1, E2, V2) 
 	 					projList.append(proj)
 						timeList.append(t)
 
@@ -76,7 +102,10 @@ def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	interp1 = spline.Interpolator(E1, abs(proj1)**2)
 	interp2 = spline.Interpolator(E2, abs(proj2)**2)
 
-	return array([interp1.Evaluate(e) + interp2.Evaluate(e) for e in outputEnergies])
+	outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
+	outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
+
+	return outDistrib1, outDistrib2
 
 def MakeDelayScanPlots():
 	interactive = rcParams["interactive"]
@@ -85,14 +114,14 @@ def MakeDelayScanPlots():
 	def Plot(filename):
 		t, c = GetScanDelayCorrelation(outputfile=filename, partitionCount=1)
 		figure()
-		ionization = 1 - sum(abs(c[:,:20])**2, axis=1)
+		ionization = 1 - sum(c[:,:20], axis=1)
 		plot(t, ionization, label="Ionization")
 		for i in range(10):
 			if i < 5:
 				label = "$n = %i$" % i
 			else:
 				label = "_nolegend_"
-			plot(t, abs(c[:,i])**2, label=label)
+			plot(t, c[:,i], label=label)
 		axis([0,50, 0,  0.8])
 		legend()
 		xlabel("Pulse Delay")
@@ -114,7 +143,7 @@ def MakeDelayScanPlots():
 	figure()
 	t, c = GetScanDelayCorrelation(outputfile="outputfiles/hd+/delay_%i.h5", partitionCount=1)
 	t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/hd+/nodipole_delay_%i.h5", partitionCount=1)
-	plot(t, abs(c)**2 - abs(c2)**2)
+	plot(t, c - c2)
 	title("Difference between HD+ with and without static dipole moment")
 	xlabel("Pulse Delay")
 	ylabel("Proabability difference")
@@ -144,7 +173,7 @@ def RepackDelayScan(**args):
 		SaveArray(output, "/", "pulse_delay", time)
 		SaveArray(output, "/", "energy", E)
 
-		SaveArray(output, "/", "final_correlation", abs(proj)**2)
+		SaveArray(output, "/", "final_correlation", proj)
 		SaveArray(output, "/", "energy_distribution", corr)
 		SaveArray(output, "/", "norm", norm)
 
@@ -294,6 +323,9 @@ def PropagateDelayScan(**args):
 		raise Exception("Please implement for Rank!=2")
 	eigenstateSize = len(eigenstates[0,:])
 
+	boundE, boundV = LoadBoundEigenstates(**args)
+	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
+
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	timeList = []
 	initCorrList = []
@@ -301,6 +333,10 @@ def PropagateDelayScan(**args):
 	normList = []
 	psiTimeList = []
 	timeList = []
+	energyDistribution = []
+
+	dE = average(diff(contE2))
+	E = r_[-0.5:0]
 
 	pulseStart = conf.ElectronicCoupling.delay
 	pulseDuration = conf.ElectronicCoupling.duration
@@ -312,59 +348,44 @@ def PropagateDelayScan(**args):
 		shape = (0,) + prop.psi.GetData().shape
 		psiList = output.createEArray(outputpath, "wavefunction", atom, shape, createparents=True)
 		
+		def checkpoint():
+			timeList.append(prop.PropagatedTime)
+			initCorrList.append(prop.psi.InnerProduct(initPsi))
+			normList.append(prop.psi.GetNorm())
+			psiTimeList.append(prop.PropagatedTime)
+			psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
+			energyDistribution.append(array(CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)))
+			corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
+
 		#0) Store the initial packet
-		timeList.append(prop.PropagatedTime)
-		corrList.append(GetEigenstateCorrelations(prop, eigenstates))
-		initCorrList.append(prop.psi.InnerProduct(initPsi))
-		normList.append(prop.psi.GetNorm())
-		psiTimeList.append(prop.PropagatedTime)
-		psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
-		
+		checkpoint()
+
 		#1) Propagate until the pulse starts
 		prop.Duration = pulseStart - 2*pulseDuration
 		for t in prop.Advance(minimum(20, prop.Duration)): 
-			timeList.append(t)
-			corrList.append(GetEigenstateCorrelations(prop, eigenstates))
-			initCorrList.append(prop.psi.InnerProduct(initPsi))
-			normList.append(prop.psi.GetNorm())
-			psiTimeList.append(t)
-			psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
+			#checkpoint()
+			pass
 		
-		#1a) Save the wavepacket to see how much has flowed out
-		timeList.append(prop.PropagatedTime)
-		corrList.append(GetEigenstateCorrelations(prop, eigenstates))
-		initCorrList.append(prop.psi.InnerProduct(initPsi))
-		normList.append(prop.psi.GetNorm())
-		psiTimeList.append(prop.PropagatedTime)
-		psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
+		#1a) Save the wavepacket before the pulse to see how much has flowed out
+		checkpoint()	
 		
 		#2) Propagate until the end of the pulse
 		prop.Duration = pulseStart + 2*pulseDuration
 		index = 0
 		for t in prop.Advance(True):
-			timeList.append(t)
-			corrList.append(GetEigenstateCorrelations(prop, eigenstates))
-			initCorrList.append(prop.psi.InnerProduct(initPsi))
-			normList.append(prop.psi.GetNorm())
-			#if index % 20 == 0:
-			#	psiTimeList.append(t)
-			#	psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
-			index+=1
-		
+			#checkpoint()
+			pass
 		
 		#2a) Save the wavepacket at the end 
-		timeList.append(prop.PropagatedTime)
-		corrList.append(GetEigenstateCorrelations(prop, eigenstates))
-		initCorrList.append(prop.psi.InnerProduct(initPsi))
-		normList.append(prop.psi.GetNorm())
-		psiTimeList.append(prop.PropagatedTime)
-		psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
+		checkpoint()
 		
 		SaveArray(output, outputpath, "time", array(timeList))
 		SaveArray(output, outputpath, "eigenstateProjection", array(corrList))
 		SaveArray(output, outputpath, "initstateProjection", array(initCorrList))
 		SaveArray(output, outputpath, "norm", array(normList))
-		SaveArray(output, outputpath, "timeWavefunction", array(corrList))
+		SaveArray(output, outputpath, "timeWavefunction", array(psiTimeList))
+		SaveArray(output, outputpath, "energyDistribution", array(energyDistribution))
+		SaveArray(output, "/", "energy", E)
 		psiList.close()
 
 	finally:

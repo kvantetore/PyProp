@@ -183,10 +183,13 @@ def GetFullSpectrum(**args):
 	H = GetHamiltonMatrix(**args)
 	E, V = eig(H)
 
+	prop = SetupProblem(**args)
+	dr = prop.psi.GetRepresentation().GetRepresentation(0).GetRange(0).Dx
+
 	E = real(E)
 	index = argsort(E)
 	E = E[index]
-	V = V[:,index]
+	V = V[:,index] / sqrt(dr)
 	
 	return E, V
 
