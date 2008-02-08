@@ -280,7 +280,7 @@ class Problem:
 		classname = config.InitialCondition.classname
 		
 	  	#Create globals
-		glob = dict(sys.modules['__main__'].__dict__)
+		glob = dict(ProjectNamespace)
 		glob.update(globals())	
 	
 		#try to

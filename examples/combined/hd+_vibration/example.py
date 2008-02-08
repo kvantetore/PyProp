@@ -9,6 +9,7 @@ import tables
 sys.path.insert(1, os.path.abspath("./pyprop"))
 import pyprop
 pyprop = reload(pyprop)
+pyprop.ProjectNamespace = locals()
 
 #Load the project module
 from libpotential import *
@@ -22,6 +23,12 @@ execfile("initialization.py")
 execfile("serialization.py")
 execfile("potential.py")
 
+def IPython1Test(host, port):
+	
+	ctrl.execute("all", 'execfile("example.py")', block=True)
+	r = r_[0:10]
+	ctrl.scatterAll("delayList", r)
+	print ctrl.execute("all", "print delayList", block=True)
 
 def MakePhaseShiftPlot(**args):
 	

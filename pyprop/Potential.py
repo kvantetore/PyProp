@@ -35,7 +35,7 @@ def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None
 	if potentialRank == None:
 		potentialRank = rank
 
-	glob = dict(sys.modules['__main__'].__dict__)
+	glob = dict(ProjectNamespace)
 	glob.update(globals())
 	
 	potential = None

@@ -17,7 +17,7 @@ class Section:
 				self.SetOptionString(optionName, cfg.get(name, optionName))
 			
 	def SetOptionString(self, optionName, optionString):
-		glob = dict(sys.modules['__main__'].__dict__)
+		glob = dict(ProjectNamespace)
 		glob.update(globals())
 		try:
 			optionValue = eval(optionString, glob, self.__dict__)

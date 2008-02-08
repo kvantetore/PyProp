@@ -285,6 +285,55 @@ def GetScanDelayNorm(**args):
 
 	return time, proj
 
+
+#------------------------------------------------------------------------------	
+#                Submit scan delay jobs
+#------------------------------------------------------------------------------	
+
+#ipython1:
+try:
+	import ipython1.kernel.api as kernel
+except:
+	print "Could not load IPython1, fancy submitting wil be unavailable"
+
+def GetStalloEngineCount():
+	controllerHost = "localhost"
+	controllerPort = 61001
+
+	#Create connection to stallo
+	rc = kernel.RemoteController((controllerHost, controllerPort))
+	return rc.getIDs()
+
+
+def SubmitDelayScanStallo(**args):
+	delayList = args["delayList"]
+	outputfile = args["outputfile"]
+	molecule = args["molecule"]
+
+	controllerHost = "localhost"
+	controllerPort = 61001
+	if "controllerHost" in args:
+		controllerHost = args["controllerHost"]
+	if "controllerPort" in args:
+		controllerPort = args["controllerPort"]
+
+	#Create connection to stallo
+	rc = kernel.RemoteController((controllerHost, controllerPort))
+	partitionCount = len(rc.getIDs())
+
+	if partitionCount == 0:
+		raise Exception("No engines connected to controller @ stallo.")
+
+	rc.runAll('example.py', block=True)
+	rc.scatterAll("delayList", delayList)
+	rc.scatterAll("partitionId", r_[:partitionCount])
+	rc.pushAll(args=args)
+	rc.executeAll('args["delayList"] = delayList', block=True)
+	rc.executeAll('args["outputfile"] = args["outputfile"] % partitionId[0]', block=True)
+	print rc.executeAll('RunDelayScan(**args)', block=True)
+	
+	
+
 def SubmitDelayScan(**args):
 	delayList = args["delayList"]
 	outputfile = args["outputfile"]
