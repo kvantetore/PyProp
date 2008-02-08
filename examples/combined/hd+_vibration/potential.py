@@ -93,7 +93,7 @@ def GetLaserField(config, t):
 	scaling = 4 * log(2) 
 
 	envelope = exp( - scaling * (t - t0)**2 / config.duration**2 )
-	field = E0 * cos(config.frequency*(t - t0)) * envelope
+	field = E0 * cos(config.frequency*(t - t0) + config.phase) * envelope
 
 	return field
 	

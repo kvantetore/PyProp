@@ -1,0 +1,4 @@
+HD+ vibration is an advanced serial project. It uses some techniques that
+would not have worked in parallel.
+
+See the doc/doc.tex for more information about what is calculated, and how.

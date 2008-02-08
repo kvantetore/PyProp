@@ -23,6 +23,25 @@ execfile("serialization.py")
 execfile("potential.py")
 
 
+def MakePhaseShiftPlot(**args):
+	
+	args["pulsePhase"] = 0
+	t, c, r, rad = Propagate(**args)
+
+	args["pulsePhase"] = pi/2.
+	t, c2, r, rad = Propagate(**args)
+
+	args["pulsePhase"] = pi/4.
+	t, c3, r, rad = Propagate(**args)
+
+	colors = "bgrcmykw"
+	for i in range(len(colors)):
+		plot(t, c[:,i], "%c-" % colors[i])
+		plot(t, c2[:,i], "%c--" % colors[i])
+		plot(t, c3[:,i], "%c." % colors[i])
+
+	return t, c, c2
+
 def Propagate(**args):
 	args['config'] = "config.ini"
 	args['imtime'] = False
@@ -43,6 +62,11 @@ def Propagate(**args):
 		f.close()
 	del f
 
+	boundE, boundV = LoadBoundEigenstates(**args)
+	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
+	dE = average(diff(contE2))
+	E = r_[-0.5:0:dE]
+	
 	if len(eigenstates.shape) != 2:
 		raise Exception("Please implement for Rank!=2")
 	eigenstateSize = len(eigenstates[0,:])
@@ -53,8 +77,12 @@ def Propagate(**args):
 	corrList = []
 	radialData = []
 
+	outputCount = 500
+	if "outputCount" in args:
+		outputCount = args["outputCount"]
+
 	tPrev = 0
-	for t in prop.Advance(True):
+	for t in prop.Advance(outputCount):
 		corrList += [abs(GetEigenstateCorrelations(prop, eigenstates))**2]
 		radialData += [sum(abs(prop.psi.GetData())**2, axis=1)]
 		
@@ -73,7 +101,9 @@ def Propagate(**args):
 	corr = abs(prop.psi.InnerProduct(initPsi))**2
 	print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
 
-	return array(timeList), array(corrList), array(r), array(radialData)
+	energyDistrib1, energyDistrib2 = CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)
+
+	return array(timeList), array(corrList), E, array([energyDistrib1, energyDistrib2])
 
 
 

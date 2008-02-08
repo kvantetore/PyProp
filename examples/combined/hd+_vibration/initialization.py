@@ -8,6 +8,10 @@ def SetupConfig(**args):
 	#Load the config file
 	conf = pyprop.Load(configFile)
 
+	if "dt" in args:
+		dt = args["dt"]
+		conf.Propagation.timestep = dt
+
 	#Modify the config
 	if "imtime" in args:
 		imtime = args["imtime"]
@@ -55,6 +59,18 @@ def SetupConfig(**args):
 	if 'pulseDelay' in args:
 		pulseDelay = args["pulseDelay"]
 		conf.ElectronicCoupling.delay = pulseDelay
+
+	if "pulsePhase" in args:
+		pulsePhase = args["pulsePhase"]
+		conf.ElectronicCoupling.phase = pulsePhase
+
+	if "pulseDuration" in args:
+		pulseDuration = args["pulseDuration"]
+		conf.ElectronicCoupling.duration = pulseDuration
+	
+	if "pulseIntensity" in args:
+		pulseIntensity = args["pulseIntensity"]
+		conf.ElectronicCoupling.intensity = pulseIntensity
 
 	if "duration" in args:
 		duration = args["duration"]

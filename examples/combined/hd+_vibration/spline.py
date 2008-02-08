@@ -1,5 +1,17 @@
 from numpy import *
 
+"""
+
+if you have a set of function values y[i], evaluated on a set of grid points x[i],
+and whish to interpolate these points to a new set of grid points x1[i], the following 
+will do the trick
+
+interp = Interpolator(x, y)
+y1 = [interp.Evaluate(v) for v in x1]
+
+
+"""
+
 class Interpolator:
 	"""
 	A very simple spline interpolator. It is not very fast or memory

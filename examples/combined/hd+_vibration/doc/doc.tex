@@ -1,5 +1,7 @@
 \documentclass[a4paper]{article}
 
+\usepackage{graphicx}
+
 
 %opening
 \title{Notes on $HD^+$ Propagation}
@@ -62,7 +64,6 @@ for each electronic state $i$
  	H_n^i(R) \psi_{i,j}(R) = \left( H_n(R) + \epsilon_i(R) \right) \psi_{i,j}(R) = E_{i,j} \psi_{i,j}(R)
 \end{equation}
 
-
 \subsection{Laser Interaction}
 We will model the laser field with the usual semi classical model. For a polarized laser pulse in 
 the length gauge, this is in the laboratory frame
@@ -84,10 +85,34 @@ between two electronic states $\phi_i(r; R)$ and $\phi_j(t; R)$
 \end{equation}
 If we put this and eqn \ref{eqn:nuclear-hamiltonian-bo} into the time dependent Schrödinger equation, we get
 \begin{equation}
+	\label{eqn:nuclear-hamiltonian-laser}
  - \imath \frac{\partial}{\partial t} \psi_i = \left( H_n + \epsilon_i(R) \right) \psi_i + E(t) \varepsilon \left( \kappa_r \sum_j d_{i, j}(R) \psi_j + \kappa_R R \psi_i\right)
 \end{equation}
-Usually, however, only the two lowest electronic states have to be considered, in which case this simplifies to two coupled equations.
 
+\subsection{1D Model}
+Here, we will concentrate on propagating the nuclear equation. In accordance with eqn \ref{eqn:nuclear-hamiltonian-laser}, we do not need to know the exact electronic wavefunctions, as long as the induced dipole moments $d_{i,j}(R)$ are available. Furthermore, we will ignore rotational effects in the molecule, effectively reducing the problem from a full 3D problem to a much simpler 1D model.
+
+As the difference The dipole moments for the two lowest electronic states was calculated by Bates (REF), and the following expression was found to be a good approximation for the dipole moments
+\begin{equation}
+	d(R) = -\frac{1}{2 + 1.4 |R|} + \frac{|R|}{2 \sqrt{1 - \rho(R)^2}}
+\end{equation}
+where 
+\begin{equation}
+	\rho(R) = (1 + |R| + |R|^{2/3}) exp(-|R|) 
+\end{equation}
+As we will only perform calculations on the radial part of the nuclear wavefunction, we can simplify $H_1$
+\begin{equation}
+	H_1 = \frac{1}{2 M_n} \left( \frac{\partial^2}{\partial R^2} + \frac{2}{R} \frac{\partial}{\partial R} \right)
+\end{equation}
+To get rid of the first derivative term, will perform calculations on a reduced wavefunction
+\begin{equation}
+	\psi_{reduced}(R) = r^{-1} \psi_{original}(R)
+\end{equation}
+This transforms $H_1$ into
+\begin{equation}
+	H_1 = \frac{1}{2 M_n} \frac{\partial^2}{\partial R^2} 
+\end{equation}
+And $\psi_{reduced}(R)$ will be refered to as $\psi(R)$ below unless otherwise stated
 
 \section{Numerical Method}
 We will use a standard splitting technique for time marching the TDSE. The Hamiltonian is split in three parts
@@ -107,9 +132,95 @@ Since each of the sub-Hamiltonians can be solved accurately (see below), it make
 \begin{equation}
 	\psi(t + \Delta t) = \exp(- \imath \Delta t H_1) \exp(- \imath \Delta t H_2) \exp(- \imath \Delta t H_3) \psi(t) + O(\Delta t^2)
 \end{equation}
-The accuracy of this splitting can be increased by considering other splitting schemes such as the symmetric Strang splitting (REF)
+The accuracy of this splitting can be increased by considering other splitting schemes such as the symmetric Strang splitting scheme (REF)
 
-\subsection{Solving $H_1$}
+As all parts of the Hamiltonian are hermitian, they are all orthogononaly diagonalizable. This means that an eigenvector decomposition can be very accurately computed.  The key to accurately propagating each sub-propagator, is then to find a space in which they are diagonal, or in other words if we choose a starting space, find a linear transformation that diagonalizes the operator.
+
+\subsection{Propagating $H_1$}
+We will use a discretized grid representation as our starting point. It is well known that the Fourier transformation $\bar{f}(k) = {\cal F}_R f(R)$ diagonalizes the differentiation operator $\partial^2/\partial R^2$
+\begin{equation}
+	\frac{\partial^2 f(R)}{\partial R^2} = {\cal F}^-1 -k^2 {\cal F} f(R)
+\end{equation}
+For a periodic equispaced discretized grid, the discrete Fourier transfom $F$ can be used to approximate to the differentiation. Normally, when dealing with radial grids, one must take care to get the correct $\lim_{R \rightarrow 0} \psi(R) = 0$ behaviour. In our case, however, the steep positive potential as $R \rightarrow 0$, automatically keeps the wavefunction small near the origin, taking away the need for anti symmetrization or other techniques otherwise employed.
+
+As there are no coupling between the different electronic states, we can transform both electronic states to Fourier space, perform the differentiation, and transform back.
+\begin{equation}
+ 	\psi_i^{H_1}(R, t+\Delta t) = F^{-1} \exp \left( \imath \Delta t \frac{k^2}{2 M_n} \right) F \psi_i(R, t)
+\end{equation}
+
 \subsection{Solving $H_2$}
+\begin{equation}
+	H_2 = \frac{Z_1 Z_2}{|R|} + \epsilon_i(R) 
+\end{equation}
+$H_2$ is a grid function, and therefore diagonal in the grid space. We can therefore directly solve write up the sub propagator, using a different potential 
+for each electronic wavefunction
+\begin{equation}
+ 	\psi_i^{H_2}(R, t+\Delta t) = \exp \left\{ \imath \Delta t \left(\frac{Z_1 Z_2}{|R|} + \epsilon_i(R) \right)  \right\} \psi_i(R, t)
+\end{equation}
+
 \subsection{Solving $H_3$}
+Using a two level approximation for the electronic states, the electronic coupling part of the Hamiltonian looks like this
+\begin{equation}
+ 	H_3 = E(t) D(R)
+\end{equation}
+Where
+\[
+	D(R) = \left(\begin{array}{cc}
+			\kappa_R R & \kappa_r d_{1,2}(R) \\
+			\noalign{\medskip}
+			\kappa_r d_{1,2}^*(R) & \kappa_R R
+		\end{array}
+		\right)
+\]
+$H_3$ is a $2x2$ matrix coupling the two electronic states for each value of $R$. However, there are no coupling between different values of $R$. We can 
+therefore find a transformation $G(R)$ diagonalizes the electronic coupling. As $D(R)$ is Hermitian, this transformation will be orthogonal.
+\begin{equation}
+	D(R) = G(R) \Lambda(R) G^*(R)
+\end{equation}
+This gives us a way to propagate $H_3$
+\begin{equation}
+ 	\psi_i^{H_3}(R, t+\Delta t) = G(R) \exp \left\{ \imath \Delta t E(t) \Lambda(R) \right\} G^*(R) \psi_i(R, t)
+\end{equation}
+
+\section{Results}
+\begin{figure}[p]
+ \centering
+ \includegraphics[width=12cm]{fig/delay_scan_h2p.eps}
+ \caption{Eigenstate population for $H_2^+$ as a function of pulse delay time for a $14fs$ pulse of intensity $2e14 W/cm^2$.}
+ \label{fig:delay_scan_h2+}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \includegraphics[width=12cm]{fig/delay_scan_d2p.eps}
+ \caption{Eigenstate population for $D_2^+$ as a function of pulse delay time for a $14fs$ pulse of intensity $2e14 W/cm^2$.}
+ \label{fig:delay_scan_d2+}
+\end{figure}
+
+\begin{figure}[p]
+ \centering
+ \includegraphics[width=12cm]{fig/delay_scan_hdp.eps}
+ \caption{Eigenstate population for $HD^+$ as a function of pulse delay time for a $14fs$ pulse of intensity $2e14 W/cm^2$.}
+ \label{fig:delay_scan_hd+}
+\end{figure}
+
+% \begin{figure}[p]
+%  \centering
+%  \includegraphics[width=12cm]{fig/delay_scan_hdp_nodipole.eps}
+%  \caption{Eigenstate population for $HD^+$ as a function of pulse delay time for a $14fs$ pulse of intensity $2e14 W/cm^2$ 
+% without the static dipole moment taken into consideration}
+%  \label{fig:delay_scan_d2+_nodipole}
+% \end{figure}
+
+\begin{figure}[p]
+ \centering
+ \includegraphics[width=12cm]{fig/delay_scan_nodipole_diff.eps}
+ \caption{Difference between calculations with and without the static dipole term included for $HD^+$}
+ \label{fig:delay_scan_hd+_nodipole_diff}
+\end{figure}
+
+Figures \ref{fig:delay_scan_h2+}-\ref{fig:delay_scan_hd+} shows the population of different eigenstates as a function of different pulse delay times $t_d$. We notice that all the graphs show simiar features, in that the ionization probability is oscillating with the first minima at $t_d \approx 20fs$. Furthermore, we notice that the oscillations have different frequencies for the three molecules, which can be accredited to the different masses of the systems (Which is the only difference between $H_2^+$ and $D_2^+$). The $HD^+$ molecule has also a static dipole, which potentially could have changed the dynamics, but as seen in Figure \ref{fig:delay_scan_hd+_nodipole_diff}, it has no real effect.
+
+Another noticable effect is that for 
+
 \end{document}
