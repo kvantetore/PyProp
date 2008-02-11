@@ -179,6 +179,10 @@ def GetScanDelayEnergyDistribution(**args):
 
 	E1, V1, E2, V2 = LoadContinuumEigenstates(**args)
 
+	recalculate = False
+	if "recalculate" in args:
+		recalculate = args["recalculate"]
+
 	#To add up the energies we must interpolate the values from 
 	#the E1 and E2 grids to a common E-grid
 	dE = average(diff(E2))
@@ -188,8 +192,13 @@ def GetScanDelayEnergyDistribution(**args):
 	timeList = []
 
 	for t, node in IterateScanNodes(outputfile, partitionCount):
-		psi = node.wavefunction[-1,:,:]
-		proj1, proj2 = CalculateEnergyDistribution(psi, E, E1, V1, E2, V2) 
+		if recalculate:
+			psi = node.wavefunction[-1,:,:]
+			proj1, proj2 = CalculateEnergyDistribution(psi, E, E1, V1, E2, V2) 
+		else:
+			proj1 = node.energyDistribution[-1,0,:]
+			proj2 = node.energyDistribution[-1,1,:]
+
 		projList.append([proj1, proj2])
 		timeList.append(t)
 
@@ -227,7 +236,7 @@ def RepackDelayScan(**args):
 	outputfile = args["outputfile"]
 	partitionCount = args["partitionCount"]
 	repackFile = args["repackFile"]
-
+	
 	print "Repacking correlation"
 	time, proj = GetScanDelayCorrelation(**args)
 	print "Repacking energy distribution"
@@ -291,14 +300,17 @@ def GetScanDelayNorm(**args):
 #------------------------------------------------------------------------------	
 
 #ipython1:
+DefaultControllerHost = "localhost"
+DefaultControllerPort = 61001
+
 try:
 	import ipython1.kernel.api as kernel
 except:
 	print "Could not load IPython1, fancy submitting wil be unavailable"
 
 def GetStalloEngineCount():
-	controllerHost = "localhost"
-	controllerPort = 61001
+	controllerHost = DefaultControllerHost
+	controllerPort = DefaultControllerPort
 
 	#Create connection to stallo
 	rc = kernel.RemoteController((controllerHost, controllerPort))
@@ -310,8 +322,8 @@ def SubmitDelayScanStallo(**args):
 	outputfile = args["outputfile"]
 	molecule = args["molecule"]
 
-	controllerHost = "localhost"
-	controllerPort = 61001
+	controllerHost = DefaultControllerHost
+	controllerPort = DefaultControllerPort
 	if "controllerHost" in args:
 		controllerHost = args["controllerHost"]
 	if "controllerPort" in args:
@@ -324,13 +336,15 @@ def SubmitDelayScanStallo(**args):
 	if partitionCount == 0:
 		raise Exception("No engines connected to controller @ stallo.")
 
-	rc.runAll('example.py', block=True)
+	rc.executeAll('import os')
+	rc.executeAll('os.environ["PYPROP_SINGLEPROC"] = "1"')
+	rc.runAll('example.py')
 	rc.scatterAll("delayList", delayList)
 	rc.scatterAll("partitionId", r_[:partitionCount])
 	rc.pushAll(args=args)
-	rc.executeAll('args["delayList"] = delayList', block=True)
-	rc.executeAll('args["outputfile"] = args["outputfile"] % partitionId[0]', block=True)
-	print rc.executeAll('RunDelayScan(**args)', block=True)
+	rc.executeAll('args["delayList"] = delayList')
+	rc.executeAll('args["outputfile"] = args["outputfile"] % partitionId[0]')
+	rc.executeAll('RunDelayScan(**args)')
 	
 	
 
