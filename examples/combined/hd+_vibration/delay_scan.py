@@ -336,12 +336,17 @@ def SubmitDelayScanStallo(**args):
 	if partitionCount == 0:
 		raise Exception("No engines connected to controller @ stallo.")
 
+	#Make sure pyprop is loaded
 	rc.executeAll('import os')
 	rc.executeAll('os.environ["PYPROP_SINGLEPROC"] = "1"')
-	rc.runAll('example.py')
+	rc.executeAll('execfile("example.py")')
+
+	#scatter delay list
 	rc.scatterAll("delayList", delayList)
 	rc.scatterAll("partitionId", r_[:partitionCount])
 	rc.pushAll(args=args)
+
+	#run
 	rc.executeAll('args["delayList"] = delayList')
 	rc.executeAll('args["outputfile"] = args["outputfile"] % partitionId[0]')
 	rc.executeAll('RunDelayScan(**args)')

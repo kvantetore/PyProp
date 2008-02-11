@@ -23,6 +23,73 @@ execfile("initialization.py")
 execfile("serialization.py")
 execfile("potential.py")
 
+def ConcatenateHDF5(inFileList, outFile, outputMode="w"):
+	def NodeExists(f, where, path):
+		"""
+		Checks wheter the node path exists in where in the file f
+		"""
+		nodeExists = False
+		try:
+			node = f.getNode(where, path)
+			nodeExists = True
+		except tables.NoSuchNodeError: pass
+		return nodeExists
+
+	def GetParentPath(path):
+		"""
+		Splits path into the parent path and the name
+		"""
+		path = path.strip()
+		if path.endswith("/"):
+			path = path[:-1]
+		pathList = path.split("/")
+		if len(pathList) == 1:
+			return None, None
+		if len(pathList) == 2:
+			return "/", pathList[1]
+		path = "/".join(pathList[:-1])
+		name = pathList[-1]
+		return path, name
+
+	def GetOrCreateGroup(f, path):
+		"""
+		Gets path from the file f if it exists, or creates a group with that path
+		"""
+		path, name = GetParentPath(path)
+		if path == None:
+			return f.root
+		node = None
+		try:
+			node = f.getNode(path, name)
+			if not isinstance(node, tables.Group):
+				raise Exception("Path %s/%s exists but it is not a group" (path,name))
+		except tables.NoSuchNodeError: pass
+		if node == None:
+			node = f.createGroup(path, name, createparents=True)
+		return node
+
+	#Main method
+	outFile = tables.openFile(outFile, outputMode)
+	try:
+		for fileName in inFileList:
+			inFile = tables.openFile(fileName, "r")
+			try:
+				for node in inFile.walkNodes(inFile.root):
+					if not(isinstance(node, tables.Group)):
+						name = node._v_name
+						path = node._v_parent._v_pathname
+						if NodeExists(outFile, path, name):
+							print "Node %s/%s already exists, skipping" % (path, name)
+						else:
+							#print "Copying %s/%s" % (path, name)
+							outParent = GetOrCreateGroup(outFile, path)
+							node.copy(outParent, name)
+			finally:
+				inFile.close()
+
+	finally:
+		outFile.close()
+
 def IPython1Test(host, port):
 	
 	ctrl.execute("all", 'execfile("example.py")', block=True)
