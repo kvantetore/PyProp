@@ -24,6 +24,19 @@ execfile("serialization.py")
 execfile("potential.py")
 
 def ConcatenateHDF5(inFileList, outFile, outputMode="w"):
+	"""
+	Concatenates several HDF5 files to one file.
+	* inFileList: list of filenames to be concatenated
+	* outFile: the file to which the concatenation should be written
+	* outputMode: the mode in which outFile will be opened ("w" or "a")
+
+	All non-group nodes are copied from the input files in the order in which they are
+	specified. If a node already exists in outFile, it is skipped, and a warning is printed.
+
+	If the same node exists in several of the input files, the node being in the first file 
+	containing the duplicates will be used.
+	"""
+
 	def NodeExists(f, where, path):
 		"""
 		Checks wheter the node path exists in where in the file f
@@ -91,13 +104,21 @@ def ConcatenateHDF5(inFileList, outFile, outputMode="w"):
 		outFile.close()
 
 def IPython1Test(host, port):
-	
+	"""
+	Very simple ipython1 test
+	see http://ipython.scipy.org/moin/IPython1 for more info
+	on ipython1
+	"""
 	ctrl.execute("all", 'execfile("example.py")', block=True)
 	r = r_[0:10]
 	ctrl.scatterAll("delayList", r)
 	print ctrl.execute("all", "print delayList", block=True)
 
 def MakePhaseShiftPlot(**args):
+	"""
+	Runs a problem with 3 different phases on the pulse,
+	and makes
+	"""
 	
 	args["pulsePhase"] = 0
 	t, c, r, rad = Propagate(**args)
@@ -120,32 +141,24 @@ def Propagate(**args):
 	args['config'] = "config.ini"
 	args['imtime'] = False
 	inputfile = GetInputFile(**args)
+
+	conf = SetupConfig(**args)
 	prop = SetupProblem(**args)
 
-	f = tables.openFile(inputfile, "r")
-	try:
-		#Setup initial state
-		prop.psi.GetData()[:,0] = f.root.initial_state[:]
-		prop.psi.GetData()[:,1] = 0
-		initPsi = prop.psi.Copy()
-
-		#Load eigenstates
-		eigenstates = conj(f.root.eigenstates[:])
-		f.close()
-	finally:
-		f.close()
-	del f
+	pumpFrequency = conf.InitialCondition.pump_frequency
+	pumpTransitionProbability = conf.InitialCondition.pump_probability
+	pumpCount = conf.InitialCondition.pump_count
+	pumpStateEnergy = GetInitialStateEnergy(inputfile)
+	pumpTimes, pumpProb, pumpPhase = GetPump(pumpFrequency, pumpCount, pumpTransitionProbability, pumpStateEnergy)
+	
+	LoadInitialState(prop, inputfile)
+	initPsi = prop.psi.Copy()
 
 	boundE, boundV = LoadBoundEigenstates(**args)
 	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 	
-	if len(eigenstates.shape) != 2:
-		raise Exception("Please implement for Rank!=2")
-	eigenstateSize = len(eigenstates[0,:])
-	weight = prop.psi.GetRepresentation().GetRepresentation(0).GetRange(0).Dx
-
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	timeList = []
 	corrList = []
@@ -155,21 +168,47 @@ def Propagate(**args):
 	if "outputCount" in args:
 		outputCount = args["outputCount"]
 
+	def output():
+		"""
+		Performs one output from the propagation. We have many 
+		advance loops, and creating an inner function like this is a 
+		nice way of grouping the output functionality
+		"""
+		corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
+		radialData.append(sum(abs(prop.psi.GetData())**2, axis=1))
+		
+		timeList.append(t/femtosec_to_au)
+
+	#
+	fullDuration = prop.Duration
+	outputFrequency = float(outputCount) / prop.Duration
+
+	#Propagate to the end of the pump pulse
+	prop.psi.GetData()[:] = 0
+	for i in range(len(pumpTimes)):
+		#Add a franck-condon with the correct phase wavepacket to our wavefunction.
+		prop.psi.GetData()[:] += pumpProb[i] * pumpPhase[i] * initPsi.GetData()
+		if i<len(pumpTimes)-1:
+			prop.Duration = pumpTimes[i+1]
+			curOutCount = outputFrequency * (pumpTimes[i+1] - pumpTimes[i])
+			for t in prop.Advance(curOutCount):
+				outputCount -= 1
+				output()
+
+	prop.psi.Normalize()
+
+	prop.Duration = fullDuration
 	tPrev = 0
 	for t in prop.Advance(outputCount):
-		corrList += [abs(GetEigenstateCorrelations(prop, eigenstates))**2]
-		radialData += [sum(abs(prop.psi.GetData())**2, axis=1)]
-		
-		norm = prop.psi.GetNorm()
-		corr = abs(prop.psi.InnerProduct(initPsi))**2
-		timeList.append(t/femtosec_to_au)
+		output()
 		if t-tPrev > 20*femtosec_to_au:
+			corr = abs(prop.psi.InnerProduct(initPsi))**2
+			norm = prop.psi.GetNorm()
 			print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
 			tPrev = t
-		#plot(r, abs(prop.psi.GetData())**2)
 
 	timeList.append(prop.PropagatedTime / femtosec_to_au)
-	corrList += [abs(GetEigenstateCorrelations(prop, eigenstates))**2]
+	corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
 
 	norm = prop.psi.GetNorm()
 	corr = abs(prop.psi.InnerProduct(initPsi))**2
@@ -177,20 +216,8 @@ def Propagate(**args):
 
 	energyDistrib1, energyDistrib2 = CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)
 
-	return array(timeList), array(corrList), E, array([energyDistrib1, energyDistrib2])
+	return array(timeList), array(corrList), E, array([energyDistrib1, energyDistrib2]), array(r), array(radialData)
 
-
-
-def GetEigenstateCorrelations(prop, eigenstates):
-	"""
-	Returns the correlation betweeen the propagated state and the eigenstates
-	"""
-	eigenstateSize = eigenstates.shape[1]
-	weight = prop.psi.GetRepresentation().GetRepresentation(0).GetRange(0).Dx
-
-	psiSlice = prop.psi.GetData()[0:eigenstateSize,0]
-
-	return dot(eigenstates, psiSlice)*weight
 
 	
 def PlotElectricField(**args):

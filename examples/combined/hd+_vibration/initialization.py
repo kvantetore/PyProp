@@ -80,6 +80,15 @@ def SetupConfig(**args):
 		silent = args["silent"]
 		conf.Propagation.silent = silent
 
+	if "pumpFrequency" in args:
+		conf.InitialCondition.pump_frequency = args["pumpFrequency"]
+
+	if "pumpProbability" in args:
+		conf.InitialCondition.pump_probability = args["pumpProbability"]
+
+	if "pumpCount" in args:
+		conf.InitialCondition.pump_count = args["pumpCount"]
+
 	if "potentialSlope" in args:
 		conf.VibrationalPotential.potential_slope=args["potentialSlope"]
 		
@@ -161,6 +170,20 @@ def SetupInitialState(**args):
 	#Setup initial state
 	prop = FindGroundstate(**args)
 	prop.SaveWavefunctionHDF(outputfile, "/initial_state")
+	f = tables.openFile(outputfile, "a")
+	try:
+		E = prop.GetEnergy()
+		SaveArray(f, "/", "initial_energy", [E])
+	finally:
+		f.close()
+
+def GetInitialStateEnergy(outputfile):
+	f = tables.openFile(outputfile, "r")
+	try:
+		E = f.root.initial_energy[:][0]
+	finally:
+		f.close()
+	return E
 
 
 def GetInputFile(**args):
@@ -234,8 +257,78 @@ def SetupFullSpectrum(**args):
 def SetupInputFile(**args):
 	outputfile = GetInputFile(**args)
 	args["outputfile"] = outputfile
+
+	setupEigenstates=False
+	if "setupEigenstates" in args:
+		setupEigenstates = args["setupEigenstates"]
+	setupFullSpectrum=True
+	if "setupFullSpectrum" in args:
+		setupFullSpectrum = args["setupFullSpectrum"]
+	setupInitialState=True
+	if "setupInitialState" in args:
+		setupInitialState = args["setupInitialState"]
 	#SetupEigenstates(**args)
 	SetupFullSpectrum(**args)
 	SetupInitialState(**args)
+
+
+def LoadEigenstates(**args):
+	inputfile = GetInputFile(**args)
+
+	conf = SetupConfig(**args)
+	c = conf.RadialRepresentation
+	dr = (c.rank0[1] - c.rank0[0]) / float(c.rank0[2])
+
+	f = tables.openFile(inputfile, "r")
+	try:
+		E1 = f.root.complete.binding.eigenvalues[:]
+		V1 = conj(f.root.complete.binding.eigenstates[:].transpose())
+		E2 = f.root.complete.unbinding.eigenvalues[:]
+		V2 = conj(f.root.complete.unbinding.eigenstates[:].transpose())
+	finally:
+		f.close()
+
+	return E1, V1*dr, E2, V2*dr
+
+def LoadBoundEigenstates(**args):	
+	threshold = -0.5
+	E1, V1, E2, V2 = LoadEigenstates(**args)
+
+	thresholdIndex = max(where(E1<=threshold)[0])
+	E1 = E1[:thresholdIndex]
+	V1 = V1[:thresholdIndex,:]
+
+	return E1, V1
+
+def LoadContinuumEigenstates(**args):
+	threshold = -0.5
+	upperThreshold = 0.0
+
+	E1, V1, E2, V2 = LoadEigenstates(**args)
+	
+	maxIndex1 = max(where(E1<=upperThreshold)[0]) + 1
+	thresholdIndex = max(where(E1<=threshold)[0])
+	E1 = E1[thresholdIndex:maxIndex1]
+	V1 = V1[thresholdIndex:maxIndex1, :]
+
+	maxIndex2 = max(where(E2<=upperThreshold)[0]) + 1
+	E2 = E2[:maxIndex2]
+	V2 = V2[:maxIndex2, :]
+
+	return E1, V1, E2, V2
+
+
+def LoadInitialState(prop, inputfile):
+	f = tables.openFile(inputfile, "r")
+	try:
+		#Setup initial state
+		prop.psi.GetData()[:,0] = f.root.initial_state[:]
+		prop.psi.GetData()[:,1] = 0
+		initPsi = prop.psi.Copy()
+
+		f.close()
+	finally:
+		f.close()
+	del f
 
 
