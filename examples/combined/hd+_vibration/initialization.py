@@ -267,9 +267,10 @@ def SetupInputFile(**args):
 	setupInitialState=True
 	if "setupInitialState" in args:
 		setupInitialState = args["setupInitialState"]
-	#SetupEigenstates(**args)
-	SetupFullSpectrum(**args)
-	SetupInitialState(**args)
+
+	if setupEigenstates: SetupEigenstates(**args)
+	if setupFullSpectrum: SetupFullSpectrum(**args)
+	if setupInitialState: SetupInitialState(**args)
 
 
 def LoadEigenstates(**args):
