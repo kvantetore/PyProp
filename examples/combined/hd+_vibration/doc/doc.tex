@@ -9,6 +9,11 @@
 
 \begin{document}
 
+\newcommand{\bra}[1]{\<#1|}
+\newcommand{\ket}[1]{|#1\>}
+\newcommand{\innerproduct}[2]{\<#1|#2\>}
+\newcommand{\matrixelement}[3]{\<#1|#2|#3\>}
+
 \maketitle
 
 \section{The Problem}
@@ -88,6 +93,20 @@ If we put this and eqn \ref{eqn:nuclear-hamiltonian-bo} into the time dependent 
 	\label{eqn:nuclear-hamiltonian-laser}
  - \imath \frac{\partial}{\partial t} \psi_i = \left( H_n + \epsilon_i(R) \right) \psi_i + E(t) \varepsilon \left( \kappa_r \sum_j d_{i, j}(R) \psi_j + \kappa_R R \psi_i\right)
 \end{equation}
+
+\subsection{Pump Laser Model}
+The simplest possible model of the pumping laser is that it is an instantaneous ionization from a neutral to an ionic molecule. The ionic nuclear system is then put in a Franck-Condon distribution of the original state in the neutral molecule. As the tunneling process required
+for ionization depends exponentially on the instantaneous field strength, it is a good approximation to assume the ionization only happens on the
+peak of the laser pulse. However, the probability of ionization on the first peak of the pulse is far from 1 (NOTE: Make some approximation to what the probability is), and this model does not account for the possibility of ionization on one of the later peaks in the pulse. We will modify this model to allow ionization in several steps $\{t_i\}$ separated by a half cycle of the laser pulse $t_{i+1} - t_{i} = \pi/\omega$. At each pump step a portion of the initial state of the neutral molecule will be coherently added to the ionic molecule wavefunction as a Franck-Condon distribution. The ionic state evolves between steps $t_i$ and $t_{i+1}$ with the followng propagator.
+\begin{equation}
+	\ket{\psi(t_{i+1})} = \exp(- \imath (t_{i+1} - t_i)) H) \ket{\psi(t_i)}
+\end{equation}
+While the ground state of the neutral ion is an eigenstate, and evolves with phase rotation
+\begin{equation}
+	\ket{\psi^0(t_{i+1})} = exp(- \imath (t_{i+1} - t_i)) E^0_0) \ket{\psi^0(t_i)}
+\end{equation}
+If we  let the first pump be at $t=0$, the propagation of
+
 
 \subsection{1D Model}
 Here, we will concentrate on propagating the nuclear equation. In accordance with eqn \ref{eqn:nuclear-hamiltonian-laser}, we do not need to know the exact electronic wavefunctions, as long as the induced dipole moments $d_{i,j}(R)$ are available. Furthermore, we will ignore rotational effects in the molecule, effectively reducing the problem from a full 3D problem to a much simpler 1D model.

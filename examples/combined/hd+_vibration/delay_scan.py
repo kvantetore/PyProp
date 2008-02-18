@@ -17,8 +17,13 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	path, name = os.path.split(filename)
 	root, ext = os.path.splitext(name)
 
+	#Get norm
+	t, n = GetScanDelayNorm(outputfile=filename, partitionCount=partitionCount)
+
 	#Plot Final Correlation
 	t, c = GetScanDelayCorrelation(outputfile=filename, partitionCount=partitionCount)
+	for i in range(c.shape[1]):
+		c[:,i] /= n #Correct for normalization issues
 	figure(figsize=(figureSize,figureSize*3./4.))
 	for i in range(10):
 		if i < 5:
@@ -32,7 +37,7 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	ylabel("Proabability")
 	title("Bound states distribution %s %s" % (molecule, root))
 
-	#Plot Norm
+	#Plot Ionization
 	boundStateThreshold = 25
 	ionization = 1 - sum(c[:,:boundStateThreshold], axis=1)
 	figure(figsize=(figureSize,figureSize*3./4.))
@@ -344,6 +349,7 @@ def SubmitDelayScanStallo(**args):
 		controllerPort = args["controllerPort"]
 
 	#Create connection to stallo
+	print "Connecting to ipython1 controller..."
 	rc = kernel.RemoteController((controllerHost, controllerPort))
 	partitionCount = len(rc.getIDs())
 
@@ -351,21 +357,33 @@ def SubmitDelayScanStallo(**args):
 		raise Exception("No engines connected to controller @ stallo.")
 
 	#Make sure pyprop is loaded
+	print "Loading pyprop..."
 	rc.executeAll('import os')
 	rc.executeAll('os.environ["PYPROP_SINGLEPROC"] = "1"')
 	rc.executeAll('execfile("example.py")')
 
 	#scatter delay list
+	print "Distributing jobs..."
 	rc.scatterAll("delayList", delayList)
 	rc.scatterAll("partitionId", r_[:partitionCount])
 	rc.pushAll(args=args)
 
 	#run
+	print "Running jobs..."
 	rc.executeAll('args["delayList"] = delayList')
 	rc.executeAll('args["outputfile"] = args["outputfile"] % partitionId[0]')
 	rc.executeAll('RunDelayScan(**args)')
-	
-	
+
+	#gather all files into one
+	print "Gathering all outputfiles into one..."
+	filenames = [outputfile % i for i in range(partitionCount)]
+	combinedFile = outputfile.replace("%i", "all")
+	rc.push(1, filenames=filenames, combinedFile=combinedFile)
+	rc.execute(1, 'ConcatenateHDF5(filenames, combinedFile)')
+	#remove all single proc files
+	rc.executeAll('os.unlink(args["outputfile"])')
+
+	print "Done."
 
 def SubmitDelayScan(**args):
 	delayList = args["delayList"]
