@@ -1,0 +1,16 @@
+#Representation for the bspline representation
+BSplineRepresentation = Class("BSpline::BSplineRepresentation", "../representation/bspline/bsplinerepresentation.h")
+no_virtual(BSplineRepresentation)
+use_shared_ptr(BSplineRepresentation)
+
+BSplineGridRepresentation = Class("BSpline::BSplineGridRepresentation", "../representation/bspline/bsplinegridrepresentation.h")
+no_virtual(BSplineGridRepresentation)
+use_shared_ptr(BSplineGridRepresentation)
+
+#transform
+BSplinePropagator = Template("BSpline::Propagator", "../transform/bspline/bsplinepropagator.h")
+BSplinePropagator("1", "BSplinePropagator_1")
+BSplinePropagator("2", "BSplinePropagator_2")
+BSplinePropagator("3", "BSplinePropagator_3")
+BSplinePropagator("4", "BSplinePropagator_4")
+

@@ -21,6 +21,8 @@ extern "C"
 	void LAPACK_NAME(zgeqrf)( int* M, int* N, cplx* A, int* LDA, cplx* TAU, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zungqr)( int* M, int* N, int *K, cplx* A, int* LDA, cplx* TAU, cplx* WORK, int* LWORK, int* INFO );
     void LAPACK_NAME(zunmqr)( char* SIDE, char* TRANS, int* M, int* N, int* K, cplx* A, int* LDA, cplx* TAU, cplx* C, int* LDC, cplx* WORK, int* LWORK, int* INFO );
+	void LAPACK_NAME(zhbgv)( char* JOBZ, char* UPLO, int* N, int* KA, int* KB, cplx* AB, int* LDAB, cplx* BB, int* LDBB, double* W, cplx* Z, int* LDZ, cplx* WORK, double* RWORK, int* INFO);
+	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
 }
 
 
@@ -32,7 +34,9 @@ class LAPACK
 
 public:
 	typedef Array<T, 1> VectorType;
+	typedef Array<int, 1> VectorTypeInt;
 	typedef Array<double, 1> DoubleVectorType;
+	typedef Array<cplx, 1> ComplexDoubleVectorType;
 	typedef Array<T, 2> MatrixType;
 
 	LAPACK()
@@ -74,6 +78,11 @@ public:
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix );
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, VectorType &vector );
 
+	int CalculateEigenvectorFactorizationGeneralizedHermitianBanded(bool calculateEigenvetors, HermitianStorage storage, MatrixType &matrixA, 
+			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors);
+
+	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
+
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;
 	Array<std::complex<float>, 1> complexSingleWork;
@@ -90,6 +99,12 @@ private:
 	//void PreconditionCompleteQRFactorization(MatrixType R, VectorType reflectors, MatrixType Q);
 	void PreconditionCompleteQRFactorization(MatrixType &matrix, VectorType &reflectors);
 	void PreconditionApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix );
+
+	void PreconditionCalculateEigenvectorFactorizationGeneralizedHermitianBanded(bool calculateEigenvetors, HermitianStorage storage, MatrixType &matrixA, 
+			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors);
+
+	void PreconditionSolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
+
 };
 
 
@@ -150,6 +165,26 @@ void LAPACK<T>::PreconditionApplyQRTransformation( MultiplicationSide side, Mult
 {
 	//TODO: ADD preconditions
 }
+
+
+template<class T>
+void LAPACK<T>::PreconditionCalculateEigenvectorFactorizationGeneralizedHermitianBanded(bool calculateEigenvetors, HermitianStorage storage, MatrixType &matrixA, 
+			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors)
+
+{
+	BZPRECONDITION(matrixA.extent(0) == matrixB.extent(0));
+	BZPRECONDITION(matrixA.extent(1) == matrixB.extent(1));
+	BZPRECONDITION(matrixA.extent(0) == eigenvalues.extent(0));
+	BZPRECONDITION(matrixA.extent(0) == eigenvectors.extent(0));
+}
+
+template<class T>
+void LAPACK<T>::PreconditionSolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, 
+		int &subDiagonals, int &superDiagonals)
+{
+	//TODO: Add preconditions
+}
+
 
 /*
  * Implementation for complex<double>
@@ -376,6 +411,106 @@ inline int LAPACK<cplx>::ApplyQRTransformation( MultiplicationSide side, Multipl
 
 	MatrixType matrix(vector.data(), shape, stride, blitz::neverDeleteData);
 	return ApplyQRTransformation(side, transpose, qrMatrix, reflectors, matrix);
+}
+
+
+/*
+ * Solve generalized eigenvalue problem for hermitian banded matrices A and B:  Ax = lBx
+ */
+template<>
+inline int LAPACK<cplx>::CalculateEigenvectorFactorizationGeneralizedHermitianBanded(bool calculateEigenvectors,
+                                                                                     HermitianStorage storage,
+                                                                                     MatrixType &matrixA, 
+                                                                                     MatrixType &matrixB, 
+                                                                                     DoubleVectorType &eigenvalues, 
+                                                                                     MatrixType &eigenvectors)
+{
+
+	// Some sanity checks on input
+	PreconditionCalculateEigenvectorFactorizationGeneralizedHermitianBanded(calculateEigenvectors, storage, matrixA, matrixB, eigenvalues, eigenvectors);
+
+	// Should we calculate eigenvectors
+	char jobz = calculateEigenvectors ? 'V' : 'N';
+
+	// How is matrices stored?
+	char uplo = storage == HermitianUpper ? 'U' : 'L';
+
+	// Dimensions of input matrices
+	int n = matrixA.extent(0);
+	int ldab = matrixA.extent(1);
+	int ldbb = matrixB.extent(1);
+	int ka = ldab - 1;
+	int kb = ldbb - 1;
+
+	int ldz = n;
+
+	// Resize work arrays if needed
+	if (complexDoubleWork.extent(1) < n) { complexDoubleWork.resize(n); }
+	if (doubleWork.extent(1) < 3 * n) { doubleWork.resize(3 * n); }
+
+	int info;
+
+	
+	//Call LAPACK to perfrom calculation
+	LAPACK_NAME(zhbgv)(
+		&jobz,                       // Eigenvalues only or eigenvalues+eigenvectors
+		&uplo,                       // What is stored: upper or lower triangle of matrix
+		&n,                          // Order of input matrices >= 0
+		&ka,                         // Number of super- / sub-diagonals in matrix A
+		&kb,                         // Number of super- / sub-diagonals in matrix B
+		matrixA.data(),
+		&ldab,                       // Leading dimension of A, >= KA+1
+		matrixB.data(),
+		&ldbb,                       // Leading dimension of B, >= KB+1
+		eigenvalues.data(),          // (out) Eigenvalues in ascending order
+		eigenvectors.data(),         // (out) Eigenvectors (Z)
+		&ldz,                        // (in) Leading dimension of eigenvetor array
+		complexDoubleWork.data(),
+		doubleWork.data(),
+		&info);
+
+
+	if (info < 0)
+	{
+		cout << "WARNING: (zhbgv) argument i had illegal value, i = " << info << endl;
+	}
+	else if (0 < info <= n)
+	{
+		cout << "WARNING: (zhbgv) algorithm failed to converge! INFO =  " << info << endl;
+	}
+	else if (0 < info > n)
+	{
+		cout << "WARNING: (zhbgv) matrix B not positive definite! INFO = " << info << endl;
+	}
+
+	return info;
+}
+
+/*
+ * Solve banded linear system of complex equations.
+ */
+template<>
+inline int LAPACK<cplx>::SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals)
+{
+	// Dimensions of input arrays
+	int n = equationMatrix.extent(0);
+	int kl = subDiagonals;
+	int ku = superDiagonals;
+	int nhrs = 1;
+	int ldab = equationMatrix.extent(1);
+	int ldb = rightHandVector.extent(0);
+
+	int info;
+	
+	// Call LAPACK routine, solve system of equations
+	LAPACK_NAME(zgbsv) ( &n, &kl, &ku, &nhrs, equationMatrix.data(), &ldab, pivotVector.data(), rightHandVector.data(), &ldb, &info);
+
+	if (info != 0)
+	{
+		cout << "WARNING: Could not solve system of equations " << info << endl;
+	}
+
+	return info;
 }
 
 }} //Namespaces

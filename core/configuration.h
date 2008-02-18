@@ -2,6 +2,7 @@
 #define CONFIGURATION_H
 
 #include <string>
+#include "utility/boostpythonhack.h"
 
 enum ConfigSectionMode
 {
@@ -23,11 +24,13 @@ public:
 	bool HasValue(const std::string &name) const;
 	template<class T> T Get(const std::string &name) const;
 	template<class T> T Set(const std::string &name, const T& value);
-	
+
 	template<class T> void Get(const std::string &name, T& dest) const
 	{
 		dest = Get<T>(name);
 	}
+
+	const object GetPythonConfigSection() const;
 };
 
 #endif

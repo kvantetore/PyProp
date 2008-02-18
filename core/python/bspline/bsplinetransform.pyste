@@ -1,0 +1,5 @@
+#transform
+OrthoPolPropagator = Template("BSpline::Propagator", "transform/bspline/bsplinepropagator.h")
+OrthoPolPropagator("1", "BSplinePropagator_1")
+
+

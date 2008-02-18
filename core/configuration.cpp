@@ -8,12 +8,9 @@
 #undef _POSIX_C_SOURCE
 #endif
 
-#include <boost/python.hpp>
 #include <blitz/array.h>
 #include <complex>
 #include <map>
-
-using namespace boost::python;
 
 typedef std::map<std::string, std::string> ConfigMap;
 
@@ -67,7 +64,7 @@ ConfigSection::~ConfigSection()
 		{
 			Py_DECREF((PyObject*)SectionObject);
 			SectionObject = 0;
-			}
+		}
 	}
 } 
 
@@ -82,6 +79,18 @@ ConfigSection::ConfigSection(const ConfigSection& other)
 		SectionObject = other.SectionObject;
 		Py_INCREF((PyObject*)SectionObject);
 	}
+}
+
+const object ConfigSection::GetPythonConfigSection() const
+{
+	if (Mode != ConfigSectionModePython)
+	{
+		throw std::runtime_error("ConfigSection Not implemented!");
+	}
+	const handle<> hndl(borrowed((PyObject*)this->SectionObject));
+	const object config_obj(hndl);
+	
+	return config_obj;
 }
 
 template<class T>
@@ -128,6 +137,7 @@ void ConfigSection::Set(const std::string &name, const T &value)
 */
 
 template bool ConfigSection::Get<bool>(const std::string &name) const;
+template object ConfigSection::Get<object>(const std::string &name) const;
 template int ConfigSection::Get<int>(const std::string &name) const;
 template double ConfigSection::Get<double>(const std::string &name) const;
 template std::string ConfigSection::Get<std::string>(const std::string &name) const;
