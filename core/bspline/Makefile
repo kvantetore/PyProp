@@ -8,8 +8,8 @@ DESTDIR      := $(call ABS_PATH,$(PYPROP_ROOT)/pyprop/core)
 
 PYSTEFILES   := wrapper.pyste
 SOURCEFILES  := wrapper.cpp \
+                ../transform/bspline/bspline.cpp \
 				../transform/bspline/bsplinepropagator.cpp \
-				../transform/bspline/bspline.cpp \
 				../representation/bspline/bsplinerepresentation.cpp \
 				../representation/bspline/bsplinegridrepresentation.cpp
 

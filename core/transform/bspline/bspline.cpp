@@ -385,7 +385,49 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 		b(i) = ProjectOnBSpline(functionGridValues, i);
 	}
 
-	/* Solving banded linear system of equations 
+	/* 
+	 * Solving banded linear system of equations 
+	 *  to obtain expansion coefficients 
+	 */
+	SetupOverlapMatrixFull();
+	int offDiagonalBands = MaxSplineOrder - 1;
+	VectorTypeInt pivot(NumberOfBSplines);
+	pivot = 0;
+	
+	linalg::LAPACK<cplx> lapack;
+	int info = lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, b, offDiagonalBands, 
+			offDiagonalBands);
+
+	OverlapMatrixFullComputed = false;
+	
+	return b;
+}
+
+/* 
+ * Expand a function f in the B-spline basis. The function is precalculated
+ * on the quadrature grid, and passed as a complex 1D blitz::Array.
+ */
+blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> function)
+{
+	using namespace blitz;
+
+	VectorTypeCplx b = VectorTypeCplx(NumberOfBSplines);
+
+	int gridChunkSize = QuadratureGrid.extent(1);
+	VectorTypeCplx functionSlice = VectorTypeCplx(gridChunkSize);
+
+	for (int i = 0; i < NumberOfBSplines; i++)
+	{
+		int startIndex = GetGridIndex(i);
+		int stopIndex = startIndex + gridChunkSize - 1;
+		functionSlice = function( Range(startIndex, stopIndex) );
+
+		// Compute projection on b-spline i
+		b(i) = ProjectOnBSpline(functionSlice, i);
+	}
+
+	/* 
+	 * Solving banded linear system of equations 
 	 *  to obtain expansion coefficients 
 	 */
 	SetupOverlapMatrixFull();

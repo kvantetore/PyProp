@@ -14,3 +14,6 @@ BSplinePropagator("2", "BSplinePropagator_2")
 BSplinePropagator("3", "BSplinePropagator_3")
 BSplinePropagator("4", "BSplinePropagator_4")
 
+#bspline main class
+BSpline = Class("BSpline::BSpline", "../transform/bspline/bspline.h")
+use_shared_ptr(BSpline)

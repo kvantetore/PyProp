@@ -24,7 +24,8 @@ private:
 	VectorType BreakpointSequence;
 	VectorTypeInt ContinuitySequence;
 	VectorType KnotSequence;
-	VectorTypeInt KnotBreakpointMap;    // Map a knot index to "top" knot index
+	VectorTypeInt KnotGridIndexMap;    // Map a knot index to corresponding global grid index
+	VectorTypeInt TopKnotMap;          // Map a knot index to "top" knot index
 	VectorType Weights;
 	VectorType Nodes;
 	VectorType Ones;
@@ -57,7 +58,8 @@ public:
 	VectorType GetBreakpointSequence() { return BreakpointSequence; }
 	VectorTypeInt GetContinuitySequence() { return ContinuitySequence; }
 	VectorType GetKnotSequence() { return KnotSequence; }
-	VectorTypeInt GetKnotBreakpointMap() { return KnotBreakpointMap; }
+	VectorTypeInt GetKnotGridIndexMap() { return KnotGridIndexMap; }
+	VectorTypeInt GetTopKnotMap() { return TopKnotMap; }
 	VectorType GetWeights() { return Weights; }
 	VectorType GetNodes() { return Nodes; }
 	VectorType GetQuadratureGrid(int i) { return QuadratureGrid(i, blitz::Range::all()); }
@@ -69,7 +71,8 @@ public:
 	void ResizeBreakpointSequence(int size) { BreakpointSequence.resize(size); }
 	void ResizeContinuitySequence(int size) { ContinuitySequence.resize(size); }
 	void ResizeKnotSequence(int size) { KnotSequence.resize(size); }
-	void ResizeKnotBreakpointMap(int size) { KnotBreakpointMap.resize(size); }
+	void ResizeKnotGridIndexMap(int size) { KnotGridIndexMap.resize(size); }
+	void ResizeTopKnotMap(int size) { TopKnotMap.resize(size); }
 	void ResizeWeights(int size) { Weights.resize(size); }
 	void ResizeNodes(int size) { Nodes.resize(size); }
 	void ResizeQuadratureGridGlobal(int size) { QuadratureGridGlobal.resize(size); }
@@ -95,6 +98,7 @@ public:
 
 	// B-spline-expansion related functions
 	VectorTypeCplx ExpandFunctionInBSplines(object);
+	VectorTypeCplx ExpandFunctionInBSplines(blitz::Array<cplx, 1> function); // Expand pre-evaluated function in b-spline basis
 	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx); // Reconstruct on quadrature points
 	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx, VectorType); // Reconstruct on given grid
 	
@@ -102,6 +106,7 @@ public:
 	int ComputeStartIndex(int, int);
 	int ComputeStopIndex(int, int);
 	int ComputeIndexShift(int);
+	int GetGridIndex(int);
 	double ScaleAndTranslate(double, double, double);
 	
 };
@@ -128,15 +133,27 @@ inline int BSpline::ComputeStopIndex(int startIndex, int rightIndex)
 
 inline int BSpline::ComputeIndexShift(int i)
 {
-	return KnotBreakpointMap(i) - i;
+	return TopKnotMap(i) - i;
 }
 
-
+/*
+ * Scale and translate a coordinate from [-1,1] to [a,b]
+ */
 inline double BSpline::ScaleAndTranslate(double x, double a, double b)
 {
 	return (x - 1.0) * (b - a) / 2.0 + b;
 }
 
+
+/*
+ * Get the global grid point correspoding to a knot point
+ */
+inline int BSpline::GetGridIndex(int knotIndex)
+{
+	return KnotGridIndexMap(knotIndex);
+}
+
 }; //Namespace
 
 #endif
+

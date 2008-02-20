@@ -20,6 +20,10 @@ try:
 	from libode import *
 except:
 	print "Warning: could not load ODE wrapper (%s)" % sys.exc_info()[1]
+try:
+	from libbspline import *
+except:
+	print "Warning: could not load B-spline library (%s)" % sys.exc_info()[1]
 
 
 def EnumerateRankClasses(baseName):
