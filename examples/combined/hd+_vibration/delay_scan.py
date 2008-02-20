@@ -502,9 +502,11 @@ def PropagateDelayScan(**args):
 				#propagate until the next pump time
 				prop.Duration = pumpTimes[i+1]
 				for t in prop.Advance(False): pass
+		#Normalize after the pumping is complete
+		prop.psi.Normalize()
 
 		#0) Store the initial packet
-		checkpoint()
+		#checkpoint()
 
 		#1) Propagate until the pulse starts
 		prop.Duration = pulseStart - 2*pulseDuration
@@ -513,7 +515,7 @@ def PropagateDelayScan(**args):
 			pass
 		
 		#1a) Save the wavepacket before the pulse to see how much has flowed out
-		checkpoint()	
+		#checkpoint()	
 		
 		#2) Propagate until the end of the pulse
 		prop.Duration = pulseStart + 2*pulseDuration
