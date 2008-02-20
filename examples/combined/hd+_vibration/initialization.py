@@ -11,10 +11,12 @@ def SetupConfig(**args):
 	if "dt" in args:
 		dt = args["dt"]
 		conf.Propagation.timestep = dt
+		print "Using timestep %.4f" % dt
 
 	#Modify the config
 	if "imtime" in args:
 		imtime = args["imtime"]
+		if imtime: print "Using imaginary time"
 		propSection = conf.Propagation
 		dt = abs(propSection.timestep)
 		renormalize = False
@@ -25,30 +27,34 @@ def SetupConfig(**args):
 		propSection.timestep = dt
 		propSection.renormalization = renormalize
 
-	if 'species' in args:
+	if 'species' in args:	
 		species = args["species"]
 		conf.VibrationalPotential.species = species
+		if imtime: print "Using species %s" % species
 
 	if "molecule" in args:
 		molecule = args["molecule"].lower()
+		print "Using molecule %s" % molecule
 		if molecule == "h2+":
 			conf.RadialPropagator.mass = ReducedMass(mass_proton_au, mass_proton_au)
-			conf.ElectronicCoupling.static_dipole_moment = 0
+			conf.ProbePulsePotential.static_dipole_moment = 0
 		elif molecule == "d2+":
 			conf.RadialPropagator.mass = ReducedMass(mass_deuteron_au, mass_deuteron_au)
-			conf.ElectronicCoupling.static_dipole_moment = 0
+			conf.ProbePulsePotential.static_dipole_moment = 0
 		elif molecule == "hd+":
 			conf.RadialPropagator.mass = ReducedMass(mass_deuteron_au, mass_proton_au)
-			conf.ElectronicCoupling.static_dipole_moment = 1. / 3.
+			conf.ProbePulsePotential.static_dipole_moment = 1. / 3.
 		else:
 			raise Exception("Unknown molecule '%s'" % molecule)
 	
 	if "staticDipoleMoment" in args:
 		staticDipoleMoment = args["staticDipoleMoment"]
-		conf.ElectronicCoupling.static_dipole_moment = staticDipoleMoment
+		print "Using static dipole moment %.4f" % staticDipoleMoment
+		conf.ProbePulsePotential.static_dipole_moment = staticDipoleMoment
 
 	if 'radialScaling' in args:
 		radialScaling = args["radialScaling"]
+		print "Using radial scaling %i" % radialScaling
 		rank0 = conf.RadialRepresentation.rank0
 		radialRange = rank0[1] - rank0[0]
 		radialSize = rank0[2]
@@ -56,37 +62,69 @@ def SetupConfig(**args):
 		rank0[1] = radialRange / radialScaling + rank0[0]
 		rank0[2] = radialSize / radialScaling
 
+	#Probe Pulse
 	if 'pulseDelay' in args:
 		pulseDelay = args["pulseDelay"]
-		conf.ElectronicCoupling.delay = pulseDelay
+		print "Using pulse delay %.4f fs" % (pulseDelay / femtosec_to_au)
+		conf.ProbePulsePotential.delay = pulseDelay
 
 	if "pulsePhase" in args:
 		pulsePhase = args["pulsePhase"]
-		conf.ElectronicCoupling.phase = pulsePhase
+		print "Using pulse phase %.4f" % pulsePhase
+		conf.ProbePulsePotential.phase = pulsePhase
 
 	if "pulseDuration" in args:
 		pulseDuration = args["pulseDuration"]
-		conf.ElectronicCoupling.duration = pulseDuration
+		print "Using pulse duration %i fs" % (pulseDuration / femtosec_to_au)
+		conf.ProbePulsePotential.duration = pulseDuration
 	
 	if "pulseIntensity" in args:
 		pulseIntensity = args["pulseIntensity"]
-		conf.ElectronicCoupling.intensity = pulseIntensity
+		print "Using pulse intensity %s W/cm^2" % pulseIntensity
+		conf.ProbePulsePotential.intensity = pulseIntensity
 
+	#Control Pulse
+	if 'controlDelay' in args:
+		controlDelay = args["controlDelay"]
+		print "Using control pulse delay %.4f fs" % (controlDelay / femtosec_to_au)
+		conf.ControlPulsePotential.delay = controlDelay
+
+	if "controlPhase" in args:
+		controlPhase = args["controlPhase"]
+		print "Using control pulse phase %.4f" % controlPhase
+		conf.ControlPulsePotential.phase = controlPhase
+
+	if "controlDuration" in args:
+		controlDuration = args["controlDuration"]
+		print "Using control pulse duration %i fs" % (controlDuration / femtosec_to_au)
+		conf.ControlPulsePotential.duration = controlDuration
+	
+	if "controlIntensity" in args:
+		controlIntensity = args["controlIntensity"]
+		print "Using control pulse intensity %s W/cm^2" % controlIntensity
+		conf.ControlPulsePotential.intensity = controlIntensity
+
+	#Propagation
 	if "duration" in args:
 		duration = args["duration"]
+		print "Propagating for %i fs" % (duration / femtosec_to_au)
 		conf.Propagation.duration = duration
 
 	if "silent" in args:
 		silent = args["silent"]
 		conf.Propagation.silent = silent
 
+	#Pump Pulse
 	if "pumpFrequency" in args:
+		print "Using pump frequency %.4f" % args["pumpFrequency"]
 		conf.InitialCondition.pump_frequency = args["pumpFrequency"]
 
 	if "pumpProbability" in args:
+		print "Using pump probability %.4f" % args["pumpProbability"]
 		conf.InitialCondition.pump_probability = args["pumpProbability"]
 
 	if "pumpCount" in args:
+		print "Using pump count %.4f" % args["pumpCount"]
 		conf.InitialCondition.pump_count = args["pumpCount"]
 
 	if "potentialSlope" in args:

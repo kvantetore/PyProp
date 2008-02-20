@@ -474,8 +474,8 @@ def PropagateDelayScan(**args):
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 
-	pulseStart = conf.ElectronicCoupling.delay
-	pulseDuration = conf.ElectronicCoupling.duration
+	pulseStart = conf.ProbePulsePotential.delay
+	pulseDuration = conf.ProbePulsePotential.duration
 	
 	output = tables.openFile(outputfile, "a")
 	try:

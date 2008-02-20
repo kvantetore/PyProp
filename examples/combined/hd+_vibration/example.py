@@ -223,7 +223,7 @@ def Propagate(**args):
 def PlotElectricField(**args):
 	conf = SetupConfig(**args)
 	psi = pyprop.CreateWavefunction(conf)
-	pot = pyprop.CreatePotentialFromSection(conf.ElectronicCoupling, "ElectronicCoupling", psi)
+	pot = pyprop.CreatePotentialFromSection(conf.ProbePulsePotential, "ProbePulsePotential", psi)
 	t = r_[0:conf.Propagation.duration:abs(conf.Propagation.timestep)]
 	field = array([pot.GetTimeValue(curT) for curT in t])
 	plot(t/femtosec_to_au, field)
