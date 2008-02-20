@@ -30,7 +30,7 @@ def SetupConfig(**args):
 	if 'species' in args:	
 		species = args["species"]
 		conf.VibrationalPotential.species = species
-		if imtime: print "Using species %s" % species
+		print "Using species %s" % species
 
 	if "molecule" in args:
 		molecule = args["molecule"].lower()
@@ -59,8 +59,9 @@ def SetupConfig(**args):
 		radialRange = rank0[1] - rank0[0]
 		radialSize = rank0[2]
 	
-		rank0[1] = radialRange / radialScaling + rank0[0]
-		rank0[2] = radialSize / radialScaling
+		rank0[1] = radialRange / abs(radialScaling) + rank0[0]
+		if radialScaling > 0:
+			rank0[2] = radialSize / abs(radialScaling)
 
 	#Probe Pulse
 	if 'pulseDelay' in args:
