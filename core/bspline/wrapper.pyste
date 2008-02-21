@@ -7,12 +7,19 @@ BSplineGridRepresentation = Class("BSpline::BSplineGridRepresentation", "../repr
 no_virtual(BSplineGridRepresentation)
 use_shared_ptr(BSplineGridRepresentation)
 
-#transform
+#propagator
 BSplinePropagator = Template("BSpline::Propagator", "../transform/bspline/bsplinepropagator.h")
 BSplinePropagator("1", "BSplinePropagator_1")
 BSplinePropagator("2", "BSplinePropagator_2")
 BSplinePropagator("3", "BSplinePropagator_3")
 BSplinePropagator("4", "BSplinePropagator_4")
+
+#transform
+BSplineTransform = Template("BSpline::BSplineTransform", "../transform/bspline/bsplinetransform.h")
+BSplineTransform("1", "BSplineTransform_1")
+BSplineTransform("2", "BSplineTransform_2")
+BSplineTransform("3", "BSplineTransform_3")
+BSplineTransform("4", "BSplineTransform_4")
 
 #bspline main class
 BSpline = Class("BSpline::BSpline", "../transform/bspline/bspline.h")

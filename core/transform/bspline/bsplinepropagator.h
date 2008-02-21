@@ -29,7 +29,7 @@ private:
 public:
 
 	void ApplyConfigSection(const ConfigSection &config);
-	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, int rank);
+	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int rank);
 	void AdvanceStep(Wavefunction<Rank> &psi);
 	void MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi);
 	void ApplyMatrix(const blitz::Array<cplx, 2> &matrix, blitz::Array<cplx, 3> &data);

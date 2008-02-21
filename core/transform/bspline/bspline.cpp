@@ -285,7 +285,7 @@ double BSpline::BSplineOverlapIntegral(VectorType f, int i, int j)
 /*
  * Compute overlap integral between b-splines B_i d2/dx2 B_j.
  * Due to the compact support of b-splines, a given b-spline
- * will only overlap with k other splines (k: spline order).
+ * will only overlap with 2k-1 other splines (k: spline order).
  * This routine accounts for this and returns zero if |i-j| >= k.
  * NOTE: For now we must have j >= i!
  */

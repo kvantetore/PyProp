@@ -20,13 +20,12 @@ public:
 	typedef shared_ptr< CombinedRepresentation<Rank> > Ptr;
 
 	//Constructors
-	CombinedRepresentation() {}
-	virtual ~CombinedRepresentation() {}
-
-	virtual typename Representation<Rank>::RepresentationPtr Copy()
-	{
-		return typename Representation<Rank>::RepresentationPtr(new CombinedRepresentation<Rank>(*this));
-	}
+	CombinedRepresentation();
+	virtual ~CombinedRepresentation();
+	CombinedRepresentation(const CombinedRepresentation<Rank> &other);
+	CombinedRepresentation<Rank>& operator=(const CombinedRepresentation<Rank> &other);
+	
+	virtual typename Representation<Rank>::RepresentationPtr Copy();
 
 	//Get/Set the representation of the specified rank
 	Representation1DPtr GetRepresentation(int rank);

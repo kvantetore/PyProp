@@ -1,23 +1,12 @@
 #include "bsplinepropagator.h"
-#include "../../representation/representation.h"
-#include "../../representation/combinedrepresentation.h"
-#include "../../representation/bspline/bsplinerepresentation.h"
+#include "../representation/representation.h"
 #include "../../utility/blitzblas.h"
 #include "../../utility/blitztricks.h"
 #include "../../utility/blitzlapack.h"
 
 
-
 namespace BSpline
 {
-
-cplx ToCplx(double a)
-{
-	return cplx(a, 0);
-}
-
-BZ_DECLARE_FUNCTION(ToCplx);
-
 
 template<int Rank>
 void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
@@ -28,14 +17,12 @@ void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 
 
 template<int Rank>
-void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, int rank)
+void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int rank)
 {
 	using namespace blitz;
 
 	//Get b-spline object from wavefunction
-	typename CombinedRepresentation<Rank>::Ptr repr = dynamic_pointer_cast< CombinedRepresentation<Rank> >(psi.GetRepresentation());
-	BSplineRepresentation::Ptr subRepr = dynamic_pointer_cast< BSplineRepresentation >(repr->GetRepresentation(rank));
-	BSplineObject = subRepr->GetBSplineObject();
+	BSplineObject = bsplineObject;
 
 	//Set class parameters
 	PropagateRank = rank;

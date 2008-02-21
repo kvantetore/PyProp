@@ -19,6 +19,7 @@ void BSplineRepresentation::ApplyConfigSection(const ConfigSection &config)
 
 	// Get grid/weight size from BSpline object
 	int gridSize = BSplineObject->NumberOfBSplines;
+	cout << "Got BSpline size " << gridSize << endl;
 	Grid.resize(gridSize);
 	Grid = blitz::tensor::i;
 	Weights.resize(gridSize);

@@ -3,6 +3,8 @@
 
 #include "../../common.h"
 #include "../../wavefunction.h"
+#include "bspline.h"
+
 
 namespace BSpline
 {
@@ -17,14 +19,21 @@ class BSplineTransform
 {
 private:
 	int BaseRank;
+	int BSplineDataName;
+	int BSplineGridDataName;
+	BSpline::Ptr BSplineObject;
 
 public:
 	
 	// Constructor
-	BSplineTransform() {}
+	BSplineTransform() :
+		BaseRank(-1),
+		BSplineDataName(-1),
+		BSplineGridDataName(-1)
+	{}
 	~BSplineTransform() {}
 
-	void SetupStep(const Wavefunction<Rank> &psi, int baseRank);
+	void SetupStep(Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int baseRank);
 
 	/*
 	 * Transforms. We use functions from the BSPLINE class

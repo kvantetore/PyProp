@@ -10,6 +10,7 @@ PYSTEFILES   := wrapper.pyste
 SOURCEFILES  := wrapper.cpp \
                 ../transform/bspline/bspline.cpp \
 				../transform/bspline/bsplinepropagator.cpp \
+				../transform/bspline/bsplinetransform.cpp \
 				../representation/bspline/bsplinerepresentation.cpp \
 				../representation/bspline/bsplinegridrepresentation.cpp
 
@@ -18,12 +19,12 @@ OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libbspline
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 PYPROP_LIB_PATH := $(DESTDIR)
-LIBS         := $(LIBS) -lcore
+LIBS         := $(LIBS)
 all: $(MODULEFILE)
 
 $(MODULEFILE): $(OBJECTS)
 	rm -f $(MODULEFILE)
-	$(LD) $(LD_SHARED) -o $(MODULEFILE) $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH)) 
+	$(LD) $(LD_SHARED) -lcore -o $(MODULEFILE) $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH)) 
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste

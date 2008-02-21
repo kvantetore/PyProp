@@ -83,8 +83,6 @@ public:
 	double EvaluateBSpline(double, int, int);
 	double EvaluateBSplineDerivative2(double, int, int);
 	VectorType EvaluateBSplineOnGrid(VectorType, int);
-	void CreateBSplineTable();
-	void CreateBSplineDerivative2Table();
 	VectorType GetBSpline(int);
 	VectorType GetBSplineDerivative2(int);
 	double BSplineOverlapIntegral(int i, int j) { return BSplineOverlapIntegral(Ones, i, j); }
@@ -93,6 +91,8 @@ public:
 	//double EvaluateBSplineDerivative(int int);
 	double BSplineDerivative2OverlapIntegral(int, int);
 
+	void CreateBSplineTable();
+	void CreateBSplineDerivative2Table();
 	void ComputeOverlapMatrix();
 	void SetupOverlapMatrixFull();
 
