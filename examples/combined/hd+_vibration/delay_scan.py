@@ -50,7 +50,7 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	#Plot Energy Distribution
 	t, E, c = GetScanDelayEnergyDistribution(molecule=molecule, outputfile=filename, partitionCount=partitionCount)
 	figure(figsize=(figureSize, figureSize*3./4))
-	projectileEnergy_eV = (E+0.5)/2./eV_to_au
+	projectileEnergy_eV = E
 	pcolormesh(t, projectileEnergy_eV, sum(c, axis=1).transpose(), shading="flat")
 	xlabel("Pulse Delay")
 	ylabel("Energy")
@@ -87,7 +87,7 @@ def MakeDelayScanPlots(save=False):
 	def PlotEnergy(molecule, filename):
 		t, E, c = GetScanDelayEnergyDistribution(molecule=molecule, outputfile=filename, partitionCount=8)
 		figure(figsize=(size, size*3./4))
-		pcolormesh(t, (E+0.5)/2./eV_to_au, sum(c, axis=1).transpose(), shading="flat")
+		pcolormesh(t, E, sum(c, axis=1).transpose(), shading="flat")
 		xlabel("Pulse Delay")
 		ylabel("Energy")
 
@@ -225,6 +225,8 @@ def GetScanDelayEnergyDistribution(**args):
 	#To make the plots more consistent, we clamp it to 0
 	proj[where(proj<0.0)] = 0.0
 
+	E = (E + 0.5) / 2 / eV_to_au
+
 	return time, E, proj
 
 
@@ -238,8 +240,8 @@ def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	the energy distribution is then interpolated (with cubic splines)
 	over outputEnergies
 	"""
-	proj1 = dot(V1[:-1,:], psi[:,0]) / diff(E1)
-	proj2 = dot(V2[:-1,:], psi[:,1]) / diff(E2)
+	proj1 = dot(V1[:-1,:], psi[:,0]) #/ diff(E1)
+	proj2 = dot(V2[:-1,:], psi[:,1]) #/ diff(E2)
  
 	interp1 = spline.Interpolator(E1[:-1], abs(proj1)**2)
 	interp2 = spline.Interpolator(E2[:-1], abs(proj2)**2)
@@ -335,6 +337,31 @@ def GetStalloEngineCount():
 	rc = kernel.RemoteController((controllerHost, controllerPort))
 	return rc.getIDs()
 
+def SubmitAll():
+	args = {}
+	args["molecule"] = "d2+"
+	args["delayList"] = r_[0:800]
+
+	pulseDurations = [5, 8, 12, 14, 18]
+	controlIntensity = [0, 0.5e14, 1e14, 2e14]
+	probeIntensity = [0.5e14, 1e14, 3e14, 4e14]
+	controlDelay = [30, 40]
+
+
+
+def SubmitControlPumpExperiment(**args):
+	args["outputfile"] = "outputfiles/%s/control_%ifs_%ifs_%ie13_pump_%ifs_%ie13.h5" % \
+		( \
+		args["molecule"], \
+		args["controlDuration"]/femtosec_to_au, \
+		args["controlDelay"]/femtosec_to_au, \
+		args["controlIntensity"]/1e13, \
+		args["pulseDuration"]/femtosec_to_au, \
+		args["pulseIntensity"]/1e13 \
+		)
+
+	print args["outputfile"]
+	#SubmitDelayScanStallo(**args)
 
 def SubmitDelayScanStallo(**args):
 	delayList = args["delayList"]

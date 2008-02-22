@@ -175,7 +175,7 @@ def Propagate(**args):
 		nice way of grouping the output functionality
 		"""
 		corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
-		radialData.append(sum(abs(prop.psi.GetData())**2, axis=1))
+		radialData.append(prop.psi.GetData().copy())
 		
 		timeList.append(t/femtosec_to_au)
 
@@ -224,8 +224,9 @@ def PlotElectricField(**args):
 	conf = SetupConfig(**args)
 	psi = pyprop.CreateWavefunction(conf)
 	pot = pyprop.CreatePotentialFromSection(conf.ProbePulsePotential, "ProbePulsePotential", psi)
+	pot2 = pyprop.CreatePotentialFromSection(conf.ControlPulsePotential, "ProbePulsePotential", psi)
 	t = r_[0:conf.Propagation.duration:abs(conf.Propagation.timestep)]
-	field = array([pot.GetTimeValue(curT) for curT in t])
+	field = array([pot.GetTimeValue(curT) + pot2.GetTimeValue(curT) for curT in t])
 	plot(t/femtosec_to_au, field)
 
 	return t, field

@@ -63,6 +63,11 @@ def SetupConfig(**args):
 		if radialScaling > 0:
 			rank0[2] = radialSize / abs(radialScaling)
 
+	if "radialGrid" in args:
+		radialGrid = args["radialGrid"]
+		print "Using radial grid %s" % radialGrid
+		conf.RadialRepresentation.rank0 = list(radialGrid)
+		
 	#Probe Pulse
 	if 'pulseDelay' in args:
 		pulseDelay = args["pulseDelay"]
