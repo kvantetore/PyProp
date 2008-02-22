@@ -68,6 +68,8 @@ void BSplineTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi)
 				BSplineObject->ExpandFunctionInBSplines(psiSlice);
 		}
 	}
+
+	psi.SetActiveBuffer(BSplineDataName);
 }
 
 /*
@@ -110,6 +112,7 @@ void BSplineTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi)
 				BSplineObject->ConstructFunctionFromBSplineExpansion(psiSlice);
 		}
 	}
+	psi.SetActiveBuffer(BSplineGridDataName);
 }
 
 template class BSplineTransform<1>;

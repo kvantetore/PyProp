@@ -23,8 +23,8 @@ private:
 	int PropagateRank;
 	double Mass;
 
-	void SetupHamiltonianMatrix(blitz::Array<cplx, 2> HamiltonianMatrix);
-	void ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> HamiltonianMatrix);
+	void SetupHamiltonianMatrix(blitz::Array<cplx, 2> &HamiltonianMatrix);
+	void ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> &HamiltonianMatrix);
 
 public:
 

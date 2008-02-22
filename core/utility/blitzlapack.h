@@ -445,8 +445,8 @@ inline int LAPACK<cplx>::CalculateEigenvectorFactorizationGeneralizedHermitianBa
 	int ldz = n;
 
 	// Resize work arrays if needed
-	if (complexDoubleWork.extent(1) < n) { complexDoubleWork.resize(n); }
-	if (doubleWork.extent(1) < 3 * n) { doubleWork.resize(3 * n); }
+	if (complexDoubleWork.extent(0) < n) { complexDoubleWork.resize(n); }
+	if (doubleWork.extent(0) < 3 * n) { doubleWork.resize(3 * n); }
 
 	int info;
 
@@ -470,18 +470,21 @@ inline int LAPACK<cplx>::CalculateEigenvectorFactorizationGeneralizedHermitianBa
 		&info);
 
 
-	if (info < 0)
+	if (info != 0)
 	{
-		cout << "WARNING: (zhbgv) argument i had illegal value, i = " << info << endl;
-	}
-	else if (0 < info <= n)
-	{
-		cout << "WARNING: (zhbgv) algorithm failed to converge! INFO =  " << info << endl;
-	}
-	else if (0 < info > n)
-	{
-		cout << "WARNING: (zhbgv) matrix B not positive definite! INFO = " << info << endl;
-	}
+		if (info < 0)
+		{
+			cout << "WARNING: (zhbgv) argument i had illegal value, i = " << info << endl;
+		}
+		else if (info <= n)
+		{
+			cout << "WARNING: (zhbgv) algorithm failed to converge! INFO =  " << info << endl;
+		}
+		else if (info > n)
+		{
+			cout << "WARNING: (zhbgv) matrix B not positive definite! INFO = " << info << endl;
+		}
+	}	 
 
 	return info;
 }

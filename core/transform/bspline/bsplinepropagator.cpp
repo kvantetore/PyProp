@@ -3,6 +3,7 @@
 #include "../../utility/blitzblas.h"
 #include "../../utility/blitztricks.h"
 #include "../../utility/blitzlapack.h"
+#include <cmath>
 
 
 namespace BSpline
@@ -53,11 +54,13 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpl
 			expDot = 0;
 			for (int k=0; k<N; k++)
 			{
-				expDot += Eigenvectors(k,i) * exp(- I * dt * Eigenvalues(k)) * Eigenvectors(k,j);
-				hamDot += Eigenvectors(k,i) * Eigenvalues(k) * Eigenvectors(k,j);
+				//expDot += Eigenvectors(k,i) * exp(- I * dt * Eigenvalues(k)) * Eigenvectors(k,j);
+				//hamDot += Eigenvectors(k,i) * Eigenvalues(k) * Eigenvectors(k,j);
+				expDot += Eigenvectors(k,i) * conj(Eigenvectors(k,j));
+				hamDot += Eigenvectors(k,i) * conj(Eigenvectors(k,j));
 			}
 			PropagationMatrix(i,j) = expDot;
-			HamiltonianMatrix(i, j) = hamDot;
+			HamiltonianMatrix(i,j) = hamDot;
 		}
 	}
 
@@ -140,23 +143,25 @@ void Propagator<Rank>::ApplyMatrix(const blitz::Array<cplx, 2> &matrix, blitz::A
  */
 
 template<int Rank>
-void Propagator<Rank>::SetupHamiltonianMatrix(blitz::Array<cplx, 2> HamiltonianMatrix)
+void Propagator<Rank>::SetupHamiltonianMatrix(blitz::Array<cplx, 2> &HamiltonianMatrix)
 {
 	// I = ka+1+j
 	// J = j
 	
 	int k = BSplineObject->MaxSplineOrder;
 	int N = BSplineObject->NumberOfBSplines;
-	int ldab = k + 1;
+	//int ldab = k + 1;
+	int ldab = k;
 	HamiltonianMatrix.resize(N, ldab);
 
 	for (int i = 0; i < N; i++)
 	{
-		int jMax = std::min(i+k, N);
+		int jMax = std::min(i + k, N);
 		for (int j = i; j < jMax; j++)
 		{
 			int lapackI = k - 1 + i - j;
 			int lapackJ = j;
+
 			HamiltonianMatrix(lapackJ,lapackI) = BSplineObject->BSplineDerivative2OverlapIntegral(i,j);
 		}
 	}
@@ -165,8 +170,9 @@ void Propagator<Rank>::SetupHamiltonianMatrix(blitz::Array<cplx, 2> HamiltonianM
 	HamiltonianMatrix *= -1.0 / (2.0 * Mass);
 }
 
+
 template<int Rank>
-void Propagator<Rank>::ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> HamiltonMatrix)
+void Propagator<Rank>::ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> &HamiltonMatrix)
 {
 	using namespace blitz;
 	
@@ -182,7 +188,7 @@ void Propagator<Rank>::ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> Hami
 	//Array<double, 2> doubleOverlapMatrix = BSplineObject->GetBSplineOverlapMatrix();
 	//Array<cplx, 2> overlapMatrix(doubleOverlapMatrix.shape);
 	//overlapMatrix = doubleOverlapMatrix(tensor::i);
-	Array<cplx, 2> overlapMatrix ( BSplineObject->GetBSplineOverlapMatrix()(tensor::i) );
+	Array<cplx, 2> overlapMatrix ( BSplineObject->GetBSplineOverlapMatrix()(tensor::i, tensor::j) );
 	
 	// Solve generalized eigenvalue problem using LAPACK routine zhbgv
 	linalg::LAPACK<cplx> lapack;
@@ -192,6 +198,17 @@ void Propagator<Rank>::ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> Hami
 	                                                            overlapMatrix,
 	                                                            Eigenvalues,
                                                                 Eigenvectors);
+
+	//Normalize eigenvectors
+	for (int k = 0; k < N; k++)
+	{
+		Array<double, 1> evReal( real(Eigenvectors(k, Range::all())) );
+		Array<double, 1> evImag( imag(Eigenvectors(k, Range::all())) );
+		Array<double, 1> evAbsSqr( evReal(Range::all()) * evReal(Range::all())
+			+ evImag(Range::all()) * evImag(Range::all()) );
+		double norm = sum(evAbsSqr);
+		Eigenvectors(k, Range::all()) /= sqrt(norm);
+	}
 }
 
 

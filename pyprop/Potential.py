@@ -138,11 +138,11 @@ class StaticPotentialWrapper(PotentialWrapper):
 		self.Potential.InitializePotential(self.psi, self.Storage)
 
 		if hasattr(self.ConfigSection, "grid_function"):
-			func = self.ConfigSection.function
+			func = self.ConfigSection.grid_function
 			updateFunc = eval("core.SetPotentialFromGridFunction_" + str(self.psi.GetRank()))
 			updateFunc(self.Potential, timeStep, self.psi, self.psi.GetRepresentation(), func, self.ConfigSection)
 	
-		if hasattr(self.ConfigSection, "function"):
+		elif hasattr(self.ConfigSection, "function"):
 			func = self.ConfigSection.function
 			potentialData = self.Potential.GetPotentialData()
 			func(self.psi, self.ConfigSection, potentialData)
