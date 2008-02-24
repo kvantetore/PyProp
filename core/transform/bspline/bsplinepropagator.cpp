@@ -39,28 +39,30 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpl
 	//Obtain eigenvectors for HamiltonianMatrixSetup
 	ComputeHamiltonianEigenvectors(HamiltonianMatrixSetup);
 
-	//Create transform-and-multiply-matrix matrices
+	//Create propagation matrix
 	PropagationMatrix.resize(Eigenvectors.shape());
-	HamiltonianMatrix.resize(Eigenvectors.shape());
 
-	cplx hamDot = 0;
+	/*
+	 * Compute exponential of hamilton matrix H (-> propagation matrix)
+	 * This is done using right and left eigenvectors of S**-1 * H,
+	 * (X and Y**H respectively). Since X**-1 = Y**H, we have:
+	 *
+	 *     exp(H) = X * exp(L) * Y**H
+	 *
+	 * Eigenvector matrices are stored in col-major (FORTRAN) order.
+	 */
 	cplx expDot = 0;
-
 	for (int i=0; i<N; i++)
 	{
 		for (int j=0; j<N; j++)
 		{
-			hamDot = 0;
 			expDot = 0;
 			for (int k=0; k<N; k++)
 			{
-				//expDot += Eigenvectors(k,i) * exp(- I * dt * Eigenvalues(k)) * Eigenvectors(k,j);
-				//hamDot += Eigenvectors(k,i) * Eigenvalues(k) * Eigenvectors(k,j);
-				expDot += Eigenvectors(k,i) * conj(Eigenvectors(k,j));
-				hamDot += Eigenvectors(k,i) * conj(Eigenvectors(k,j));
+				expDot += Eigenvectors(k,i) * exp(-I * dt * Eigenvalues(k)) * conj(EigenvectorsInverse(k,j));
+				//expDot += Eigenvectors(k,i) * conj(Eigenvectors(k,j));
 			}
 			PropagationMatrix(i,j) = expDot;
-			HamiltonianMatrix(i,j) = hamDot;
 		}
 	}
 
@@ -115,9 +117,6 @@ void Propagator<Rank>::ApplyMatrix(const blitz::Array<cplx, 2> &matrix, blitz::A
 {
 	using namespace blitz;
 
-	//TODO: Make this faster, much faster, by calling
-	//on some vectorized function in blas.
-	
 	Array<cplx, 1> temp = TempData;
 			
 	//iterate over the array direction which is not propagated by this
@@ -141,28 +140,31 @@ void Propagator<Rank>::ApplyMatrix(const blitz::Array<cplx, 2> &matrix, blitz::A
  * Following are some internal functions to set up and diagonalize
  * the hamiltonian matrix in the b-spline basis.
  */
-
 template<int Rank>
 void Propagator<Rank>::SetupHamiltonianMatrix(blitz::Array<cplx, 2> &HamiltonianMatrix)
 {
-	// I = ka+1+j
-	// J = j
-	
 	int k = BSplineObject->MaxSplineOrder;
 	int N = BSplineObject->NumberOfBSplines;
-	//int ldab = k + 1;
-	int ldab = k;
-	HamiltonianMatrix.resize(N, ldab);
+	HamiltonianMatrix.resize(N, N);
+	HamiltonianMatrix = 0;
+
+	OverlapMatrix.resize(N,N);
+	OverlapMatrix = 0;
 
 	for (int i = 0; i < N; i++)
 	{
 		int jMax = std::min(i + k, N);
 		for (int j = i; j < jMax; j++)
 		{
-			int lapackI = k - 1 + i - j;
-			int lapackJ = j;
+			HamiltonianMatrix(j,i) = BSplineObject->BSplineDerivative2OverlapIntegral(i,j);
+			OverlapMatrix(j,i) = BSplineObject->BSplineOverlapIntegral(i,j);
 
-			HamiltonianMatrix(lapackJ,lapackI) = BSplineObject->BSplineDerivative2OverlapIntegral(i,j);
+			//Get lower triangle by transposing
+			if (i != j)
+			{
+				HamiltonianMatrix(i,j) = HamiltonianMatrix(j,i);
+				OverlapMatrix(i,j) = OverlapMatrix(j,i);
+			}
 		}
 	}
 	
@@ -176,47 +178,45 @@ void Propagator<Rank>::ComputeHamiltonianEigenvectors(blitz::Array<cplx, 2> &Ham
 {
 	using namespace blitz;
 	
-	bool computeEigenvectors = true;
-	linalg::LAPACK<cplx>::HermitianStorage upperOrLower = linalg::LAPACK<cplx>::HermitianUpper;
-	int N = BSplineObject->NumberOfBSplines;
-
 	// Resize Eigenvectors and Eigenvalues
+	int N = BSplineObject->NumberOfBSplines;
 	Eigenvalues.resize(N);
 	Eigenvectors.resize(N,N);
+	EigenvectorsInverse.resize(N,N);
 
-	// Copy overlap matrix from BSplineObject, since LAPACK routine makes changes to it
-	//Array<double, 2> doubleOverlapMatrix = BSplineObject->GetBSplineOverlapMatrix();
-	//Array<cplx, 2> overlapMatrix(doubleOverlapMatrix.shape);
-	//overlapMatrix = doubleOverlapMatrix(tensor::i);
-	Array<cplx, 2> overlapMatrix ( BSplineObject->GetBSplineOverlapMatrix()(tensor::i, tensor::j) );
-	
-	// Solve generalized eigenvalue problem using LAPACK routine zhbgv
+	//Lapack stuff
+	Array<int, 1> pivot(N);
+	pivot = 0;
 	linalg::LAPACK<cplx> lapack;
-	lapack.CalculateEigenvectorFactorizationGeneralizedHermitianBanded(computeEigenvectors,
-	                                                            upperOrLower,
-	                                                            HamiltonMatrix,
-	                                                            overlapMatrix,
-	                                                            Eigenvalues,
-                                                                Eigenvectors);
 
-	//Normalize eigenvectors
-	for (int k = 0; k < N; k++)
-	{
-		Array<double, 1> evReal( real(Eigenvectors(k, Range::all())) );
-		Array<double, 1> evImag( imag(Eigenvectors(k, Range::all())) );
-		Array<double, 1> evAbsSqr( evReal(Range::all()) * evReal(Range::all())
-			+ evImag(Range::all()) * evImag(Range::all()) );
-		double norm = sum(evAbsSqr);
-		Eigenvectors(k, Range::all()) /= sqrt(norm);
-	}
+	//Compute LU factorization of overlap matrix
+	lapack.CalculateLUFactorization(OverlapMatrix, pivot);
+
+	//Invert overlap matrix
+	lapack.CalculateMatrixInverse(OverlapMatrix, pivot);
+
+	//Matrix-matrix multiply: inv(OverlapMat) * DiffMat 
+	Array<cplx, 2> Matrix(N,N);
+	Matrix = sum(OverlapMatrix(tensor::k, tensor::j) * HamiltonMatrix(tensor::i, tensor::k), tensor::k);
+
+	// Store hamilton matrix. Matrix is in col-major order
+	// (FORTRAN), so we transpose to get HamiltonianMatrix
+	// in row-major order.
+	HamiltonianMatrix.resize(N,N);
+	HamiltonianMatrix = Matrix(tensor::j, tensor::i);
+
+	//Calculate left and right eigenvectors of Matrix 
+	//(inverse overlap times differentiation matrix) 
+	bool calculateLeft = true;
+	bool calculateRight = true;
+	lapack.CalculateEigenvectorFactorization(calculateLeft, calculateRight, Matrix, Eigenvalues, EigenvectorsInverse, Eigenvectors);
 }
 
-
+//Instantiate propagators of rank 1-4
 template class Propagator<1>;
 template class Propagator<2>;
 template class Propagator<3>;
 template class Propagator<4>;
-
 
 } //Namespace
 

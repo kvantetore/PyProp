@@ -12,18 +12,6 @@ CombinedRepresentation<Rank>::~CombinedRepresentation()
 {
 }
 
-template<int Rank>
-CombinedRepresentation<Rank>::CombinedRepresentation(const CombinedRepresentation<Rank> &other) 
-{
-	throw std::runtime_error("Cant copy captain, I dont have the power!");
-}
-
-template<int Rank>
-CombinedRepresentation<Rank>& CombinedRepresentation<Rank>::operator=(const CombinedRepresentation<Rank> &other) 
-{
-	throw std::runtime_error("Cant assign captain, I dont have the power!");
-}
-
 
 template<int Rank>
 typename Representation<Rank>::RepresentationPtr CombinedRepresentation<Rank>::Copy()

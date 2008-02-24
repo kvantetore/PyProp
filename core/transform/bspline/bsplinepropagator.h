@@ -16,8 +16,10 @@ private:
 
 	blitz::Array<cplx, 2> PropagationMatrix;
 	blitz::Array<cplx, 2> HamiltonianMatrix;
+	blitz::Array<cplx, 2> OverlapMatrix;
 	blitz::Array<cplx, 2> Eigenvectors;
-	blitz::Array<double, 1> Eigenvalues;
+	blitz::Array<cplx, 2> EigenvectorsInverse;
+	blitz::Array<cplx, 1> Eigenvalues;
 	blitz::Array<cplx, 1> TempData;
 
 	int PropagateRank;
@@ -36,9 +38,9 @@ public:
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
 	blitz::Array<cplx, 2> GetHamiltonianMatrix() { return HamiltonianMatrix; }
 	blitz::Array<cplx, 2> GetEigenvectors() { return Eigenvectors; }
-	blitz::Array<double, 1> GetEigenvalues() { return Eigenvalues; }
-
-
+	blitz::Array<cplx, 2> GetEigenvectorsInverse() { return EigenvectorsInverse; }
+	blitz::Array<cplx, 1> GetEigenvalues() { return Eigenvalues; }
+	blitz::Array<cplx, 2> GetOverlapMatrixInverse() { return OverlapMatrix; }
 };
 
 }; //Namespace

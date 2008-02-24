@@ -22,8 +22,6 @@ public:
 	//Constructors
 	CombinedRepresentation();
 	virtual ~CombinedRepresentation();
-	CombinedRepresentation(const CombinedRepresentation<Rank> &other);
-	CombinedRepresentation<Rank>& operator=(const CombinedRepresentation<Rank> &other);
 	
 	virtual typename Representation<Rank>::RepresentationPtr Copy();
 

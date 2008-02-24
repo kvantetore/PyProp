@@ -61,10 +61,10 @@ void BSplineTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi)
 			 * Copy wavefunction slice along bspline rank to temp
 			 * array. We do this since LAPACK needs contiguous arrays.
 			 */
-			psiSlice = input3d(i, Range(fromStart, toEnd), j).copy();
+			psiSlice = input3d(i, Range::all(), j).copy();
 
 			// Call on BSpline function to perform expansion
-			output3d(i, Range(fromStart, toEnd) , j) = 
+			output3d(i, Range::all() , j) = 
 				BSplineObject->ExpandFunctionInBSplines(psiSlice);
 		}
 	}
@@ -105,10 +105,10 @@ void BSplineTransform<Rank>::InverseTransform(Wavefunction<Rank> &psi)
 			 * Copy wavefunction slice along bspline rank to temp
 			 * array.
 			 */
-			psiSlice = input3d(i, Range(fromStart, toEnd), j).copy();
+			psiSlice = input3d(i, Range::all(), j).copy();
 
 			// Call on BSpline function to perform expansion
-			output3d(i, Range(fromStart, toEnd) , j) = 
+			output3d(i, Range::all() , j) = 
 				BSplineObject->ConstructFunctionFromBSplineExpansion(psiSlice);
 		}
 	}

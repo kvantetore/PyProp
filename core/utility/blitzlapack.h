@@ -23,6 +23,8 @@ extern "C"
     void LAPACK_NAME(zunmqr)( char* SIDE, char* TRANS, int* M, int* N, int* K, cplx* A, int* LDA, cplx* TAU, cplx* C, int* LDC, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zhbgv)( char* JOBZ, char* UPLO, int* N, int* KA, int* KB, cplx* AB, int* LDAB, cplx* BB, int* LDBB, double* W, cplx* Z, int* LDZ, cplx* WORK, double* RWORK, int* INFO);
 	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
+	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
+	void LAPACK_NAME(zgetrf)( int* N, int* M, cplx* A, int* LDA, int* IPIV, int* INFO );
 }
 
 
@@ -64,6 +66,9 @@ public:
 		HermitianUpper,
 		HermitianLower
 	};
+
+	int CalculateMatrixInverse(MatrixType &matrix, VectorTypeInt &pivot);
+	int CalculateLUFactorization(MatrixType &matrix, VectorTypeInt &pivot);
 
 	int CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 			MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
@@ -189,6 +194,57 @@ void LAPACK<T>::PreconditionSolveGeneralBandedSystemOfEquations(MatrixType &equa
 /*
  * Implementation for complex<double>
  */
+
+template<>
+inline int LAPACK<cplx>::CalculateLUFactorization(MatrixType &matrix, blitz::Array<int, 1> &pivot)
+{
+	//TODO: add preconditioner
+
+	int N = matrix.extent(0);
+	int M = matrix.extent(1);
+	int LDA = M;
+
+	int info = 0;
+
+	//Call LAPACK routine to compute LU factorization
+	LAPACK_NAME(zgetrf)(&N, &M, matrix.data(), &LDA, pivot.data(), &info);
+
+	if (info != 0)
+	{
+		cout << "WARNING: zgetrf could not compute LU factorization, info = " << info << endl;
+	}
+
+	return info;
+}
+
+template<>
+inline int LAPACK<cplx>::CalculateMatrixInverse(MatrixType &matrix, blitz::Array<int, 1> &pivot)
+{
+	//TODO: add preconditioner
+	
+	int N = matrix.extent(0);
+	int LDA = matrix.extent(1);
+
+	int info = 0;
+	int workLength = N;
+
+	//Resize work arrays if needed
+	if (complexDoubleWork.extent(0) < N)
+	{
+		complexDoubleWork.resize(N);
+	}
+
+	//Call LAPACK routine to invert matrix
+	LAPACK_NAME(zgetri)(&N, matrix.data(), &LDA, pivot.data(), complexDoubleWork.data(), &workLength, &info);
+
+	if (info != 0)
+	{
+		cout << "WARNING: zgetri could not invert matrix, info = " << info << endl; 
+	}
+
+	return info;
+}
+
 
 template<>
 inline int LAPACK<cplx>::CalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 

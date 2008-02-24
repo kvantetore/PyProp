@@ -414,13 +414,17 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> fu
 	VectorTypeCplx b = VectorTypeCplx(NumberOfBSplines);
 
 	int gridChunkSize = QuadratureGrid.extent(1);
+	int globalGridSize = QuadratureGridGlobal.extent(0);
 	VectorTypeCplx functionSlice = VectorTypeCplx(gridChunkSize);
 
 	for (int i = 0; i < NumberOfBSplines; i++)
 	{
 		int startIndex = GetGridIndex(i);
-		int stopIndex = startIndex + gridChunkSize - 1;
-		functionSlice = function( Range(startIndex, stopIndex) );
+		int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
+		functionSlice = 0.0;
+		functionSlice( Range(0, stopIndex-startIndex) ) = function( Range(startIndex, stopIndex) );
+
+
 
 		// Compute projection on b-spline i
 		b(i) = ProjectOnBSpline(functionSlice, i);
