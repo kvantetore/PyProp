@@ -207,8 +207,8 @@ def Propagate(**args):
 			print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
 			tPrev = t
 
-	timeList.append(prop.PropagatedTime / femtosec_to_au)
-	corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
+
+	output()
 
 	norm = prop.psi.GetNorm()
 	corr = abs(prop.psi.InnerProduct(initPsi))**2

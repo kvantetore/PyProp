@@ -263,8 +263,11 @@ def GetHamiltonMatrix(**args):
 	return matrix
 	
 def GetFullSpectrum(**args):
+	print "Setting up hamilton matrix"
 	H = GetHamiltonMatrix(**args)
+	print "Diagonalizing matrix"
 	E, V = eig(H)
+	print "Done"
 
 	prop = SetupProblem(**args)
 	dr = prop.psi.GetRepresentation().GetRepresentation(0).GetRange(0).Dx

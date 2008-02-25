@@ -9,7 +9,7 @@ figureSizeScreen = 32*cm_to_inch
 #            Parse input files
 #-----------------------------------------------------------------
 
-def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False):
+def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1):
 	#Disable interactive when plotting
 	interactive = rcParams["interactive"]
 	rcParams["interactive"] = False
@@ -17,44 +17,64 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	path, name = os.path.split(filename)
 	root, ext = os.path.splitext(name)
 
+	figure(figsize=(25*cm_to_inch, 15*cm_to_inch))
+	subplot(3,1,1)
+	title("%s %s" % (molecule, root))
+
 	#Get norm
-	t, n = GetScanDelayNorm(outputfile=filename, partitionCount=partitionCount)
+	#t, n = GetScanDelayNorm(outputfile=filename, partitionCount=partitionCount)
 
 	#Plot Final Correlation
 	t, c = GetScanDelayCorrelation(outputfile=filename, partitionCount=partitionCount)
-	for i in range(c.shape[1]):
-		c[:,i] /= n #Correct for normalization issues
-	figure(figsize=(figureSize,figureSize*3./4.))
-	for i in range(10):
-		if i < 5:
-			label = "$n = %i$" % i
-		else:
-			label = "_nolegend_"
-		plot(t, c[:,i], label=label)
-	axis([20, 100, 0,  0.8])
-	legend()
-	xlabel("Pulse Delay")
-	ylabel("Proabability")
-	title("Bound states distribution %s %s" % (molecule, root))
+	##pcolor plot
+	subplot(3,1,3)
+	maxState = 10
+	pcolormesh(t, arange(maxState+1), c[:,:maxState+1].transpose(), cmap=cm.gist_heat_r, shading="flat")
+	axis((0,800,0,maxState))
+	ylabel("Vibrational State")
+	xlabel("Delay time (fs)")
 
 	#Plot Ionization
 	boundStateThreshold = 25
 	ionization = 1 - sum(c[:,:boundStateThreshold], axis=1)
-	figure(figsize=(figureSize,figureSize*3./4.))
-	plot(t, ionization)
+	#figure(figsize=(figureSize,figureSize*3./4.))
+	subplot(3,1,1)
+	plot(t, ionization, color="#ff8e16")
 	axis([0,800,0,1])
-	ylabel("Probability")
-	xlabel("Pulse Delay")
-	title("Disociation yield %s %s" % (molecule, root))
+	ylabel("Dissoc. Probability")
+	#xlabel("Pulse Delay")
+	#title("Disociation yield %s %s" % (molecule, root))
 
 	#Plot Energy Distribution
-	t, E, c = GetScanDelayEnergyDistribution(molecule=molecule, outputfile=filename, partitionCount=partitionCount)
-	figure(figsize=(figureSize, figureSize*3./4))
-	projectileEnergy_eV = E
-	pcolormesh(t, projectileEnergy_eV, sum(c, axis=1).transpose(), shading="flat")
-	xlabel("Pulse Delay")
-	ylabel("Energy")
-	title("Energy distribution %s %s" % (molecule, root))
+	t, E, c = GetScanDelayEnergyDistribution(molecule=molecule, outputfile=filename, partitionCount=partitionCount, radialScaling=radialScaling, recalculate=True)
+	#figure(figsize=(figureSize, figureSize*3./4))
+	subplot(3,1,2)
+	Emax = 2
+	Emin = 0.1
+	eIndex = where(Emin<=E<=Emax)[0][::3]
+	pcolormesh(t, E[eIndex], sum(c[:,:,eIndex], axis=1).transpose(), shading="flat", cmap=cm.gist_heat_r)
+	#xlabel("Pulse Delay")
+	axis((0,800,0,Emax))
+	ylabel("Projectile Energy")
+	#title("Energy distribution %s %s" % (molecule, root))
+
+	#Fixup
+	subplots_adjust(hspace=0)
+	subplot(3,1,1)
+	ticPos, ticLabel = xticks()
+	ticLabel = ["" for i in range(len(ticLabel))]
+	xticks(ticPos, ticLabel)
+
+	subplot(3,1,2)
+	ticPos, ticLabel = xticks()
+	ticLabel = ["" for i in range(len(ticLabel))]
+	xticks(ticPos, ticLabel)
+	ticPos, ticLabel = yticks()
+	yticks(ticPos[:-1])
+
+	subplot(3,1,3)
+	ticPos, ticLabel = yticks()
+	yticks(ticPos[:-1]+0.5, ["   %i" % i for i in ticPos[:-1]])
 
 	#restore interactive state
 	rcParams["interactive"] = interactive
@@ -240,11 +260,11 @@ def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	the energy distribution is then interpolated (with cubic splines)
 	over outputEnergies
 	"""
-	proj1 = dot(V1[:-1,:], psi[:,0]) #/ diff(E1)
-	proj2 = dot(V2[:-1,:], psi[:,1]) #/ diff(E2)
+	proj1 = abs(dot(V1[:-1,:], psi[:,0]))**2 / diff(E1)
+	proj2 = abs(dot(V2[:-1,:], psi[:,1]))**2 / diff(E2)
  
-	interp1 = spline.Interpolator(E1[:-1], abs(proj1)**2)
-	interp2 = spline.Interpolator(E2[:-1], abs(proj2)**2)
+	interp1 = spline.Interpolator(E1[:-1], proj1)
+	interp2 = spline.Interpolator(E2[:-1], proj2)
 
 	outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
 	outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
@@ -339,20 +359,79 @@ def GetStalloEngineCount():
 
 def SubmitAll():
 	args = {}
-	args["molecule"] = "d2+"
-	args["delayList"] = r_[0:800]
+	args["delayList"] = r_[0:800:2]
+	args["radialScaling"] = 2
 
-	pulseDurations = [5, 8, 12, 14, 18]
-	controlIntensity = [0, 0.5e14, 1e14, 2e14]
-	probeIntensity = [0.5e14, 1e14, 3e14, 4e14]
-	controlDelay = [30, 40]
+	molecules = ["d2+", "hd+", "h2+"]
+	pulseDurations = [8, 12, 18]
+	controlIntensities = [0, 0.5e14, 1e14, 2e14]
+	probeIntensities = [0.5e14, 1e14, 3e14, 4e14]
+	controlDelays = [30]
+
+	count = 0
+	for m in molecules:
+		for p in pulseDurations:
+			for ci in controlIntensities:
+				for pi in probeIntensities:
+					if pi > ci:
+						for cd in controlDelays:
+							if cd == controlDelays[0] or ci > 0:
+								args["molecule"] = m
+								args["pulseDuration"] = p*femtosec_to_au
+								args["pulseIntensity"] = pi
+								args["controlDuration"]  = p*femtosec_to_au
+								args["controlIntensity"] = ci
+								args["controlDelay"] = cd*femtosec_to_au
+								SubmitControlPumpExperiment(**args)
+								count += 1
+
+	print "Count= ", count
+					
+
+def SubmitAll2():
+	args = {}
+	args["delayList"] = r_[0:800:2]
+	args["radialScaling"] = 2
+
+	molecules = ["d2+", "hd+", "h2+"]
+	pulseDurations = [5, 12, 18]
+	probeIntensities = [0.5e14, 1e14, 4e14]
+	phases = [0, pi/4., pi/2.]
+
+	count = 0
+	for m in molecules:
+		for p in pulseDurations:
+			for intensity in probeIntensities:
+				for phase in phases:
+					args["molecule"] = m
+					args["pulseDuration"] = p*femtosec_to_au
+					args["pulseIntensity"] = intensity
+					args["pulsePhase"] = phase
+					SubmitPhaseExperiment(**args)
+					count += 1
+
+	print "Count= ", count
+					
+def SubmitPhaseExperiment(**args):
+	args["outputfile"] = "outputfiles/%s/phase_%s_%.2fpi_pump_%ifs_%ie13.h5" % \
+		( \
+		args["molecule"], \
+		"%i", \
+		args["pulsePhase"]/pi, \
+		args["pulseDuration"]/femtosec_to_au, \
+		args["pulseIntensity"]/1e13 \
+		)
+
+	print args["outputfile"]
+	#SubmitDelayScanStallo(**args)
 
 
 
 def SubmitControlPumpExperiment(**args):
-	args["outputfile"] = "outputfiles/%s/control_%ifs_%ifs_%ie13_pump_%ifs_%ie13.h5" % \
+	args["outputfile"] = "outputfiles/%s/control_%s_%ifs_%ifs_%ie13_pump_%ifs_%ie13.h5" % \
 		( \
 		args["molecule"], \
+		"%i", \
 		args["controlDuration"]/femtosec_to_au, \
 		args["controlDelay"]/femtosec_to_au, \
 		args["controlIntensity"]/1e13, \
@@ -361,7 +440,7 @@ def SubmitControlPumpExperiment(**args):
 		)
 
 	print args["outputfile"]
-	#SubmitDelayScanStallo(**args)
+	SubmitDelayScanStallo(**args)
 
 def SubmitDelayScanStallo(**args):
 	delayList = args["delayList"]
