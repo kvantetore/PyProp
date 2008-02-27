@@ -142,6 +142,45 @@ void MatrixVectorMultiply(const Array<double, 2> &A, const Array<double, 1> &v, 
 	);		
 }
 
+
+/*
+ * Performs the matrix-vector product y = A x. The matrix A 
+ * is hermitian and banded.
+ */
+void MatrixVectorMultiplyHermitianBanded(const Array<cplx, 2> &A, const Array<cplx, 1> &x, 
+	Array<cplx, 1> &y, cplx alpha, cplx beta)
+{
+	//Array<cplx, 2> B(A.extent(1), A.extent(0));
+
+	//B = A(tensor::j, tensor::i);
+
+	int N = A.extent(0);
+	int LDA = A.extent(1);
+	int K = LDA - 1;
+	int incX = x.stride(0);
+	int incY = y.stride(0);
+
+	//Scaling parameters (alpha for A, beta for y)
+	//cplx alpha = 1.0;
+	//cplx beta = 0.0;
+	
+	BLAS_NAME(zhbmv)(
+		CblasColMajor,  // FORTRAN-style array 
+		CblasLower,     // Lower triangular part stored
+		N,              // Cols of A
+		K,              // Subdiagonals of A
+		&alpha,         // Scaling of A
+		A.data(),       // Pointer to A
+		LDA,            // Size of first dim of A
+		x.data(),       // Pointer to x
+		incX,           // Stride of x
+		&beta,          // Scaling of y
+		y.data(),       // Pointer to y
+		incY            // Stride of y
+	);
+}
+
+
 //Performs elementwise multiplication of u and v
 //There are no blas calls to do this, so we use the reference
 //implementation
@@ -220,6 +259,7 @@ cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cp
 	BLAS_NAME(zdotc_sub)(N, u.data(), uStride, v.data(), vStride, &result);
 	return result;
 }
+
 
 
 //Explicitly instantiate template functions

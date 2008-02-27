@@ -29,6 +29,11 @@ void MatrixVectorMultiply_double(blitz::Array<double, 2> A, blitz::Array<double,
 	MatrixVectorMultiply(A, v, w);
 }
 
+void MatrixVectorMultiplyHermitianBanded_cplx(blitz::Array<cplx, 2> A, blitz::Array<cplx, 1> x, blitz::Array<cplx, 1> y,
+	cplx alpha, cplx beta)
+{
+	MatrixVectorMultiplyHermitianBanded(A, x, y, alpha, beta);
+}
 
 /*
 template<int Rank>
@@ -48,6 +53,7 @@ void ExportBlitzBlas()
 {
 	def("MatrixMatrixMultiply", MatrixMatrixMultiply_double);
 	def("MatrixVectorMultiply", MatrixVectorMultiply_double);
+	def("MatrixVectorMultiplyHermitianBanded", MatrixVectorMultiplyHermitianBanded_cplx);
 	//def("VectorElementMultiply_1", VectorElementMultiply<1>);
 	//def("VectorInnerProduct_1", VectorInnerProduct<1>);
 }

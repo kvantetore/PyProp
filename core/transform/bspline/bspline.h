@@ -15,6 +15,7 @@ public:
 	typedef blitz::Array<double, 1> VectorType;
 	typedef blitz::Array<cplx, 1> VectorTypeCplx;
 	typedef blitz::Array<double, 2> MatrixType;
+	typedef blitz::Array<cplx, 2> MatrixTypeCplx;
 	typedef blitz::Array<int, 1> VectorTypeInt;
 
 private:
@@ -37,7 +38,7 @@ private:
 	MatrixType QuadratureGrid;
 	MatrixType ScaledWeights;
 	MatrixType OverlapMatrix;
-	blitz::Array<cplx, 2> OverlapMatrixFull;
+	MatrixTypeCplx OverlapMatrixFull;
 
 	bool OverlapMatrixComputed;
 	bool OverlapMatrixFullComputed;
@@ -64,6 +65,7 @@ public:
 	VectorType GetNodes() { return Nodes; }
 	VectorType GetQuadratureGrid(int i) { return QuadratureGrid(i, blitz::Range::all()); }
 	MatrixType GetBSplineOverlapMatrix() { return OverlapMatrix; }
+	MatrixTypeCplx GetBSplineOverlapMatrixFull() { SetupOverlapMatrixFull(); return OverlapMatrixFull; }
 	VectorType GetQuadratureGridGlobal() { return QuadratureGridGlobal; }
 	VectorType GetQuadratureWeightsGlobal() { return QuadratureWeightsGlobal; }
 

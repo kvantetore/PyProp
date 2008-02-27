@@ -7,7 +7,7 @@ SUBDIRS := $(SUBDIRS) ode
 endif
 
 #A small rule to compile only a selected few pyste files
-TESTFILES :=  python/distributedmodel.pyste
+TESTFILES :=  python/blitzblas.pyste
 BSPLINEFILES := python/bspline/bsplinerepresentation.pyste
 BSPLINEREPFILES := python/bspline/bsplinetransform.pyste
 
@@ -28,3 +28,5 @@ bspline:
 bsplinerep: 
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(BSPLINEREPFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
+
+

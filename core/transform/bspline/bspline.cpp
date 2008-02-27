@@ -568,7 +568,7 @@ void BSpline::SetupOverlapMatrixFull()
 {
 	int k = MaxSplineOrder;
 
-	if (!OverlapMatrixComputed) 
+	if (!OverlapMatrixComputed)
 	{ 
 		ComputeOverlapMatrix();
 	}

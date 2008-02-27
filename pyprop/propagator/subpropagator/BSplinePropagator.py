@@ -64,10 +64,6 @@ class BSplinePropagator:
 		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
 
 
-	def GetBasisFunction(self, rank, basisIndex):
-		return self.Propagator.GetEigenvectors()[basisIndex,:]
-
-
 	def ForwardTransform(self):
 		self.Transform.ForwardTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)

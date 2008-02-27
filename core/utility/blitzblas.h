@@ -11,6 +11,10 @@ void MatrixMatrixMultiply(const blitz::Array<double, 2> &A, const blitz::Array<d
 void MatrixVectorMultiply(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &v, blitz::Array<cplx, 1> &w);
 void MatrixVectorMultiply(const blitz::Array<double, 2> &A, const blitz::Array<double, 1> &v, blitz::Array<double, 1> &w);
 
+//Performs the matrix-vector product x = A y for hermitian banded A
+void MatrixVectorMultiplyHermitianBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 
+	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta);
+
 //Performs the vector-vector elementwisse product w_i = u_i * v_i
 //any of u, v, and w may be the same vector
 template<int Rank>
