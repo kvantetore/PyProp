@@ -34,11 +34,13 @@ private:
 	VectorType QuadratureWeightsGlobal; // Repeated concatenation of quadrature weights
 
 	MatrixType BSplineTable;
+	MatrixTypeCplx BSplineTableBlas;
 	MatrixType BSplineDerivative2Table;
 	MatrixType QuadratureGrid;
 	MatrixType ScaledWeights;
 	MatrixType OverlapMatrix;
 	MatrixTypeCplx OverlapMatrixFull;
+
 
 	bool OverlapMatrixComputed;
 	bool OverlapMatrixFullComputed;
@@ -46,7 +48,13 @@ private:
 public:
 
 	// Construction
-	BSpline() { eps = 1e-15; OverlapMatrixComputed = false; OverlapMatrixFullComputed = false;}
+	BSpline() 
+	{ 
+		eps = 1e-15; 
+		OverlapMatrixComputed = false; 
+		OverlapMatrixFullComputed = false; 
+		ProjectionAlgorithm = 0;
+	}
 
 	// Destructor
 	virtual ~BSpline() {}
@@ -54,6 +62,8 @@ public:
 	// Data members	
 	int NumberOfBSplines;
 	int MaxSplineOrder;
+
+	int ProjectionAlgorithm;
 
 	// Functions to get grid-related sequences
 	VectorType GetBreakpointSequence() { return BreakpointSequence; }
@@ -94,15 +104,22 @@ public:
 	double BSplineDerivative2OverlapIntegral(int, int);
 
 	void CreateBSplineTable();
+	//void CreateBSplineTableBlas();
 	void CreateBSplineDerivative2Table();
 	void ComputeOverlapMatrix();
 	void SetupOverlapMatrixFull();
 
 	// B-spline-expansion related functions
 	VectorTypeCplx ExpandFunctionInBSplines(object);
-	VectorTypeCplx ExpandFunctionInBSplines(blitz::Array<cplx, 1> function); // Expand pre-evaluated function in b-spline basis
-	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx); // Reconstruct on quadrature points
-	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx, VectorType); // Reconstruct on given grid
+	
+	// Expand pre-evaluated function in b-spline basis
+	void ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output); 	
+
+	// Reconstruct on quadrature points
+	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx);
+
+	// Reconstruct on given grid
+	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx, VectorType); 
 	
 	// Various small convenient functions
 	int ComputeStartIndex(int, int);

@@ -15,10 +15,11 @@ private:
 	BSpline::Ptr BSplineObject;
 
 	blitz::Array<cplx, 2> PropagationMatrix;     // LAPACK matrix
-	blitz::Array<cplx, 2> PropagationMatrixBlas; // BLAS matrix
+	blitz::Array<cplx, 2> OverlapMatrixBlas;     // BLAS matrix
 	blitz::Array<cplx, 2> HamiltonianMatrix;     // BLAS matrix
 	blitz::Array<cplx, 2> OverlapMatrix;         // LAPACK matrix
 	blitz::Array<cplx, 1> TempData;
+	blitz::Array<cplx, 2> TempMatrix;
 
 	int PropagateRank;
 	double Mass;
@@ -54,7 +55,7 @@ public:
 	// Functions to return various propagator matrices
 	blitz::Array<cplx, 2> GetOverlapMatrix() { return OverlapMatrix; }
 	blitz::Array<cplx, 2> GetHamiltonianMatrix() { return HamiltonianMatrix; }
-	blitz::Array<cplx, 2> GetPropagationMatrixBlas() { return PropagationMatrixBlas; }
+	blitz::Array<cplx, 2> GetOverlapMatrixBlas() { return OverlapMatrixBlas; }
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
 };
 

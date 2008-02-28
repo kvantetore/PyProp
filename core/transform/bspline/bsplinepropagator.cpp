@@ -38,7 +38,7 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi,
 	SetupBlasMatrices(dt);
 
 	//Allocate temp data
-	TempData.resize(PropagationMatrix.extent(0));
+	TempData.resize(psi.GetData().extent(rank));
 }
 
 /*
@@ -57,7 +57,15 @@ void Propagator<Rank>::AdvanceStep(Wavefunction<Rank> &psi)
 	ApplyCrankNicolson(PropagationMatrix, data3d);
 }
 
-
+/*
+ * Multiply hamiltonian on wavefunction. The non-orthogonality of b-splines
+ * introduces the overlap matrix into this, requiring us to solve
+ * 
+ *     S * d = H * c = b
+ *
+ *  where d are the new wavefunction coefficients. A BLAS call takes care of
+ *  the matrix-vector product H * c, and then we use LAPACK to solve S * d = b.
+ */
 template<int Rank>
 void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
 {
@@ -97,6 +105,8 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
 			pivot = 0;
 			lapack.SolveGeneralBandedSystemOfEquations(smat, pivot, temp, offDiagonalBands, 
 				offDiagonalBands);
+
+			//Add solution to w in case psi is more than rank 1
 			w += temp;
 		}
 	}
@@ -128,16 +138,17 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 	Array<cplx, 2> pmat(PropagationMatrix.shape());
 
 	cplx scaling = -I * TimeStep / 2.0;
-			
+	
 	//iterate over the array directions which are not propagated by this
 	//propagator
 	for (int i=0; i<data.extent(0); i++)
 	{
 		for (int j=0; j<data.extent(2); j++)
 		{
-			// pmat is a copy of the propagation matrix.
-			// Need to copy this every iteration since LAPACK
-			// call destroys input matrix.
+			/* 
+			 * pmat is a copy of the propagation matrix. Need to copy this 
+			 * every iteration since LAPACK call destroys input matrix.
+			 */
 			pmat = PropagationMatrix;
 
 			/* v is a view of a slice of the wave function
@@ -146,21 +157,35 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 			Array<cplx, 1> v = data(i, Range::all(), j);
 			temp = v; 
 
-			//Call BLAS function for fast banded matrix-vector product
+			/*
+			 * Call BLAS function for fast banded matrix-vector product.
+			 * While both the overlap and hamilton matrices are symmetric,
+			 * this is not so for the propagation matrix S + idt/2 * H.
+			 * Since we are using the banded hermitian BLAS matrix-vector
+			 * product routine, we multiply in two steps and sum up afterwards.
+			 */
 			MatrixVectorMultiplyHermitianBanded(HamiltonianMatrix, temp, v, scaling, 0.0);
-			MatrixVectorMultiplyHermitianBanded(PropagationMatrixBlas, temp, v, 1.0, 1.0);
+			MatrixVectorMultiplyHermitianBanded(OverlapMatrixBlas, temp, v, 1.0, 1.0);
 
-			//Then call LAPACK to solve banded system of equations, obtaining 
-			//solution at t+dt/2
+			/*
+			 * Then call LAPACK to solve banded system of equations, obtaining 
+			 * solution at t+dt/2. We must a temp array copy of v to get the
+			 * stride right for LAPACK (stride = 1)
+			 */
+			temp = v;
 			pivot = 0;
 			linalg::LAPACK<cplx> lapack;
-			lapack.SolveGeneralBandedSystemOfEquations(pmat, pivot, v, offDiagonalBands, 
+			lapack.SolveGeneralBandedSystemOfEquations(pmat, pivot, temp, offDiagonalBands, 
 				offDiagonalBands);
+
+			v = temp;
 		}
 	}
 }
 
-
+/*
+ * Set up matrices to be stored on LAPACK form
+ */
 template<int Rank>
 void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 {
@@ -169,10 +194,13 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 	int ldab = 3 * k - 2;
 	cplx Im = cplx(0.0, 1.0);
 
+	//Resize prop matrix
 	PropagationMatrix.resize(N, ldab);
-	PropagationMatrix = 0;
 
-	//Get full b-bspline overlap matrix (stored on LAPACK form)
+	/*
+	 * Get full b-bspline overlap matrix from b-bspline object,
+	 * since it is already stored on LAPACK form
+	 */
 	OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
 
 	cplx ham = 0.0;
@@ -201,7 +229,9 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 	}
 }
 
-
+/*
+ * Set up matrices to be stored on BLAS form
+ */
 template<int Rank>
 void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 {
@@ -209,29 +239,25 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 	int k = BSplineObject->MaxSplineOrder;
 	int N = BSplineObject->NumberOfBSplines;
 	int lda = k;
-	PropagationMatrixBlas.resize(N, lda);
-	PropagationMatrixBlas = 0;
-	HamiltonianMatrix.resize(N, lda);
-	HamiltonianMatrix = 0;
 
-	cplx ham = 0.0;
-	cplx overlap = 0.0;
+	// Resize matrices
+	OverlapMatrixBlas.resize(N, lda);
+	HamiltonianMatrix.resize(N, lda);
+
 	for (int j = 0; j < N; j++)
 	{
 		int iMax = std::min(j + k, N);
 		for (int i = j; i < iMax; i++)
 		{
+			//BLAS index map from "normal" indices
 			int J = j;
 			int I = i - j;
 
 			//BSplineOverlapIntegral must have j >= i, so we transpose.
 			//This is okay, since the matrix is real and symmetric.
-			ham = -1.0 / (2.0 * Mass) * BSplineObject->BSplineDerivative2OverlapIntegral(j, i);
-			overlap = BSplineObject->BSplineOverlapIntegral(j, i);
-
-			//PropagationMatrixBlas(J, I) = overlap - Im * dt / 2.0 * ham;
-			PropagationMatrixBlas(J, I) = overlap;
-			HamiltonianMatrix(J, I) = ham;
+			HamiltonianMatrix(J, I)  = -1.0 / (2.0 * Mass) *
+				BSplineObject->BSplineDerivative2OverlapIntegral(j, i);
+			OverlapMatrixBlas(J, I) = BSplineObject->BSplineOverlapIntegral(j, i);
 		}
 	}
 }

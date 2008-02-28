@@ -1,4 +1,5 @@
 #include "bspline.h"
+#include "../../utility/blitzblas.h"
 
 namespace BSpline
 {
@@ -224,6 +225,41 @@ void BSpline::CreateBSplineDerivative2Table()
 
 
 /*
+ * Same as CreateBSplineTable, but storage in
+ * BLAS order.
+ */ 
+/*void BSpline::CreateBSplineTableBlas()
+{
+	int numberOfQuadPoints = QuadratureGridGlobal.extent(0);
+	//int xSize = numberOfQuadPoints * MaxSplineOrder;
+	int k = MaxSplineOrder;
+	int numberOfNodes = Nodes.extent(0);
+	int numberOfBands = (2 * k - 1) * numberOfNodes;
+	
+	// Rescale arrays
+	BSplineTableBlas.resize(numberOfQuadPoints, numberOfBands);
+
+	BSplineTableBlas = 0.0;
+
+	for (int j = 0; j < numberOfQuadPoints; j++)
+	{
+		int iMin = std::max(j - numberOfBands + 1, 0);
+		int iMax = std::min(j + numberOfBands, NumberOfBSplines);
+		for (int i = iMin; i < iMax; i++)
+		{
+			int I = k - j + i;
+			int J = j;
+			double x = QuadratureGridGlobal(j);
+			//BSplineTableBlas(J,I) = BSplineTable(i, xIndex)
+			BSplineTableBlas(J,I) = EvaluateBSpline(x, k, i);
+		}
+	}
+	
+} // End function CreateBSplineTableBlas	
+*/
+
+
+/*
  * Compute overlap integral between b-splines B_i and B_j.
  * Due to the compact support of b-splines, a given b-spline
  * will only overlap with k other splines (k: spline order).
@@ -371,7 +407,6 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 	using namespace blitz;
 
 	VectorTypeCplx b = VectorTypeCplx(NumberOfBSplines);
-
 	int gridChunkSize = QuadratureGrid.extent(1);
 	VectorTypeCplx functionGridValues = VectorTypeCplx(gridChunkSize);
 
@@ -395,8 +430,8 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 	pivot = 0;
 	
 	linalg::LAPACK<cplx> lapack;
-	int info = lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, b, offDiagonalBands, 
-			offDiagonalBands);
+	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, b, 
+		offDiagonalBands, offDiagonalBands);
 
 	OverlapMatrixFullComputed = false;
 	
@@ -407,28 +442,82 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
  * Expand a function f in the B-spline basis. The function is precalculated
  * on the quadrature grid, and passed as a complex 1D blitz::Array.
  */
-blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> function)
+void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output)
 {
 	using namespace blitz;
 
-	VectorTypeCplx b = VectorTypeCplx(NumberOfBSplines);
-
 	int gridChunkSize = QuadratureGrid.extent(1);
 	int globalGridSize = QuadratureGridGlobal.extent(0);
-	VectorTypeCplx functionSlice = VectorTypeCplx(gridChunkSize);
 
-	for (int i = 0; i < NumberOfBSplines; i++)
+	if (ProjectionAlgorithm == 0)
 	{
-		int startIndex = GetGridIndex(i);
-		int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
-		functionSlice = 0.0;
-		functionSlice( Range(0, stopIndex-startIndex) ) = function( Range(startIndex, stopIndex) );
+		for (int i = 0; i < NumberOfBSplines; i++)
+		{
+			int startIndex = GetGridIndex(i);
+			int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
+			int curChunkSize = stopIndex - startIndex;
 
+			cplx tempValue = 0;
+			for (int j=0; j<curChunkSize; j++)
+			{
+				tempValue += input(j+startIndex) * ScaledWeights(i, j) * BSplineTable(i, j);
+			}
+			output(i) = tempValue;
 
-
-		// Compute projection on b-spline i
-		b(i) = ProjectOnBSpline(functionSlice, i);
+		}
 	}
+
+	else if (ProjectionAlgorithm == 1)
+	{
+		VectorTypeCplx functionSlice = VectorTypeCplx(gridChunkSize);
+		for (int i = 0; i < NumberOfBSplines; i++)
+		{
+			int startIndex = GetGridIndex(i);
+			int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
+			functionSlice = 0.0;
+			functionSlice( Range(0, stopIndex-startIndex) ) = 
+				input( Range(startIndex, stopIndex) );
+
+			// Compute projection on b-spline i
+			output(i) = ProjectOnBSpline(functionSlice, i);
+		}
+	}
+
+	else
+
+	{
+		cout << "ERROR: Unknown projection algorithm " << ProjectionAlgorithm << endl;
+	}
+ 	
+/*	else if (ProjectionAlgorithm == 2)
+	{
+		double* weightData = &ScaledWeights(0,0);
+		double* splineData = &BSplineTable(0,0);
+		cplx* outputData = &output(0);
+		int inputStride = input.stride(0);
+
+		for (int i = 0; i < NumberOfBSplines; i++)
+		{
+			int startIndex = GetGridIndex(i);
+			int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
+			int curChunkSize = stopIndex - startIndex;
+			
+			cplx* inputData = & input(startIndex);
+
+
+			for (int j=0; j<curChunkSize; j++)
+			{
+				(*outputData) += (*inputData) * (*weightData) * (*splineData);
+				inputData += inputStride;
+				weightData++;
+				splineData++;
+			}
+
+			outputData++;
+		} 
+
+	}
+*/
 
 	/* 
 	 * Solving banded linear system of equations 
@@ -440,12 +529,10 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> fu
 	pivot = 0;
 	
 	linalg::LAPACK<cplx> lapack;
-	int info = lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, b, offDiagonalBands, 
-			offDiagonalBands);
+	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, output, 
+		offDiagonalBands, offDiagonalBands);
 
 	OverlapMatrixFullComputed = false;
-	
-	return b;
 }
 
 

@@ -22,6 +22,7 @@ private:
 	int BSplineDataName;
 	int BSplineGridDataName;
 	BSpline::Ptr BSplineObject;
+	blitz::Array<cplx, 1> TempData;
 
 public:
 	

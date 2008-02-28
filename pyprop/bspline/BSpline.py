@@ -33,6 +33,9 @@ class BSPLINE(core.BSpline):
 		# enough knotpoints left.
 		self.NumberOfBSplines = self.GetKnotSequence().size - self.MaxSplineOrder
 
+		# Set projection algorithm type
+		self.ProjectionAlgorithm = conf.Get("projection_algorithm")
+
 		
 	def CreateBreakpointSequence(self, conf):
 		"""

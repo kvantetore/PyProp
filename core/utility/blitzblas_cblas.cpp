@@ -180,6 +180,38 @@ void MatrixVectorMultiplyHermitianBanded(const Array<cplx, 2> &A, const Array<cp
 	);
 }
 
+/*
+ * Performs the matrix-vector product y = A x. The matrix A 
+ * is banded and complex.
+ */
+void MatrixVectorMultiplyBanded(const Array<cplx, 2> &A, const Array<cplx, 1> &x, 
+	Array<cplx, 1> &y, cplx alpha, cplx beta, int M)
+{
+	int MM = y.extent(0);
+	int N = A.extent(0);
+	int lda = A.extent(1);
+	int ku = (lda - 1) / 2;
+	int kl = ku;
+	int xStride = x.stride(0);
+	int yStride = y.stride(0);
+
+	BLAS_NAME(zgbmv)(
+		CblasColMajor,		// FORTRAN-style array 
+		CblasNoTrans,		// Don't transpose A
+		MM,                 // Rows of A 
+		N,                  // Cols of A
+		kl,                 // Sub-diagonals of A
+		ku,                 // Super-diagonals of A
+		&alpha,             // Scale of A*v
+		A.data(),           // Pointer to A
+		lda,                // Size of first dim of A
+		x.data(),           // Pointer to input vector 
+		xStride,            // Stride of input vector
+		&beta,              // Scale of w
+		y.data(),           // Pointer to output vector
+		yStride             // Stride of output vector
+	);
+}
 
 //Performs elementwise multiplication of u and v
 //There are no blas calls to do this, so we use the reference

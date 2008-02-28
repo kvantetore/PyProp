@@ -24,12 +24,13 @@ class BSplinePropagator:
 
 		# Set up propagator
 		assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
-		#print self.RepresentationBSpline.GetLocalGrid(self.TransformRank)
 
 		self.Propagator.Setup(dt, self.psi, self.BSplineObject, self.TransformRank)
 
 		# Set up transform
+		print "        Setup Forward Transform"
 		self.Transform.SetupStep(self.psi, self.BSplineObject, self.TransformRank)
+		print "        Setup Inverse Transform"
 		self.Transform.InverseTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationGrid)
 
@@ -51,6 +52,7 @@ class BSplinePropagator:
 	def SetupStepConjugate(self, dt):
 		self.Transform.ForwardTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
+
 
 	def AdvanceStepConjugate(self, t, dt):
 		self.ForwardTransform()

@@ -18,15 +18,18 @@ void BSplineGridRepresentation::SetupRepresentation(BSpline::Ptr p)
 	BSplineObject = p;
 
 	// Get grid and weights from bspline object
-	blitz::Array<double, 1> grid = BSplineObject->GetQuadratureGridGlobal();
-	blitz::Array<double, 1> weights = BSplineObject->GetQuadratureGridGlobal();
+	Grid.reference( BSplineObject->GetQuadratureGridGlobal().copy() );
+	Weights.reference( BSplineObject->GetQuadratureWeightsGlobal().copy() );
+	
+	//blitz::Array<double, 1> grid = BSplineObject->GetQuadratureGridGlobal();
+	//blitz::Array<double, 1> weights = BSplineObject->GetQuadratureWeightsGlobal();
 
 	// Resize grid and weight vectors
-	Grid.resize(grid.shape());
-	Weights.resize(weights.shape());
+	//Grid.resize(grid.shape());
+	//Weights.resize(weights.shape());
+	//Grid = grid;
+	//Weights = weights;
 
-	Grid = grid;
-	Weights = weights;
 
 }	
 

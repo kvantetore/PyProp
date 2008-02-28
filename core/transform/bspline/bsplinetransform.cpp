@@ -23,6 +23,8 @@ void BSplineTransform<Rank>::SetupStep(Wavefunction<Rank> &psi, BSpline::Ptr bsp
 	gridShape(baseRank) = BSplineObject->GetQuadratureGridGlobal().extent(0);
 	BSplineGridDataName = psi.AllocateData(gridShape);
 	BSplineDataName = psi.GetActiveBufferName();
+
+	TempData.resize(BSplineObject->GetQuadratureGridGlobal().extent(0));
 }
 
 /*
@@ -57,15 +59,13 @@ void BSplineTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi)
 	{
 		for (int j = 0; j < postCount; j++)
 		{
-			/*
-			 * Copy wavefunction slice along bspline rank to temp
-			 * array. We do this since LAPACK needs contiguous arrays.
-			 */
-			psiSlice = input3d(i, Range::all(), j).copy();
+			// View slice of psi along propagation direction
+			psiSlice = input3d(i, Range::all(), j);
 
 			// Call on BSpline function to perform expansion
-			output3d(i, Range::all() , j) = 
-				BSplineObject->ExpandFunctionInBSplines(psiSlice);
+			TempData = 0;
+			BSplineObject->ExpandFunctionInBSplines(psiSlice, TempData);
+			output3d(i, Range::all() , j) = TempData;
 		}
 	}
 
