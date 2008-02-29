@@ -16,7 +16,9 @@ void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	cout << "BSplinePropagator: Mass = " << Mass << endl;
 }
 
-
+/*
+ * Set up propagator
+ */
 template<int Rank>
 void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, 
 	BSpline::Ptr bsplineObject, int rank)
@@ -40,6 +42,25 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi,
 	//Allocate temp data
 	TempData.resize(psi.GetData().extent(rank));
 }
+
+/*
+ * Set up propagator with additional potential
+ */
+template<int Rank>
+void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, 
+	BSpline::Ptr bsplineObject, blitz::Array<double, 1> potential, int rank)
+{
+	//Get b-splien potential values
+	PotentialVector.reference( potential.copy() );
+
+	//We have a b-spline potential
+	HasPotential = true;
+
+	//Setup "the rest"
+	Setup(dt, psi, bsplineObject, rank);
+}
+
+
 
 /*
  * Advance the wavefunction one time step
@@ -203,6 +224,8 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 	 */
 	OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
 
+	blitz::Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));
+
 	cplx ham = 0.0;
 	cplx overlap = 0.0;
 	for (int i = 0; i < N; i++)
@@ -220,6 +243,13 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 
 			ham = -1.0 / (2.0 * Mass) * BSplineObject->BSplineDerivative2OverlapIntegral(i, j);
 			overlap = BSplineObject->BSplineOverlapIntegral(i, j);
+			
+			//Compute potential matrix element if present
+			if (HasPotential)
+			{
+				GetPotentialSlice(potentialSlice, i);
+				ham += BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
+			}
 
 			//PropagationMatrix(Ju, Iu) = OverlapMatrix(Ju, Iu) + Im * dt / 2.0 * ham;
 			//PropagationMatrix(Jl, Il) = OverlapMatrix(Jl, Il) + Im * dt / 2.0 * ham;
@@ -228,6 +258,7 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 		}
 	}
 }
+
 
 /*
  * Set up matrices to be stored on BLAS form
@@ -239,6 +270,8 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 	int k = BSplineObject->MaxSplineOrder;
 	int N = BSplineObject->NumberOfBSplines;
 	int lda = k;
+
+	blitz::Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));
 
 	// Resize matrices
 	OverlapMatrixBlas.resize(N, lda);
@@ -257,11 +290,45 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 			//This is okay, since the matrix is real and symmetric.
 			HamiltonianMatrix(J, I)  = -1.0 / (2.0 * Mass) *
 				BSplineObject->BSplineDerivative2OverlapIntegral(j, i);
+		
+			//Compute potential matrix element if present
+			if (HasPotential)
+			{
+				GetPotentialSlice(potentialSlice, j);
+				HamiltonianMatrix(J,I) += BSplineObject->BSplineOverlapIntegral(potentialSlice, j, i);
+			}
+
 			OverlapMatrixBlas(J, I) = BSplineObject->BSplineOverlapIntegral(j, i);
 		}
 	}
 }
 
+/*
+ * Get a slice of a function defined on the global grid, starting at
+ * the same grid point as b-spline number i.
+ */
+template<int Rank>
+void Propagator<Rank>::GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i)
+{
+	int bsplineSize = BSplineObject->GetBSpline(0).extent(0);
+	int xSize = BSplineObject->GetNodes().extent(0);
+	int globalGridSize = PotentialVector.extent(0);
+
+	// Compute start and stop indices of potential (to match b-spline B_i)
+	int startIndex = (BSplineObject->GetTopKnotMap()(i) - BSplineObject->MaxSplineOrder + 2) * xSize;
+	int stopIndex = std::min(startIndex + bsplineSize, globalGridSize);
+
+	/* 
+	 * At degenerate knot points b-splines span a variable number of quadrature points.
+	 * To ensure the constant size of the potential slice (as required by BSplineOverlapIntegral),
+	 * we make use of a constant-size zero vector, and assign to it the appropriate number of
+	 * potential values, possibly leaving some trailing zeros.
+	 */
+	potentialSlice = 0;
+	potentialSlice( blitz::Range(0, stopIndex - startIndex - 1) ) = 
+		PotentialVector( blitz::Range(startIndex, stopIndex - 1) );
+
+}
 
 //Instantiate propagators of rank 1-4
 template class Propagator<1>;

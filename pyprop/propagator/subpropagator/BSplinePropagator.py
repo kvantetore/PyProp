@@ -11,8 +11,10 @@ class BSplinePropagator:
 		self.RepresentationBSpline = psi.GetRepresentation().GetRepresentation(transformRank)
 		self.BSplineObject = self.RepresentationBSpline.GetBSplineObject()
 
+
 	def ApplyConfigSection(self, configSection):
 		configSection.Apply(self.Propagator)
+		self.ConfigSection = configSection
 
 
 	def SetupStep(self, dt):
@@ -21,11 +23,6 @@ class BSplinePropagator:
 		self.RepresentationGrid = core.BSplineGridRepresentation()
 		self.RepresentationGrid.SetupRepresentation(self.BSplineObject)
 		self.RepresentationGrid.SetDistributedModel(self.RepresentationBSpline.GetDistributedModel())
-
-		# Set up propagator
-		assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
-
-		self.Propagator.Setup(dt, self.psi, self.BSplineObject, self.TransformRank)
 
 		# Set up transform
 		print "        Setup Forward Transform"
@@ -50,8 +47,22 @@ class BSplinePropagator:
 
 
 	def SetupStepConjugate(self, dt):
+		
+		# Set up b-spline potential
+		globalGridSize = self.BSplineObject.GetQuadratureGridGlobal().size
+		potentialVector = zeros(globalGridSize, dtype=double)
+		if hasattr(self.ConfigSection, "potential"):
+			potentialName = self.ConfigSection.Get("potential")
+			potentialSection = self.ConfigSection.Config.GetSection(potentialName)
+			potential = CreatePotentialFromSection(potentialSection, potentialName, self.psi)
+			potential.SetupStep(dt)
+			potentialVector[:] = potential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
+
+		# Set up propagator
 		self.Transform.ForwardTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
+		assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
+		self.Propagator.Setup(dt, self.psi, self.BSplineObject, potentialVector, self.TransformRank)
 
 
 	def AdvanceStepConjugate(self, t, dt):

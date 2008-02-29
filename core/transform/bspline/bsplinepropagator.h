@@ -20,6 +20,7 @@ private:
 	blitz::Array<cplx, 2> OverlapMatrix;         // LAPACK matrix
 	blitz::Array<cplx, 1> TempData;
 	blitz::Array<cplx, 2> TempMatrix;
+	blitz::Array<double, 1> PotentialVector;
 
 	int PropagateRank;
 	double Mass;
@@ -29,6 +30,8 @@ private:
 	void SetupBlasMatrices(const cplx &dt);
 
 public:
+	
+	bool HasPotential;
 
 	/*
 	 * Get configuration options from configsection
@@ -39,6 +42,8 @@ public:
 	 * Setup propagator object
 	 */
 	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int rank);
+	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, 
+		blitz::Array<double, 1> potential, int rank);
 
 	/*
 	 * Advance wavefunction one timestep
@@ -51,7 +56,11 @@ public:
 	void MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi);
 	void ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix, blitz::Array<cplx, 3> &data);
 
-	
+	/*
+	 * Do some index-fu to get potential slice corresponding to b-spline # i
+	 */
+	void GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i);
+
 	// Functions to return various propagator matrices
 	blitz::Array<cplx, 2> GetOverlapMatrix() { return OverlapMatrix; }
 	blitz::Array<cplx, 2> GetHamiltonianMatrix() { return HamiltonianMatrix; }
