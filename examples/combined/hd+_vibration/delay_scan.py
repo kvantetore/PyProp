@@ -5,11 +5,14 @@ cm_to_inch = 1./2.5
 figureSizePaper = 16*cm_to_inch
 figureSizeScreen = 32*cm_to_inch
 
+try: import scipy.interpolate
+except: print "Scipy not available"
+
 #-----------------------------------------------------------------
 #            Parse input files
 #-----------------------------------------------------------------
 
-def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1):
+def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1, useExistingFigure=False, figureTitle=None, cmap=None, color=None):
 	#Disable interactive when plotting
 	interactive = rcParams["interactive"]
 	rcParams["interactive"] = False
@@ -17,9 +20,18 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	path, name = os.path.split(filename)
 	root, ext = os.path.splitext(name)
 
-	figure(figsize=(25*cm_to_inch, 15*cm_to_inch))
+	#Default color and colormap
+	if cmap == None:
+		cmap = cm.gist_heat_r
+	if color == None:
+		color = "#ff8e16"
+
+	if not useExistingFigure:
+		figure(figsize=(25*cm_to_inch, 15*cm_to_inch))
 	subplot(3,1,1)
-	title("%s %s" % (molecule, root))
+	if figureTitle == None:
+		figureTitle = "%s %s" % (molecule, root)
+	title(figureTitle)
 
 	#Get norm
 	#t, n = GetScanDelayNorm(outputfile=filename, partitionCount=partitionCount)
@@ -29,7 +41,7 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	##pcolor plot
 	subplot(3,1,3)
 	maxState = 10
-	pcolormesh(t, arange(maxState+1), c[:,:maxState+1].transpose(), cmap=cm.gist_heat_r, shading="flat")
+	pcolormesh(t, arange(maxState+1), c[:,:maxState+1].transpose(), cmap=cmap, shading="flat")
 	axis((0,800,0,maxState))
 	ylabel("Vibrational State")
 	xlabel("Delay time (fs)")
@@ -39,7 +51,7 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	ionization = 1 - sum(c[:,:boundStateThreshold], axis=1)
 	#figure(figsize=(figureSize,figureSize*3./4.))
 	subplot(3,1,1)
-	plot(t, ionization, color="#ff8e16")
+	plot(t, ionization, color=color)
 	axis([0,800,0,1])
 	ylabel("Dissoc. Probability")
 	#xlabel("Pulse Delay")
@@ -50,9 +62,10 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	#figure(figsize=(figureSize, figureSize*3./4))
 	subplot(3,1,2)
 	Emax = 2
-	Emin = 0.1
-	eIndex = where(Emin<=E<=Emax)[0][::3]
-	pcolormesh(t, E[eIndex], sum(c[:,:,eIndex], axis=1).transpose(), shading="flat", cmap=cm.gist_heat_r)
+	Emin = 0.0
+	eIndex = where(E >Emin)[0]
+	eIndex = eIndex[where(E[eIndex] <= Emax)[0]][::3]
+	pcolormesh(t, E[eIndex], sum(c[:,:,eIndex], axis=1).transpose(), shading="flat", cmap=cmap, vmin=0, vmax=20)
 	#xlabel("Pulse Delay")
 	axis((0,800,0,Emax))
 	ylabel("Projectile Energy")
@@ -250,6 +263,8 @@ def GetScanDelayEnergyDistribution(**args):
 	return time, E, proj
 
 
+
+
 def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	"""
 	Calculates the energy distribution of the array psi, by projecting 
@@ -263,11 +278,17 @@ def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	proj1 = abs(dot(V1[:-1,:], psi[:,0]))**2 / diff(E1)
 	proj2 = abs(dot(V2[:-1,:], psi[:,1]))**2 / diff(E2)
  
-	interp1 = spline.Interpolator(E1[:-1], proj1)
-	interp2 = spline.Interpolator(E2[:-1], proj2)
+	tick1 = scipy.interpolate.interp1d(E1[:-1], proj1, bounds_error=False, fill_value=0)
+	tick2 = scipy.interpolate.interp1d(E2[:-1], proj2, bounds_error=False, fill_value=0)
+	#outDistrib1 = scipy.interpolate.splev(outputEnergies, tick1)
+	#outDistrib2 = scipy.interpolate.splev(outputEnergies, tick2)
+	outDistrib1 = tick1(outputEnergies)
+	outDistrib2 = tick2(outputEnergies)
 
-	outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
-	outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
+	#interp1 = spline.Interpolator(E1[:-1], proj1)
+	#interp2 = spline.Interpolator(E2[:-1], proj2)
+	#outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
+	#outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
 
 	return outDistrib1, outDistrib2
 
@@ -411,6 +432,40 @@ def SubmitAll2():
 					count += 1
 
 	print "Count= ", count
+
+def SubmitAllFinal():
+	duration5fs = 5 * sqrt(2) * femtosec_to_au
+	duration12fs = 12 * sqrt(2) * femtosec_to_au
+
+	#5fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#12fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#CEP
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
+
+def SubmitFinalExperiment(**args):
+	args["outputfile"] = "outputfiles/%s/final_%s_phase_%.2fpi_pump_%ifs_%ie13_scaling_%i.h5" % \
+		( \
+		args["molecule"], \
+		"%i", \
+		args["pulsePhase"]/pi, \
+		args["pulseDuration"]/(femtosec_to_au*sqrt(2)), 
+		args["pulseIntensity"]/1e13 \
+		)
+
+	print args["outputfile"]
+	SubmitDelayScanStallo(**args)
+
 					
 def SubmitPhaseExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/phase_%s_%.2fpi_pump_%ifs_%ie13.h5" % \
@@ -423,7 +478,7 @@ def SubmitPhaseExperiment(**args):
 		)
 
 	print args["outputfile"]
-	#SubmitDelayScanStallo(**args)
+	SubmitDelayScanStallo(**args)
 
 
 
@@ -532,8 +587,8 @@ def RunDelayScan(**args):
 
 	for delay in delayList:
 		args["pulseDelay"] = delay*femtosec_to_au
-		args["outputpath"] = "/delay_%i" % (delay)
-		print "Propagating %s with pulse delay %ifs" % (molecule, delay)
+		args["outputpath"] = "/delay_%.4f" % (delay)
+		print "Propagating %s with pulse delay %ffs" % (molecule, delay)
 		PropagateDelayScan(**args)
 
 def PropagateDelayScan(**args):
