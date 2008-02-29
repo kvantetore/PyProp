@@ -64,8 +64,7 @@ class FourierPropagatorBase:
 
 		#For imaginary time propagation, set origin to 0 to keep symmetry
 		if 1.0j * imag(dt) == dt and self.ForceOriginZero:
-			pass
-			#self.SetValue(self.OriginIndex, 0)
+			self.SetValue(self.OriginIndex, 0)
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		"""
