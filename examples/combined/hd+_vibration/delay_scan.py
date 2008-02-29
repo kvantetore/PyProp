@@ -5,8 +5,12 @@ cm_to_inch = 1./2.5
 figureSizePaper = 16*cm_to_inch
 figureSizeScreen = 32*cm_to_inch
 
-try: import scipy.interpolate
-except: print "Scipy not available"
+try: 
+	import scipy.interpolate
+	ScipyAvailable=True
+except: 
+	print "Scipy not available"
+	ScipyAvailable=False
 
 #-----------------------------------------------------------------
 #            Parse input files
@@ -277,18 +281,20 @@ def CalculateEnergyDistribution(psi, outputEnergies, E1, V1, E2, V2):
 	"""
 	proj1 = abs(dot(V1[:-1,:], psi[:,0]))**2 / diff(E1)
 	proj2 = abs(dot(V2[:-1,:], psi[:,1]))**2 / diff(E2)
- 
-	tick1 = scipy.interpolate.interp1d(E1[:-1], proj1, bounds_error=False, fill_value=0)
-	tick2 = scipy.interpolate.interp1d(E2[:-1], proj2, bounds_error=False, fill_value=0)
-	#outDistrib1 = scipy.interpolate.splev(outputEnergies, tick1)
-	#outDistrib2 = scipy.interpolate.splev(outputEnergies, tick2)
-	outDistrib1 = tick1(outputEnergies)
-	outDistrib2 = tick2(outputEnergies)
 
-	#interp1 = spline.Interpolator(E1[:-1], proj1)
-	#interp2 = spline.Interpolator(E2[:-1], proj2)
-	#outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
-	#outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
+	if ScipyAvailable:
+		tick1 = scipy.interpolate.interp1d(E1[:-1], proj1, bounds_error=False, fill_value=0)
+		tick2 = scipy.interpolate.interp1d(E2[:-1], proj2, bounds_error=False, fill_value=0)
+		#outDistrib1 = scipy.interpolate.splev(outputEnergies, tick1)
+		#outDistrib2 = scipy.interpolate.splev(outputEnergies, tick2)
+		outDistrib1 = tick1(outputEnergies)
+		outDistrib2 = tick2(outputEnergies)
+	
+	else:
+		interp1 = spline.Interpolator(E1[:-1], proj1)
+		interp2 = spline.Interpolator(E2[:-1], proj2)
+		outDistrib1 = array([interp1.Evaluate(e) for e in outputEnergies])
+		outDistrib2 = array([interp2.Evaluate(e) for e in outputEnergies])
 
 	return outDistrib1, outDistrib2
 
@@ -438,12 +444,14 @@ def SubmitAllFinal():
 	duration12fs = 12 * sqrt(2) * femtosec_to_au
 
 	#5fs (intensity) 
+	SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
 
 	#12fs (intensity) 
+	SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=20e13, pulsePhase=0.0)
@@ -453,6 +461,40 @@ def SubmitAllFinal():
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
 
+	#h2+
+	#5fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#12fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#CEP
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
+
+	#hd+
+	#5fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#12fs (intensity) 
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration12fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration12fs, pulseIntensity=40e13, pulsePhase=0.0)
+
+	#CEP
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
+
 def SubmitFinalExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/final_%s_phase_%.2fpi_pump_%ifs_%ie13_scaling_%i.h5" % \
 		( \
@@ -460,7 +502,8 @@ def SubmitFinalExperiment(**args):
 		"%i", \
 		args["pulsePhase"]/pi, \
 		args["pulseDuration"]/(femtosec_to_au*sqrt(2)), 
-		args["pulseIntensity"]/1e13 \
+		args["pulseIntensity"]/1e13, \
+		args["radialScaling"] \
 		)
 
 	print args["outputfile"]
