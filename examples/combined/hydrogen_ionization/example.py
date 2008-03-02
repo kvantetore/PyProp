@@ -100,3 +100,20 @@ def FindIonizationProbabilityAmplitude():
 	legend()
 
 	return amplitudeList, ionizationList
+
+
+def GetHamiltonMatrixSubspace(prop, l):
+	size = prop.psi.GetData().shape[0]
+	matrix = zeros((size, size), dtype=complex)
+	tempPsi = prop.GetTempPsi()
+
+	for i in range(size):
+		prop.psi.GetData()[:] = 0
+		prop.psi.GetData()[i,l] = 1
+
+		tempPsi.GetData()[:] = 0
+		prop.MultiplyHamiltonian(tempPsi)
+		
+		matrix[:, i] = tempPsi.GetData()[:,l]
+		
+	return matrix

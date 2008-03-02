@@ -7,7 +7,8 @@ SUBDIRS := $(SUBDIRS) ode
 endif
 
 #A small rule to compile only a selected few pyste files
-TESTFILES :=  python/blitzblas.pyste
+#TESTFILES :=  python/blitzblas.pyste
+TESTFILES :=  python/sphericalabsorber.pyste
 BSPLINEFILES := python/bspline/bsplinerepresentation.pyste
 BSPLINEREPFILES := python/bspline/bsplinetransform.pyste
 

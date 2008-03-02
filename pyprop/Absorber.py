@@ -14,7 +14,8 @@ absorbers = ["RadialAbsorber"]
 type = AbsorbingBoundary
 rank = 0
 width = 10
-
+absorb_left = True
+absorb_right = True
 
 """
 

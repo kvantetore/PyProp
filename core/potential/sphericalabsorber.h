@@ -88,6 +88,14 @@ public:
 			it++;
 		}
 	}
+
+	/** Does nothing for now **/
+	void MultiplyPotential(Wavefunction<Rank> &psi, Wavefunction<Rank> &destPsi, const cplx &dt, const cplx &t)
+	{
+		;
+	}
+
+
 };
 
 
