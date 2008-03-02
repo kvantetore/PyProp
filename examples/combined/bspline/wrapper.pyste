@@ -1,0 +1,7 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potential for 2D
+PotentialEvaluator("CoulombPotential<1> 1","CoulombPotential_1")
+PotentialEvaluator("CoulombPotential<2> 2","CoulombPotential_2")
+
