@@ -8,14 +8,6 @@ CombinedRepresentation("2")
 CombinedRepresentation("3")
 CombinedRepresentation("4")
 
-#Combined representation for spherical coordinates.
-SphericalRepresentation = Template("SphericalRepresentation", "representation/sphericalrepresentation.h")
-no_virtual(SphericalRepresentation)
-SphRepr_2 = SphericalRepresentation("2")
-SphRepr_3 = SphericalRepresentation("3")
-use_shared_ptr(SphRepr_2)
-use_shared_ptr(SphRepr_3)
-
 #Representations for the angular part of the spherical representation
 AngularRepresentation = Class("AngularRepresentation", "representation/angularrepresentation.h")
 no_virtual(AngularRepresentation)

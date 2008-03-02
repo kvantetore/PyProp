@@ -67,6 +67,21 @@ public:
 		return this->GetDistributedModel()->GetLocalArray(GetGlobalGrid(rank), rank);
 	}
 
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank)
+	{
+		throw std::runtime_error("OverlapMatrix not implemented for this representation");
+	}
+
+	virtual int GetOverlapBandwidth(int rank)
+	{
+		return 1;
+	}
+
+	bool IsOrthogonalBasis(int rank)
+	{
+		return this->GetOverlapBandwidth(rank) == 1;
+	}
+
 	//Must override
 	virtual blitz::TinyVector<int, Rank> GetFullShape() = 0;
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2) = 0;

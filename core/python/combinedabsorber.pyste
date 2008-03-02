@@ -1,5 +1,5 @@
 AbsorberModel = Class("AbsorberModel", "potential/combinedabsorber.h")
-no_init(AbsorberModel)
+#no_init(AbsorberModel)
 use_shared_ptr(AbsorberModel)
 
 AbsorbingPotential = Template("CombinedAbsorberPotential", "potential/combinedabsorber.h")

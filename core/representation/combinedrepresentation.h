@@ -34,7 +34,10 @@ public:
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank);
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank);
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank);
+	virtual int GetOverlapBandwidth(int rank);
 	virtual void ApplyConfigSection(const ConfigSection &config);
+
 };
 
 #endif

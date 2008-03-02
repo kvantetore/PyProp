@@ -8,7 +8,7 @@ endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
-TESTFILES :=  python/sphericalabsorber.pyste
+TESTFILES :=  python/representation.pyste python/combinedrepresentation.pyste
 BSPLINEFILES := python/bspline/bsplinerepresentation.pyste
 BSPLINEREPFILES := python/bspline/bsplinetransform.pyste
 

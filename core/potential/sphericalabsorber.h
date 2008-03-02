@@ -3,8 +3,7 @@
 
 #include "../common.h"
 #include "../wavefunction.h"
-#include "../representation/sphericalrepresentation.h"
-#include "../representation/radialrepresentation.h"
+#include "../representation/combinedrepresentation.h"
 
 /*
  * Absorbing potential of the form cos(r)**80

@@ -37,6 +37,18 @@ GetLocalWeights(int rank)
 	return GetRepresentation(rank)->GetLocalWeights(rank);
 }
 
+template<int Rank> blitz::Array<double, 2> CombinedRepresentation<Rank>::
+GetGlobalOverlapMatrix(int rank)
+{
+	return GetRepresentation(rank)->GetGlobalOverlapMatrix(rank);
+}
+
+template<int Rank> int CombinedRepresentation<Rank>::
+GetOverlapBandwidth(int rank)
+{
+	return GetRepresentation(rank)->GetOverlapBandwidth(rank);
+}
+
 template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
 ::GetFullShape() 
 {
@@ -75,16 +87,33 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	blitz::Array<cplx, Rank> d2(w2.GetData());
 
 	blitz::TinyVector< blitz::Array<double, 1>, Rank> weights;
+	blitz::TinyVector< blitz::Array<double, 2>, Rank> overlap;
+	blitz::TinyVector< int, Rank> bandWidth;
+	bandWidth = 1;
 	for (int i=0; i<Rank; i++)
 	{
-		weights(i).reference(CombinedRepresentation<Rank>::GetLocalWeights(i));
+		//Reference all weights
+		weights(i).reference(GetLocalWeights(i));
+
+		//Reference all overlap matrices
+		if (!this->IsOrthogonalBasis(i))
+		{
+			bandWidth(i) = GetOverlapBandwidth(i);
+			if (this->GetDistributedModel()->IsDistributedRank(i))
+			{
+				cout << "Rank " << i << " is distributed, and has overlap bandwidth > 1" << endl;
+				throw std::runtime_error("Distributed rank has overlap bandwidth > 1");
+			}
+
+			overlap(i).reference(GetGlobalOverlapMatrix(i));
+		}
 	}
+
 
 	double weight = 1;
 	cplx innerProduct = 0;
 	
 	typename blitz::Array<cplx, Rank>::iterator it1 = d1.begin();
-	typename blitz::Array<cplx, Rank>::iterator it2 = d2.begin();
 	for (int linearCount=0; linearCount<w1.Data.size(); linearCount++)
 	{
 		weight = 1.;
@@ -92,15 +121,54 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 		{
 			weight *= weights(curRank)(it1.position()(curRank));
 		}
+
+		/*
+		 * Non-orthogonal basises makes inner products more complicated
+		 * sum( conj(psi1(i)) * psi2(j) * overlap(i, j) * weight(i), i, j)
+		 *
+		 * compared to inner product for orthogonal basises
+		 * sum( conj(psi1(i)) * psi2(i) * weight(i), i) 
+		 *
+		 * Overlap is a banded matrix.
+		 *
+		 * bandWidth == 1 <=> Orthogonal basis
+		 */
+
+		cplx curValue = conj(*it1);
+
+		//Calculate overlap along each rank
+		cplx subInnerProduct = 0;
+		for (int curRank=0; curRank<Rank; curRank++)
+		{
+			int curBandWidth = bandWidth(curRank);
+			if (curBandWidth > 1)
+			{
+				blitz::TinyVector<int, Rank> otherIndex = it1.position();
+				int curRankIndex = otherIndex(curRank);
+				int curRankSize = d1.extent(curRank);
+			
+				int startBand = std::max(0, curRankIndex - (bandWidth(curRank) - 1) / 2);
+				int stopBand = std::min(curRankSize-1, curRankIndex + (bandWidth(curRank) - 1) / 2);
+				for (int band=startBand; band<=stopBand; band++)
+				{
+					otherIndex(curRank) = band;
+					double curOverlap = overlap(curRank)(curRankIndex, band+curBandWidth); //TODO: Implement properly for correct matrix storage
+					subInnerProduct += curValue * d2(otherIndex) * curOverlap;
+				}
+			}
+			else
+			{
+				subInnerProduct = curValue * d2(it1.position());
+			}
+		}
+
+		innerProduct += subInnerProduct * weight;
 		
-		innerProduct += conj(*it1) * (*it2) * weight;
 		it1++;
-		it2++;
 	}
 
 	return innerProduct;
 }
-
 
 
 template class CombinedRepresentation<1>;

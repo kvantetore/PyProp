@@ -3,8 +3,8 @@
 
 #include "../common.h"
 #include "../wavefunction.h"
-#include "../representation/sphericalrepresentation.h"
 #include "../representation/angularrepresentation.h"
+#include "../representation/combinedrepresentation.h"
 #include "../representation/sphericalharmonicrepresentation.h"
 #include "shtools.h"
 
@@ -31,10 +31,12 @@ public:
 	// alternative: use the constructor with the Wavefunction argument
 	void SetupStep(const Wavefunction<Rank> &psi)
 	{
+		throw std::runtime_error("SphericalTransform temporarily out of service...");
+		/*
 		// uses the representation of the wavefunction to get MaxL
-		typedef SphericalRepresentation<Rank> SphRepr;
+		typedef CombinedRepresentation<Rank> CombRepr;
 		typedef SphericalHarmonicRepresentation SphHarmRepr;
-		typename SphRepr::Ptr reprSphere = dynamic_pointer_cast<SphRepr>(psi.GetRepresentation());
+		typename CombRepr::Ptr reprSphere = dynamic_pointer_cast<CombRepr>(psi.GetRepresentation());
 		SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast<SphHarmRepr>(reprSphere->GetAngularRepresentation());
 		if (reprAngular == 0) 
 		{
@@ -42,6 +44,7 @@ public:
 			throw std::runtime_error("Invalid wavefunction representation");
 		}
 		transform.Initialize(reprAngular->Range.MaxL);
+		*/
 	}
 	
 	/* 

@@ -11,6 +11,7 @@ OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
 PYSTEFILES = \
 	python/cranknicholson.pyste \
 	python/representation.pyste \
+	python/combinedrepresentation.pyste \
 	python/orthopolrepresentation.pyste \
 	python/orthopoltransform.pyste \
 	python/orthopolpotentials.pyste \
@@ -31,7 +32,6 @@ PYSTEFILES = \
 	python/sphericalabsorber.pyste \
 	python/sphericalkineticpotential.pyste \
 	python/sphericalrange.pyste \
-	python/sphericalrepresentation.pyste \
 	python/sphericaltransform.pyste \
 	python/staticpotential.pyste \
 	python/polarpotential.pyste \
@@ -73,7 +73,6 @@ SOURCES= \
 	mpi/distributedmodel.cpp \
 	python/pysteoutput/_main.cpp \
 	finitediff/exponentialfinitedifference.cpp \
-	representation/sphericalrepresentation.cpp \
 	utility/timer.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))

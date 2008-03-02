@@ -444,10 +444,10 @@ def SubmitAllFinal():
 	duration12fs = 12 * sqrt(2) * femtosec_to_au
 
 	#5fs (intensity) 
-	SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
-	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
-	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
-	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
+	#SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
+	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
 
 	#12fs (intensity) 

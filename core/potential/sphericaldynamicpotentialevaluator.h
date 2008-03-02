@@ -3,7 +3,8 @@
 
 #include "../common.h"
 #include "../wavefunction.h"
-#include "../representation/sphericalrepresentation.h"
+#include "../representation/combinedrepresentation.h"
+#include "../representation/angularrepresentation.h"
 #include "staticpotential.h"
 #include "potentialbase.h"
 #include "potentialaction.h"
@@ -19,7 +20,7 @@ public:
 	template<class DynamicPotentialClass>
 	void IterateAction(DynamicPotentialClass &potential, const Wavefunction<Rank> &psi, blitz::Array<cplx, Rank> updateData, const cplx &timeStep, const double &curTime)
 	{
-		typedef SphericalRepresentation<Rank> SphRepr;		
+		typedef CombinedRepresentation<Rank> CombRepr;		
 
 		//Set up PotentialClass
 		potential.CurTime = curTime;
@@ -27,7 +28,8 @@ public:
 		potential.CurTimeUpdated();
 
 		//Get representations
-		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
+		typename CombRepr::Ptr repr = dynamic_pointer_cast< CombRepr >(psi.GetRepresentation());
+		typename AngularRepresentation::Ptr angularRepr = dynamic_pointer_cast< AngularRepresentation >(repr->GetRepresentation(Rank-1));
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
 		for (int i=0; i<Rank-1; i++)
@@ -36,7 +38,7 @@ public:
 		}
 		
 		blitz::Array<double, 2> omegaGrid;
-		omegaGrid.reference(repr->GetLocalAngularGrid());
+		omegaGrid.reference(angularRepr->GetLocalOmegaGrid());
 		
 		//postition is size rank+1 since <r,(l,m)> --> <r,l,m> = pos
 		blitz::TinyVector<double, Rank+1> pos;
@@ -125,7 +127,7 @@ public:
 
 	double CalculateExpectationValue(const Wavefunction<Rank> &psi, const cplx &timeStep, const double curTime)
 	{
-		typedef SphericalRepresentation<Rank> SphRepr;		
+		typedef CombinedRepresentation<Rank> CombRepr;		
 	
 		blitz::Array<cplx, Rank> data(psi.Data);
 		
@@ -135,14 +137,15 @@ public:
 		Potential.CurTimeUpdated();
 
 		//Get representations
-		typename SphRepr::Ptr repr = dynamic_pointer_cast< SphericalRepresentation<Rank> >(psi.GetRepresentation());
+		typename CombRepr::Ptr repr = dynamic_pointer_cast< CombRepr >(psi.GetRepresentation());
+		typename AngularRepresentation::Ptr angularRepr = dynamic_pointer_cast< AngularRepresentation >(repr->GetRepresentation(Rank-1));
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
 		for (int i=0; i<Rank; i++)
 		{
 			grid(i).reference(repr->GetLocalGrid(i));
 		}
-		blitz::Array<double, 2> omegaGrid(repr->GetLocalAngularGrid());
+		blitz::Array<double, 2> omegaGrid(angularRepr->GetLocalOmegaGrid());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > weights;
 		for (int i=0; i<Rank; i++)

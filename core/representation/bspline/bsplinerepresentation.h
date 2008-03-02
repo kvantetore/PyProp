@@ -77,8 +77,17 @@ public:
 		return Grid;
 	}
 
-	virtual void ApplyConfigSection(const ConfigSection &config);
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank)
+	{
+		return BSplineObject->GetOverlapMatrix();
+	}
 
+	virtual int GetOverlapBandwidth(int rank)
+	{
+		return BSplineObject->NumberOfSplines * 2 - 1;
+	}
+
+	virtual void ApplyConfigSection(const ConfigSection &config);
 
 	/*
 	 * Return b-spline object
