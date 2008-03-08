@@ -40,10 +40,12 @@ private:
 	MatrixType ScaledWeights;
 	MatrixType OverlapMatrix;
 	MatrixTypeCplx OverlapMatrixFull;
+	MatrixType OverlapMatrixBlas;
 
 
 	bool OverlapMatrixComputed;
 	bool OverlapMatrixFullComputed;
+	bool OverlapMatrixBlasComputed;
 
 public:
 
@@ -53,6 +55,7 @@ public:
 		eps = 1e-15; 
 		OverlapMatrixComputed = false; 
 		OverlapMatrixFullComputed = false; 
+		OverlapMatrixBlasComputed = false; 
 		ProjectionAlgorithm = 0;
 	}
 
@@ -76,6 +79,7 @@ public:
 	VectorType GetQuadratureGrid(int i) { return QuadratureGrid(i, blitz::Range::all()); }
 	MatrixType GetBSplineOverlapMatrix() { return OverlapMatrix; }
 	MatrixTypeCplx GetBSplineOverlapMatrixFull() { SetupOverlapMatrixFull(); return OverlapMatrixFull; }
+	MatrixType GetBSplineOverlapMatrixBlas() { SetupOverlapMatrixBlas(); return OverlapMatrixBlas; }
 	VectorType GetQuadratureGridGlobal() { return QuadratureGridGlobal; }
 	VectorType GetQuadratureWeightsGlobal() { return QuadratureWeightsGlobal; }
 
@@ -108,6 +112,7 @@ public:
 	void CreateBSplineDerivative2Table();
 	void ComputeOverlapMatrix();
 	void SetupOverlapMatrixFull();
+	void SetupOverlapMatrixBlas();
 
 	// B-spline-expansion related functions
 	VectorTypeCplx ExpandFunctionInBSplines(object);

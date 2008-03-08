@@ -24,7 +24,8 @@ void BSplineTransform<Rank>::SetupStep(Wavefunction<Rank> &psi, BSpline::Ptr bsp
 	BSplineGridDataName = psi.AllocateData(gridShape);
 	BSplineDataName = psi.GetActiveBufferName();
 
-	TempData.resize(BSplineObject->GetQuadratureGridGlobal().extent(0));
+	//TempData.resize(BSplineObject->GetQuadratureGridGlobal().extent(0));
+	TempData.resize(BSplineObject->NumberOfBSplines);
 }
 
 /*
@@ -68,7 +69,6 @@ void BSplineTransform<Rank>::ForwardTransform(Wavefunction<Rank> &psi)
 			output3d(i, Range::all() , j) = TempData;
 		}
 	}
-
 	psi.SetActiveBuffer(BSplineDataName);
 }
 

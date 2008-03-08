@@ -695,4 +695,62 @@ void BSpline::SetupOverlapMatrixFull()
 	OverlapMatrixFullComputed = true;
 }
 
+
+/*
+ * Setup overlap matrix for use with BLAS routine zgbsv.
+ * Both upper and lower bands are stored, in a manner required by
+ * said routine.
+ */
+void BSpline::SetupOverlapMatrixBlas()
+{
+	int k = MaxSplineOrder;
+	int N = NumberOfBSplines;
+
+	//Check that overlap matrix has been computed
+	if (!OverlapMatrixComputed)
+	{ 
+		ComputeOverlapMatrix();
+	}
+
+	//Check if BLAS overlap matrix has been set up
+	if (OverlapMatrixBlasComputed) { return; }
+
+	//Check that size of OverlapMatrixBlas is correct; otherwise resize
+	if ( (OverlapMatrixBlas.extent(0) != N) || (OverlapMatrixBlas.extent(1) != k) )
+	{
+		OverlapMatrixBlas.resize(N, k);
+	}
+
+	
+	OverlapMatrixBlas = 0;
+
+	for (int j = 0; j < N; j++)
+	{
+		int iMax = std::min(j + k, N);
+		for (int i = j; i < iMax; i++)
+		//for (int i = j; i < N; i++)
+		{
+			/* 
+			 * OverlapMatrix is stored according to (another) LAPACK
+			 * specification, so first we must map its indices to
+			 * "ordinary" matrix indices.
+			 */
+			int J = i;
+			int I = k - 1 + j - i;
+
+			//BLAS index map from "normal" indices
+			int Jb = j;
+			int Ib = i - j;
+
+			//Set up blas matrix
+			OverlapMatrixBlas(Jb, Ib) = OverlapMatrix(J, I);
+			//OverlapMatrixBlas(Jb, Ib) = BSplineOverlapIntegral(j, i);
+		}
+	}
+
+	OverlapMatrixBlasComputed = true;
+}
+
+
 } //Namespace
+

@@ -64,14 +64,15 @@ template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
 template<int Rank> Representation1DPtr CombinedRepresentation<Rank>
 ::GetRepresentation(int rank)
 {
-	return Representations[rank];
+	//return Representations[rank];
+	return Representations(rank);
 }
 
 //Change the representation of the specified rank
 template<int Rank> void CombinedRepresentation<Rank>
 ::SetRepresentation(int rank, Representation1DPtr repr)
 {
-	Representations[rank] = repr;
+	Representations(rank) = repr;
 }
 
 template<int Rank> void CombinedRepresentation<Rank>
@@ -104,11 +105,10 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 				cout << "Rank " << i << " is distributed, and has overlap bandwidth > 1" << endl;
 				throw std::runtime_error("Distributed rank has overlap bandwidth > 1");
 			}
-
+			
 			overlap(i).reference(GetGlobalOverlapMatrix(i));
 		}
 	}
-
 
 	double weight = 1;
 	cplx innerProduct = 0;
@@ -132,8 +132,10 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 		 * Overlap is a banded matrix.
 		 *
 		 * bandWidth == 1 <=> Orthogonal basis
+		 *
+		 * Note that the overlap matrix is assumed to be stored on BLAS form 
+		 * as used by the routine zgbsv.
 		 */
-
 		cplx curValue = conj(*it1);
 
 		//Calculate overlap along each rank
@@ -149,10 +151,25 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 			
 				int startBand = std::max(0, curRankIndex - (bandWidth(curRank) - 1) / 2);
 				int stopBand = std::min(curRankSize-1, curRankIndex + (bandWidth(curRank) - 1) / 2);
-				for (int band=startBand; band<=stopBand; band++)
+				for (int band=startBand; band<curRankIndex; band++)
 				{
+					//BLAS index map from "normal" indices
+					int Jb = band;
+					int Ib = (curRankIndex - band);
+
 					otherIndex(curRank) = band;
-					double curOverlap = overlap(curRank)(curRankIndex, band+curBandWidth); //TODO: Implement properly for correct matrix storage
+					double curOverlap = overlap(curRank)(Jb, Ib); 
+					subInnerProduct += curValue * d2(otherIndex) * curOverlap;
+				}
+
+				for (int band=curRankIndex; band<=stopBand; band++)
+				{
+					//BLAS index map from "normal" indices
+					int Jb = curRankIndex;
+					int Ib = band - curRankIndex;
+
+					otherIndex(curRank) = band;
+					double curOverlap = overlap(curRank)(Jb, Ib); 
 					subInnerProduct += curValue * d2(otherIndex) * curOverlap;
 				}
 			}

@@ -13,8 +13,7 @@ class CombinedRepresentation : public Representation<Rank>
 {
 private:
 	//Variables
-	Representation1DPtr Representations[Rank];
-	blitz::Array<double, 1> LocalGrid[Rank];
+	blitz::TinyVector<Representation1DPtr, Rank> Representations;
 
 public:
 	typedef shared_ptr< CombinedRepresentation<Rank> > Ptr;

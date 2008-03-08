@@ -33,6 +33,8 @@ clean:
 	rm -rf .deps
 	mkdir .deps
 	rm -rf wrapper.cpp
+	rm -rf ../representation/bspline/*.o
+	rm -rf ../transform/bspline/*.o
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
 

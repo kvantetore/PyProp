@@ -79,12 +79,24 @@ public:
 
 	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank)
 	{
-		return BSplineObject->GetOverlapMatrix();
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong b-spline rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
+		}
+		return BSplineObject->GetBSplineOverlapMatrixBlas();
 	}
+
 
 	virtual int GetOverlapBandwidth(int rank)
 	{
-		return BSplineObject->NumberOfSplines * 2 - 1;
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong b-spline rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
+		}
+
+		int bandWidth = BSplineObject->MaxSplineOrder * 2 - 1;
+		//return BSplineObject->NumberOfBSplines * 2 - 1;
+		return bandWidth;
 	}
 
 	virtual void ApplyConfigSection(const ConfigSection &config);
