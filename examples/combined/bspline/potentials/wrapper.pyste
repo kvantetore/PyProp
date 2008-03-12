@@ -1,0 +1,8 @@
+#declare potential evaluator for cartesian-like potentials
+SingleActiveElectronEvaluator = Template("RankOnePotentialEvaluator", "saepotential.cpp")
+#PotentialEvaluatorDynamic = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile RankOne potential for 1D and 2D
+SingleActiveElectronEvaluator("SingleActiveElectronPotential<1> 1","SingleActiveElectronPotential_1")
+SingleActiveElectronEvaluator("SingleActiveElectronPotential<1> 2","SingleActiveElectronPotential_2")
+
