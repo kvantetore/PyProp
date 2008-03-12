@@ -16,6 +16,7 @@ public:
 	typedef shared_ptr<AbsorberModel> Ptr;
 	typedef blitz::Array<double, 1> Vector;
 
+	AbsorberModel() {}
 	virtual ~AbsorberModel() {}
 	virtual void ApplyConfigSection(const ConfigSection &config) {}
 	virtual void SetupStep(Vector grid) = 0;

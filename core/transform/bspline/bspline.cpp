@@ -445,7 +445,7 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
  * There are two algorithms implemented here:
  *
  *     0. Sum is performed with explicit loop. Performance: approx. two
- *        times faster than 1.
+ *        times faster than algorithm 1.
  *     1. Sum is performed with blitz++ sum-function (which is slow).
  */
 void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output)
