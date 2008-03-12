@@ -18,9 +18,12 @@ private:
 	blitz::Array<cplx, 2> OverlapMatrixBlas;     // BLAS matrix
 	blitz::Array<cplx, 2> HamiltonianMatrix;     // BLAS matrix
 	blitz::Array<cplx, 2> OverlapMatrix;         // LAPACK matrix
+	blitz::Array<cplx, 2> CentrifugalMatrix;     // LAPACK matrix
+	blitz::Array<cplx, 2> CentrifugalMatrixBlas; // BLAS matrix
 	blitz::Array<cplx, 1> TempData;
 	blitz::Array<cplx, 2> TempMatrix;
 	blitz::Array<double, 1> PotentialVector;
+	blitz::Array<double, 1> CentrifugalVector;
 
 	int PropagateRank;
 	double Mass;
@@ -32,6 +35,7 @@ private:
 public:
 	
 	bool HasPotential;
+	bool HasCentrifugalPotential;
 
 	/*
 	 * Get configuration options from configsection
@@ -44,6 +48,7 @@ public:
 	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int rank);
 	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, 
 		blitz::Array<double, 1> potential, int rank);
+	void SetupCentrifugalPotential(blitz::Array<double, 1> centrifugalPotential);
 
 	/*
 	 * Advance wavefunction one timestep
@@ -59,13 +64,18 @@ public:
 	/*
 	 * Do some index-fu to get potential slice corresponding to b-spline # i
 	 */
-	void GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i);
+	void GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i, 
+		blitz::Array<double, 1> potentialVector);
 
-	// Functions to return various propagator matrices
+	/*
+	 * Functions to return various propagator matrices
+	 */
 	blitz::Array<cplx, 2> GetOverlapMatrix() { return OverlapMatrix; }
 	blitz::Array<cplx, 2> GetHamiltonianMatrix() { return HamiltonianMatrix; }
 	blitz::Array<cplx, 2> GetOverlapMatrixBlas() { return OverlapMatrixBlas; }
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
+	blitz::Array<cplx, 2> GetCentrifugalMatrixBlas() { return CentrifugalMatrixBlas; }
+	blitz::Array<cplx, 2> GetCentrifugalMatrix() { return CentrifugalMatrix; }
 };
 
 }; //Namespace

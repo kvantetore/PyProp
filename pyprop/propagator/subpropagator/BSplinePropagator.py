@@ -21,6 +21,7 @@ class BSplinePropagator:
 	
 		# Set up b-spline grid representation
 		self.RepresentationGrid = core.BSplineGridRepresentation()
+		self.RepresentationGrid.SetBaseRank(self.TransformRank)
 		self.RepresentationGrid.SetupRepresentation(self.BSplineObject)
 		self.RepresentationGrid.SetDistributedModel(self.RepresentationBSpline.GetDistributedModel())
 
@@ -51,6 +52,7 @@ class BSplinePropagator:
 		# Set up b-spline potential
 		globalGridSize = self.BSplineObject.GetQuadratureGridGlobal().size
 		potentialVector = zeros(globalGridSize, dtype=double)
+		centrifugalVector = zeros(globalGridSize, dtype=double)
 		if hasattr(self.ConfigSection, "potential"):
 			potentialName = self.ConfigSection.Get("potential")
 			potentialSection = self.ConfigSection.Config.GetSection(potentialName)
@@ -58,13 +60,29 @@ class BSplinePropagator:
 			potential.SetupStep(dt)
 			potentialVector[:] = potential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
 
-		# Set up propagator
-		self.Transform.ForwardTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
-		assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
-		self.Propagator.Setup(dt, self.psi, self.BSplineObject, potentialVector, self.TransformRank)
+			if hasattr(self.ConfigSection, "centrifugal_potential"):
+				centrifugalPotentialName = self.ConfigSection.Get("centrifugal_potential")
+				centrifugalPotentialSection = self.ConfigSection.Config.GetSection(centrifugalPotentialName)
+				centrifugalPotential = CreatePotentialFromSection(centrifugalPotentialSection, centrifugalPotentialName, self.psi)
+				centrifugalPotential.SetupStep(dt)
+				centrifugalVector[:] = centrifugalPotential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
+				self.Propagator.SetupCentrifugalPotential(centrifugalVector)
 
+			# Set up propagator w/potential
+			self.Transform.ForwardTransform(self.psi)
+			self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
+			assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
+			self.Propagator.Setup(dt, self.psi, self.BSplineObject, potentialVector, self.TransformRank)
 
+		else:
+
+			# Set up propagator without potentials
+			self.Transform.ForwardTransform(self.psi)
+			self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
+			assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
+			self.Propagator.Setup(dt, self.psi, self.BSplineObject, self.TransformRank)
+
+	
 	def AdvanceStepConjugate(self, t, dt):
 		self.ForwardTransform()
 		self.Propagator.AdvanceStep(self.psi)

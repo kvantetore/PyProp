@@ -4,7 +4,7 @@
 namespace BSpline
 {
 
-/*
+/*! \fn double EvaluateBSpline(double x, int splineOrder, int leftKnotPoint)
  * Evaluate B-spline value B(x) at point 'x' over knot sequence. B-spline
  * is of order 'splineOrder'. B(x) is non-zero over the interval defined
  * by 'leftKnotPoint' and 'leftKnotPoint' + 'splineOrder'.
@@ -394,7 +394,7 @@ blitz::Array<double, 1> BSpline::EvaluateBSplineOnGrid(VectorType grid, int bSpl
 }
 
 
-/* 
+/*! \fn blitz::Array<cplx, 1> ExpandFunctionInBSplines(object func)
  * Expand a function f in the B-spline basis. Since B-splines are not
  * orthogonal, the usual projection method yields a linear system of
  * equations, Sc = b, where S is the B-spline overlap matrix, c are the 
@@ -441,6 +441,12 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 /* 
  * Expand a function f in the B-spline basis. The function is precalculated
  * on the quadrature grid, and passed as a complex 1D blitz::Array.
+ *
+ * There are two algorithms implemented here:
+ *
+ *     0. Sum is performed with explicit loop. Performance: approx. two
+ *        times faster than 1.
+ *     1. Sum is performed with blitz++ sum-function (which is slow).
  */
 void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output)
 {

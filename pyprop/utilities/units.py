@@ -50,7 +50,7 @@ def SItoAtomic(number,what):
 #
 def AngularFrequencyAtomicFromWavelengthSI(wavelength):
   "Wavelength [nm] -> angular freq. [a.u]"
-  return SItoAtomic(2*pi*constantsSI.lightSpeed/(wavelength*1e-9),UNITS_FREQUENCY)
+  return SItoAtomic(2*pi*constantsSI.lightSpeed/(wavelength*1e-9),UNIT_FREQUENCY)
 
 def ElectricFieldAtomicFromIntensitySI(intensity):
   "Intensity [W/cm**2] -> E-field strength [a.u.]"

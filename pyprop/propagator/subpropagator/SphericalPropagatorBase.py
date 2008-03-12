@@ -1,5 +1,6 @@
 
 class SphericalPropagatorBase:
+
 	def __init__(self, psi, transformRank):
 		self.psi = psi
 		self.TransformRank = transformRank
@@ -10,6 +11,7 @@ class SphericalPropagatorBase:
 	def ApplyConfigSection(self, config):
 		self.Mass = config.mass
 		self.RadialRank = config.radial_rank
+		self.Config = config
 
 	def SetupStep(self, dt):
 		raise "Implement this in a inheriting class"
@@ -20,17 +22,24 @@ class SphericalPropagatorBase:
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
 	def AdvanceStep(self, t, dt):
-		self.Potential.AdvanceStep(t, dt)
+		if self.Potential != None:
+			self.Potential.AdvanceStep(t, dt)
+
 		self.Transform.InverseTransform(self.psi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
 
 	def AdvanceStepConjugate(self, t, dt):
 		self.Transform.ForwardTransform(self.psi)
-		self.Potential.AdvanceStep(t, dt)
+
+		if self.Potential != None:
+			self.Potential.AdvanceStep(t, dt)
+
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
-		self.Potential.MultiplyPotential(dstPsi, t, dt)
+		if self.Potential != None:
+			self.Potential.MultiplyPotential(dstPsi, t, dt)
+
 		self.Transform.InverseTransform(self.psi)
 		self.Transform.InverseTransform(dstPsi)
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)

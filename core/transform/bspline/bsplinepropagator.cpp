@@ -1,5 +1,6 @@
 #include "bsplinepropagator.h"
 #include "../representation/representation.h"
+#include "../representation/reducedspherical/reducedsphericalharmonicrepresentation.h"
 #include "../../utility/blitzblas.h"
 #include "../../utility/blitztricks.h"
 #include "../../utility/blitzlapack.h"
@@ -14,6 +15,8 @@ void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
 	config.Get("mass", Mass);
 	cout << "BSplinePropagator: Mass = " << Mass << endl;
+	HasPotential = false;
+	HasCentrifugalPotential = false;
 }
 
 /*
@@ -50,7 +53,7 @@ template<int Rank>
 void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi, 
 	BSpline::Ptr bsplineObject, blitz::Array<double, 1> potential, int rank)
 {
-	//Get b-splien potential values
+	//Get b-spline potential values
 	PotentialVector.reference( potential.copy() );
 
 	//We have a b-spline potential
@@ -60,6 +63,19 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi,
 	Setup(dt, psi, bsplineObject, rank);
 }
 
+
+/*
+ * Set up propagator with centrifugal term
+ */
+template<int Rank>
+void Propagator<Rank>::SetupCentrifugalPotential(blitz::Array< double, 1> centrifugalPotential)
+{
+	//Get centrifugal potential values
+	CentrifugalVector.reference( centrifugalPotential.copy() );
+
+	//We have a centrifugal term
+	HasCentrifugalPotential = true;
+}
 
 
 /*
@@ -77,6 +93,7 @@ void Propagator<Rank>::AdvanceStep(Wavefunction<Rank> &psi)
 	//Propagate the 3D array
 	ApplyCrankNicolson(PropagationMatrix, data3d);
 }
+
 
 /*
  * Multiply hamiltonian on wavefunction. The non-orthogonality of b-splines
@@ -101,6 +118,7 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
 	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, PropagateRank, 1);
 	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, PropagateRank, 1);
 	Array<cplx, 2> matrix = GetHamiltonianMatrix();
+	Array<cplx, 2> centrifugalMatrix = GetCentrifugalMatrixBlas();
 
 	Array<int, 1> pivot(N);
 	Array<cplx, 2> smat(OverlapMatrix.shape());
@@ -120,6 +138,13 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
 			Array<cplx, 1> v = srcData(i, Range::all(), j);
 			Array<cplx, 1> w = dstData(i, Range::all(), j);
 			MatrixVectorMultiplyHermitianBanded(matrix, v, temp, 1.0, 0.0);
+
+			if (HasCentrifugalPotential)
+			{
+				double l = j;
+				double factor = l * (l + 1.0) / (2.0 * Mass);
+				MatrixVectorMultiplyHermitianBanded(centrifugalMatrix, v, temp, factor, 1.0);
+			}
 
 			//Then call LAPACK to solve system of equations
 			//    S * d = b
@@ -183,10 +208,20 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 			 * While both the overlap and hamilton matrices are symmetric,
 			 * this is not so for the propagation matrix S + idt/2 * H.
 			 * Since we are using the banded hermitian BLAS matrix-vector
-			 * product routine, we multiply in two steps and sum up afterwards.
+			 * product routine, we multiply in two steps and sum up implicitly
+			 * in BLAS using a scaling parameter.
 			 */
 			MatrixVectorMultiplyHermitianBanded(HamiltonianMatrix, temp, v, scaling, 0.0);
 			MatrixVectorMultiplyHermitianBanded(OverlapMatrixBlas, temp, v, 1.0, 1.0);
+
+			if (HasCentrifugalPotential)
+			{
+				double l = j;
+				cplx factor = l * (l + 1.0) / (2.0 * Mass) * scaling;
+				MatrixVectorMultiplyHermitianBanded(CentrifugalMatrixBlas, temp, v, factor, 1.0);
+
+				pmat -= factor * CentrifugalMatrix;
+			}
 
 			/*
 			 * Then call LAPACK to solve banded system of equations, obtaining 
@@ -196,13 +231,14 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 			temp = v;
 			pivot = 0;
 			linalg::LAPACK<cplx> lapack;
-			lapack.SolveGeneralBandedSystemOfEquations(pmat, pivot, temp, offDiagonalBands, 
+			lapack.SolveGeneralBandedSystemOfEquations(pmat, pivot, temp, offDiagonalBands,
 				offDiagonalBands);
 
 			v = temp;
 		}
 	}
 }
+
 
 /*
  * Set up matrices to be stored on LAPACK form
@@ -217,6 +253,7 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 
 	//Resize prop matrix
 	PropagationMatrix.resize(N, ldab);
+	if (HasCentrifugalPotential) { CentrifugalMatrix.resize(N, ldab); }
 
 	/*
 	 * Get full b-bspline overlap matrix from b-bspline object,
@@ -247,8 +284,16 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 			//Compute potential matrix element if present
 			if (HasPotential)
 			{
-				GetPotentialSlice(potentialSlice, i);
+				GetPotentialSlice(potentialSlice, i, PotentialVector);
 				ham += BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
+			}
+
+			//Compute centrifugal matrix element if present
+			if (HasCentrifugalPotential)
+			{
+				GetPotentialSlice(potentialSlice, i, CentrifugalVector);
+				CentrifugalMatrix(Ju,Iu) = BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
+				CentrifugalMatrix(Jl,Il) = BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
 			}
 
 			//PropagationMatrix(Ju, Iu) = OverlapMatrix(Ju, Iu) + Im * dt / 2.0 * ham;
@@ -276,6 +321,7 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 	// Resize matrices
 	OverlapMatrixBlas.resize(N, lda);
 	HamiltonianMatrix.resize(N, lda);
+	if (HasCentrifugalPotential) { CentrifugalMatrixBlas.resize(N, lda); }
 
 	for (int j = 0; j < N; j++)
 	{
@@ -294,8 +340,15 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
 			//Compute potential matrix element if present
 			if (HasPotential)
 			{
-				GetPotentialSlice(potentialSlice, j);
+				GetPotentialSlice(potentialSlice, j, PotentialVector);
 				HamiltonianMatrix(J,I) += BSplineObject->BSplineOverlapIntegral(potentialSlice, j, i);
+			}
+
+			//Compute centrifugal matrix element if present
+			if (HasCentrifugalPotential)
+			{
+				GetPotentialSlice(potentialSlice, j, CentrifugalVector);
+				CentrifugalMatrixBlas(J,I) = BSplineObject->BSplineOverlapIntegral(potentialSlice, j, i);
 			}
 
 			OverlapMatrixBlas(J, I) = BSplineObject->BSplineOverlapIntegral(j, i);
@@ -308,11 +361,12 @@ void Propagator<Rank>::SetupBlasMatrices(const cplx &dt)
  * the same grid point as b-spline number i.
  */
 template<int Rank>
-void Propagator<Rank>::GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i)
+void Propagator<Rank>::GetPotentialSlice(blitz::Array<double, 1> potentialSlice, int i, 
+	blitz::Array<double, 1> potentialVector)
 {
 	int bsplineSize = BSplineObject->GetBSpline(0).extent(0);
 	int xSize = BSplineObject->GetNodes().extent(0);
-	int globalGridSize = PotentialVector.extent(0);
+	int globalGridSize = potentialVector.extent(0);
 
 	// Compute start and stop indices of potential (to match b-spline B_i)
 	int startIndex = (BSplineObject->GetTopKnotMap()(i) - BSplineObject->MaxSplineOrder + 2) * xSize;
@@ -326,9 +380,10 @@ void Propagator<Rank>::GetPotentialSlice(blitz::Array<double, 1> potentialSlice,
 	 */
 	potentialSlice = 0;
 	potentialSlice( blitz::Range(0, stopIndex - startIndex - 1) ) = 
-		PotentialVector( blitz::Range(startIndex, stopIndex - 1) );
+		potentialVector( blitz::Range(startIndex, stopIndex - 1) );
 
 }
+
 
 //Instantiate propagators of rank 1-4
 template class Propagator<1>;
