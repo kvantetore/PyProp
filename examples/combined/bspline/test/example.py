@@ -195,10 +195,33 @@ def TestPhaseAccuracy(**args):
 	M = GetHamiltonMatrix(prop)
 	E, V = eig(M)
 	I = argsort(E)
-	deltaE = E[I[state1]] - E[I[state2]]
+	E1 = E[I[state1]] 
+	E2 = E[I[state2]] 
+	deltaE = E1 - E2
 
-	#Create intial (linear combination) state
-	prop.psi.GetData()[:] = V[:,I[state1]] + V[:,I[state2]]
+	#Strip phase (rotate to real)
+	for i in [state1, state2]:
+		largestCompIndex = argmax(abs(V[:,I[i]]))
+		x = V[largestCompIndex, I[i]].real
+		y = V[largestCompIndex, I[i]].imag
+		eigenvectorPhase = arctan(y/x) 
+		V[:,I[i]] *= exp(-1j * eigenvectorPhase)
+
+	prop.V1 = V[:,I[state1]]
+	prop.V2 = V[:,I[state2]]
+
+
+	#Create wavefunction from state 1 and 2
+	psi1 = prop.psi.Copy()
+	psi1.GetData()[:] = V[:,I[state1]].real
+	psi1.Normalize()	
+	psi2 = prop.psi.Copy()
+	psi2.GetData()[:] = V[:,I[state2]].real
+	psi2.Normalize()
+
+	#Create initial (linear combination) state
+	prop.psi.GetData()[:] = 0.0
+	prop.psi.GetData()[:] = psi1.GetData()[:] + psi2.GetData()[:]
 	prop.psi.Normalize()
 	
 	#Store initial state
@@ -206,20 +229,122 @@ def TestPhaseAccuracy(**args):
 
 	#Integrate
 	prop.initialCorr = []
+	prop.state1Corr = []
+	prop.state2Corr = []
 	prop.outputTimes = []
 	prop.analyticCorr = []
+	prop.norm = []
 	for t in prop.Advance(300): 
+		prop.norm.append( prop.psi.GetNorm() )
+		prop.initialCorr.append( prop.psi.InnerProduct(initialPsi) )
+		prop.state1Corr.append( prop.psi.InnerProduct(psi1) )
+		prop.state2Corr.append( prop.psi.InnerProduct(psi2) )
+		prop.outputTimes.append( t )
+		prop.analyticCorr.append( 0.5 * (exp(-1j * E1 * t) + exp(-1j * E2 * t)) )
+
+	#
+	#Plot results
+	#
+	figure()
+
+	# Plot projection on states 1 and 2
+	subplot(211)
+	#plot(prop.outputTimes, abs(array(prop.state1Corr))**2)
+	#plot(prop.outputTimes, abs(array(prop.state2Corr))**2)
+	plot(prop.outputTimes, abs(array(prop.initialCorr))**2)
+	ylabel('Autocorrelation')
+	axis('tight')
+
+	#Plot relative phase error
+	phase = arctan2(array(prop.initialCorr).imag, array(prop.initialCorr).real)
+	phaseAnalytic = arctan2(array(prop.analyticCorr).imag, array(prop.analyticCorr).real)
+	phaseError = abs(phase - phaseAnalytic)
+	maxPhaseError = max(abs(phaseError))
+	subplot(212)
+	plot(prop.outputTimes, phaseError / maxPhaseError)
+	xlabel('Time (a.u.)')
+	ylabel('Rel. phase err. (%1.1e)' % maxPhaseError)
+	axis('tight')
+
+	return prop
+
+
+def TestPhaseAccuracySingleState(**args):
+	"""
+	Integrate an eigenstates in	time, projecting on the initial state 
+	during propagation. This allows us to check the phase accuracy of 
+	the integrator, which should give some indication of its performance 
+	(and correctness).
+	"""
+
+	#Select state to integrate
+	state = 0
+	if 'state' in args:
+		state = args['state']
+	
+	#Set a sufficient integration time
+	args['duration'] = 100
+	args['dt'] = 0.01
+
+	#Set up problem
+	prop = SetupProblem(**args)
+
+	#Get eigenstates
+	M = GetHamiltonMatrix(prop)
+	E, V = eig(M)
+	I = argsort(E)
+	energy = E[I[0]]
+
+	#Strip phase (rotate to real)
+	largestCompIndex = argmax(abs(V[:,I[state]]))
+	x = V[largestCompIndex, I[state]].real
+	y = V[largestCompIndex, I[state]].imag
+	eigenvectorPhase = arctan(y/x) 
+	V[:,I[state]] *= exp(-1j * eigenvectorPhase)
+	prop.V = V[:,I[state]]
+
+	#Create intial (linear combination) state
+	prop.psi.GetData()[:] = 0.0
+	prop.psi.GetData()[:] = V[:,I[state]].real
+	prop.psi.Normalize()
+	
+	#Store initial state
+	initialPsi = prop.psi.Copy()
+
+	#Integrate
+	prop.initialCorr = []
+	prop.norm = []
+	prop.outputTimes = []
+	prop.analyticCorr = []
+
+	for t in prop.Advance(400): 
+		prop.norm.append( prop.psi.GetNorm() )
 		prop.initialCorr.append( prop.psi.InnerProduct(initialPsi) )
 		prop.outputTimes.append( t )
-		prop.analyticCorr.append( 0.5 * (1 + cos(deltaE * t)) )
+		prop.analyticCorr.append( exp(-1j * energy * t) )
 
-	#Plot result
+	#
+	#Plot results
+	#
 	figure()
+
+	#Plot norm and projection on initial state
 	subplot(211)
+	plot(prop.outputTimes, abs(array(prop.norm)))
 	plot(prop.outputTimes, abs(array(prop.initialCorr))**2)
-	plot(prop.outputTimes, array(prop.analyticCorr))
+	legend(('Norm', 'Autocorrelation'))
+	axis('tight')
+
+	#Plot relative phase error
+	phase = arctan2(array(prop.initialCorr).imag, array(prop.initialCorr).real)
+	phaseAnalytic = arctan2(array(prop.analyticCorr).imag, array(prop.analyticCorr).real)
+	phaseError = abs(phase - phaseAnalytic)
+	maxPhaseError = max(abs(phaseError))
 	subplot(212)
-	semilogy(prop.outputTimes, abs(abs(array(prop.initialCorr))**2 - array(prop.analyticCorr)))
+	plot(prop.outputTimes, phaseError / maxPhaseError)
+	xlabel('Time (a.u.)')
+	ylabel('Rel. phase err. (%1.1e)' % maxPhaseError)
+	axis('tight')
 
 	return prop
 
