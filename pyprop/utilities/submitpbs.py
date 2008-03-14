@@ -15,9 +15,9 @@ class SubmitScript:
 	walltime = timedelta(hours=0, minutes=30, seconds=0)
 	nodes = 1
 	ppn = 1
-	proc_memory = "500mb"
+	proc_memory = None #"500mb"
 	
-	account = "matematisk"
+	account = None #"matematisk"
 	jobname = "myjob"
 
 	stdout = None
@@ -27,19 +27,6 @@ class SubmitScript:
 	executable = "a.out"
 	parameters = ""
 	workingdir = None
-
-	compiler = "gnu"
-	mpi = "openmpi"
-	mpirun_enabled = True
-
-	compilerscript = "~/use_compiler"
-	mpiscript = "~/use_mpi"
-
-	#Environment variables to be copied from current environment
-	env_copy = list()
-	#Extra environment variables to add to 
-	env_extra = dict()
-
 
 	def CreateScript(self):
 		script = list()
@@ -53,19 +40,14 @@ class SubmitScript:
 		minutes = (self.walltime.seconds / 60) % 60
 		seconds = self.walltime.seconds % 60
 		script.append("#PBS -l walltime=" + str(hours) + ":" + str(minutes) + ":" + str(seconds))
-		script.append("#PBS -l nodes=" + str(self.nodes) + ":ppn=" + str(self.ppn))
-		script.append("#PBS -l pmem=" + str(self.proc_memory))
+		script.append("#PBS -l nodes=" + str(self.nodes) + ":ppn=" + str(self.ppn) + ":ib")
+		if self.proc_memory != None:
+			script.append("#PBS -l pmem=" + str(self.proc_memory))
 
 		#Administrative
 		script.append('#PBS -N "' + str(self.jobname) + '"')
-		script.append("#PBS -A " + self.account)
-
-		#Environment variables
-		for env in self.env_copy:
-			script.append("#PBS -v " + str(env))
-
-		for env in self.env_extra:
-			script.append("#PBS -v " + str(env) + str(self.env_extra[env]))
+		if self.account != None:
+			script.append("#PBS -A " + self.account)
 
 		#IO redirection
 		if self.stdout != None:
@@ -78,27 +60,13 @@ class SubmitScript:
 			self.workingdir = os.path.abspath(os.curdir)
 		script.append("cd " + str(self.workingdir))
 
-		#Load the correct paths for the given mpi and compiler
-		script.append("source " + str(self.compilerscript)  + " " + str(self.compiler))
-		script.append("source " + str(self.mpiscript) + " " + str(self.mpi))
-		
 		#Check if we're redirecting stdin
 		instr = ""
 		if self.stdin != None:
 			instr = "< " + str(self.stdin)
 	
-		#HACK: if we're using openmpi, we must specify number of procs
-		procstr = ""
-		if self.mpi == "openmpi":
-			procstr = "-np " + str(self.nodes * self.ppn)
-
-		#Check if we're using mpirun or mpiexec to start our program
-		mpirun = ""
-		if self.mpirun_enabled:
-			mpirun = "$MPIRUN " + procstr + " "
-
 		#Create script line
-		script.append(mpirun + str(self.executable) + " " + str(self.parameters) + instr)
+		script.append(str(self.executable) + " " + str(self.parameters) + instr)
 		
 		#exit stuff
 		script.append("exit $?")

@@ -27,7 +27,9 @@ def CreateDistribution(config, rank=None):
 		distrSection = sec()
 
 	distrSection.proc_array_rank = 1
-	distrSection.initial_distribution = array([config.Representation.rank-1], dtype=int)
+	#DO NOT CHANGE THIS UNLESS YOU ARE ABSOLUTELY SURE. IF THE LAST RANK IS USED
+	#SaveWavefunctionHDF WILL HAVE ABSOLUTELY HORRIBLE PERFORMANCE!!!
+	distrSection.initial_distribution = array([0], dtype=int)
 
 	#apply configuration
 	distrib.ApplyConfigSection(distrSection)

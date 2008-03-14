@@ -3,7 +3,7 @@ def GetAnotherDistribution(distrib, rank):
 		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
 
 	ranks = [j for j in r_[0:rank] if j not in distrib]
-	return array([max(ranks)], dtype=int)
+	return array([min(ranks)], dtype=int)
 
 #----------------------------------------------------------------------------------------------------
 # Cartesian FFT Evaluator

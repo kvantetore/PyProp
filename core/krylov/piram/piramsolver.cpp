@@ -211,8 +211,8 @@ void PiramSolver<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wavefunc
 	this->Callback = callback;
 
 	//Use our custom integration
-	typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
-	Solver.Integration = integration;
+	//typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
+	//Solver.Integration = integration;
 	
 	Solver.Solve();
 	Solver.Postprocess();
