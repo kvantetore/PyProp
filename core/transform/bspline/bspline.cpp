@@ -438,7 +438,8 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 	return b;
 }
 
-/* 
+/*! \fn blitz::Array<cplx, 1> ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, 
+ * blitz::Array<cplx, 1> output)
  * Expand a function f in the B-spline basis. The function is precalculated
  * on the quadrature grid, and passed as a complex 1D blitz::Array.
  *
@@ -545,7 +546,8 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 /*
  * From a given sequence of b-spline coefficients, construct a function on given grid.
  */
-blitz::Array<cplx, 1> BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid)
+blitz::Array<cplx, 1> 
+BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid)
 {
 	int gridSize = grid.extent(0);
 	int numberOfCoeffs = c.extent(0);
