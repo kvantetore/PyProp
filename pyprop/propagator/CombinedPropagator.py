@@ -34,7 +34,7 @@ class CombinedPropagator(PropagatorBase):
 
 		for prop in self.SubPropagators:
 			#parallelization
-			if prop.TransformRank == self.Rank-1:
+			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
 				self.Transpose(1)
 			prop.SetupStep(dt/2.)
 
@@ -45,14 +45,15 @@ class CombinedPropagator(PropagatorBase):
 		for prop in propagatorsReversed:
 			prop.SetupStepConjugate(dt/2.)
 			#parallelization
-			if prop.TransformRank == self.Rank-1:
+			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
 				self.Transpose(2)
 
-		distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-		if len(distr) != 1:
-			raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
-		if distr[0] != self.Rank-1:
-			raise "Distribution (%s) is invalid" % (distr)
+		if not IsSingleProc():
+			distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
+			if len(distr) != 1:
+				raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
+			if distr[0] != self.Rank-1:
+				raise "Distribution (%s) is invalid" % (distr)
 
 
 	def MultiplyHamiltonian(self, destPsi, t, dt):
