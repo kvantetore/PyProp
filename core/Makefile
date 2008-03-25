@@ -5,6 +5,9 @@ SUBDIRS := redirect krylov
 ifdef PYPROP_USE_ODE
 SUBDIRS := $(SUBDIRS) ode
 endif
+ifeq ($(PYPROP_USE_BSPLINE),1)
+SUBDIRS := $(SUBDIRS) bspline
+endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
