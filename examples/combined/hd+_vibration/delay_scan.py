@@ -1,5 +1,6 @@
 import commands
 import pyprop.utilities.submitpbs as submit
+import numpy
 
 cm_to_inch = 1./2.5
 figureSizePaper = 16*cm_to_inch
@@ -12,9 +13,165 @@ except:
 	print "Scipy not available"
 	ScipyAvailable=False
 
+
+def PrintAxisPosition(event):
+	if event.inaxes:
+		print "Clicked at (%.4f, %.4f)"  % (event.xdata, event.ydata)
+		figure()
+
 #-----------------------------------------------------------------
 #            Parse input files
 #-----------------------------------------------------------------
+
+class DelayScanPlot():
+	def __init__(self, molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1, useExistingFigure=False, figureTitle=None, cmap=None, color=None):
+		#Disable interactive when plotting
+		interactive = rcParams["interactive"]
+		rcParams["interactive"] = False
+
+		try:
+		
+			path, name = os.path.split(filename)
+			root, ext = os.path.splitext(name)
+			
+			#Default color and colormap
+			if cmap == None:
+				cmap = LoadColormap("gradient.txt", True)
+			if color == None:
+				color = "#0045a2" #"#ff8e16" 
+			self.ColorMap = cmap
+			self.Color = color
+		
+			#Create New/Use Existing figure
+			if useExistingFigure:
+				curFig = gcf()
+			else:
+				curFig = figure(figsize=(25*cm_to_inch, 15*cm_to_inch))
+			subplot(3,1,1)
+			if figureTitle == None:
+				figureTitle = "%s %s" % (molecule, root)
+			title(figureTitle)
+			self.Figure = curFig
+		
+			if not batchMode:
+				pylab.connect("button_press_event", self.MouseClick)
+			
+			#load data
+			t, eigenstateDistribution = GetScanDelayCorrelation(outputfile=filename, partitionCount=partitionCount)
+			t, E, energyDistribution = GetScanDelayEnergyDistribution(molecule=molecule, outputfile=filename, partitionCount=partitionCount, radialScaling=radialScaling, recalculate=True)
+			self.Time = t
+			self.Energy = E
+			self.EnergyDistribution = energyDistribution
+			self.EigenstateDistribution = eigenstateDistribution
+		
+			#Plot
+			self.PlotEigenstateDistribution()
+			self.PlotDissociation()
+			self.PlotEnergyDistribution()
+			self.AdjustFigure()
+
+		finally:
+			#restore interactive state
+			rcParams["interactive"] = interactive
+			if not batchMode:
+				show()
+
+	
+	def PlotEigenstateDistribution(self):
+		t = self.Time
+
+		#Plot Final Correlation
+		subplot(3,1,3)
+		maxState = 10
+		pcolormesh(t, arange(maxState+1), self.EigenstateDistribution[:,:maxState+1].transpose(), cmap=self.ColorMap, shading="flat")
+		axis((0,800,0,maxState))
+		ylabel("Vibrational State")
+		xlabel("Delay time (fs)")
+		self.AxesEigenstateDistrib = gca()
+	
+	def PlotDissociation(self):
+		t = self.Time
+
+		#Plot Dissociation
+		boundStateThreshold = 25
+		dissociation = 1 - sum(self.EigenstateDistribution[:,:boundStateThreshold], axis=1)
+		subplot(3,1,1)
+		cla()
+		plot(t, dissociation, color=self.Color)
+		axis([0,800,0,1])
+		ylabel("Dissoc. Probability")
+		self.AxesDissoc = gca()
+	
+	def PlotEnergyDistribution(self):
+		E = self.Energy
+		t = self.Time
+
+		#Plot Energy Distribution
+		subplot(3,1,2)
+		Emax = 2
+		Emin = 0.0
+		eIndex = where(E >Emin)[0]
+		eIndex = eIndex[where(E[eIndex] <= Emax)[0]][::1]
+		pcolormesh(t, E[eIndex], sum(self.EnergyDistribution[:,:,eIndex], axis=1).transpose(), shading="flat", cmap=self.ColorMap, vmin=0, vmax=20)
+		axis((0,800,0,Emax))
+		ylabel("Projectile Energy")
+		self.AxesEnergyDistrib = gca()
+
+	def AdjustFigure(self):
+		#Fixup
+		subplots_adjust(hspace=0)
+		subplot(3,1,1)
+		ticPos, ticLabel = xticks()
+		ticLabel = ["" for i in range(len(ticLabel))]
+		xticks(ticPos, ticLabel)
+		
+		subplot(3,1,2)
+		ticPos, ticLabel = xticks()
+		ticLabel = ["" for i in range(len(ticLabel))]
+		xticks(ticPos, ticLabel)
+		ticPos, ticLabel = yticks()
+		yticks(ticPos[:-1])
+		
+		subplot(3,1,3)
+		ticPos, ticLabel = yticks()
+		yticks(ticPos[:-1]+0.5, ["   %i" % i for i in ticPos[:-1]])
+
+	def MouseClick(self, event):
+		interactive = rcParams["interactive"]
+		rcParams["interactive"] = False
+
+		if event.inaxes == self.AxesDissoc:
+			self.PlotDissociation()
+
+		if event.inaxes == self.AxesEnergyDistrib:
+			clickedTime = event.xdata
+			timeDiff = abs(self.Time - clickedTime)
+			idx = where(timeDiff == numpy.min(timeDiff))[0][0]
+			
+			subplot(3,1,1)
+			cla()
+			hold(True)
+			plot(self.Energy, self.EnergyDistribution[idx, 0, :], "r-", label="Energy distrib. t=%.2ffs binding" % self.Time[idx])
+			plot(self.Energy, self.EnergyDistribution[idx, 1, :], "g--", label="Energy distrib. t=%.2ffs unbinding" % self.Time[idx])
+			legend()
+			axis((0,2,0,30))
+
+		if event.inaxes == self.AxesEigenstateDistrib:
+			clickedTime = event.xdata
+			timeDiff = abs(self.Time - clickedTime)
+			idx = where(timeDiff == numpy.min(timeDiff))[0][0]
+	
+			subplot(3,1,1)
+			cla()
+			hold(True)
+			c = self.EigenstateDistribution
+			bar(r_[0:c.shape[1]].copy(), c[idx, :].copy())
+			title("t = %f" % self.Time[idx])
+
+		rcParams["interactive"] = True	
+		draw_if_interactive()
+
+	
 
 def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1, useExistingFigure=False, figureTitle=None, cmap=None, color=None):
 	#Disable interactive when plotting
@@ -26,9 +183,9 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 
 	#Default color and colormap
 	if cmap == None:
-		cmap = cm.gist_heat_r
+		cmap = LoadColormap("gradient.txt", True)
 	if color == None:
-		color = "#ff8e16"
+		color = "#0045a2" #"#ff8e16" 
 
 	if not useExistingFigure:
 		figure(figsize=(25*cm_to_inch, 15*cm_to_inch))
@@ -68,7 +225,7 @@ def MakeDelayScanPlot(molecule, filename, partitionCount=0, figureSize=30*cm_to_
 	Emax = 2
 	Emin = 0.0
 	eIndex = where(E >Emin)[0]
-	eIndex = eIndex[where(E[eIndex] <= Emax)[0]][::3]
+	eIndex = eIndex[where(E[eIndex] <= Emax)[0]][::1]
 	pcolormesh(t, E[eIndex], sum(c[:,:,eIndex], axis=1).transpose(), shading="flat", cmap=cmap, vmin=0, vmax=20)
 	#xlabel("Pulse Delay")
 	axis((0,800,0,Emax))
@@ -444,30 +601,30 @@ def SubmitAllFinal():
 	duration12fs = 12 * sqrt(2) * femtosec_to_au
 
 	#5fs (intensity) 
-	#SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
-	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
-	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
-	#SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
+	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
-
+	
 	#12fs (intensity) 
 	SubmitFinalExperiment(radialScaling=1, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=20e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration12fs, pulseIntensity=40e13, pulsePhase=0.0)
-
+	
 	#CEP
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
-
+	
 	#h2+
 	#5fs (intensity) 
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=10e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=0.0)
-
+	
 	#12fs (intensity) 
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=5e13, pulsePhase=0.0)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="h2+", pulseDuration=duration12fs, pulseIntensity=10e13, pulsePhase=0.0)
@@ -495,6 +652,50 @@ def SubmitAllFinal():
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=20e13, pulsePhase=pi/2)
 	SubmitFinalExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="hd+", pulseDuration=duration5fs, pulseIntensity=40e13, pulsePhase=pi/2)
 
+def SubmitAllFinalControl():
+	duration5fs = 5 * sqrt(2) * femtosec_to_au
+	duration12fs = 12 * sqrt(2) * femtosec_to_au
+
+	#5fs (intensity) 
+	#26.5fs delay
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+
+	#493fs delay
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+
+def SubmitFinalControlExperiment(**args):
+	args["outputfile"] = "outputfiles/%s/final_control_%s_control_%.2ffs_%ie13_probe_%ifs_%ie13_scaling_%i.h5" % \
+		( \
+		args["molecule"], \
+		"%i", \
+		args["controlDelay"]/femtosec_to_au, \
+		args["controlIntensity"]/1e13, \
+		args["pulseDuration"]/(femtosec_to_au*sqrt(2)), 
+		args["pulseIntensity"]/1e13, \
+		args["radialScaling"] \
+		)
+
+	print args["outputfile"]
+
+	#Submit:
+	SubmitDelayScanStallo(**args)
+
+	##Make Plots
+	#datafile = args["outputfile"].replace("%i", "all")
+	#MakeDelayScanPlot(args["molecule"], datafile, radialScaling=args["radialScaling"], batchMode=True)
+	#path, name = os.path.split(datafile)
+	#root, ext = os.path.splitext(name)
+	#pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
+	#pylab.close("all")
+
+
+
 def SubmitFinalExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/final_%s_phase_%.2fpi_pump_%ifs_%ie13_scaling_%i.h5" % \
 		( \
@@ -507,7 +708,18 @@ def SubmitFinalExperiment(**args):
 		)
 
 	print args["outputfile"]
+
+	#Submit:
 	SubmitDelayScanStallo(**args)
+
+	##Make Plots
+	#datafile = args["outputfile"].replace("%i", "all")
+	#MakeDelayScanPlot(args["molecule"], datafile, radialScaling=args["radialScaling"], batchMode=True)
+	#path, name = os.path.split(datafile)
+	#root, ext = os.path.splitext(name)
+	#pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
+	#pylab.close("all")
+
 
 					
 def SubmitPhaseExperiment(**args):

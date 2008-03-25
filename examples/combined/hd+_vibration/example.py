@@ -22,6 +22,7 @@ execfile("delay_scan.py")
 execfile("initialization.py")
 execfile("serialization.py")
 execfile("potential.py")
+execfile("load_cmap.py")
 
 def ConcatenateHDF5(inFileList, outFile, outputMode="w"):
 	"""
@@ -158,11 +159,13 @@ def Propagate(**args):
 	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
-	
+
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	dr = diff(r)[0]
 	timeList = []
 	corrList = []
 	radialData = []
+
 
 	outputCount = 500
 	if "outputCount" in args:
@@ -178,6 +181,10 @@ def Propagate(**args):
 		radialData.append(prop.psi.GetData().copy())
 		
 		timeList.append(t/femtosec_to_au)
+
+	#output initial state
+	t = 0
+	output()
 
 	#
 	fullDuration = prop.Duration
@@ -196,6 +203,23 @@ def Propagate(**args):
 				output()
 
 	prop.psi.Normalize()
+
+	if "removeStates" in args:
+		if args["removeStates"] == "odd":
+			states = r_[1:len(boundE):2]
+		elif args["removeStates"] == "even":
+			states = r_[0:len(boundE):2]
+		else:
+			raise Exception("Invalid removeStates %s" % args["removeStates"])
+		
+		data = prop.psi.GetData()[:,0].copy()
+		for i in states:
+			print "Removing %i" % i
+			data -= dot(conj(boundV[i, :]), data) * boundV[i,:]/dr
+		prop.psi.GetData()[:,0] = data
+
+		plot(r, abs(prop.psi.GetData()[:,0].copy())**2)
+
 
 	prop.Duration = fullDuration
 	tPrev = 0
