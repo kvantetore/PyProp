@@ -22,6 +22,10 @@ def SetupConfig(**args):
 	conf = pyprop.Load(configFile)
 
 	#Modify the config
+	if "dt" in args:
+		timeStep = args['dt']
+		conf.Propagation.timestep = timeStep
+
 	if "imtime" in args:
 		imtime = args["imtime"]
 		propSection = conf.Propagation
@@ -34,11 +38,11 @@ def SetupConfig(**args):
 		propSection.timestep = dt
 		propSection.renormalization = renormalize
 
-	if "amplitude" in args:
-		amplitude = args["amplitude"]
-		conf.DynamicPotential.amplitude = amplitude
+	if "omega_left" in args:
+		omegaLeft = args["omega_left"]
+		conf.QuantumDotPotential_0.omega_left = omegaLeft
+		conf.QuantumDotPotential_1.omega_left = omegaLeft
 
-	
 	if "xmax" in args:
 		xMax = args['xmax']
 		conf.BSplineRepresentation.xmax = xMax
@@ -47,10 +51,6 @@ def SetupConfig(**args):
 		xSize = args['xsize']
 		conf.BSplineRepresentation.xsize = xSize
 	
-	if "dt" in args:
-		timeStep = args['dt']
-		conf.Propagation.timestep = timeStep
-		
 	return conf
 
 
@@ -149,3 +149,46 @@ def FindEigenvalues(**args):
 		print "%.17f" % E
 
 	return solver
+
+
+def TestStability(**args):
+	args["imtime"] = True
+	args["omega_left"] = 1
+	initProp = FindGroundstate(**args)
+
+	args["imtime"] = False
+	args["omega_left"] = 1.5
+	conf = SetupConfig(**args)
+	#conf.Propagation.potential_evaluation = ["StarkPotential"]
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	
+	prop.psi.GetData()[:] = initProp.psi.GetData()
+	initPsi = prop.psi.Copy()
+
+	for t in prop.Advance(10):
+		print "t = %.2f, N(t) = %.8f, P(t) = %.8f" % (t, prop.psi.GetNorm(), abs(prop.psi.InnerProduct(initPsi)**2))
+	return prop
+
+	
+import time
+
+def TestInnerProductSpeed(**args):
+	prop = SetupProblem(**args)
+
+	avgCount = 5
+	minCount = 10
+
+	for algo in range(4):
+		prop.psi.GetRepresentation().Algorithm = algo
+		minT = 1e10
+		for i in range(minCount):
+			t = - time.time()
+			for j in range(avgCount):
+				n = prop.psi.GetNorm()
+			t += time.time()
+			if t<minT:
+				minT = t / avgCount
+		print "Algorithm %i: %f" % (algo, minT)
+	
+
