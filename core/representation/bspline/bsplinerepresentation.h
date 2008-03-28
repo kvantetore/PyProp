@@ -100,6 +100,7 @@ public:
 	}
 
 	virtual void ApplyConfigSection(const ConfigSection &config);
+	void SetupRepresentation(BSpline::Ptr bsplineObject);
 
 	/*
 	 * Return b-spline object

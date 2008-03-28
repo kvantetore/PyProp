@@ -152,7 +152,7 @@ def Propagate(**args):
 	pumpStateEnergy = GetInitialStateEnergy(inputfile)
 	pumpTimes, pumpProb, pumpPhase = GetPump(pumpFrequency, pumpCount, pumpTransitionProbability, pumpStateEnergy)
 	
-	LoadInitialState(prop, inputfile)
+	LoadInitialState(prop, **args)
 	initPsi = prop.psi.Copy()
 
 	boundE, boundV = LoadBoundEigenstates(**args)

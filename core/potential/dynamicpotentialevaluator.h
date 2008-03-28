@@ -114,6 +114,23 @@ public:
 		return potentialData;
 	}
 
+	/** 
+   	  * Updates the array potentialData with the values of the dynamic potential at the given time. 
+	  * This method assumes that potentialData has been resized to the correct size before calling
+	  * this function
+	  *
+	  * In a multiproc environment this returns the local portion of the potential corresponding to 
+	  * the current distribution of the wavefunction.
+  	*/
+	void UpdatePotentialData(blitz::Array<cplx, Rank> potentialData, const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime)
+	{
+		if (potentialData.shape() != psi.GetData().shape())
+		{
+			throw std::runtime_error("potentialData has invalid shape");
+		}
+		Get.IterateAction(Potential, psi, potentialData, timeStep, curTime);
+	}
+
 	double CalculateExpectationValue(const Wavefunction<Rank> &psi, const cplx &timeStep, const double curTime)
 	{
 		blitz::Array<cplx, Rank> data(psi.Data);

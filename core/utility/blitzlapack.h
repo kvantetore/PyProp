@@ -23,6 +23,12 @@ extern "C"
     void LAPACK_NAME(zunmqr)( char* SIDE, char* TRANS, int* M, int* N, int* K, cplx* A, int* LDA, cplx* TAU, cplx* C, int* LDC, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zhbgv)( char* JOBZ, char* UPLO, int* N, int* KA, int* KB, cplx* AB, int* LDAB, cplx* BB, int* LDBB, double* W, cplx* Z, int* LDZ, cplx* WORK, double* RWORK, int* INFO);
 	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
+	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
+
+	//TODO: finish this
+	//void LAPACK_NAME(zpbsvx)( char* FACT, char* UPLO, int* N, int* KD, int* NRHS, cplx* AB, int* LDAB, cplx* AFB, int* LDAFB, char* EQUED, double* S, cplx* B, int* LDB, cplx* X, int* LDX, double* RCOND, double* FERR, double* BERR, cplx* WORK, double* RWORK, int* INFO )
+
+
 	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zgetrf)( int* N, int* M, cplx* A, int* LDA, int* IPIV, int* INFO );
 }
@@ -67,6 +73,19 @@ public:
 		HermitianLower
 	};
 
+	enum MatrixFactoring
+	{
+		MatrixIsFactored,
+		MatrixIsNotFactored,
+		MatrixIsNotEqulibriated
+	};
+
+	enum MatrixEquilibrium
+	{
+		MatrixEquilibriumEnabled,
+		MatrixEquilibriumDisabled
+	};
+
 	int CalculateMatrixInverse(MatrixType &matrix, VectorTypeInt &pivot);
 	int CalculateLUFactorization(MatrixType &matrix, VectorTypeInt &pivot);
 
@@ -87,6 +106,9 @@ public:
 			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors);
 
 	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
+/* TODO finish this
+	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, double* forwardErrorEstimate, double* backwardErrorEstimate);
+*/
 
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;

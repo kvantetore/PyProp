@@ -1,7 +1,5 @@
 
-
-CartesianFourierTransform = Template("CartesianFourierTransform",
-"transform/cartesianfouriertransform.h")
+CartesianFourierTransform = Template("CartesianFourierTransform", "transform/cartesianfouriertransform.h")
 CartesianFourierTransform("1")
 CartesianFourierTransform("2")
 CartesianFourierTransform("3")

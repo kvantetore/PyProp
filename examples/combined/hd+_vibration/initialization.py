@@ -366,17 +366,63 @@ def LoadContinuumEigenstates(**args):
 	return E1, V1, E2, V2
 
 
-def LoadInitialState(prop, inputfile):
+def LoadInitialState(prop, **args):
+	"""
+	Loads an initial state into prop.psi
+
+	which initial condition is used is dependent on
+	args["initType"] 
+		if it is "fc", a FranckCondon distrib is used
+		if it is "adk", the Niederhausen & Thumm distrib is used
+	
+	"""
+	
+	initType = "fc"
+	if "initType" in args:
+		initType = args["initType"]
+	
+	if initType == "fc":
+		print "Using FranckCondon initial condition"
+		LoadInitialStateFranckCondon(prop, GetInputFile(**args))
+
+	elif initType == "adk":
+		print "Using ADI initial condition"
+		LoadInitialStateNiederhausen(prop, **args)
+
+	else:
+		raise Exception("Invalid initType (%s), specify 'fc' or 'adk'" % initType)
+
+
+def LoadInitialStateFranckCondon(prop, inputfile):
+	"""
+	Loads a FranckCondon initial condition from a file
+	(as created from SetupInitialCondition, and puts it
+	into the wavefunction of prop
+	"""
 	f = tables.openFile(inputfile, "r")
 	try:
 		#Setup initial state
 		prop.psi.GetData()[:,0] = f.root.initial_state[:]
 		prop.psi.GetData()[:,1] = 0
-		initPsi = prop.psi.Copy()
 
 		f.close()
 	finally:
 		f.close()
 	del f
 
+
+def LoadInitialStateNiederhausen(prop, **args):
+	"""
+	Loads the initial condition used by Niederhausen & Thumm, specified
+	by the population of the vibrational levels.
+	"""
+	vibrationalPopulation = [0.17, 0.25, 0.23, 0.16, 0.09, 0.05, 0.03, 0.025, 0.006]
+	E, V = LoadBoundEigenstates(**args)
+
+	prop.psi.GetData()[:] = 0
+	for i in range(len(vibrationalPopulation)):
+		amplitude = sqrt(vibrationalPopulation[i])
+		prop.psi.GetData()[:,0] += amplitude * V[i,:]
+
+	prop.psi.Normalize()
 

@@ -34,7 +34,7 @@ public:
 	//Returns the size of the grid
 	virtual blitz::TinyVector<int, 1> GetFullShape()
 	{
-		return blitz::TinyVector<int, 1>();
+		return Range.GetGrid().extent(0);
 	}
 
 	/*

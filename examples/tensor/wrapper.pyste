@@ -1,0 +1,23 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potential for 1D and 2D
+PotentialEvaluator("KineticEnergyPotential<1> 1","KineticEnergyPotential_1")
+PotentialEvaluator("KineticEnergyPotential<2> 2","KineticEnergyPotential_2")
+
+PotentialEvaluator("DipoleLaserPotential<1> 1","DipoleLaserPotential_1")
+PotentialEvaluator("DipoleLaserPotential<2> 2","DipoleLaserPotential_2")
+
+
+PotentialEvaluator("RadialHarmonicPotential<2> 2","RadialHarmonicPotential_2")
+
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 3>);\n')
+
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 3>);\n')
+
+module_code('def("MultiplyTensorPotential_1", MultiplyTensorPotential_1<cplx>);\n')
+module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\n')

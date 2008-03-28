@@ -13,6 +13,9 @@ namespace ReducedSpherical
 
 class ReducedSphericalTools
 {
+public:
+	typedef shared_ptr<ReducedSphericalTools> Ptr;
+
 private:
 	blitz::Array<double, 1> ThetaGrid;		//Theta points. Note that this is only the unique theta points
 	blitz::Array<double, 1> Weights;		//The weights used for integrating over omega

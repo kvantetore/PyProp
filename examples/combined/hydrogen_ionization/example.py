@@ -74,15 +74,23 @@ def FindIonizationProbability(**args):
 
 	initialPsi = prop.psi.Copy()
 
-	for t in prop.Advance(10):
+	timeList = []
+	corrList = []
+
+	for t in prop.Advance(50):
 		norm = prop.psi.GetNorm()
 		corr = abs(prop.psi.InnerProduct(initialPsi))**2
+		timeList.append(t)
+		corrList.append(corr)
 		print "t = %f, Norm = %f, Corr = %f" % (t, norm, corr)
 
 	norm = prop.psi.GetNorm()
 	corr = abs(prop.psi.InnerProduct(initialPsi))**2
 	print "Ionization Probability = %f" % norm
 	print "Initial state correlation = %f" % corr
+
+	prop.TimeList = array(timeList)
+	prop.CorrelationList = array(corrList)
 
 	return prop
 

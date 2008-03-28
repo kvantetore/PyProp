@@ -37,7 +37,7 @@ public:
 	//Returns the size of the grid
 	virtual blitz::TinyVector<int, 1> GetFullShape()
 	{
-		return blitz::TinyVector<int, 1>();
+		return Grid.extent(0);
 	}
 
 	/*
@@ -75,6 +75,7 @@ public:
 	}
 
 	void SetupRepresentation(BSpline::Ptr p);
+	BSpline::Ptr GetBSplineObject() { return BSplineObject; }
 
 	virtual void ApplyConfigSection(const ConfigSection &config);
 

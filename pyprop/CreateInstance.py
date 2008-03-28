@@ -2,9 +2,9 @@
 def CreateInstanceRank(className, rank):
 	try:
 		return eval("%s_%i()" % (className, rank) )
-	except Exception, ex:
+	except Exception:
 		print "Could not create instance of class ", className, "with rank ", rank
-		raise ex
+		raise
 		
 def CreateDistribution(config, rank=None):
 	#Instance Distribution class which is templated over rank
@@ -12,15 +12,11 @@ def CreateDistribution(config, rank=None):
 		rank = config.Representation.rank
 	distrib = CreateInstanceRank("core.DistributedModel", rank)
 	
-	#Apply configuration section to distribution object 
-	#(if it supports applying config data)
-	config.Apply(distrib)
-
 	#hack in initial distribution into configuration
 	#TODO: Get initial distribution from propagator
 	class sec:
 		pass
-	
+
 	if hasattr(config, "Distribution"):
 		distrSection = config.Distribution
 	else:
@@ -84,10 +80,10 @@ def CreateSubRepresentations(combinedRepr, config):
 		combinedRepr.SetRepresentation(i, repr)
 
 	
-def CreateWavefunctionInstance(config, representation):
+def CreateWavefunctionInstance(representation):
 	#Create instance
 	print "    Creating instance"
-	rank = config.Representation.rank
+	rank = len(representation.GetFullShape())
 	psi = CreateInstanceRank("core.Wavefunction", rank)
 	
 	#Set reresentation

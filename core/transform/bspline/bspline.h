@@ -106,6 +106,20 @@ public:
 	cplx ProjectOnBSpline(VectorTypeCplx, int); 
 	//double EvaluateBSplineDerivative(int int);
 	double BSplineDerivative2OverlapIntegral(int, int);
+	
+	void SolveForOverlapMatrix(VectorTypeCplx vector);
+
+	template<class TBase> TBase BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int derivative, int i, int j);
+	//For python wrapping
+	double BSplineGlobalOverlapIntegral_double(blitz::Array<double, 1> func, int derivative, int i, int j)
+	{
+		return BSplineGlobalOverlapIntegral(func, derivative, i, j);
+	}
+
+	cplx BSplineGlobalOverlapIntegral_cplx(blitz::Array<cplx, 1> func, int derivative, int i, int j)
+	{
+		return BSplineGlobalOverlapIntegral(func, derivative, i, j);
+	}
 
 	void CreateBSplineTable();
 	//void CreateBSplineTableBlas();
@@ -176,6 +190,8 @@ inline int BSpline::GetGridIndex(int knotIndex)
 {
 	return KnotGridIndexMap(knotIndex);
 }
+
+
 
 }; //Namespace
 

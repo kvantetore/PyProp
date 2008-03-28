@@ -318,6 +318,92 @@ double BSpline::BSplineOverlapIntegral(VectorType f, int i, int j)
 }
 
 
+template<class TBase>
+TBase BSpline::BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int derivative, int i, int j)
+{
+	using namespace blitz;
+
+	//Reorder to make i < j
+	if (i > j)
+	{
+		int temp = i;
+		i = j;
+		j = temp;
+	}
+
+	// Overlap only nonzero if |i - j| < splineOrder
+	if ( (j - i) < MaxSplineOrder )
+	{
+		//Select tables based on derivative info
+		MatrixType LeftTable;
+		MatrixType RightTable;
+		
+		LeftTable.reference(BSplineTable);
+		if (derivative == 0)
+		{
+			RightTable.reference(BSplineTable);
+		}
+		else if (derivative == 2)
+		{
+			RightTable.reference(BSplineDerivative2Table);
+		}
+		else
+		{
+			cout << "Invalid derivative " << derivative << endl;
+			throw std::runtime_error("Invalid derivative in bspline");
+		}
+
+		//
+		// Since b-splines are only evaluated and stored on the part
+		// of the grid where they are non-zero, we need to figure out
+		// how much of the two given b-splines overlap (i.e. indices)
+		// and only sum over this area.
+		//
+		int leftIndex = i;
+		int rightIndex = j;
+
+
+		int startIndex, stopIndex;
+
+		if ( fabs(KnotSequence(i) - KnotSequence(j)) < eps )
+		{
+			startIndex = 0;
+			stopIndex = RightTable.extent(1) - 1;
+		}
+		else
+		{
+			startIndex = ComputeStartIndex(leftIndex, rightIndex);
+			stopIndex = ComputeStopIndex(startIndex, rightIndex);
+		}
+
+		//Indices for the function is in the global index grid
+		int globalStartIndex = GetGridIndex(leftIndex);
+		int globalEndIndex = std::min(globalStartIndex + RightTable.extent(1), func.extent(0)) - 1; 
+		globalStartIndex += startIndex;
+
+		// Slice left and right b-splines + function and scaled integration weights
+		VectorType B_left = LeftTable(leftIndex, Range(startIndex, toEnd));
+		VectorType B_right = RightTable(rightIndex, Range(fromStart, stopIndex));
+		VectorType ScaledWeightsSlice = ScaledWeights(j, Range(0, stopIndex));
+		blitz::Array<TBase, 1> fSlice = func(Range(globalStartIndex, globalEndIndex));
+
+		// Calculate overlap
+		TBase I = 0;
+		for (int i = 0; i < fSlice.extent(0); i++)
+		{
+			I += ScaledWeightsSlice(i) * fSlice(i) * B_left(i) * B_right(i);
+		}
+		//double I = sum(ScaledWeightsSlice * fSlice * B_left * B_right);
+
+		return I;
+	}
+
+	return 0.0;	
+}
+
+template cplx   BSpline::BSplineGlobalOverlapIntegral<cplx>  (VectorTypeCplx func, int derivative, int i, int j);
+template double BSpline::BSplineGlobalOverlapIntegral<double>(VectorType     func, int derivative, int i, int j);
+
 /*
  * Compute overlap integral between b-splines B_i d2/dx2 B_j.
  * Due to the compact support of b-splines, a given b-spline
@@ -542,6 +628,25 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 	OverlapMatrixFullComputed = false;
 }
 
+
+void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
+{
+	using namespace blitz;
+	/* 
+	 * Solving banded linear system of equations 
+	 *  to obtain expansion coefficients 
+	 */
+	SetupOverlapMatrixFull();
+	int offDiagonalBands = MaxSplineOrder - 1;
+	VectorTypeInt pivot(NumberOfBSplines);
+	pivot = 0;
+	
+	linalg::LAPACK<cplx> lapack;
+	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, vector, 
+		offDiagonalBands, offDiagonalBands);
+
+	OverlapMatrixFullComputed = false;
+}
 
 /*
  * From a given sequence of b-spline coefficients, construct a function on given grid.

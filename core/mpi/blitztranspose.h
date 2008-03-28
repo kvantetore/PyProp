@@ -45,8 +45,8 @@ public:
 		return CartesianShape;
 	}
 
-	void Transpose(const DataVector &fullShape, DataArray &inData, const ProcVector &inDistr, DataArray &outData, const ProcVector &outDistr);
-	void Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &inData, int inDistr, DataArray &outData, int outDistr, int procRank);
+	void Transpose(const DataVector fullShape, DataArray inData, const ProcVector inDistr, DataArray outData, const ProcVector outDistr);
+	void Transpose(const DataVector fullShape, const ProcVector fullDistr, DataArray inData, int inDistr, DataArray outData, int outDistr, int procRank);
 
 	/*
 	 * Creates a local shape which matches a given shape of the virtual global array for a given distribution
@@ -260,7 +260,7 @@ ArrayTranspose<DataRank>::~ArrayTranspose()
  */
 template<int DataRank>
 void ArrayTranspose<DataRank>::
-Transpose(const DataVector &fullShape, DataArray &inData, const ProcVector &inDistr, DataArray &outData, const ProcVector &outDistr)
+Transpose(const DataVector fullShape, DataArray inData, const ProcVector inDistr, DataArray outData, const ProcVector outDistr)
 {
 	typedef std::vector<int> vectori;
 
@@ -294,7 +294,7 @@ Transpose(const DataVector &fullShape, DataArray &inData, const ProcVector &inDi
 
 template<int DataRank>
 void ArrayTranspose<DataRank>::
-Transpose(const DataVector &fullShape, const ProcVector &fullDistr, DataArray &inData, int inDistr, DataArray &outData, int outDistr, int procRank)
+Transpose(const DataVector fullShape, const ProcVector fullDistr, DataArray inData, int inDistr, DataArray outData, int outDistr, int procRank)
 {
 	ProcVector outFullDistr = fullDistr.copy();
 	outFullDistr(procRank) = outDistr;

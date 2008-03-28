@@ -657,17 +657,30 @@ def SubmitAllFinalControl():
 	duration12fs = 12 * sqrt(2) * femtosec_to_au
 
 	#5fs (intensity) 
-	#26.5fs delay
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+	#26.5fs delay 
+	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+	#	controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+	#	controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 
 	#493fs delay
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
 		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
 		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+
+	#293fs delay (even states)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+
+	#306fs delay (odd states)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+
 
 def SubmitFinalControlExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/final_control_%s_control_%.2ffs_%ie13_probe_%ifs_%ie13_scaling_%i.h5" % \
@@ -872,7 +885,7 @@ def PropagateDelayScan(**args):
 	pumpStateEnergy = GetInitialStateEnergy(inputfile)
 	pumpTimes, pumpProb, pumpPhase = GetPump(pumpFrequency, pumpCount, pumpTransitionProbability, pumpStateEnergy)
 
-	LoadInitialState(prop, inputfile)
+	LoadInitialState(prop, **args)
 	initPsi = prop.psi.Copy()
 
 	boundE, boundV = LoadBoundEigenstates(**args)

@@ -23,4 +23,6 @@ BSplineTransform("4", "BSplineTransform_4")
 
 #bspline main class
 BSpline = Class("BSpline::BSpline", "../transform/bspline/bspline.h")
+rename(BSpline.BSplineGlobalOverlapIntegral_cplx, "BSplineGlobalOverlapIntegral")
+rename(BSpline.BSplineGlobalOverlapIntegral_double, "BSplineGlobalOverlapIntegral")
 use_shared_ptr(BSpline)

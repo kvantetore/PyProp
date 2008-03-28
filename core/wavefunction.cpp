@@ -34,7 +34,8 @@ int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 		cout << "Trying to allocate array larger than 2GB ("
 		     << byteCount/(1024*1024*1024) << "GB). "
 		     << "This is most likely an error, aborting." << endl;
-		exit(-1);
+		cout << "Shape = " << ToString(shape) << endl;
+		throw std::runtime_error("Wavefunction too large");
 	}
 
 	std::cout 

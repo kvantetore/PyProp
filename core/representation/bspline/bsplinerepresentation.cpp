@@ -15,7 +15,14 @@ void BSplineRepresentation::ApplyConfigSection(const ConfigSection &config)
 	 */
 	object initFunction = config.Get<object>("init_function");
 	object pythonConf = config.GetPythonConfigSection();
-	BSplineObject = extract<BSpline::Ptr>(initFunction(pythonConf));
+	BSpline::Ptr bsplineObject = extract<BSpline::Ptr>(initFunction(pythonConf));
+
+	SetupRepresentation(bsplineObject);
+}
+
+void BSplineRepresentation::SetupRepresentation(BSpline::Ptr bsplineObject)
+{
+	BSplineObject = bsplineObject;
 
 	// Get grid/weight size from BSpline object
 	int gridSize = BSplineObject->NumberOfBSplines;
@@ -30,6 +37,7 @@ void BSplineRepresentation::ApplyConfigSection(const ConfigSection &config)
 	//Integration weights are all 1.0
 	Weights.resize(gridSize);
 	Weights = 1.0;
+
 }
 
 } //namespace
