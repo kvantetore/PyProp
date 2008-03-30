@@ -120,6 +120,7 @@ clean:
 	rm -f finitediff/*.o
 	rm -f transform/transformedgrid/*.o
 	rm -f representation/bspline/*.o
+	rm -f representation/combinedrepresentation_generated.cpp
 	rm -f $(OBJECTS)
 	
 pyclean:
