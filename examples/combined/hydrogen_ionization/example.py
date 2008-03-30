@@ -37,6 +37,10 @@ def SetupConfig(**args):
 	if "amplitude" in args:
 		amplitude = args["amplitude"]
 		conf.DynamicPotential.amplitude = amplitude
+
+	if "duration" in args:
+		duration = args["duration"]
+		conf.Propagation.duration = duration
 		
 	return conf
 

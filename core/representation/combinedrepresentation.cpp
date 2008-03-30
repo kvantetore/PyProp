@@ -1,10 +1,12 @@
 #include "combinedrepresentation.h"
 #include "cartesianrepresentation.h"
 
+#include "../utility/blitzblas.h"
 
 template<int Rank>
 CombinedRepresentation<Rank>::CombinedRepresentation() 
 {
+	Algorithm = 1;
 }
 
 template<int Rank>
@@ -38,9 +40,15 @@ GetLocalWeights(int rank)
 }
 
 template<int Rank> blitz::Array<double, 2> CombinedRepresentation<Rank>::
-GetGlobalOverlapMatrix(int rank)
+GetGlobalOverlapMatrixFullRow(int rank)
 {
-	return GetRepresentation(rank)->GetGlobalOverlapMatrix(rank);
+	return GetRepresentation(rank)->GetGlobalOverlapMatrixFullRow(rank);
+}
+
+template<int Rank> blitz::Array<double, 2> CombinedRepresentation<Rank>::
+GetGlobalOverlapMatrixFullCol(int rank)
+{
+	return GetRepresentation(rank)->GetGlobalOverlapMatrixFullCol(rank);
 }
 
 template<int Rank> int CombinedRepresentation<Rank>::
@@ -79,6 +87,11 @@ template<int Rank> void CombinedRepresentation<Rank>
 ::ApplyConfigSection(const ConfigSection &config) 
 {
 	//Do this manually for each sub-representation
+
+	if (config.HasValue("innerproduct_algorithm"))
+	{
+		config.Get("innerproduct_algorithm", Algorithm);
+	}
 }
 
 template<int Rank> cplx CombinedRepresentation<Rank>
@@ -87,104 +100,52 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	blitz::Array<cplx, Rank> d1(w1.GetData());
 	blitz::Array<cplx, Rank> d2(w2.GetData());
 
-	blitz::TinyVector< blitz::Array<double, 1>, Rank> weights;
-	blitz::TinyVector< blitz::Array<double, 2>, Rank> overlap;
-	blitz::TinyVector< int, Rank> bandWidth;
-	bandWidth = 1;
-	for (int i=0; i<Rank; i++)
-	{
-		//Reference all weights
-		weights(i).reference(GetLocalWeights(i));
+	/*
+	 * Algorithm1 is faster for orthogonal basises
+	 * Algorithm2 is faster for nonorthogonal basies
+	 *
+	 * For a combination of orthogonal and non-orthogonal
+	 * basises, they are most likely almost equally fast 
+	 */
 
-		//Reference all overlap matrices
-		if (!this->IsOrthogonalBasis(i))
-		{
-			bandWidth(i) = GetOverlapBandwidth(i);
-			if (this->GetDistributedModel()->IsDistributedRank(i))
-			{
-				cout << "Rank " << i << " is distributed, and has overlap bandwidth > 1" << endl;
-				throw std::runtime_error("Distributed rank has overlap bandwidth > 1");
-			}
-			
-			overlap(i).reference(GetGlobalOverlapMatrix(i));
-		}
+	if (Algorithm == 1)
+	{
+		return InnerProductImpl_Algo1(d1, d2);
+	}
+	else if (Algorithm == 2)
+	{
+		return InnerProductImpl_Algo2(d1, d2);
+	}
+	else
+	{
+		cout << "Unknown InnerProduct algorithm " << Algorithm << endl;
+		throw std::runtime_error("Unknown InnerProduct algorithm");
 	}
 
-	double weight = 1;
-	cplx innerProduct = 0;
-	
-	typename blitz::Array<cplx, Rank>::iterator it1 = d1.begin();
-	for (int linearCount=0; linearCount<w1.Data.size(); linearCount++)
-	{
-		weight = 1.;
-		for (int curRank=0; curRank<Rank; curRank++)
-		{
-			weight *= weights(curRank)(it1.position()(curRank));
-		}
+}
 
-		/*
-		 * Non-orthogonal basises makes inner products more complicated
-		 * sum( conj(psi1(i)) * psi2(j) * overlap(i, j) * weight(i), i, j)
-		 *
-		 * compared to inner product for orthogonal basises
-		 * sum( conj(psi1(i)) * psi2(i) * weight(i), i) 
-		 *
-		 * Overlap is a banded matrix.
-		 *
-		 * bandWidth == 1 <=> Orthogonal basis
-		 *
-		 * Note that the overlap matrix is assumed to be stored on BLAS form 
-		 * as used by the routine zgbsv.
-		 */
-		cplx curValue = conj(*it1);
+/*----------------------------------------------------------------------------
+                Implementation of the inner product
+  ----------------------------------------------------------------------------*/
 
-		//Calculate overlap along each rank
-		cplx subInnerProduct = 0;
-		for (int curRank=0; curRank<Rank; curRank++)
-		{
-			int curBandWidth = bandWidth(curRank);
-			if (curBandWidth > 1)
-			{
-				blitz::TinyVector<int, Rank> otherIndex = it1.position();
-				int curRankIndex = otherIndex(curRank);
-				int curRankSize = d1.extent(curRank);
-			
-				int startBand = std::max(0, curRankIndex - (bandWidth(curRank) - 1) / 2);
-				int stopBand = std::min(curRankSize-1, curRankIndex + (bandWidth(curRank) - 1) / 2);
-				for (int band=startBand; band<curRankIndex; band++)
-				{
-					//BLAS index map from "normal" indices
-					int Jb = band;
-					int Ib = (curRankIndex - band);
+template<int Rank> 
+cplx CombinedRepresentation<Rank>::InnerProductImpl_Algo1(DataArray d1, DataArray d2)
+{
+	/* 
+	 * Specialized versions of the inner product algorithms are generated
+	 * by combinedrepresentation_generator.py and compiled separately
+	 */	
+	throw std::runtime_error("InnerProduct Not Implemented");
+}
 
-					otherIndex(curRank) = band;
-					double curOverlap = overlap(curRank)(Jb, Ib); 
-					subInnerProduct += curValue * d2(otherIndex) * curOverlap;
-				}
-
-				for (int band=curRankIndex; band<=stopBand; band++)
-				{
-					//BLAS index map from "normal" indices
-					int Jb = curRankIndex;
-					int Ib = band - curRankIndex;
-
-					otherIndex(curRank) = band;
-					double curOverlap = overlap(curRank)(Jb, Ib); 
-					subInnerProduct += curValue * d2(otherIndex) * curOverlap;
-				}
-			}
-			else
-			{
-				subInnerProduct = curValue * d2(it1.position());
-			}
-		}
-
-		innerProduct += subInnerProduct * weight;
-		
-		it1++;
-	}
-
-	return innerProduct;
+template<int Rank> 
+cplx CombinedRepresentation<Rank>::InnerProductImpl_Algo2(DataArray d1, DataArray d2)
+{
+	/* 
+	 * Specialized versions of the inner product algorithms are generated
+	 * by combinedrepresentation_generator.py and compiled separately
+	 */
+	throw std::runtime_error("InnerProduct Not Implemented");
 }
 
 

@@ -24,10 +24,12 @@ private:
 	VectorType Weights;
 	BSpline::Ptr BSplineObject;
 
+	blitz::Array<double, 2> OverlapMatrixFullRow;
+	blitz::Array<double, 2> OverlapMatrixFullCol;
 public:
 	
 	//Constructors
-	BSplineRepresentation() {}
+	BSplineRepresentation() : OverlapMatrixFullRow(0), OverlapMatrixFullCol(0) {}
 	virtual ~BSplineRepresentation() {}
 
 	virtual Representation<1>::RepresentationPtr Copy()
@@ -77,15 +79,31 @@ public:
 		return Grid;
 	}
 
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank)
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong b-spline rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return BSplineObject->GetBSplineOverlapMatrixBlas();
+		if (OverlapMatrixFullCol.size() == 0)
+		{
+			SetupOverlapMatrix();
+		}
+		return OverlapMatrixFullCol;
 	}
 
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullRow(int rank)
+	{
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong b-spline rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
+		}
+		if (OverlapMatrixFullRow.size() == 0)
+		{
+			SetupOverlapMatrix();
+		}
+		return OverlapMatrixFullRow;
+	}
 
 	virtual int GetOverlapBandwidth(int rank)
 	{
@@ -97,6 +115,48 @@ public:
 		int bandWidth = BSplineObject->MaxSplineOrder * 2 - 1;
 		//return BSplineObject->NumberOfBSplines * 2 - 1;
 		return bandWidth;
+	}
+
+	/* End of Representation<1> interface */
+
+	void SetupOverlapMatrix()
+	{
+		blitz::Array<double, 2> overlapBlas = BSplineObject->GetBSplineOverlapMatrixBlas();
+		int bsplineSize = overlapBlas.extent(0);
+		int bandwidth = this->GetOverlapBandwidth(GetBaseRank());
+		int bw = (bandwidth+1) / 2;
+
+		cout << "Setting up overlap matrix " << bsplineSize << ", " << bandwidth << endl;
+
+		OverlapMatrixFullCol.resize(bsplineSize, bandwidth);
+		OverlapMatrixFullRow.resize(bandwidth, bsplineSize);
+		OverlapMatrixFullCol = 0;
+		OverlapMatrixFullRow = 0;
+		
+		for (int band=-bw+1; band<bw; band++)
+		{
+			int start=0;
+			int end=bsplineSize;
+			if (band < 0) { start = -band; }
+			else { end -= band; }
+			for (int index=start; index<end; index++)
+			{
+				if (band<0)
+				{
+					int Jb = index + band;
+					int Ib = - band;
+					OverlapMatrixFullCol(index, band+bw-1) = overlapBlas(Jb, Ib); 
+					OverlapMatrixFullRow(band+bw-1, index) = overlapBlas(Jb, Ib); 
+				}
+				else
+				{
+					int Jb = index;
+					int Ib = band;
+					OverlapMatrixFullCol(index, band+bw-1) = overlapBlas(Jb, Ib); 
+					OverlapMatrixFullRow(band+bw-1, index) = overlapBlas(Jb, Ib); 
+				}
+			}
+		}
 	}
 
 	virtual void ApplyConfigSection(const ConfigSection &config);

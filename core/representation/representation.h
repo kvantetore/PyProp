@@ -67,10 +67,54 @@ public:
 		return this->GetDistributedModel()->GetLocalArray(GetGlobalGrid(rank), rank);
 	}
 
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrix(int rank)
+	/*
+	 * Returns the overlap matrix S_{i,j}, where the bands are stored colwise, i.e.
+	 * S_{i,j} = overlapMatrix(i, i-j+bw)
+	 * where |i - j| <= bw
+	 * This means that elements of the same row (of different bands) are stored contiguously in memory
+	 */
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank)
 	{
-		throw std::runtime_error("OverlapMatrix not implemented for this representation");
+		if (IsOrthogonalBasis(rank))
+		{
+			//For orthogonal basises the overlap matrix is diagonal with the weights on the diagonal
+			blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
+
+			blitz::TinyVector<int, 2> shape(weights.extent(0), 1);
+			blitz::TinyVector<int, 2> stride(1, 1);
+			blitz::Array<double, 2> overlapMatrix(weights.data(), shape, stride, blitz::neverDeleteData);
+			return overlapMatrix;
+		}
+		else
+		{
+			throw std::runtime_error("OverlapMatrix not implemented for this representation");
+		}
 	}
+
+	/*
+	 * Returns the overlap matrix S_{i,j}, where the bands are stored rowwise, i.e.
+	 * S_{i,j} = overlapMatrix(i-j+bw, j)
+	 *
+	 * This means that elements of the same band is stored contigously in memory
+	 */
+	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullRow(int rank)
+	{
+		if (IsOrthogonalBasis(rank))
+		{
+			//For orthogonal basises the overlap matrix is diagonal with the weights on the diagonal
+			blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
+
+			blitz::TinyVector<int, 2> shape(1, weights.extent(0));
+			blitz::TinyVector<int, 2> stride(1, 1);
+			blitz::Array<double, 2> overlapMatrix(weights.data(), shape, stride, blitz::neverDeleteData);
+			return overlapMatrix;
+		}
+		else
+		{
+			throw std::runtime_error("OverlapMatrix not implemented for this representation");
+		}
+	}
+
 
 	virtual int GetOverlapBandwidth(int rank)
 	{

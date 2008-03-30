@@ -46,7 +46,7 @@ void ExpokitPropagator<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &p
 	cplx* out = tempPsi.GetData().data();
 
 	double inNorm = psi.GetNorm();
-	cout << "inNorm = " << inNorm << endl;
+	//cout << "inNorm = " << inNorm << endl;
 	if (inNorm < 1e-6)
 	{
 		cout << "Wavefunction is zero: " << endl;
@@ -59,7 +59,7 @@ void ExpokitPropagator<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &p
 	this->MultiplyCallback = callback;
 	//Set up timestep
 	this->TimeStep = sqrt(sqr(imag(dt) + sqr(real(dt))));
-	cout << "Using timestep " << this->TimeStep << endl;
+	//cout << "Using timestep " << this->TimeStep << endl;
 	this->ImaginaryTime = false;
 	if (abs(imag(dt)) > 1e-10)
 	{

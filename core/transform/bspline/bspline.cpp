@@ -632,6 +632,12 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
 {
 	using namespace blitz;
+
+	if (vector.stride(0) != 1)
+	{
+		throw std::runtime_error("Vector is not unit-stride. LAPACK requires unit stride vectors");
+	}
+
 	/* 
 	 * Solving banded linear system of equations 
 	 *  to obtain expansion coefficients 

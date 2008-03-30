@@ -64,7 +64,7 @@ void MultiplyHamiltonian(void *data, cplx *inBuffer, cplx *outBuffer)
 	}
 
 	cplx outNorm = sum((outData * conj(outData)));
-	if (real(outNorm) < 0.1)
+	if (real(outNorm) < 1e-10)
 	{
 		cout << "Outnorm is very small. Something is amiss." << endl;
 		cout << "  InNorm = " << inNorm << endl;

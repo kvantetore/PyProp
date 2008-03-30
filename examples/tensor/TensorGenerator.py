@@ -109,6 +109,8 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int)
+		pairs[:,0] = 0
+		pairs[:,1] = N-1
 
 		index = 0
 		for i in xrange(N):
@@ -154,7 +156,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		elif geom == "dense":
 			return GeometryInfoBSplineDense(self.BSplineObject)
 		else:
-			raise UnknownGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
+			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		#TODO: Implement for general rank
@@ -200,7 +202,7 @@ class GeometryInfoReducedSphHarmDense(GeometryInfoBase):
 class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	"""
 	Geometry information for Reduced spherical harmonic geometries
-	with no symmetries
+	with delta l = +- 1 symetry
 	"""
 	def __init__(self, sphericalHarmonicObject):
 		#Set member variables 
@@ -210,7 +212,39 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 		return True
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax()
+		return self.SphericalHarmonicObject.GetLMax()*2
+		
+	def GetBasisPairs(self):
+		count = self.SphericalHarmonicObject.GetLMax()
+		
+		pairs = zeros((count*2, 2), dtype=int)
+		index = 0
+		for i in xrange(count):
+			pairs[index, 0] = i
+			pairs[index, 1] = i-1
+			index+=1
+			pairs[index, 0] = i
+			pairs[index, 1] = i+1
+			index+=1
+
+		return pairs
+
+
+class GeometryInfoReducedSphHarmDiagonal(GeometryInfoBase):
+	"""
+	Geometry information for Reduced spherical harmonic geometries
+	with \delta l = 0 symmetry. The potential is specified in the 
+	l-basis
+	"""
+	def __init__(self, sphericalHarmonicObject):
+		#Set member variables 
+		self.SphericalHarmonicObject = sphericalHarmonicObject	
+
+	def UseGridRepresentation(self):
+		return False
+	
+	def GetBasisPairCount(self):
+		return self.SphericalHarmonicObject.GetLMax()+1
 		
 	def GetBasisPairs(self):
 		count = self.GetBasisPairCount()
@@ -219,10 +253,11 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 		index = 0
 		for i in xrange(count):
 			pairs[index, 0] = i
-			pairs[index, 1] = i+1
+			pairs[index, 1] = i
 			index+=1
 
 		return pairs
+
 
 
 class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
@@ -234,7 +269,7 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 	def ApplyConfigSection(self, configSection):
 		self.SetupBasis(configSection.lmax)
 
-	def SetupBass(self, lmax):
+	def SetupBasis(self, lmax):
 		self.LMax = lmax
 		self.SphericalHarmonicObject = pyprop.core.ReducedSphericalTools()
 		self.SphericalHarmonicObject.Initialize(self.LMax)
@@ -245,7 +280,7 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		return repr
 
 	def GetBasisRepresentation(self):
-		repr = pyprop.core.ReducedSphericalRepresentation()
+		repr = pyprop.core.ReducedSphericalHarmonicRepresentation()
 		repr.SetupRepresentation(self.LMax)
 		return repr
 
@@ -254,13 +289,13 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		if geom == "identity":
 			raise Exception("TODO: Implement Identity!")
 		if geom == "diagonal":
-			raise Exception("TODO: Implement diagonal!")
+			return GeometryInfoReducedSphHarmDiagonal(self.SphericalHarmonicObject)
 		elif geom == "dense":
 			return GeometryInfoReducedSphHarmDense(self.SphericalHarmonicObject)
 		elif geom == "dipoleselectionrule":
 			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject)
 		else:
-			raise UnknownGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		#TODO: Implement for general rank
@@ -289,7 +324,7 @@ def CreateBasisFromRepresentation(representation):
 	
 	elif representation.__class__ == pyprop.core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
-		basis.SetupBasis(representation.Range.LMax)
+		basis.SetupBasis(representation.Range.MaxL)
 
 	else:
 		raise NotImplementedException("Unknown representation %s" % representation)
@@ -379,47 +414,52 @@ class TensorPotentialGenerator(object):
 		for rank in range(self.Rank-1,-1,-1):
 			basis = self.BasisList[rank]
 			geometryInfo = geometryList[rank]
-			differentiation = 0
-			if hasattr(configSection, "differentiation%i" % rank):
-				differentiation = configSection.Get("differentiation%i" % rank)
 
-			#Check if this rank is distributed. If it is, we must redistribute
-			if rank in distribution:
-				print "Rank %i is distributed" % rank
-				assert(rank != self.Rank-1)
-				assert(not rank+1 in distribution)
+			#If we should not use the grid representation for this rank, it means that the potential
+			#is already expressed in the basis representation, and thus we dont need to do anything
+			#for this rank
+			if geometryInfo.UseGridRepresentation():
+				differentiation = 0
+				if hasattr(configSection, "differentiation%i" % rank):
+					differentiation = configSection.Get("differentiation%i" % rank)
 
-				#Create new distribution
-				distribIndex = distribution.index(rank)
-				newDistribution = list(distribution)
-				newDistribution[distribIndex] = rank+1
+				#Check if this rank is distributed. If it is, we must redistribute
+				if rank in distribution:
+					print "Rank %i is distributed" % rank
+					assert(rank != self.Rank-1)
+					assert(not rank+1 in distribution)
 
-				#Create shape of transposed function and allocate dest buffer
-				transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int))
-				dest = zeros(transposedShape, dtype=complex)
+					#Create new distribution
+					distribIndex = distribution.index(rank)
+					newDistribution = list(distribution)
+					newDistribution[distribIndex] = rank+1
 
-				#Transpose
-				transpose.Transpose(fullShape, source, array(distribution, int), dest, array(newDistribution, int))
+					#Create shape of transposed function and allocate dest buffer
+					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int))
+					dest = zeros(transposedShape, dtype=complex)
 
-				#Use the new buffer
+					#Transpose
+					transpose.Transpose(fullShape, source, array(distribution, int), dest, array(newDistribution, int))
+
+					#Use the new buffer
+					source = dest
+					distribution = newDistribution
+
+				#Calculate dest shape
+				destShape = array(source.shape)
+				destShape[rank] = geometryInfo.GetBasisPairCount()
+
+				#Update full shape
+				fullShape[rank] = geometryInfo.GetBasisPairCount()
+			
+				#Allocate the destination array
+				dest = zeros(destShape, dtype=complex)
+
+				#Represent this rank in the basis
+				basis.RepresentPotentialInBasis(source, dest, rank, geometryInfo, differentiation) 
+
+				#Use the destination from this rank as the source to the next
 				source = dest
-				distribution = newDistribution
-
-			#Calculate dest shape
-			destShape = array(source.shape)
-			destShape[rank] = geometryInfo.GetBasisPairCount()
-
-			#Update full shape
-			fullShape[rank] = geometryInfo.GetBasisPairCount()
-		
-			#Allocate the destination array
-			dest = zeros(destShape, dtype=complex)
-
-			#Represent this rank in the basis
-			basis.RepresentPotentialInBasis(source, dest, rank, geometryInfo, differentiation) 
-
-			#Use the destination from this rank as the source to the next
-			source = dest
 
 		#done!
 		return source
@@ -509,7 +549,11 @@ class TensorPotential(PotentialWrapper):
 		self.psi = psi
 
 	def ApplyConfigSection(self, configSection):
-		pass
+		#Check wheter this is a time dependent potential
+		self.IsTimeDependent = False
+		if hasattr(configSection, "time_function"):
+			self.IsTimeDependent = True
+			self.TimeFunction = lambda t: configSection.time_function(configSection, t)
 
 	def SetupStep(self, timestep):
 		self.BasisPairs = [self.GeometryList[i].GetBasisPairs() for i in range(self.psi.GetRank())]
@@ -522,18 +566,21 @@ class TensorPotential(PotentialWrapper):
 		
 		source = self.psi.GetData()
 		dest = destPsi.GetData()
+
+		timeScaling = 1.0
+		if self.IsTimeDependent:
+			timeScaling = self.TimeFunction(t)
 		
-		#TODO: Implement higher performance versions of these loops in C++
 		#TODO: Implement support for parallelization. 
 		if rank == 1:
 			pairs = self.BasisPairs[0]
-			MultiplyTensorPotential_1(self.PotentialData, pairs, source, dest)
+			MultiplyTensorPotential_1(self.PotentialData, timeScaling, pairs, source, dest)
 
 		elif rank == 2:
 			pairs0 = self.BasisPairs[0]
 			pairs1 = self.BasisPairs[1]
 
-			MultiplyTensorPotential_2(self.PotentialData, pairs0, pairs1, source, dest)
+			MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest)
 
 		else:
 			raise NotImplementedException("Only rank=1 and rank=2 is currently implemented for TensorPotential")
@@ -572,6 +619,16 @@ class BasisPropagator(PropagatorBase):
 		#Create any precalculated potentials 
 		self.__Base.ApplyConfig(self, config)
 
+		self.GeneratePotentials(config)
+		self.ConsolidatePotentials()
+
+
+	def GeneratePotentials(self, config):
+		"""
+		Genereate TensorPotentials from potentials specified on the grid in the
+		configuration file
+		"""
+
 		#Potentials we should create on the fly
 		if hasattr(config.Propagation, "grid_potential_list"):
 			potentials = config.Propagation.grid_potential_list
@@ -587,12 +644,61 @@ class BasisPropagator(PropagatorBase):
 
 				#Create PotentialWrapper for TensorPotential
 				potential = TensorPotential(self.psi)
+				configSection.Apply(potential)
 				potential.GeometryList = geometryList
 				potential.PotentialData = potentialData
 				potential.Name = potentialName
 
 				#Add potential to potential list
 				self.PotentialList.append(potential)
+
+	def ConsolidatePotentials(self):
+		"""
+		Try to consolidate potentials having the same geometry into
+		one potential to save evaulations. Potentials containing a time
+		dependent part needs to be treated separately, and thus is not considered
+		"""
+		
+		print "Consolidating similar potentials: "
+		print "Starting with potentials:"
+		for pot in self.PotentialList:
+			print "    %s" % pot.Name
+
+		#only non timedependent potentials are considered
+		potentials = [pot for pot in self.PotentialList if not pot.IsTimeDependent]
+		removePotentials = []
+
+		#Consolidate til we're at the last potential
+		i = 0
+		while(i < len(potentials)-1):
+			curPot = potentials[i]
+
+			#Loop over all potentials after curPot
+			for otherPot in list(potentials[i+1:]):
+				#We can consolidate curPot and otherPot if all the index pairs are the same
+				canConsolidate = True
+				for rank in range(self.Rank):
+					if not numpy.all(curPot.GeometryList[rank].GetBasisPairs() == otherPot.GeometryList[rank].GetBasisPairs()):
+						canConsolidate = False
+						break
+
+				#Add oterPot to curPot
+				curPot.PotentialData[:] += otherPot.PotentialData
+				curPot.Name += "+" + otherPot.Name
+				potentials.remove(otherPot)
+				removePotentials.append(otherPot)
+
+			#Next potential
+			i += 1
+
+		#Remove consolidated potentials from the main potential list
+		for pot in removePotentials:
+			self.PotentialList.remove(pot)
+
+		print "Ended up with potentials:"
+		for pot in self.PotentialList:
+			print "    %s" % pot.Name
+
 
 	def ApplyConfigSection(self, configSection): 
 		self.__Base.ApplyConfigSection(self, configSection)
@@ -623,7 +729,7 @@ class BasisPropagator(PropagatorBase):
 		#Make sure we end up with the correct array in destPsi
 		if hasNonOrthogonalBasis:
 			destPsi.GetData()[:] = source
-
+		
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")
 
@@ -631,12 +737,8 @@ class BasisPropagator(PropagatorBase):
 		raise NotImplementedException("Implement GetBasisFunction...")
 
 	def SolveForOverlapMatrix(self, source, dest, overlapMatrix, rank):
-		if self.Rank == 1:
-			dest[:] = source
-			bspline = self.psi.GetRepresentation().GetRepresentation(0).GetBSplineObject()
-			bspline.SolveForOverlapMatrix(dest)
-		else:
-			raise Exception("NotImplemented!")
+		bspline = self.psi.GetRepresentation().GetRepresentation(rank).GetBSplineObject()
+		SolveForOverlapMatrix(bspline, source, dest, rank)
 	
 
 

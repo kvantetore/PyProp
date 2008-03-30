@@ -31,7 +31,7 @@ def test():
 	return A, B, Overlap
 
 def test2():
-	conf = pyprop.Load("config.ini")
+	conf = pyprop.Load("config_radial.ini")
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	prop.AdvanceStep()
@@ -127,4 +127,129 @@ def MatrixMultiply(matrix, inVector, outVector, geometryList):
 				dest[r0, r1] += matrix[i, j] * soure[c0, c1]
 
 
+def TestBanded():
+	conf = pyprop.Load("config.ini")
+	conf.KineticEnergy0.geometry0 = "Dense"
+	conf.KineticEnergy0.geometry1 = "Dense"
+	conf.KineticEnergy1.geometry0 = "Dense"
+	conf.KineticEnergy1.geometry1 = "Dense"
+	conf.TestPotential.geometry0 = "Dense"
+	conf.TestPotential.geometry1 = "Dense"
+	propDense = pyprop.Problem(conf)
+	propDense.SetupStep()
+	tempDense = propDense.GetTempPsi()
+	tempDense.GetData()[:] = 0
+	propDense.MultiplyHamiltonian(tempDense)
+
+	conf = pyprop.Load("config.ini")
+	conf.KineticEnergy0.geometry0 = "Banded"
+	conf.KineticEnergy0.geometry1 = "Banded"
+	conf.KineticEnergy1.geometry0 = "Banded"
+	conf.KineticEnergy1.geometry1 = "Banded"
+	conf.TestPotential.geometry0 = "Banded"
+	conf.TestPotential.geometry1 = "Banded"
+	propBanded = pyprop.Problem(conf)
+	propBanded.SetupStep()
+	tempBanded = propBanded.GetTempPsi()
+	tempBanded.GetData()[:] = 0
+	propBanded.MultiplyHamiltonian(tempBanded)
+
+	figure()
+	pcolormesh(tempDense.GetData().real.copy())
+	figure()
+	pcolormesh(tempBanded.GetData().real.copy())
+
+
+def TestStability():
+	conf = pyprop.Load("config.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	for t in prop.Advance(50):
+		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
+
+	initPsi = prop.psi
+
+	conf = pyprop.Load("config_radial.ini")
+	conf.Propagation.timestep = abs(conf.Propagation.timestep)
+	conf.Propagation.renormalization = False
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	prop.psi.GetData()[:] = initPsi.GetData()
+	for t in prop.Advance(50):
+		print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, prop.psi.GetNorm(), abs(prop.psi.InnerProduct(initPsi))**2)
+
+def Propagate():
+	conf = pyprop.Load("config_radial.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	for t in prop.Advance(10):
+		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
+
+	initPsi = prop.psi
+
+	conf = pyprop.Load("config_radial.ini")
+	conf.Propagation.timestep = abs(conf.Propagation.timestep)
+	conf.Propagation.renormalization = False
+	conf.Propagation.grid_potential_list.append("LaserPotential")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	prop.psi.GetData()[:] = initPsi.GetData()
+	
+	timeList = []
+	corrList = []
+	normList = []
+
+	for t in prop.Advance(20):
+		n = prop.psi.GetNorm()
+		c = abs(prop.psi.InnerProduct(initPsi))**2
+		timeList.append(t)
+		normList.append(n)
+		corrList.append(c)
+		print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
+		hold(False)
+		pcolormesh(abs(prop.psi.GetData())**2)
+		draw()
+
+	prop.CorrelationList = array(corrList)
+	prop.NormList = array(normList)
+	prop.TimeList = array(timeList)
+
+	return prop
+
+def LaserFunction(conf, t):
+	if t < conf.pulse_duration:
+		curField = conf.amplitude;
+		curField *= sin(t * pi / conf.pulse_duration)**2;
+		curField *= cos(t * conf.frequency);
+	else:
+		curField = 0
+	return curField
+
+import time
+def TestInnerProduct():
+	conf = pyprop.Load("config_radial.ini")
+	conf.Propagation.grid_potential_list = []
+	prop = pyprop.Problem(conf)
+	
+	avgCount = 100
+	minCount = 10
+
+	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
+
+	for algo in range(6):
+		prop.psi.GetRepresentation().Algorithm = algo
+		n = prop.psi.GetNorm()
+		print "Norm (Algo %i) = %f" % (algo, n)
+
+	for algo in range(6):
+		prop.psi.GetRepresentation().Algorithm = algo
+		minT = 1e10
+		for i in range(minCount):
+			t = - time.time()
+			for j in range(avgCount):
+				n = prop.psi.GetNorm()
+			t += time.time()
+			if t<minT:
+				minT = t / avgCount
+		print "Algorithm %i: %f" % (algo, minT)
 

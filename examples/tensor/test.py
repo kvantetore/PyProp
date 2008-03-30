@@ -1,7 +1,7 @@
+from pylab import *
 import pypar
 
-execfile("TensorGenerator.py")
-
-test()
+execfile("example.py")
+TestInnerProduct()
 
 pypar.finalize()
