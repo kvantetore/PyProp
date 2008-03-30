@@ -719,8 +719,8 @@ class BasisPropagator(PropagatorBase):
 			isOrthogonal = repr.IsOrthogonalBasis(i)
 			if not isOrthogonal:
 				#Solve for the overlap matrix for this rank
-				overlapMatrix = repr.GetGlobalOverlapMatrix(i)
-				self.SolveForOverlapMatrix(source, dest, overlapMatrix, i)
+				#overlapMatrix = repr.GetGlobalOverlapMatrix(i)
+				self.SolveForOverlapMatrix(source, dest, None, i)
 				
 				#Use the current dest as the next source, and vice versa
 				source, dest = dest, source

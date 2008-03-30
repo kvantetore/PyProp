@@ -178,9 +178,10 @@ def TestStability():
 	for t in prop.Advance(50):
 		print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, prop.psi.GetNorm(), abs(prop.psi.InnerProduct(initPsi))**2)
 
-def Propagate():
+def Propagate(algo=1):
 	conf = pyprop.Load("config_radial.ini")
 	prop = pyprop.Problem(conf)
+	prop.psi.GetRepresentation().Algorithm = algo
 	prop.SetupStep()
 	for t in prop.Advance(10):
 		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
@@ -193,6 +194,7 @@ def Propagate():
 	conf.Propagation.grid_potential_list.append("LaserPotential")
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
+	prop.psi.GetRepresentation().Algorithm = algo
 	prop.psi.GetData()[:] = initPsi.GetData()
 	
 	timeList = []
@@ -201,6 +203,8 @@ def Propagate():
 
 	for t in prop.Advance(20):
 		n = prop.psi.GetNorm()
+		if n != n:
+			return prop
 		c = abs(prop.psi.InnerProduct(initPsi))**2
 		timeList.append(t)
 		normList.append(n)
@@ -234,20 +238,23 @@ def TestInnerProduct():
 	avgCount = 100
 	minCount = 10
 
+	tempPsi = prop.GetTempPsi()
+	
 	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
+	tempPsi.GetData()[:] = rand(*prop.psi.GetData().shape)
 
-	for algo in range(6):
+	for algo in range(1,3):
 		prop.psi.GetRepresentation().Algorithm = algo
-		n = prop.psi.GetNorm()
-		print "Norm (Algo %i) = %f" % (algo, n)
+		n = prop.psi.InnerProduct(tempPsi)
+		print "Norm (Algo %i) = %f" % (algo, abs(n)**2)
 
-	for algo in range(6):
+	for algo in range(1,3):
 		prop.psi.GetRepresentation().Algorithm = algo
 		minT = 1e10
 		for i in range(minCount):
 			t = - time.time()
 			for j in range(avgCount):
-				n = prop.psi.GetNorm()
+				n = prop.psi.InnerProduct(tempPsi)
 			t += time.time()
 			if t<minT:
 				minT = t / avgCount

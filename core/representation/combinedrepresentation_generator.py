@@ -110,7 +110,7 @@ def RecurseAlgorithm1OuterLoop(rank, curRank):
 			""" % { "rank": i }
 
 		str += """
-			cplx* __restrict__ d2Ptr0 = & d1(%(indexStartBand)s);
+			cplx* __restrict__ d2Ptr0 = & d2(%(indexStartBand)s);
 		""" % { "indexStartBand": indexStartBandStr }
 
 		str += RecurseAlgorithm1InnerLoop(rank, 0)
@@ -260,7 +260,7 @@ def RecurseAlgorithm2InnerLoop(rank, curRank):
 
 	else:
 		str += """
-			innerProduct += (*d1Ptr%(rank)i++) * (*d2Ptr%(rank)i++) * overlap%(rank)i;
+			innerProduct += conj(*d1Ptr%(rank)i++) * (*d2Ptr%(rank)i++) * overlap%(rank)i;
 		""" % { "rank": curRank }
 
 	str += """
