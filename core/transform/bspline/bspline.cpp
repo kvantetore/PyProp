@@ -591,7 +591,7 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 			int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
 			int curChunkSize = stopIndex - startIndex;
 			
-			cplx* inputData = & input(startIndex);
+			cplx* inputData = &input(startIndex);
 
 
 			for (int j=0; j<curChunkSize; j++)

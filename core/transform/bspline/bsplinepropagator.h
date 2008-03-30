@@ -25,9 +25,15 @@ private:
 	blitz::Array<double, 1> PotentialVector;
 	blitz::Array<double, 1> CentrifugalVector;
 
+	blitz::Array< blitz::Array<int, 1>, 1 > Pivots;
+
+	blitz::Array< blitz::Array<cplx, 2>, 1 > BigPropagationMatrix;
+
 	int PropagateRank;
 	double Mass;
 	cplx TimeStep;
+	int lMax;
+	int PropagationAlgorithm;
 
 	void SetupLapackMatrices(const cplx &dt);
 	void SetupBlasMatrices(const cplx &dt);
@@ -36,6 +42,11 @@ public:
 	
 	bool HasPotential;
 	bool HasCentrifugalPotential;
+
+	Propagator()
+	{	
+		PropagationAlgorithm = 1;
+	}
 
 	/*
 	 * Get configuration options from configsection
@@ -76,6 +87,13 @@ public:
 	blitz::Array<cplx, 2> GetPropagationMatrix() { return PropagationMatrix; }
 	blitz::Array<cplx, 2> GetCentrifugalMatrixBlas() { return CentrifugalMatrixBlas; }
 	blitz::Array<cplx, 2> GetCentrifugalMatrix() { return CentrifugalMatrix; }
+	blitz::Array<cplx, 2> GetBigPropagationMatrix(int i) { return BigPropagationMatrix(i); }
+
+	void SetLmax(int lmax) { this->lMax = lmax; }
+	int GetLmax() { return this->lMax; }
+
+	void SetPropagationAlgorithm(int algo) { this->PropagationAlgorithm = algo; }
+	int GetPropagationAlgorithm() { return this->PropagationAlgorithm; }
 };
 
 }; //Namespace

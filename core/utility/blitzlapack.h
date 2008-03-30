@@ -31,6 +31,9 @@ extern "C"
 
 	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zgetrf)( int* N, int* M, cplx* A, int* LDA, int* IPIV, int* INFO );
+
+	void LAPACK_NAME(zgbtrs)( char* TRANS, int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO ); 
+	void LAPACK_NAME(zgbtrf)( int* M, int* N, int* KL, int* KU, cplx* AB, int* LDAB, int* IPIV, int* INFO );
 }
 
 
@@ -112,6 +115,9 @@ public:
 
 	int CalculateCholeskyFactorizationPositiveDefiniteBanded(HermitianStorage storage, MatrixType equationMatrix);
 	int SolvePositiveDefiniteBandedFactored(HermitianStorage storage, MatrixType factoredMatrix, MatrixType rightHandSide);
+
+	int CalculateLUFactorizationBanded(MatrixType equationMatrix, VectorTypeInt pivots);
+	int SolveBandedFactored(MatrixType factoredMatrix, VectorTypeInt pivots, VectorType rightHandSide);
 
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;
@@ -746,7 +752,58 @@ inline int LAPACK<cplx>::SolvePositiveDefiniteBandedFactored(HermitianStorage st
 	return info;
 }
 
+template<>
+inline int LAPACK<cplx>::CalculateLUFactorizationBanded(MatrixType equationMatrix, VectorTypeInt pivots)
+{
+	/* 
+	 * Assumptions (IMPORTANT)
+	 *   - equationMatrix is square
+	 *   - number of superdiagonal bands == number of subdiagonal bands
+	 */
+	
+	//Get data matrix sizes
+	int m = equationMatrix.extent(0);
+	int n = m;
+	int ldab = equationMatrix.extent(1);
+	int kl = (ldab - 1) / 3;
+	int ku = kl;
 
+	int info;
+
+	LAPACK_NAME(zgbtrf)(&m, &n, &kl, &ku, equationMatrix.data(), &ldab, pivots.data(), &info);
+
+	if (info != 0)
+	{
+		cout << "WARNING: zgbrtf error " << info << endl;
+	}
+
+	return info;
+}
+
+template<>
+inline int LAPACK<cplx>::SolveBandedFactored(MatrixType factoredMatrix, VectorTypeInt pivots, VectorType rightHandSide)
+{
+	//Get data matrix sizes
+	int m = factoredMatrix.extent(0);
+	int n = m;
+	int ldab = factoredMatrix.extent(1);
+	int kl = (ldab - 1) / 3;
+	int ku = kl;
+	int nrhs = 1;
+	int ldb = rightHandSide.size();
+
+	char trans = 'N';
+	int info;
+
+	LAPACK_NAME(zgbtrs)(&trans, &n, &kl, &ku, &nrhs, factoredMatrix.data(), &ldab, pivots.data(), rightHandSide.data(), &ldb, &info);
+
+	if (info != 0)
+	{
+		cout << "WARNING: zgbrts error " << info << endl;
+	}
+
+	return info;
+}
 
 
 }} //Namespaces
