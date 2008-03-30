@@ -1,10 +1,28 @@
 #include "reducedsphericaltools.h"
 #include "../shtools.h"
 #include "../../utility/blitztricks.h"
+#include "../../utility/blitzblas.h"
 #include "../../utility/orthogonalpolynomial.h"
 
 namespace ReducedSpherical
 {
+
+int ReducedSphericalTools::GetAlgorithm(int preCout, int postCount)
+{
+	int algo = Algorithm;
+	if (algo == -1)
+	{
+		if (postCount == 1)
+		{
+			algo = 2;
+		}
+		else
+		{
+			algo = 0;
+		}
+	}
+	return algo;
+}
 
 template<int Rank> void ReducedSphericalTools::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int thetaRank)
 {
@@ -28,50 +46,214 @@ template<int Rank> void ReducedSphericalTools::InverseTransform(blitz::Array<cpl
 
 void ReducedSphericalTools::ForwardTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
 {
-	output = 0;
 	int preCount = input.extent(0);
 	int postCount = input.extent(2);
 	int thetaCount = ThetaGrid.extent(0);
 
-	for (int i=0; i<preCount; i++)
-	{
-		for (int lIndex=0; lIndex<thetaCount; lIndex++)
-		{
-			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
-			{
-				double legendre = AssocLegendrePoly(thetaIndex, lIndex) * Weights(thetaIndex);
+	int algo = GetAlgorithm(preCount, postCount);
 
-				for (int j=0; j<postCount; j++)
+	if (algo == 0)
+	{
+		output = 0;
+		for (int i=0; i<preCount; i++)
+		{
+			for (int lIndex=0; lIndex<thetaCount; lIndex++)
+			{
+				for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
 				{
-					output(i, lIndex, j) +=  legendre * input(i, thetaIndex, j);
+					double legendre = AssocLegendrePolyTransposed(lIndex, thetaIndex) * Weights(thetaIndex);
+		
+					for (int j=0; j<postCount; j++)
+					{
+						output(i, lIndex, j) +=  legendre * input(i, thetaIndex, j);
+					}
 				}
 			}
+		}
+	}
+	else if (algo == 1)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);
+
+		for (int i=0; i<preCount; i++)
+		{
+			for (int lIndex=0; lIndex<thetaCount; lIndex++)
+			{
+				output2d(i, lIndex) = 0;
+				for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+				{
+					double legendre = AssocLegendrePolyTransposed(lIndex, thetaIndex) * Weights(thetaIndex);
+					output2d(i, lIndex) +=  legendre * input(i, thetaIndex);
+				}
+			}
+		}
+	}
+	else if (algo == 2)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);
+	
+		cplx* __restrict__ outputPtr = &output2d(0, 0);
+		
+		cplx* __restrict__ inputPtr;
+		cplx* __restrict__ inputStartPtr = &input2d(0, 0);
+		
+		double* __restrict__ legendrePtr;
+		double* __restrict__ legendreStartPtr = &AssocLegendrePolyTransposed(0, 0);
+
+		double* __restrict__ weightsPtr;
+		double* __restrict__ weightsStartPtr = &Weights(0,0);
+
+		for (int i=0; i<preCount; i++)
+		{
+			legendrePtr = legendreStartPtr;
+			for (int lIndex=0; lIndex<thetaCount; lIndex++)
+			{
+				inputPtr = inputStartPtr;
+				weightsPtr = weightsStartPtr;
+
+				*outputPtr = 0;
+				for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+				{
+					double legendre = (*legendrePtr++) * (*weightsPtr++);
+					*outputPtr +=  legendre * (*inputPtr++);
+				}
+				outputPtr++;
+			}
+			inputStartPtr+= input2d.stride(0);
+		}
+	}
+	else if (algo == 3)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);		
+
+		for (int i=0; i<preCount; i++)
+		{
+			blitz::Array<cplx, 1> inputSlice = input2d(i, blitz::Range::all());
+			blitz::Array<cplx, 1> outputSlice = output2d(i, blitz::Range::all());
+
+			MatrixVectorMultiply(ForwardMatrix, inputSlice, outputSlice);
+		}
+	}
+	else if (algo == 4)
+	{
+		for (int i=0; i<preCount; i++)
+		{
+			blitz::Array<cplx, 2> inputSlice = input(i, blitz::Range::all(), blitz::Range::all());
+			blitz::Array<cplx, 2> outputSlice = output(i, blitz::Range::all(), blitz::Range::all());
+
+			MatrixMatrixMultiply(ForwardMatrix, inputSlice, outputSlice);
 		}
 	}
 }
 
 void ReducedSphericalTools::InverseTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output)
 {
-	output = 0;
 	int thetaCount = ThetaGrid.extent(0);
 	int preCount = input.extent(0);
 	int postCount = input.extent(2);
 
-	for (int i=0; i<preCount; i++)
-	{
-		for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
-		{
-			for (int lIndex=0; lIndex<thetaCount; lIndex++)
-			{
-				double legendre = AssocLegendrePoly(thetaIndex, lIndex);
+	int algo = GetAlgorithm(preCount, postCount);
 
-				for (int j=0; j<postCount; j++)
+	if (algo == 0)
+	{
+		output = 0;
+		for (int i=0; i<preCount; i++)
+		{
+			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+			{
+				for (int lIndex=0; lIndex<thetaCount; lIndex++)
 				{
-					output(i, thetaIndex, j) +=  legendre * input(i, lIndex, j);
+					double legendre = AssocLegendrePoly(thetaIndex, lIndex);
+		
+					for (int j=0; j<postCount; j++)
+					{
+						output(i, thetaIndex, j) +=  legendre * input(i, lIndex, j);
+					}
 				}
 			}
 		}
 	}
+
+	else if (algo == 1)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);
+	
+		for (int i=0; i<preCount; i++)
+		{
+			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+			{
+				output2d(i, thetaIndex) = 0;
+				for (int lIndex=0; lIndex<thetaCount; lIndex++)
+				{
+					double legendre = AssocLegendrePoly(thetaIndex, lIndex);
+					output2d(i, thetaIndex) +=  legendre * input2d(i, lIndex);
+				}
+			}
+		}
+	}
+
+	else if (algo == 2)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);
+	
+		cplx* __restrict__ outputPtr;
+		cplx* __restrict__ outputStartPtr = &output2d(0, 0);
+		
+		cplx* __restrict__ inputPtr;
+		cplx* __restrict__ inputStartPtr = &input2d(0, 0);
+		
+		double* __restrict__ legendrePtr;
+		double* __restrict__ legendreStartPtr = &AssocLegendrePoly(0, 0);
+
+		outputPtr = outputStartPtr;
+		for (int i=0; i<preCount; i++)
+		{
+			legendrePtr = legendreStartPtr;
+			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+			{
+				*outputPtr = 0;
+				inputPtr = inputStartPtr;
+				for (int lIndex=0; lIndex<thetaCount; lIndex++)
+				{
+					double legendre = (*legendrePtr++);
+					*outputPtr +=  legendre * (*inputPtr++);
+				}
+				outputPtr++;
+			}
+			inputStartPtr += input2d.stride(0);
+		}
+	}
+
+	else if (algo == 3)
+	{
+		blitz::Array<cplx, 2> input2d = MapToRank2(input, 1);
+		blitz::Array<cplx, 2> output2d = MapToRank2(output, 1);		
+
+		for (int i=0; i<preCount; i++)
+		{
+			blitz::Array<cplx, 1> inputSlice = input2d(i, blitz::Range::all());
+			blitz::Array<cplx, 1> outputSlice = output2d(i, blitz::Range::all());
+
+			MatrixVectorMultiply(InverseMatrix, inputSlice, outputSlice);
+		}
+	}
+
+	else if (algo == 4)
+	{
+		for (int i=0; i<preCount; i++)
+		{
+			blitz::Array<cplx, 2> inputSlice = input(i, blitz::Range::all(), blitz::Range::all());
+			blitz::Array<cplx, 2> outputSlice = output(i, blitz::Range::all(), blitz::Range::all());
+
+			MatrixMatrixMultiply(InverseMatrix, inputSlice, outputSlice);
+		}
+	}
+
 }
 
 /*
@@ -125,6 +307,10 @@ void ReducedSphericalTools::SetupExpansion()
 	//Calculate all assoc legendre poly, even though we only need some of them. and why? because it works!
 	blitz::Array<double, 2> legendre = SphericalTransformTensorGrid::EvaluateAssociatedLegendrePolynomials(LMax, ThetaGrid);
 	AssocLegendrePoly.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
+	AssocLegendrePolyTransposed.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
+
+	InverseMatrix.resize(thetaCount, thetaCount);
+	ForwardMatrix.resize(thetaCount, thetaCount);
 
 	//Normalize associated legendre such that the int(legendre_lm * legendre_lm', omega) = delta_lm_lm'
 	for (int l=0; l<=LMax; l++)
@@ -138,6 +324,13 @@ void ReducedSphericalTools::SetupExpansion()
 
 		//Scale assoc legendre
 		AssocLegendrePoly(blitz::Range::all(), l) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
+		AssocLegendrePolyTransposed(l, blitz::Range::all()) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
+
+		for (int j=0; j<thetaCount; j++)
+		{
+			ForwardMatrix(l, j) = legendre(j, MapLmIndex(l, m)) * norm * Weights(j);
+			InverseMatrix(j, l) = legendre(j, MapLmIndex(l, m)) * norm;
+		}
 	}
 }
 

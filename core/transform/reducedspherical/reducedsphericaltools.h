@@ -24,6 +24,12 @@ private:
 	   										   //This array is of the same length as weights
 											   //The first rank is theta-index
 											   //The second rank is l-index
+	blitz::Array<double, 2> AssocLegendrePolyTransposed; //The assosciated legendre functions evaluated in (theta) 
+												// AssocLegendrePoly(i, j) = AssocLegendrePolyTransposed(j, i)
+
+	blitz::Array<cplx, 2> InverseMatrix;
+	blitz::Array<cplx, 2> ForwardMatrix;
+										
 	int LMax;
 
 	void SetupQuadrature();					//Sets up the complete quadrature rules for both theta and phi
@@ -33,7 +39,13 @@ private:
 	void ForwardTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output);
 	void InverseTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output);
 
+	int GetAlgorithm(int preCount, int postCount);
+
 public:	
+	int Algorithm; 
+
+	ReducedSphericalTools() : LMax(-1), Algorithm(-1) {}
+
 	int GetLMax() { return LMax; }
 	blitz::Array<double, 1> GetThetaGrid() { return ThetaGrid; }
 	blitz::Array<double, 1> GetWeights() { return Weights; } 

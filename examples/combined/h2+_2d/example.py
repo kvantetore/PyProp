@@ -158,6 +158,37 @@ def FindEigenvaluesImtime(**args):
 		Propagate(**args)
 
 
+import time
+def TestSphericalHarmonicTransform(lmax=32, gridSize=256):
+	prop = SetupProblem(gridType=RadialGridType.CARTESIAN, gridSize=gridSize, lmax=lmax)
+	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
+
+	sphProp = prop.Propagator.SubPropagators[1]
+
+	avgCount = 10
+	minCount = 10
+
+	for algo in range(-1,5):
+		sphProp.Transform.transform.Algorithm = algo
+		initData = prop.psi.GetData().copy()
+		sphProp.Transform.InverseTransform(prop.psi)
+		sphProp.Transform.ForwardTransform(prop.psi)
+		print "Error (algo %i) = %f" % (algo, sum(abs(initData - prop.psi.GetData())**2))
+	
+	
+
+	for algo in range(-1,5):
+		sphProp.Transform.transform.Algorithm = algo
+		minT = 10e10
+		for i in range(minCount):
+			t = - time.time()
+			for j in range(avgCount):
+				sphProp.Transform.InverseTransform(prop.psi)
+				sphProp.Transform.ForwardTransform(prop.psi)
+			t += time.time()
+			if t<minT:
+				minT = t / avgCount
+		print "Algorithm %i: %f" % (algo, minT)
 
 #---------------------------------------------------------------------------------
 
