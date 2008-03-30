@@ -25,8 +25,7 @@ extern "C"
 	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
 	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
 
-	//TODO: finish this
-	//void LAPACK_NAME(zpbsvx)( char* FACT, char* UPLO, int* N, int* KD, int* NRHS, cplx* AB, int* LDAB, cplx* AFB, int* LDAFB, char* EQUED, double* S, cplx* B, int* LDB, cplx* X, int* LDX, double* RCOND, double* FERR, double* BERR, cplx* WORK, double* RWORK, int* INFO )
+	void LAPACK_NAME(zpbsvx)( char* FACT, char* UPLO, int* N, int* KD, int* NRHS, cplx* AB, int* LDAB, cplx* AFB, int* LDAFB, char* EQUED, double* S, cplx* B, int* LDB, cplx* X, int* LDX, double* RCOND, double* FERR, double* BERR, cplx* WORK, double* RWORK, int* INFO );
 
 
 	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
@@ -46,6 +45,7 @@ public:
 	typedef Array<double, 1> DoubleVectorType;
 	typedef Array<cplx, 1> ComplexDoubleVectorType;
 	typedef Array<T, 2> MatrixType;
+	typedef Array<double, 2> MatrixTypeDouble;
 
 	LAPACK()
 	{
@@ -77,7 +77,7 @@ public:
 	{
 		MatrixIsFactored,
 		MatrixIsNotFactored,
-		MatrixIsNotEqulibriated
+		MatrixIsNotEquilibrated
 	};
 
 	enum MatrixEquilibrium
@@ -106,9 +106,8 @@ public:
 			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors);
 
 	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
-/* TODO finish this
-	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, double* forwardErrorEstimate, double* backwardErrorEstimate);
-*/
+
+	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char* EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, DoubleVectorType forwardErrorEstimate, DoubleVectorType backwardErrorEstimate);
 
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;
@@ -132,6 +131,8 @@ private:
 
 	void PreconditionSolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
 
+	void PreconditionSolvePositiveDefiniteBandedSystemOfEquations(MatrixType equationMatrix, MatrixType factoredMatrix, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, DoubleVectorType ForwardErrorEstimate, DoubleVectorType BackwardErrorEstimate);
+	
 };
 
 
@@ -212,6 +213,22 @@ void LAPACK<T>::PreconditionSolveGeneralBandedSystemOfEquations(MatrixType &equa
 	//TODO: Add preconditions
 }
 
+template<class T>
+void LAPACK<T>::PreconditionSolvePositiveDefiniteBandedSystemOfEquations(MatrixType equationMatrix, MatrixType factoredMatrix, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, DoubleVectorType ForwardErrorEstimate, DoubleVectorType BackwardErrorEstimate)
+{
+	//Get data matrix sizes
+//	int n = equationMatrix.extent(0);
+//	int kd = equationMatrix.extent(1);
+//	int ldab = kd;
+//	int nrhs = rightHandSide.extent(0);
+//	int ldafb = factoredMatrix.extent(1);
+//	int ldb = rightHandSide.extent(1);
+//	int ldx = solution.extent(1);
+
+	BZPRECONDITION(factoredMatrix.extent(0) == equationMatrix.extent(0));
+	BZPRECONDITION(equationMatrix.extent(1) == factoredMatrix.extent(1));
+	
+}
 
 /*
  * Implementation for complex<double>
@@ -593,6 +610,95 @@ inline int LAPACK<cplx>::SolveGeneralBandedSystemOfEquations(MatrixType &equatio
 
 	return info;
 }
+
+/*
+ * Solve positive definite banded system of equations using LAPACK expert interface
+ */
+template<>
+inline int LAPACK<cplx>::SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, 
+                                                                      HermitianStorage storage, 
+                                                                      MatrixType equationMatrix, 
+                                                                      MatrixType factoredMatrix, 
+                                                                      char* EQUED, 
+																	  DoubleVectorType S, 
+                                                                      MatrixType rightHandSide, 
+                                                                      MatrixType solution, 
+                                                                      double* conditionEstimate, 
+                                                                      DoubleVectorType ForwardErrorEstimate, 
+                                                                      DoubleVectorType BackwardErrorEstimate)
+{
+
+	PreconditionSolvePositiveDefiniteBandedSystemOfEquations(equationMatrix, factoredMatrix, S, rightHandSide, solution, 
+		ForwardErrorEstimate, BackwardErrorEstimate);
+
+	char FACT = (fact == MatrixIsFactored) ? 'F' : ( (fact == MatrixIsNotEquilibrated) ? 'E' : 'N');
+	char uplo = storage == HermitianUpper ? 'U' : 'L';
+
+	//Get data matrix sizes
+	int n = equationMatrix.extent(0);
+	int ldab = equationMatrix.extent(1);
+	int kd = ldab - 1;
+	int nrhs = rightHandSide.extent(0);
+	int ldafb = factoredMatrix.extent(1);
+	int ldb = rightHandSide.extent(1);
+	int ldx = solution.extent(1);
+	int info;
+
+	//Resize work arrays if needed
+	if (complexDoubleWork.size() < 2 * n)
+	{
+		complexDoubleWork.resize(2 * n);
+	}
+
+	if (doubleWork.size() < n)
+	{
+		doubleWork.resize(n);
+	}
+
+	LAPACK_NAME(zpbsvx)(
+		&FACT, 
+		&uplo, 
+		&n, 
+		&kd, 
+		&nrhs, 
+		equationMatrix.data(), 
+		&ldab, 
+		factoredMatrix.data(), 
+		&ldafb, 
+		EQUED, 
+		S.data(), 
+		rightHandSide.data(), 
+		&ldb, 
+		solution.data(), 
+		&ldx, 
+		conditionEstimate, 
+		ForwardErrorEstimate.data(), 
+		BackwardErrorEstimate.data(), 
+		complexDoubleWork.data(),
+		doubleWork.data(), 
+		&info 
+		);
+
+
+		if (info != 0)
+		{
+			if (info < 0)
+			{
+				cout << "WARNING: (zpbsvx) argument i had illegal value, i = " << info << endl;
+			}
+			else if (info <= n)
+			{
+				cout << "WARNING: (zpbsvx) algorithm failed to converge! INFO =  " << info << endl;
+			}
+			else if (info > n)
+			{
+				cout << "WARNING: (zpbsvx) matrix singular to working precision! INFO = " << info << endl;
+			}
+		}
+
+	return info;
+}
+
 
 }} //Namespaces
 

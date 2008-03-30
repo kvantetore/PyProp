@@ -1,5 +1,6 @@
 #include "bspline.h"
 #include "../../utility/blitzblas.h"
+#include "../../utility/blitztricks.h"
 
 namespace BSpline
 {
@@ -576,13 +577,8 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 		}
 	}
 
-	else
-
-	{
-		cout << "ERROR: Unknown projection algorithm " << ProjectionAlgorithm << endl;
-	}
  	
-/*	else if (ProjectionAlgorithm == 2)
+	else if (ProjectionAlgorithm == 2)
 	{
 		double* weightData = &ScaledWeights(0,0);
 		double* splineData = &BSplineTable(0,0);
@@ -608,50 +604,59 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 
 			outputData++;
 		} 
-
 	}
-*/
+	else
+	{
+		cout << "ERROR: Unknown projection algorithm " << ProjectionAlgorithm << endl;
+	}
 
 	/* 
-	 * Solving banded linear system of equations 
-	 *  to obtain expansion coefficients 
+	 * Solve banded system of equation resulting from projection: Sc = d
 	 */
-	SetupOverlapMatrixFull();
-	int offDiagonalBands = MaxSplineOrder - 1;
-	VectorTypeInt pivot(NumberOfBSplines);
-	pivot = 0;
-	
-	linalg::LAPACK<cplx> lapack;
-	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, output, 
-		offDiagonalBands, offDiagonalBands);
+	SolveForOverlapMatrix(output);
 
-	OverlapMatrixFullComputed = false;
 }
 
 
+/*
+ * Solves a banded linear system of equations
+ */
 void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
 {
 	using namespace blitz;
 
-	if (vector.stride(0) != 1)
+	if (LapackAlgorithm == 0)
 	{
-		throw std::runtime_error("Vector is not unit-stride. LAPACK requires unit stride vectors");
+		SetupOverlapMatrixFull();
+		int offDiagonalBands = MaxSplineOrder - 1;
+		VectorTypeInt pivot(NumberOfBSplines);
+		pivot = 0;
+		
+		linalg::LAPACK<cplx> lapack;
+		lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, vector, 
+			offDiagonalBands, offDiagonalBands);
+
+		OverlapMatrixFullComputed = false;
 	}
+	else if (LapackAlgorithm == 1)
+	{
+		Array<cplx, 2> input = MapToRank2(vector, 0);
+		Array<cplx, 2> output;
+		output.resize(1, NumberOfBSplines);
+		output = 0;
+		char EQUED = 'N';
+		double conditionEstimate;
+		linalg::LAPACK<cplx> lapack;
+		lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsFactored, lapack.HermitianUpper, OverlapMatrixExpert, 
+		FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, input, output, &conditionEstimate, ForwardErrorEstimate,
+			BackwardErrorEstimate);
 
-	/* 
-	 * Solving banded linear system of equations 
-	 *  to obtain expansion coefficients 
-	 */
-	SetupOverlapMatrixFull();
-	int offDiagonalBands = MaxSplineOrder - 1;
-	VectorTypeInt pivot(NumberOfBSplines);
-	pivot = 0;
-	
-	linalg::LAPACK<cplx> lapack;
-	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, vector, 
-		offDiagonalBands, offDiagonalBands);
-
-	OverlapMatrixFullComputed = false;
+		input = output;
+	}
+	else
+	{
+		cout << "ERROR: Unknown LAPACK solver algorithm " << LapackAlgorithm << endl;
+	}
 }
 
 /*
@@ -737,7 +742,7 @@ blitz::Array<cplx, 1> BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeC
  * Compute b-spline overlap matrix. The matrix is banded due to
  * compactness of the b-splines, and symmetric positive definite.
  * For easier use with LAPACK routines, we store only the upper
- * bands in the manner specified by LAPACK (f.ex. zpbsvx).
+ * bands in the manner specified by LAPACK.
  *
  * LAPACK indices are computed from
  *
@@ -764,9 +769,58 @@ void BSpline::ComputeOverlapMatrix()
 	OverlapMatrixComputed = true;
 }
 
+/*
+ * Compute b-spline overlap matrix, stored according to LAPACK routine zpbsvx.
+ * This is an expert interface, which allows us to do an initial computation
+ * of equilibriated Cholesky factorization. Subsequent computation should 
+ * therefore be faster than using the non-expert interface.
+ *
+ * LAPACK indices are computed from
+ *
+ *     I =  MaxSplineOrder - 1 + i - j
+ *     J = j
+ *	
+ *	where we have -1 from FORTRAN->C conversion of original
+ *	formula.
+ *
+ */
+void BSpline::SetupOverlapMatrixExpert()
+{
+	using namespace blitz;
+
+	OverlapMatrixExpert.resize(NumberOfBSplines, MaxSplineOrder);
+	FactoredOverlapMatrix.resize(NumberOfBSplines, MaxSplineOrder);
+	OverlapScaleFactors.resize(NumberOfBSplines);
+	ForwardErrorEstimate.resize(1);
+	BackwardErrorEstimate.resize(1);
+
+	OverlapMatrixExpert = 0.0;
+	for (int i = 0; i < NumberOfBSplines; i++)
+	{
+		int jMax = std::min(i+MaxSplineOrder, NumberOfBSplines);
+		for (int j = i; j < jMax ; j++)
+		{
+			OverlapMatrixExpert(j, MaxSplineOrder - 1 + i - j) = BSplineOverlapIntegral(i, j);
+		}
+	}
+
+	//Initial run to perform Cholesky factorization
+	Array<cplx, 2> testVectorIn, testVectorOut;
+	testVectorIn.resize(1, NumberOfBSplines);
+	testVectorOut.resize(1, NumberOfBSplines);
+	testVectorIn = 0.0;
+	testVectorOut = 0;
+	char EQUED = 'N';
+	double conditionEstimate;
+	linalg::LAPACK<cplx> lapack;
+	lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsNotFactored, lapack.HermitianUpper, OverlapMatrixExpert, 
+	FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, testVectorIn, testVectorOut, &conditionEstimate, ForwardErrorEstimate,
+		BackwardErrorEstimate);
+}
+
 
 /*
- * Setup "full" overlap matrix for use with LAPACK routine zgbsv.
+ * Setup "full" overlap matrix for use with LAPACK routine zgbmv.
  * Both upper and lower bands are stored, in a manner required by
  * said routine.
  */
@@ -816,7 +870,7 @@ void BSpline::SetupOverlapMatrixFull()
 
 
 /*
- * Setup overlap matrix for use with BLAS routine zgbsv.
+ * Setup overlap matrix for use with BLAS routine zhbmv.
  * Both upper and lower bands are stored, in a manner required by
  * said routine.
  */

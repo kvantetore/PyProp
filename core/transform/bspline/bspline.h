@@ -42,6 +42,12 @@ private:
 	MatrixTypeCplx OverlapMatrixFull;
 	MatrixType OverlapMatrixBlas;
 
+	//Needed by zpbsvx expert interface
+	MatrixTypeCplx OverlapMatrixExpert;
+	MatrixTypeCplx FactoredOverlapMatrix;
+	VectorType OverlapScaleFactors;
+	VectorType ForwardErrorEstimate;
+	VectorType BackwardErrorEstimate;
 
 	bool OverlapMatrixComputed;
 	bool OverlapMatrixFullComputed;
@@ -49,24 +55,26 @@ private:
 
 public:
 
-	// Construction
-	BSpline() 
-	{ 
-		eps = 1e-15; 
-		OverlapMatrixComputed = false; 
-		OverlapMatrixFullComputed = false; 
-		OverlapMatrixBlasComputed = false; 
-		ProjectionAlgorithm = 0;
-	}
-
-	// Destructor
-	virtual ~BSpline() {}
-
 	// Data members	
 	int NumberOfBSplines;
 	int MaxSplineOrder;
 
 	int ProjectionAlgorithm;
+	int LapackAlgorithm;
+
+	// Constructor
+	BSpline() 
+	{ 
+		eps = 1e-15; 
+		OverlapMatrixComputed = false;
+		OverlapMatrixFullComputed = false;
+		OverlapMatrixBlasComputed = false;
+		ProjectionAlgorithm = 0;
+		LapackAlgorithm = 0;
+	}
+
+	// Destructor
+	virtual ~BSpline() {}
 
 	// Functions to get grid-related sequences
 	VectorType GetBreakpointSequence() { return BreakpointSequence; }
@@ -80,6 +88,7 @@ public:
 	MatrixType GetBSplineOverlapMatrix() { return OverlapMatrix; }
 	MatrixTypeCplx GetBSplineOverlapMatrixFull() { SetupOverlapMatrixFull(); return OverlapMatrixFull; }
 	MatrixType GetBSplineOverlapMatrixBlas() { SetupOverlapMatrixBlas(); return OverlapMatrixBlas; }
+	MatrixTypeCplx GetBSplineOverlapMatrixExpert() { return OverlapMatrixExpert; }
 	VectorType GetQuadratureGridGlobal() { return QuadratureGridGlobal; }
 	VectorType GetQuadratureWeightsGlobal() { return QuadratureWeightsGlobal; }
 
@@ -127,6 +136,7 @@ public:
 	void ComputeOverlapMatrix();
 	void SetupOverlapMatrixFull();
 	void SetupOverlapMatrixBlas();
+	void SetupOverlapMatrixExpert();
 
 	// B-spline-expansion related functions
 	VectorTypeCplx ExpandFunctionInBSplines(object);

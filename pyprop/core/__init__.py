@@ -29,6 +29,11 @@ except:
 	class BSpline(object):
 		pass
 
+try:
+	from librungekutta import *
+except:
+	print "Warning: could not load Runge-Kutta wrapper (%s)" % sys.exc_info()[1]
+
 
 def EnumerateRankClasses(baseName):
 	for className, classObject in dict(globals()).iteritems():

@@ -260,3 +260,28 @@ def TestInnerProduct():
 				minT = t / avgCount
 		print "Algorithm %i: %f" % (algo, minT)
 
+
+def TestMatrixMultiply():
+	conf = pyprop.Load("config_radial.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	avgCount = 100
+	minCount = 10
+
+	tempPsi = prop.GetTempPsi()
+
+	pot = prop.Propagator.BasePropagator.PotentialList[0]
+
+	for algo in range(2):
+		pot.MultiplyAlgorithm = algo
+		minT = 10e10
+		for i in range(minCount):
+			tempPsi.GetData()[:] = 0
+			t = - time.time()
+			for j in range(avgCount):
+				pot.MultiplyPotential(tempPsi, 0, 0)
+			t += time.time()
+			if t<minT:
+				minT = t / avgCount
+		print "Algorithm %i: %f" % (algo, minT)

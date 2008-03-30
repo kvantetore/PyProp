@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.abspath("../../.."))
 #Load and reload pyprop in order to get recent changes
 import pyprop
 pyprop = reload(pyprop)
-from libpulse import *
+from libpotential import *
 
 #numpy an pylab for good measure
 try:
@@ -99,9 +99,9 @@ def FindGroundstate(**args):
 	prop.SetupStep()
 
 	for t in prop.Advance(5):
-		print "t = ", t, " E = ", prop.GetEnergy()
+		print "t = ", t, " E = ", prop.GetEnergyImTime()
 
-	return prop.psi.Copy()
+	return prop
 
 def RunPulseExperiment(gridType=GridType.CARTESIAN):
 	#Find groundstate

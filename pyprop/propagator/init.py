@@ -10,6 +10,7 @@ execfile(__path__[0] + "/propagator/CombinedPropagator.py")
 execfile(__path__[0] + "/propagator/TransformedGridPropagator.py")
 execfile(__path__[0] + "/propagator/ExponentialFiniteDifferencePropagator.py")
 execfile(__path__[0] + "/propagator/OdePropagator.py")
+execfile(__path__[0] + "/propagator/RungeKuttaPropagator.py")
 execfile(__path__[0] + "/propagator/VectorPropagator.py")
 execfile(__path__[0] + "/propagator/Krotov.py")
 

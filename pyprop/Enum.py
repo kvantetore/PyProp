@@ -23,3 +23,10 @@ class WavefunctionFileFormat:
 	Binary = 2
 	HDF    = 3
 
+class IntegratorType:
+	IntegratorRK2 = 0
+	IntegratorRK4 = 1
+	IntegratorRKF45 = 2
+	IntegratorRKCK = 3
+	IntegratorRK8PD = 4
+	

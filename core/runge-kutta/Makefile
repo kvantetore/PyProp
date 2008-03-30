@@ -1,17 +1,25 @@
-PYPROP_ROOT  := pyprop
+PYPROP_ROOT  := ../..
+
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 
-PYPROP_LIB_PATH := $(PYPROP_ROOT)/pyprop/core
 INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
+DESTDIR      := $(call ABS_PATH,$(PYPROP_ROOT)/pyprop/core)
 
 PYSTEFILES   := wrapper.pyste
-SOURCEFILES  := wrapper.cpp
-OBJECTS      := $(SOURCEFILES:.cpp=.o)
-MODULENAME   := libpotential
+ODE_SOURCE   := rungekuttawrapper.cpp wrapper.cpp
+SOURCEFILES  := $(ODE_SOURCE)
 
-$(MODULENAME).so: $(OBJECTS)
-	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
+OBJECTS      := $(SOURCEFILES:.cpp=.o)
+MODULENAME   := librungekutta
+MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
+PYPROP_LIB_PATH := $(DESTDIR)
+LIBS         := -lcore -lgsl
+all: $(MODULEFILE)
+
+$(MODULEFILE): $(OBJECTS)
+	rm -f $(MODULEFILE)
+	$(LD) $(LD_SHARED) -o $(MODULEFILE) $(OBJECTS) $(LIBS) -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -21,7 +29,7 @@ clean:
 	mkdir .deps
 	rm -rf wrapper.cpp
 	rm -rf *.o
-	rm -rf *.so
+	rm -rf $(MODULEFILE)
 
 #autodependencies
 DEPDIR        = .deps

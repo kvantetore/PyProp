@@ -8,6 +8,7 @@ def InitBSpline(conf):
 	bspline.CreateBSplineTable()
 	bspline.CreateBSplineDerivative2Table()
 	bspline.ComputeOverlapMatrix()
+	bspline.SetupOverlapMatrixExpert()
 	return bspline
 
 
@@ -35,6 +36,9 @@ class BSPLINE(core.BSpline):
 
 		# Set projection algorithm type
 		self.ProjectionAlgorithm = conf.Get("projection_algorithm")
+
+		#Set LAPACK solver algorithm
+		self.LapackAlgorithm = conf.Get("lapack_algorithm")
 
 		
 	def CreateBreakpointSequence(self, conf):

@@ -8,6 +8,9 @@ endif
 ifeq ($(PYPROP_USE_BSPLINE),1)
 SUBDIRS := $(SUBDIRS) bspline
 endif
+ifeq ($(PYPROP_USE_RUNGEKUTTA),1)
+SUBDIRS := $(SUBDIRS) runge-kutta
+endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste

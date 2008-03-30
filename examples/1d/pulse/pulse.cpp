@@ -1,8 +1,7 @@
 #include <core/wavefunction.h>
 #include <core/potential/dynamicpotentialevaluator.h>
-
 template<int Rank>
-class CoulombPotential
+class CoulombPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator
@@ -12,29 +11,43 @@ public:
 	//Potential parameters
 	double charge;
 
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("charge", charge);
 	}
 
+	/*
+	 * Called for every grid point at every time step. 
+	 *
+	 * Some general tips for max efficiency:
+	 * - If possible, move static computations to ApplyConfigSection.
+	 * - Minimize the number of branches ("if"-statements are bad)
+	 * - Minimize the number of function calls (sin, cos, exp, are bad)
+	 * - Long statements can confuse the compiler, consider making more 
+	 *   simpler statements
+	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double V;
-		double r = fabs(pos(0));
-		if (r < 1e-6)
+		double r = std::abs(pos(0));
+		if (r < 10e-5)
 		{
-			V = 0.0;
+			return 0;
 		}
-		else
-		{
-			V = charge / r;
-		}
+		double V = charge / r;
+
 		return V;
 	}
 };
 
+
+
 template<int Rank>
-class PulsePotential
+class PulsePotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator
@@ -42,45 +55,55 @@ public:
 	double CurTime;
 
 	//Potential parameters
-	double Charge;
-	double LaserFrequency;
-	double LaserIntensity;
-	double EnvelopeFrequency;
+	double PulseDuration;
+	double Frequency;
+	double Amplitude;
 
+	//Calculated parameters
+	double convolutionFrequency;
+	double currentAmplitude;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
 	void ApplyConfigSection(const ConfigSection &config)
 	{
-		config.Get("charge", Charge);
-		config.Get("laser_frequency", LaserFrequency);
-		config.Get("laser_intensity", LaserIntensity);
+		config.Get("pulse_duration", PulseDuration);
+		config.Get("frequency", Frequency);
+		config.Get("amplitude", Amplitude);
 
-		double pulseDuration = 0;
-		config.Get("pulse_duration", pulseDuration);
-		EnvelopeFrequency = M_PI / pulseDuration;
+		convolutionFrequency = M_PI / PulseDuration;
 	}
 
-	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	/*
+	 * Called once every timestep
+	 */
+	void CurTimeUpdated()
 	{
-		double t = CurTime;
-		double V = 0.;
-		
-		//coordinates
-		double r = fabs(pos(0));
-
-		//Coulomb
-		if (r < 1e-6)
+		if (CurTime > PulseDuration)
 		{
-			V = 0.0;
+			currentAmplitude = 0;
 		}
 		else
 		{
-			V = Charge / r;
+			currentAmplitude = Amplitude;
+			currentAmplitude *= sqr(sin(CurTime * convolutionFrequency));
+			currentAmplitude *= cos(CurTime * Frequency);
 		}
+	}
 
-		//Laser
-        V += r * LaserIntensity * sqr(sin(EnvelopeFrequency*t)) * sin(LaserFrequency*t);
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = std::abs(pos(0));
+		double theta = pos(1);
 
-		return V;
+		double z = r * cos(theta);
+		return currentAmplitude * z;
 	}
 };
-
 

@@ -1,0 +1,8 @@
+
+RungeKuttaWrapper = Template("RungeKutta::RungeKuttaWrapper", "rungekuttawrapper.h");
+exclude(RungeKuttaWrapper.Psi);
+exclude(RungeKuttaWrapper.TempPsi);
+exclude(RungeKuttaWrapper.MultiplyCallback);
+
+RungeKuttaWrapper("1");
+RungeKuttaWrapper("2");

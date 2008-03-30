@@ -547,6 +547,7 @@ class TensorPotential(PotentialWrapper):
 		self.PotentialData = None
 		self.Name = None
 		self.psi = psi
+		self.MultiplyAlgorithm = 0
 
 	def ApplyConfigSection(self, configSection):
 		#Check wheter this is a time dependent potential
@@ -574,13 +575,13 @@ class TensorPotential(PotentialWrapper):
 		#TODO: Implement support for parallelization. 
 		if rank == 1:
 			pairs = self.BasisPairs[0]
-			MultiplyTensorPotential_1(self.PotentialData, timeScaling, pairs, source, dest)
+			MultiplyTensorPotential_1(self.PotentialData, timeScaling, pairs, source, dest, self.MultiplyAlgorithm)
 
 		elif rank == 2:
 			pairs0 = self.BasisPairs[0]
 			pairs1 = self.BasisPairs[1]
 
-			MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest)
+			MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest, self.MultiplyAlgorithm)
 
 		else:
 			raise NotImplementedException("Only rank=1 and rank=2 is currently implemented for TensorPotential")
