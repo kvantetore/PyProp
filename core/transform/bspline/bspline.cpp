@@ -641,17 +641,17 @@ void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
 	else if (LapackAlgorithm == 1)
 	{
 		Array<cplx, 2> input = MapToRank2(vector, 0);
-		Array<cplx, 2> output;
-		output.resize(1, NumberOfBSplines);
-		output = 0;
-		char EQUED = 'N';
-		double conditionEstimate;
+	
 		linalg::LAPACK<cplx> lapack;
+		lapack.SolvePositiveDefiniteBandedFactored(lapack.HermitianUpper, OverlapMatrixExpert, input);
+		/*
+		double conditionEstimate;
+		char EQUED = 'Y';
 		lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsFactored, lapack.HermitianUpper, OverlapMatrixExpert, 
 		FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, input, output, &conditionEstimate, ForwardErrorEstimate,
 			BackwardErrorEstimate);
+		*/
 
-		input = output;
 	}
 	else
 	{
@@ -805,17 +805,24 @@ void BSpline::SetupOverlapMatrixExpert()
 	}
 
 	//Initial run to perform Cholesky factorization
+	linalg::LAPACK<cplx> lapack;
+	lapack.CalculateCholeskyFactorizationPositiveDefiniteBanded(lapack.HermitianUpper, OverlapMatrixExpert);
+
+	/*
 	Array<cplx, 2> testVectorIn, testVectorOut;
 	testVectorIn.resize(1, NumberOfBSplines);
 	testVectorOut.resize(1, NumberOfBSplines);
 	testVectorIn = 0.0;
 	testVectorOut = 0;
-	char EQUED = 'N';
+	char EQUED = 'Y';
 	double conditionEstimate;
 	linalg::LAPACK<cplx> lapack;
-	lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsNotFactored, lapack.HermitianUpper, OverlapMatrixExpert, 
+	lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsNotEquilibrated, lapack.HermitianUpper, OverlapMatrixExpert, 
 	FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, testVectorIn, testVectorOut, &conditionEstimate, ForwardErrorEstimate,
 		BackwardErrorEstimate);
+
+	cout << OverlapScaleFactors << endl;
+	*/
 }
 
 

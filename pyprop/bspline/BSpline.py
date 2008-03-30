@@ -38,7 +38,11 @@ class BSPLINE(core.BSpline):
 		self.ProjectionAlgorithm = conf.Get("projection_algorithm")
 
 		#Set LAPACK solver algorithm
-		self.LapackAlgorithm = conf.Get("lapack_algorithm")
+		if hasattr(conf, "lapack_algorithm"):
+			self.LapackAlgorithm = conf.Get("lapack_algorithm")
+		else:
+			#Use the fast one as default
+			self.LapackAlgorithm = 1
 
 		
 	def CreateBreakpointSequence(self, conf):

@@ -23,10 +23,11 @@ extern "C"
     void LAPACK_NAME(zunmqr)( char* SIDE, char* TRANS, int* M, int* N, int* K, cplx* A, int* LDA, cplx* TAU, cplx* C, int* LDC, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zhbgv)( char* JOBZ, char* UPLO, int* N, int* KA, int* KB, cplx* AB, int* LDAB, cplx* BB, int* LDBB, double* W, cplx* Z, int* LDZ, cplx* WORK, double* RWORK, int* INFO);
 	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
-	void LAPACK_NAME(zgbsv)(int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO);
 
 	void LAPACK_NAME(zpbsvx)( char* FACT, char* UPLO, int* N, int* KD, int* NRHS, cplx* AB, int* LDAB, cplx* AFB, int* LDAFB, char* EQUED, double* S, cplx* B, int* LDB, cplx* X, int* LDX, double* RCOND, double* FERR, double* BERR, cplx* WORK, double* RWORK, int* INFO );
 
+	void LAPACK_NAME(zpbtrf)(char* UPLO, int* N, int* KD, cplx* AB, int* LDAB, int* INFO );
+	void LAPACK_NAME(zpbtrs)(char* UPLO, int* N, int* KD, int* NRHS, cplx* AB, int* LDAB, cplx* B, int* LDB, int* INFO );
 
 	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zgetrf)( int* N, int* M, cplx* A, int* LDA, int* IPIV, int* INFO );
@@ -108,6 +109,9 @@ public:
 	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
 
 	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char* EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, DoubleVectorType forwardErrorEstimate, DoubleVectorType backwardErrorEstimate);
+
+	int CalculateCholeskyFactorizationPositiveDefiniteBanded(HermitianStorage storage, MatrixType equationMatrix);
+	int SolvePositiveDefiniteBandedFactored(HermitianStorage storage, MatrixType factoredMatrix, MatrixType rightHandSide);
 
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;
@@ -698,6 +702,51 @@ inline int LAPACK<cplx>::SolvePositiveDefiniteBandedSystemOfEquations(MatrixFact
 
 	return info;
 }
+
+template<>
+inline int LAPACK<cplx>::CalculateCholeskyFactorizationPositiveDefiniteBanded(HermitianStorage storage, MatrixType equationMatrix)
+{
+	char uplo = storage == HermitianUpper ? 'U' : 'L';
+
+	//Get data matrix sizes
+	int n = equationMatrix.extent(0);
+	int ldab = equationMatrix.extent(1);
+	int kd = ldab - 1;
+	int info;
+
+	LAPACK_NAME(zpbtrf)(&uplo, &n, &kd, equationMatrix.data(), &ldab, &info );
+
+	if (info != 0)
+	{
+		cout << "WARNING: zpbrtf error " << info << endl;
+	}
+
+	return info;
+}
+
+template<>
+inline int LAPACK<cplx>::SolvePositiveDefiniteBandedFactored(HermitianStorage storage, MatrixType factoredMatrix, MatrixType rightHandSide)
+{
+	char uplo = storage == HermitianUpper ? 'U' : 'L';
+
+	//Get data matrix sizes
+	int n = factoredMatrix.extent(0);
+	int ldab = factoredMatrix.extent(1);
+	int kd = ldab - 1;
+	int nrhs = rightHandSide.extent(0);
+	int ldb = rightHandSide.extent(1);
+	int info;
+
+	LAPACK_NAME(zpbtrs)(&uplo, &n, &kd, &nrhs, factoredMatrix.data(), &ldab, rightHandSide.data(), &ldb, &info );
+	if (info != 0)
+	{
+		cout << "WARNING: zpbrts error " << info << endl;
+	}
+
+	return info;
+}
+
+
 
 
 }} //Namespaces

@@ -31,7 +31,7 @@ def test():
 	return A, B, Overlap
 
 def test2():
-	conf = pyprop.Load("config_radial.ini")
+	conf = pyprop.Load("config.ini")
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	prop.AdvanceStep()
