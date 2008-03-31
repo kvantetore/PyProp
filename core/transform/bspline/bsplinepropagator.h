@@ -30,22 +30,26 @@ private:
 	blitz::Array< blitz::Array<cplx, 2>, 1 > BigPropagationMatrix;
 
 	int PropagateRank;
-	double Mass;
-	cplx TimeStep;
 	int lMax;
 	int PropagationAlgorithm;
+	double Mass;
+	cplx TimeStep;
+
+	bool HasPotential;
+	bool HasCentrifugalPotential;
 
 	void SetupLapackMatrices(const cplx &dt);
 	void SetupBlasMatrices(const cplx &dt);
 
 public:
-	
-	bool HasPotential;
-	bool HasCentrifugalPotential;
-
 	Propagator()
 	{	
-		PropagationAlgorithm = 1;
+		// Set the slow (allround) algorithm as default
+		PropagationAlgorithm = 0;
+
+		// No potentials as default
+		HasPotential = false;
+		HasCentrifugalPotential = false;
 	}
 
 	/*

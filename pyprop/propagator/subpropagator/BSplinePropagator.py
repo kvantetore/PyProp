@@ -13,6 +13,12 @@ class BSplinePropagator:
 
 
 	def ApplyConfigSection(self, configSection):
+		if hasattr(configSection, "propagation_algorithm"):
+			if configSection.propagation_algorithm == 1:
+				rank1repr = self.psi.GetRepresentation().GetRepresentation(1)
+				if not isinstance(rank1repr, core.ReducedSphericalHarmonicRepresentation):
+					raise Exception("Specified projection algorithm only works with ReducedSphericalRepresentation!")
+
 		configSection.Apply(self.Propagator)
 		self.ConfigSection = configSection
 
@@ -49,24 +55,29 @@ class BSplinePropagator:
 
 	def SetupStepConjugate(self, dt):
 		
-		# Set up b-spline potential
+		# Allocate arrays for b-spline potential and centrifugal potential
 		globalGridSize = self.BSplineObject.GetQuadratureGridGlobal().size
 		potentialVector = zeros(globalGridSize, dtype=double)
-		centrifugalVector = zeros(globalGridSize, dtype=double)
+
+		# If present, set up centrifugal potential
+		if hasattr(self.ConfigSection, "centrifugal_potential"):
+			centrifugalPotentialName = self.ConfigSection.Get("centrifugal_potential")
+			centrifugalPotentialSection = self.ConfigSection.Config.GetSection(centrifugalPotentialName)
+			centrifugalPotential = CreatePotentialFromSection(centrifugalPotentialSection, centrifugalPotentialName, self.psi)
+			centrifugalPotential.SetupStep(dt)
+			centrifugalVector = zeros(globalGridSize, dtype=double)
+			centrifugalVector[:] = centrifugalPotential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
+			self.Propagator.SetupCentrifugalPotential(centrifugalVector)
+		
+		
+		# If an additonal b-spline potential is present, we set it up, 
+		# otherwise just kinetic potential
 		if hasattr(self.ConfigSection, "potential"):
 			potentialName = self.ConfigSection.Get("potential")
 			potentialSection = self.ConfigSection.Config.GetSection(potentialName)
 			potential = CreatePotentialFromSection(potentialSection, potentialName, self.psi)
 			potential.SetupStep(dt)
 			potentialVector[:] = potential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
-
-			if hasattr(self.ConfigSection, "centrifugal_potential"):
-				centrifugalPotentialName = self.ConfigSection.Get("centrifugal_potential")
-				centrifugalPotentialSection = self.ConfigSection.Config.GetSection(centrifugalPotentialName)
-				centrifugalPotential = CreatePotentialFromSection(centrifugalPotentialSection, centrifugalPotentialName, self.psi)
-				centrifugalPotential.SetupStep(dt)
-				centrifugalVector[:] = centrifugalPotential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
-				self.Propagator.SetupCentrifugalPotential(centrifugalVector)
 
 			# Set up propagator w/potential
 			self.Transform.ForwardTransform(self.psi)

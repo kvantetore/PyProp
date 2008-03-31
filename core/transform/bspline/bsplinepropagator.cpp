@@ -15,8 +15,6 @@ void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
 	config.Get("mass", Mass);
 	cout << "BSplinePropagator: Mass = " << Mass << endl;
-	HasPotential = false;
-	HasCentrifugalPotential = false;
 	
 	if (config.HasValue("propagation_algorithm") )
 	{
@@ -77,7 +75,7 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi,
 
 
 /*
- * Set up propagator with centrifugal term
+ * Set up centrifugal term
  */
 template<int Rank>
 void Propagator<Rank>::SetupCentrifugalPotential(blitz::Array< double, 1> centrifugalPotential)
@@ -98,8 +96,7 @@ void Propagator<Rank>::AdvanceStep(Wavefunction<Rank> &psi)
 {
 	using namespace blitz;
 
-	//Map the data to a 3D array, where the b-spline part is the 
-	//middle rank
+	//Map the data to a 3D array, where the b-spline part is the middle rank
 	Array<cplx, 3> data3d = MapToRank3(psi.Data, PropagateRank, 1);
 
 	//Propagate the 3D array
@@ -120,20 +117,15 @@ template<int Rank>
 void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
 {
 	using namespace blitz;
-
-	//int N = BSplineObject->NumberOfBSplines;
-	//int offDiagonalBands = BSplineObject->MaxSplineOrder - 1;
 	linalg::LAPACK<cplx> lapack;
 
-	//Map the data to a 3D array, where the b-spline part is the 
-	//middle rank
+	//Map the data to a 3D array, where the b-spline part is the middle rank
 	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, PropagateRank, 1);
 	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, PropagateRank, 1);
 	Array<cplx, 2> matrix = GetHamiltonianMatrix();
 	Array<cplx, 2> centrifugalMatrix = GetCentrifugalMatrixBlas();
 
-	//iterate over the array directions which are not propagated by this
-	//propagator
+	//Iterate over the array directions which are not propagated by this propagator
 	Array<cplx, 1> temp(srcData.extent(1));
 	for (int i = 0; i < srcData.extent(0); i++)
 	{
@@ -170,6 +162,9 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
  *
  *     M * c(t+dt/2) = b(t-dt/2)  (solve using LAPACK)
  *     b = conj(M) * c(t-dt/2)    (perform using BLAS)
+ *
+ * where
+ *
  *     M = S + idt/2 * H
  * 
  */
@@ -178,6 +173,7 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 	blitz::Array<cplx, 3> &data)
 {
 	using namespace blitz;
+	linalg::LAPACK<cplx> lapack;
 
 	Array<cplx, 1> temp = TempData;
 
@@ -191,8 +187,7 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 		Array<int, 1> pivot(N);
 		Array<cplx, 2> pmat(PropagationMatrix.shape());
 	
-		//iterate over the array directions which are not propagated by this
-		//propagator
+		//Iterate over the array directions which are not propagated by this propagator
 		for (int i=0; i<data.extent(0); i++)
 		{
 			for (int j=0; j<data.extent(2); j++)
@@ -203,7 +198,8 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 				 */
 				pmat = PropagationMatrix;
 
-				/* v is a view of a slice of the wave function
+				/* 
+				 * v is a view of a slice of the wave function
 				 * temp is a temporary copy of that slice
 				 */
 				Array<cplx, 1> v = data(i, Range::all(), j);
@@ -236,7 +232,6 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 				 */
 				temp = v;
 				pivot = 0;
-				linalg::LAPACK<cplx> lapack;
 				lapack.SolveGeneralBandedSystemOfEquations(pmat, pivot, temp, offDiagonalBands,
 					offDiagonalBands);
 				//lapack.CalculateLUFactorizationBanded(pmat, pivot);
@@ -250,13 +245,13 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 	else if (PropagationAlgorithm == 1)
 	
 	{
-		//iterate over the array directions which are not propagated by this
-		//propagator
+		//Iterate over the array directions which are not propagated by this propagator
 		for (int i=0; i<data.extent(0); i++)
 		{
 			for (int j=0; j<data.extent(2); j++)
 			{
-				/* v is a view of a slice of the wave function
+				/* 
+				 * v is a view of a slice of the wave function
 				 * temp is a temporary copy of that slice
 				 */
 				Array<cplx, 1> v = data(i, Range::all(), j);
@@ -273,15 +268,58 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 				MatrixVectorMultiplyHermitianBanded(HamiltonianMatrix, temp, v, scaling, 0.0);
 				MatrixVectorMultiplyHermitianBanded(OverlapMatrixBlas, temp, v, 1.0, 1.0);
 
+				if (HasCentrifugalPotential)
+				{
+					double l = j;
+					cplx factor = l * (l + 1.0) / (2.0 * Mass) * scaling;
+					MatrixVectorMultiplyHermitianBanded(CentrifugalMatrixBlas, temp, v, factor, 1.0);
+				}
 
 				/*
 				 * Then call LAPACK to solve banded system of equations, obtaining 
-				 * solution at t+dt/2. We must a temp array copy of v to get the
+				 * solution at t+dt/2. We must make a temp array copy of v to get the
 				 * stride right for LAPACK (stride = 1)
 				 */
 				temp = v;
-				linalg::LAPACK<cplx> lapack;
 				lapack.SolveBandedFactored(BigPropagationMatrix(j), Pivots(j), temp);
+				v = temp;
+			}
+		}	
+	}
+
+	else if (PropagationAlgorithm == 2)
+	
+	{
+		//Iterate over the array directions which are not propagated by this propagator
+		for (int i=0; i<data.extent(0); i++)
+		{
+			for (int j=0; j<data.extent(2); j++)
+			{
+				/* 
+				 * v is a view of a slice of the wave function
+				 * temp is a temporary copy of that slice
+				 */
+				Array<cplx, 1> v = data(i, Range::all(), j);
+				temp = v; 
+
+				/*
+				 * Call BLAS function for fast banded matrix-vector product.
+				 * While both the overlap and hamilton matrices are symmetric,
+				 * this is not so for the propagation matrix S + idt/2 * H.
+				 * Since we are using the banded hermitian BLAS matrix-vector
+				 * product routine, we multiply in two steps and sum up implicitly
+				 * in BLAS using a scaling parameter.
+				 */
+				MatrixVectorMultiplyHermitianBanded(HamiltonianMatrix, temp, v, scaling, 0.0);
+				MatrixVectorMultiplyHermitianBanded(OverlapMatrixBlas, temp, v, 1.0, 1.0);
+
+				/*
+				 * Then call LAPACK to solve banded system of equations, obtaining 
+				 * solution at t+dt/2. We must make a temp array copy of v to get the
+				 * stride right for LAPACK (stride = 1)
+				 */
+				temp = v;
+				lapack.SolveBandedFactored(BigPropagationMatrix(0), Pivots(0), temp);
 				v = temp;
 			}
 		}	
@@ -296,31 +334,43 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 
 
 /*
- * Set up matrices to be stored on LAPACK form
+ * Set up matrices to be stored on LAPACK form. Three algorithms are available,
+ * two of which only applies in special cases:
+ *
+ * Algo 0: Slow, but works for all cases
+ * Algo 1: Optimized, only works for 2D reducedspherical representation (sphRank = 1)
+ * Algo 2: Optimized, works when there are only RankOne b-spline potential present 
+ *
+ * Algo 1 and 2 performs an initial LU factorization of the propagation matrix, providing
+ * approx x2 speedup over algo 0 (sometimes more).
  */
 template<int Rank>
 void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 {
 	using namespace blitz;
+	linalg::LAPACK<cplx> lapack;
 
 	int k = BSplineObject->MaxSplineOrder;
 	int N = BSplineObject->NumberOfBSplines;
 	int ldab = 3 * k - 2;
-	cplx Im = cplx(0.0, 1.0);
+	
+	/*
+	 * Get full b-bspline overlap matrix from b-bspline object,
+	 * since it is already stored on LAPACK form
+	 */
+	OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
+
+	//Array to hold slices of a RankOne potential, if present
+	Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));
+
 
 	if (PropagationAlgorithm == 0)
 	{
+		//Resize centrifugal matrix is applicable
+		if (HasCentrifugalPotential) { CentrifugalMatrix.resize(N, ldab); }
+		
 		//Resize prop matrix
 		PropagationMatrix.resize(N, ldab);
-		if (HasCentrifugalPotential) { CentrifugalMatrix.resize(N, ldab); }
-
-		/*
-		 * Get full b-bspline overlap matrix from b-bspline object,
-		 * since it is already stored on LAPACK form
-		 */
-		OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
-
-		Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));
 
 		cplx ham = 0.0;
 		cplx overlap = 0.0;
@@ -357,10 +407,8 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 
 				}
 
-				//PropagationMatrix(Ju, Iu) = OverlapMatrix(Ju, Iu) + Im * dt / 2.0 * ham;
-				//PropagationMatrix(Jl, Il) = OverlapMatrix(Jl, Il) + Im * dt / 2.0 * ham;
-				PropagationMatrix(Ju, Iu) = overlap + Im * dt / 2.0 * ham;
-				PropagationMatrix(Jl, Il) = overlap + Im * dt / 2.0 * ham;
+				PropagationMatrix(Ju, Iu) = overlap + I * dt / 2.0 * ham;
+				PropagationMatrix(Jl, Il) = overlap + I * dt / 2.0 * ham;
 			}
 		}
 	}
@@ -372,14 +420,6 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 		BigPropagationMatrix.resize(lMax + 1);
 		Pivots.resize(lMax + 1);
 
-		/*
-		 * Get full b-bspline overlap matrix from b-bspline object,
-		 * since it is already stored on LAPACK form
-		 */
-		OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
-
-		blitz::Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));
-		
 		cplx scaling = I * dt / 2.0;
 
 		cplx ham = 0.0;
@@ -388,6 +428,7 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 		{
 			//Resize propagation matrix for this subspace
 			BigPropagationMatrix(l).resize(N, ldab);
+			Pivots(l).resize(N);
 
 			for (int i = 0; i < N; i++)
 			{
@@ -409,12 +450,13 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 					{
 						GetPotentialSlice(potentialSlice, i, PotentialVector);
 						ham += BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
+
 					}
 
 					//Compute centrifugal matrix element if present
 					if (HasCentrifugalPotential)
 					{
-						cplx factor = l * (l + 1.0) / (2.0 * Mass) ;
+						cplx factor = l * (l + 1.0) / (2.0 * Mass);
 						GetPotentialSlice(potentialSlice, i, CentrifugalVector);
 						ham += factor * BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
 					}
@@ -425,13 +467,55 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 			}
 
 			//Initial run to perform LU factorization of subspace propagation matrix
-			Pivots(l).resize(N);
-			linalg::LAPACK<cplx> lapack;
 			lapack.CalculateLUFactorizationBanded(BigPropagationMatrix(l) , Pivots(l));
 		}
 
 	}
 
+	else if (PropagationAlgorithm == 2)
+
+	{
+		//Resize prop matrix and pivots
+		BigPropagationMatrix.resize(1);
+		BigPropagationMatrix(0).resize(N, ldab);
+		Pivots.resize(1);
+		Pivots(0).resize(N);
+
+		cplx scaling = I * dt / 2.0;
+
+		cplx ham = 0.0;
+		cplx overlap = 0.0;
+		for (int i = 0; i < N; i++)
+		{
+			int jMax = std::min(i + k, N);
+			for (int j = i; j < jMax; j++)
+			{
+				//Upper lapack indices
+				int Ju = j;
+				int Iu = 2 * k - 2 + i - j;
+
+				//Lower lapack indices, from transposing S and H matrices
+				int Jl = i;
+				int Il = 2 * k - 2 + j - i;
+				ham = -1.0 / (2.0 * Mass) * BSplineObject->BSplineDerivative2OverlapIntegral(i, j);
+				overlap = BSplineObject->BSplineOverlapIntegral(i, j);
+				
+				//Compute potential matrix element if present
+				if (HasPotential)
+				{
+					GetPotentialSlice(potentialSlice, i, PotentialVector);
+					ham += BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
+
+				}
+
+				BigPropagationMatrix(0)(Ju, Iu) = overlap + scaling * ham;
+				BigPropagationMatrix(0)(Jl, Il) = overlap + scaling * ham;
+			}
+
+		}
+		//Initial run to perform LU factorization of propagation matrix
+		lapack.CalculateLUFactorizationBanded(BigPropagationMatrix(0) , Pivots(0));
+	}
 
 	else
 	
