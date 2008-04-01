@@ -80,6 +80,10 @@ template<int Rank> Representation1DPtr CombinedRepresentation<Rank>
 template<int Rank> void CombinedRepresentation<Rank>
 ::SetRepresentation(int rank, Representation1DPtr repr)
 {
+	if (Representations(rank) != 0 && Representations(rank)->GetDistributedModel() != 0 && repr->GetDistributedModel() != 0)
+	{
+		repr->GetDistributedModel()->SetDistribution(Representations(rank)->GetDistributedModel()->GetDistribution());
+	}
 	Representations(rank) = repr;
 }
 

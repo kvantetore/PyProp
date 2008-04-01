@@ -3,7 +3,7 @@ import sys
 import os
 
 #Make sure we use the correct pyprop library
-sys.path.insert(1, os.path.abspath("../../.."))
+sys.path.insert(1, os.path.abspath("./pyprop"))
 
 #Load and reload pyprop in order to get recent changes
 import pyprop

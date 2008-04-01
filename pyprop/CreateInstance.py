@@ -22,10 +22,16 @@ def CreateDistribution(config, rank=None):
 	else:
 		distrSection = sec()
 
-	distrSection.proc_array_rank = 1
+	if not hasattr(distrSection, "proc_array_rank"):	
+		distrSection.proc_array_rank = 1
+	
 	#DO NOT CHANGE THIS UNLESS YOU ARE ABSOLUTELY SURE. IF THE LAST RANK IS USED
 	#SaveWavefunctionHDF WILL HAVE ABSOLUTELY HORRIBLE PERFORMANCE!!!
-	distrSection.initial_distribution = array([0], dtype=int)
+	if not hasattr(distrSection, "initial_distribution"):
+		distrSection.initial_distribution = array([0], dtype=int)
+
+	if distrSection.initial_distribution[0] != 0:
+		print "WARNING: Not distributing first rank of wavefunction. Consider removing [Distribution] from the config file"
 
 	#apply configuration
 	distrib.ApplyConfigSection(distrSection)

@@ -1,4 +1,4 @@
-PYPROP_ROOT  := ../../..
+PYPROP_ROOT  := pyprop
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 

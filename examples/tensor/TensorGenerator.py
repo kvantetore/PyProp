@@ -2,6 +2,9 @@ class UnsupportedGeometryException(Exception):
 	def __init__(self, string):
 		Exception.__init__(self, string)
 
+
+from numpy import int32
+
 #------------------------------------------------------------------------------------
 #                       Interfaces
 #------------------------------------------------------------------------------------
@@ -77,7 +80,7 @@ class GeometryInfoBSplineDense(GeometryInfoBase):
 	def GetBasisPairs(self):
 		count = self.GetBasisPairCount()
 		
-		pairs = zeros((count, 2), dtype=int)
+		pairs = zeros((count, 2), dtype=int32)
 		index = 0
 		for i in xrange(self.BSplineObject.NumberOfBSplines):
 			for j in xrange(self.BSplineObject.NumberOfBSplines):
@@ -101,23 +104,71 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 	def GetBasisPairCount(self):
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
-		return (N * k - (k) * (k-1) / 2) * 2  
+		return 2 * N * k - (k) * (k-1) - N
+
 		
 	def GetBasisPairs(self):
 		count = self.GetBasisPairCount()
 
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int)
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		pairs[:,0] = 0
 		pairs[:,1] = N-1
 
 		index = 0
 		for i in xrange(N):
-			for j in xrange(max(0, i-k), min(i+k, N)):
+			for j in xrange(max(0, i-k+1), min(i+k, N)):
 				pairs[index, 0] = i
 				pairs[index, 1] = j
 				index+=1
+
+		if index != pairs.shape[0]:
+			raise Execption()
+
+		return pairs
+
+class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
+	"""
+	Geometry information for BSpline geometries
+	"""
+	def __init__(self, bsplineObject):
+		#Set member variables 
+		self.BSplineObject = bsplineObject	
+
+	def UseGridRepresentation(self):
+		return True
+	
+	def GetBasisPairCount(self):
+		N = self.BSplineObject.NumberOfBSplines
+		k = self.BSplineObject.MaxSplineOrder
+		return N * k 
+
+		
+	def GetBasisPairs(self):
+		count = self.GetBasisPairCount()
+
+		N = self.BSplineObject.NumberOfBSplines
+		k = self.BSplineObject.MaxSplineOrder
+
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs[:,0] = 0
+		pairs[:,1] = N-1
+
+		index = 0
+		for i in xrange(N):
+			for j in xrange(k):
+				#for j in xrange(i, min(i+k, N)):
+				if j+i < N:
+					pairs[index, 0] = i
+					pairs[index, 1] = i+j
+				else:
+					pairs[index, 0] = 0
+					pairs[index, 1] = N-1
+				index+=1
+
+		if index != pairs.shape[0]:
+			raise Exeption()
 
 		return pairs
 
@@ -152,7 +203,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		if geom == "identity":
 			raise Exception("TODO: Implement Identity!")
 		elif geom == "banded":
-			return GeometryInfoBSplineBanded(self.BSplineObject)
+			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
 			return GeometryInfoBSplineDense(self.BSplineObject)
 		else:
@@ -189,7 +240,7 @@ class GeometryInfoReducedSphHarmDense(GeometryInfoBase):
 		count = self.GetBasisPairCount()
 		basisCount = sqrt(count)
 		
-		pairs = zeros((count, 2), dtype=int)
+		pairs = zeros((count, 2), dtype=int32)
 		index = 0
 		for i in xrange(basisCount):
 			for j in xrange(basisCount):
@@ -212,20 +263,22 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 		return True
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax()*2
+		return self.SphericalHarmonicObject.GetLMax()*2 
 		
 	def GetBasisPairs(self):
-		count = self.SphericalHarmonicObject.GetLMax()
+		count = self.SphericalHarmonicObject.GetLMax()+1
 		
-		pairs = zeros((count*2, 2), dtype=int)
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		index = 0
 		for i in xrange(count):
-			pairs[index, 0] = i
-			pairs[index, 1] = i-1
-			index+=1
-			pairs[index, 0] = i
-			pairs[index, 1] = i+1
-			index+=1
+			if i > 0:
+				pairs[index, 0] = i
+				pairs[index, 1] = i-1
+				index+=1
+			if i < count-1:
+				pairs[index, 0] = i
+				pairs[index, 1] = i+1
+				index+=1
 
 		return pairs
 
@@ -249,7 +302,7 @@ class GeometryInfoReducedSphHarmDiagonal(GeometryInfoBase):
 	def GetBasisPairs(self):
 		count = self.GetBasisPairCount()
 		
-		pairs = zeros((count, 2), dtype=int)
+		pairs = zeros((count, 2), dtype=int32)
 		index = 0
 		for i in xrange(count):
 			pairs[index, 0] = i
@@ -435,7 +488,7 @@ class TensorPotentialGenerator(object):
 					newDistribution[distribIndex] = rank+1
 
 					#Create shape of transposed function and allocate dest buffer
-					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int))
+					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int32))
 					dest = zeros(transposedShape, dtype=complex)
 
 					#Transpose
@@ -547,7 +600,7 @@ class TensorPotential(PotentialWrapper):
 		self.PotentialData = None
 		self.Name = None
 		self.psi = psi
-		self.MultiplyAlgorithm = 0
+		self.MultiplyAlgorithm = 5
 
 	def ApplyConfigSection(self, configSection):
 		#Check wheter this is a time dependent potential
@@ -581,7 +634,12 @@ class TensorPotential(PotentialWrapper):
 			pairs0 = self.BasisPairs[0]
 			pairs1 = self.BasisPairs[1]
 
-			MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest, self.MultiplyAlgorithm)
+			if self.MultiplyAlgorithm == 4:
+				TensorMatrixMultiply_Simple_BandedBlas(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
+			if self.MultiplyAlgorithm == 5:
+				TensorMatrixMultiply_Simple_BandedBlas2(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
+			else:
+				MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest, self.MultiplyAlgorithm)
 
 		else:
 			raise NotImplementedException("Only rank=1 and rank=2 is currently implemented for TensorPotential")
@@ -684,10 +742,11 @@ class BasisPropagator(PropagatorBase):
 						break
 
 				#Add oterPot to curPot
-				curPot.PotentialData[:] += otherPot.PotentialData
-				curPot.Name += "+" + otherPot.Name
-				potentials.remove(otherPot)
-				removePotentials.append(otherPot)
+				if canConsolidate:
+					curPot.PotentialData[:] += otherPot.PotentialData
+					curPot.Name += "+" + otherPot.Name
+					potentials.remove(otherPot)
+					removePotentials.append(otherPot)
 
 			#Next potential
 			i += 1

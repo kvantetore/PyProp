@@ -120,7 +120,7 @@ public:
 	
 		//Find type descriptor for C++ type
 		PyArray_Descr* type_descr = Traits::GetTypeDescr();
-		
+
 		if (arr_obj->descr->type_num == type_descr->type_num || arr_obj->descr->elsize == type_descr->elsize) {
 			new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, neverDeleteData);
 		}

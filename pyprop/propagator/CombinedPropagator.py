@@ -35,7 +35,7 @@ class CombinedPropagator(PropagatorBase):
 		for prop in self.SubPropagators:
 			#parallelization
 			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
-				self.Transpose(1)
+				self.Transpose(1, self.psi)
 			prop.SetupStep(dt/2.)
 
 		self.SetupPotential(dt)
@@ -46,7 +46,7 @@ class CombinedPropagator(PropagatorBase):
 			prop.SetupStepConjugate(dt/2.)
 			#parallelization
 			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
-				self.Transpose(2)
+				self.Transpose(2, self.psi)
 
 		if not IsSingleProc():
 			distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
@@ -61,7 +61,9 @@ class CombinedPropagator(PropagatorBase):
 		for prop in self.SubPropagators:
 			#parallelization
 			if prop.TransformRank == self.Rank-1:
-				self.Transpose(1)
+				self.Transpose(1, self.psi)
+				self.Transpose(1, destPsi)
+
 			#advance step
 			prop.MultiplyHamiltonian(destPsi, t, dt/2.)
 
@@ -76,7 +78,8 @@ class CombinedPropagator(PropagatorBase):
 			prop.MultiplyHamiltonianConjugate(destPsi, t, dt/2.)
 			#parallelization
 			if prop.TransformRank == self.Rank-1:
-				self.Transpose(2)
+				self.Transpose(2, self.psi)
+				self.Transpose(2, destPsi)
 		
 
 	def AdvanceStep(self, t, dt):
@@ -86,7 +89,7 @@ class CombinedPropagator(PropagatorBase):
 		for prop in self.SubPropagators:
 			#parallelization
 			if prop.TransformRank == self.Rank-1:
-				self.Transpose(1)
+				self.Transpose(1, self.psi)
 			#advance step
 			prop.AdvanceStep(t, dt/2.)
 
@@ -101,7 +104,7 @@ class CombinedPropagator(PropagatorBase):
 			prop.AdvanceStepConjugate(t, dt/2.)
 			#parallelization
 			if prop.TransformRank == self.Rank-1:
-				self.Transpose(2)
+				self.Transpose(2, self.psi)
 
 	#Transpose
 	def SetupTranspose(self):
@@ -121,20 +124,26 @@ class CombinedPropagator(PropagatorBase):
 			self.TransposeBuffer1 = self.psi.GetActiveBufferName()
 			self.TransposeBuffer2 = self.psi.AllocateData(distribShape)
 
-	def Transpose(self, stage):
-		distrModel = self.psi.GetRepresentation().GetDistributedModel()
+	def Transpose(self, stage, psi):
+		distrModel = psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
 			if stage == 1:
-				distrModel.ChangeDistribution(self.psi, self.Distribution2, self.TransposeBuffer2)
+				distrModel.ChangeDistribution(psi, self.Distribution2, self.TransposeBuffer2)
 				newDistrib = self.Distribution2
+				for i in range(self.Rank):
+					psi.GetRepresentation().GetRepresentation(i).GetDistributedModel().SetDistribution(newDistrib)
+
 			elif stage == 2:
-				distrModel.ChangeDistribution(self.psi, self.Distribution1, self.TransposeBuffer1)
+				distrModel.ChangeDistribution(psi, self.Distribution1, self.TransposeBuffer1)
 				newDistrib = self.Distribution1
+				for i in range(self.Rank):
+					psi.GetRepresentation().GetRepresentation(i).GetDistributedModel().SetDistribution(newDistrib)
+
 			else:
 				raise "Invalid stage %i" % stage
 		
 			for i in range(self.Rank):
-				subDistribModel = prop.psi.GetRepresentation().GetRepresentation(i).GetDistributedModel()
+				subDistribModel = self.psi.GetRepresentation().GetRepresentation(i).GetDistributedModel()
 				subDistribModel.SetDistribution(newDistrib)
 
 

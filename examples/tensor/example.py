@@ -195,7 +195,12 @@ def Propagate(algo=1):
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	prop.psi.GetRepresentation().Algorithm = algo
-	prop.psi.GetData()[:] = initPsi.GetData()
+
+	for i in range(prop.psi.GetData().shape[0]):
+		prop.psi.GetData()[i, :] = initPsi.GetData()[i, :]
+	prop.psi.Normalize()
+
+	initPsi = prop.psi.Copy()
 	
 	timeList = []
 	corrList = []
@@ -266,14 +271,28 @@ def TestMatrixMultiply():
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 
-	avgCount = 100
+	avgCount = 10
 	minCount = 10
 
 	tempPsi = prop.GetTempPsi()
+	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
+	#prop.psi.GetData()[1:,:] = 0
 
 	pot = prop.Propagator.BasePropagator.PotentialList[0]
 
-	for algo in range(2):
+	algoCount = 6
+
+	for algo in [4,5]: #range(algoCount):
+		pot.MultiplyAlgorithm = algo
+		tempPsi.GetData()[:] = 0
+		pot.MultiplyPotential(tempPsi, 0, 0)
+		#print tempPsi.GetData().real
+		#figure()
+		#pcolormesh(abs(tempPsi.GetData())**2)
+		d = tempPsi.InnerProduct(prop.psi)
+		print "Overlap (Algo %i) = %f" % (algo, abs(d)**2)
+
+	for algo in [4,5]:
 		pot.MultiplyAlgorithm = algo
 		minT = 10e10
 		for i in range(minCount):
@@ -281,6 +300,7 @@ def TestMatrixMultiply():
 			t = - time.time()
 			for j in range(avgCount):
 				pot.MultiplyPotential(tempPsi, 0, 0)
+				#prop.MultiplyHamiltonian(tempPsi)
 			t += time.time()
 			if t<minT:
 				minT = t / avgCount

@@ -157,7 +157,7 @@ def TestStability(**args):
 	initProp = FindGroundstate(**args)
 
 	args["imtime"] = False
-	args["omega_left"] = 1.5
+	#args["omega_left"] = 1.5
 	conf = SetupConfig(**args)
 	#conf.Propagation.potential_evaluation = ["StarkPotential"]
 	prop = pyprop.Problem(conf)

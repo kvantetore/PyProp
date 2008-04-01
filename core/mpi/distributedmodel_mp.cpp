@@ -35,7 +35,7 @@ DistributedModel<Rank>::DistributedModel(DistributionPtr distrib)
 	{
 		Transpose = TransposePtr( new ArrayTranspose<Rank>(procRank));
 	}
-	CurrentDistribution = distrib;
+	CurrentDistribution = Distribution::Ptr(new Distribution(*distrib));
 }
 
 template<int Rank>

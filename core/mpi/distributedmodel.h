@@ -69,6 +69,12 @@ public:
 		return CurrentDistribution->GetDistribution();
 	}
 
+	void SetDistribution(Distribution::DataArray newDistrib)
+	{
+		return CurrentDistribution->SetDistribution(newDistrib);
+	}
+
+
 /*
 	template<int Rank2>
 	void ShareDistribution(DistributedModel<Rank2>::Ptr other)

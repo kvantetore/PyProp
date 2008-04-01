@@ -192,7 +192,7 @@ public:
 		double x2 = pos(1);
 		double x12 = std::fabs(x1 - x2);
 
-		return Charge / ( x12 + PotentialMinimum * exp(-SoftParam * x12) );
+		return Charge / sqrt( x12*x12 + SoftParam );
 	}
 };
 
