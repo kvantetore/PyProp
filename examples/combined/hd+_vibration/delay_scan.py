@@ -658,11 +658,12 @@ def SubmitAllFinalControl():
 
 	#5fs (intensity) 
 	#26.5fs delay 
-	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-	#	controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
-	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-	#	controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
+		controlIntensity=20e13, controlDelay=26.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 
+	"""
 	#493fs delay
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
 		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
@@ -680,7 +681,7 @@ def SubmitAllFinalControl():
 		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
 		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
-
+	"""
 
 def SubmitFinalControlExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/final_control_%s_control_%.2ffs_%ie13_probe_%ifs_%ie13_scaling_%i.h5" % \
@@ -697,15 +698,15 @@ def SubmitFinalControlExperiment(**args):
 	print args["outputfile"]
 
 	#Submit:
-	SubmitDelayScanStallo(**args)
+	#SubmitDelayScanStallo(**args)
 
 	##Make Plots
-	#datafile = args["outputfile"].replace("%i", "all")
-	#MakeDelayScanPlot(args["molecule"], datafile, radialScaling=args["radialScaling"], batchMode=True)
-	#path, name = os.path.split(datafile)
-	#root, ext = os.path.splitext(name)
-	#pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
-	#pylab.close("all")
+	datafile = args["outputfile"].replace("%i", "all")
+	MakeDelayScanPlot(args["molecule"], datafile, radialScaling=args["radialScaling"], batchMode=True)
+	path, name = os.path.split(datafile)
+	root, ext = os.path.splitext(name)
+	pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
+	pylab.close("all")
 
 
 

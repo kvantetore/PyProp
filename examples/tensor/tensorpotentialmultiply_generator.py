@@ -346,10 +346,66 @@ class StorageGeneratorSimple(StorageGeneratorBase):
 		return str
 
 
+
 #-----------------------------------------------------------------------------------
 
 
-class StorageGeneratorBandedBlas2(StorageGeneratorBase):
+class StorageGeneratorHermitian(StorageGeneratorSimple):
+	"""
+	Generator for simple hermitian storage, that is, where the loop 
+	over index pairs is the way to do matrix multiplication, but the 
+	index pairs only include the upper part of the matrix (row < col)
+	"""
+
+	def __init__(self, systemRank, curRank, innerGenerator):
+		StorageGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetLoopingCodeRecursive(self, conjugate):
+		str = """
+			do i%(rank)i = 0, N%(rank)i-1
+				row%(rank)i = pair%(rank)i(0, i%(rank)i);
+				col%(rank)i = pair%(rank)i(1, i%(rank)i);
+				%(innerLoop)s
+
+				col%(rank)i = pair%(rank)i(0, i%(rank)i);
+				row%(rank)i = pair%(rank)i(1, i%(rank)i);
+				%(innerLoopConjg)s
+			enddo
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
+		return str
+
+
+#-----------------------------------------------------------------------------------
+
+TODO:
+class StorageGeneratorDiagonal(StorageGeneratorSimple):
+	"""
+	Generator for simple hermitian storage, that is, where the loop 
+	over index pairs is the way to do matrix multiplication, but the 
+	index pairs only include the upper part of the matrix (row < col)
+	"""
+
+	def __init__(self, systemRank, curRank, innerGenerator):
+		StorageGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetLoopingCodeRecursive(self, conjugate):
+		str = """
+			do i%(rank)i = 0, N%(rank)i-1
+				row%(rank)i = i;
+				col%(rank)i = ;
+				%(innerLoop)s
+
+				col%(rank)i = pair%(rank)i(0, i%(rank)i);
+				row%(rank)i = pair%(rank)i(1, i%(rank)i);
+				%(innerLoopConjg)s
+			enddo
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
+		return str
+
+#-----------------------------------------------------------------------------------
+
+
+class StorageGeneratorBandedBlas(StorageGeneratorBase):
 	"""
 	"""
 
@@ -483,145 +539,6 @@ class StorageGeneratorBandedBlas2(StorageGeneratorBase):
 
 #-----------------------------------------------------------------------------------
 
-
-class StorageGeneratorBandedBlas(StorageGeneratorBase):
-	"""
-	"""
-
-	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
-
-	def GetParameterList(self):
-		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
-		return parameterList
-
-	def GetParameterDeclarationCode(self):
-		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
-		str += """
-			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
-			integer :: hermRow%(rank)i, hermCol%(rank)i 
-			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
-			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
-		""" % { "rank": self.CurRank }
-		return str
-
-	def GetInitializationCode(self):
-		str = """
-			N%(rank)i = potentialExtent%(rank)i
-			bsplineCount%(rank)i = sourceExtent%(rank)i
-			bandCount%(rank)i = N%(rank)i / bsplineCount%(rank)i
-
-			subDiagonals%(rank)i = bandCount%(rank)i - 1
-			sourceStride%(rank)i = 1
-			destStride%(rank)i = 1
-			alpha%(rank)i = scaling
-			beta%(rank)i = 1.0d0
-			col%(rank)i = 0
-			row%(rank)i = 0
-			i%(rank)i = 0
-
-		""" % { "rank":self.CurRank }
-		return str
-
-	def GetLoopingCodeRecursive(self, conjugate):
-		str = ""
-		#This is only if this is the innermost loop
-		str += """
-			i%(rank)i = 0
-			do row%(rank)i = 0, bsplineCount%(rank)i - bandCount%(rank)i - 1
-				do col%(rank)i = row%(rank)i, row%(rank)i+bandCount%(rank)i - 1
-					%(innerLoop)s	
-					i%(rank)i = i%(rank)i + 1
-				enddo
-			enddo
-			
-			do row%(rank)i = bsplineCount%(rank)i - bandCount%(rank)i,  bsplineCount%(rank)i - 1
-				do col%(rank)i = row%(rank)i, bsplineCount%(rank)i - 1
-					%(innerLoop)s	
-					i%(rank)i = i%(rank)i + 1
-				enddo
-				
-				i%(rank)i = i%(rank)i + (- bsplineCount%(rank)i + row%(rank)i + bandCount%(rank)i)
-			enddo
-			
-			i%(rank)i = 0
-			do hermRow%(rank)i = 0, bsplineCount%(rank)i - bandCount%(rank)i - 1
-				i%(rank)i = i%(rank)i + 1
-				do hermCol%(rank)i = hermRow%(rank)i+1, hermRow%(rank)i+bandCount%(rank)i - 1
-					col%(rank)i = hermRow%(rank)i
-					row%(rank)i = hermCol%(rank)i
-					%(innerLoopConjg)s	
-					i%(rank)i = i%(rank)i + 1
-				enddo
-			enddo
-			
-			do hermRow%(rank)i = bsplineCount%(rank)i - bandCount%(rank)i,  bsplineCount%(rank)i - 1
-				i%(rank)i = i%(rank)i + 1
-				do hermCol%(rank)i = hermRow%(rank)i+1, bsplineCount%(rank)i - 1
-					col%(rank)i = hermRow%(rank)i
-					row%(rank)i = hermCol%(rank)i
-					%(innerLoopConjg)s	
-					i%(rank)i = i%(rank)i + 1
-				enddo
-				
-				i%(rank)i = i%(rank)i + (- bsplineCount%(rank)i + hermRow%(rank)i + bandCount%(rank)i)
-			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
-
-		return str
-
-	def GetInnerLoop(self, conjugate):
-		str = ""
-		if self.InnerGenerator != None:
-			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
-		else:
-			#We're at the innermost loop
-			conjg = ""
-			if conjugate:
-				conjg = "conjg"
-			str += """
-				dest(%(rowIndex)s) = dest(%(rowIndex)s) + %(conjg)s(potential(%(potentialIndex)s)) * scaling * source(%(colIndex)s)
-			""" % \
-				{ \
-					"rowIndex": self.GetIndexString("row"), \
-					"potentialIndex": self.GetIndexString("i"), \
-					"colIndex": self.GetIndexString("col"),  \
-					"conjg": conjg, \
-				}
-		return str
-
-
-#-----------------------------------------------------------------------------------
-
-
-
-class StorageGeneratorHermitian(StorageGeneratorSimple):
-	"""
-	Generator for simple hermitian storage, that is, where the loop 
-	over index pairs is the way to do matrix multiplication, but the 
-	index pairs only include the upper part of the matrix (row < col)
-	"""
-
-	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
-
-	def GetLoopingCodeRecursive(self, conjugate):
-		str = """
-			do i%(rank)i = 0, N%(rank)i-1
-				row%(rank)i = pair%(rank)i(0, i%(rank)i);
-				col%(rank)i = pair%(rank)i(1, i%(rank)i);
-				%(innerLoop)s
-
-				col%(rank)i = pair%(rank)i(0, i%(rank)i);
-				row%(rank)i = pair%(rank)i(1, i%(rank)i);
-				%(innerLoopConjg)s
-			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
-		return str
-
-
-#-----------------------------------------------------------------------------------
-
 class TensorMatrixMultiplyGenerator(object):
 
 
@@ -644,8 +561,6 @@ class TensorMatrixMultiplyGenerator(object):
 				storageClass = StorageGeneratorHermitian
 			elif storageName == "BandedBlas":
 				storageClass = StorageGeneratorBandedBlas
-			elif storageName == "BandedBlas2":
-				storageClass = StorageGeneratorBandedBlas2
 			else:
 				raise Exception("Unknown storageName %s" % (storageName))
 		
