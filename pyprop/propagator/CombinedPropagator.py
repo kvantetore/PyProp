@@ -30,11 +30,11 @@ class CombinedPropagator(PropagatorBase):
 		self.__Base.ApplyConfigSection(self, configSection)
 
 	def SetupStep(self, dt):
-		self.SetupTranspose()
 
 		for prop in self.SubPropagators:
 			#parallelization
 			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
+				self.SetupTranspose()
 				self.Transpose(1, self.psi)
 			prop.SetupStep(dt/2.)
 

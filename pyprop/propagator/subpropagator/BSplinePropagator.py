@@ -19,6 +19,10 @@ class BSplinePropagator:
 				if not isinstance(rank1repr, core.ReducedSphericalHarmonicRepresentation):
 					raise Exception("Specified projection algorithm only works with ReducedSphericalRepresentation!")
 
+		if hasattr(configSection, "centrifugal_potential"):
+			if not hasattr(configSection, "angular_rank"):
+				raise Exception("When centrifugal potential is present, angular rank must be specified!")
+
 		configSection.Apply(self.Propagator)
 		self.ConfigSection = configSection
 
@@ -67,7 +71,7 @@ class BSplinePropagator:
 			centrifugalPotential.SetupStep(dt)
 			centrifugalVector = zeros(globalGridSize, dtype=double)
 			centrifugalVector[:] = centrifugalPotential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
-			self.Propagator.SetupCentrifugalPotential(centrifugalVector)
+			self.Propagator.SetupCentrifugalPotential(centrifugalVector, self.psi)
 		
 		
 		# If an additonal b-spline potential is present, we set it up, 

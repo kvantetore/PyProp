@@ -30,10 +30,13 @@ private:
 	blitz::Array< blitz::Array<cplx, 2>, 1 > BigPropagationMatrix;
 
 	int PropagateRank;
-	int lMax;
+	int GlobalLMax;
 	int PropagationAlgorithm;
+	int AngularRank;
 	double Mass;
 	cplx TimeStep;
+
+	blitz::Range LocalLRange;
 
 	bool HasPotential;
 	bool HasCentrifugalPotential;
@@ -63,7 +66,8 @@ public:
 	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, int rank);
 	void Setup(const cplx &dt, const Wavefunction<Rank> &psi, BSpline::Ptr bsplineObject, 
 		blitz::Array<double, 1> potential, int rank);
-	void SetupCentrifugalPotential(blitz::Array<double, 1> centrifugalPotential);
+	void SetupCentrifugalPotential(blitz::Array<double, 1> centrifugalPotential, 
+		const Wavefunction<Rank> &psi);
 
 	/*
 	 * Advance wavefunction one timestep
@@ -93,8 +97,7 @@ public:
 	blitz::Array<cplx, 2> GetCentrifugalMatrix() { return CentrifugalMatrix; }
 	blitz::Array<cplx, 2> GetBigPropagationMatrix(int i) { return BigPropagationMatrix(i); }
 
-	void SetLmax(int lmax) { this->lMax = lmax; }
-	int GetLmax() { return this->lMax; }
+	int GetGlobalLmax() { return this->GlobalLMax; }
 
 	void SetPropagationAlgorithm(int algo) { this->PropagationAlgorithm = algo; }
 	int GetPropagationAlgorithm() { return this->PropagationAlgorithm; }

@@ -53,9 +53,9 @@ class CombinedAbsorber:
 	
 	def ApplyConfigSection(self, configSection):
 		config = configSection.Config
-
 		self.AbsorberList = []
 		absorberList = configSection.absorbers
+
 		for absorberName in absorberList:
 			#Create absorber
 			absorberConfig = config.GetSection(absorberName)
@@ -71,6 +71,26 @@ class CombinedAbsorber:
 
 		repr = psi.GetRepresentation()
 		for absorber, rank in self.AbsorberList:
+
+			#If the wavefunction is distributed along the absorber rank(s), 
+			#we should only apply absorber on the procs which have the 
+			#parts of the grid where the absorber is supposed to be active.
+			#For the moment, absorber cannot extend across multiple procs.
+			distrModel = repr.GetDistributedModel()
+			if distrModel.IsDistributedRank(rank):
+				if ProcId == 0:
+					absorber.AbsorbRight = False
+					if absorber.Width > repr.GetLocalGrid(rank).size:
+						print "WARNING: absorber across multiple procs not currently supported"
+				if ProcId == ProcCount - 1:
+					if absorber.Width > repr.GetLocalGrid(rank).size:
+						print "WARNING: absorber across multiple procs not currently supported"
+					absorber.AbsorbLeft = False
+				else:
+					absorber.Width = 0
+					absorber.AbsorbLeft = False
+					absorber.AbsorbRight = False
+
 			grid = repr.GetLocalGrid(rank)
 			absorber.SetupStep(grid)
 			self.AbsorberPotential.AddAbsorber(absorber, rank)

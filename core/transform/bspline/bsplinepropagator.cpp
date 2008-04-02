@@ -19,12 +19,18 @@ void Propagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	if (config.HasValue("propagation_algorithm") )
 	{
 		config.Get("propagation_algorithm", PropagationAlgorithm);
-		cout << "BSpline propagation algorithm = " << PropagationAlgorithm << endl;
+		cout << "BSplinePropagator: using algorithm " << PropagationAlgorithm << endl;
 	}
 
 	if (config.HasValue("lmax") )
 	{
-		config.Get("lmax", lMax);
+		config.Get("lmax", GlobalLMax);
+		cout << "BSplinePropagator: global lmax = " << GlobalLMax << endl;
+	}
+
+	if ( config.HasValue("angular_rank") )
+	{
+		config.Get("angular_rank", AngularRank);
 	}
 
 }
@@ -78,10 +84,15 @@ void Propagator<Rank>::Setup(const cplx &dt, const Wavefunction<Rank> &psi,
  * Set up centrifugal term
  */
 template<int Rank>
-void Propagator<Rank>::SetupCentrifugalPotential(blitz::Array< double, 1> centrifugalPotential)
+void Propagator<Rank>::SetupCentrifugalPotential(blitz::Array< double, 1> centrifugalPotential, 
+	const Wavefunction<Rank> &psi)
 {
 	//Get centrifugal potential values
 	CentrifugalVector.reference( centrifugalPotential.copy() );
+
+	//Get local l-range from distribution
+	LocalLRange = 
+		psi.GetRepresentation()->GetDistributedModel()->GetLocalIndexRange(GlobalLMax + 1, AngularRank);
 
 	//We have a centrifugal term
 	HasCentrifugalPotential = true;
@@ -118,7 +129,7 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
 {
 	using namespace blitz;
 	linalg::LAPACK<cplx> lapack;
-
+	
 	//Map the data to a 3D array, where the b-spline part is the middle rank
 	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, PropagateRank, 1);
 	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, PropagateRank, 1);
@@ -137,7 +148,10 @@ void Propagator<Rank>::MultiplyHamiltonian(Wavefunction<Rank> &srcPsi, Wavefunct
 
 			if (HasCentrifugalPotential)
 			{
-				double l = j;
+				//Get local lmin
+				int lmin = LocalLRange.first();
+	
+				double l = j + lmin;
 				double factor = l * (l + 1.0) / (2.0 * Mass);
 				MatrixVectorMultiplyHermitianBanded(centrifugalMatrix, v, temp, factor, 1.0);
 			}
@@ -182,6 +196,7 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 	
 	cplx scaling = -I * TimeStep / 2.0;
 
+
 	if (PropagationAlgorithm == 0)
 	{
 		Array<int, 1> pivot(N);
@@ -218,7 +233,10 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 
 				if (HasCentrifugalPotential)
 				{
-					double l = j;
+					//Get local lmin
+					int lmin = LocalLRange.first();
+
+					double l = lmin + j;
 					cplx factor = l * (l + 1.0) / (2.0 * Mass) * scaling;
 					MatrixVectorMultiplyHermitianBanded(CentrifugalMatrixBlas, temp, v, factor, 1.0);
 
@@ -245,6 +263,9 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 	else if (PropagationAlgorithm == 1)
 	
 	{
+		//Find local lmin
+		int lmin = LocalLRange.first();
+
 		//Iterate over the array directions which are not propagated by this propagator
 		for (int i=0; i<data.extent(0); i++)
 		{
@@ -270,7 +291,7 @@ void Propagator<Rank>::ApplyCrankNicolson(const blitz::Array<cplx, 2> &matrix,
 
 				if (HasCentrifugalPotential)
 				{
-					double l = j;
+					double l = j + lmin;
 					cplx factor = l * (l + 1.0) / (2.0 * Mass) * scaling;
 					MatrixVectorMultiplyHermitianBanded(CentrifugalMatrixBlas, temp, v, factor, 1.0);
 				}
@@ -416,19 +437,24 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 	else if (PropagationAlgorithm == 1)
 	
 	{
+		//Find local lmin and number of l's
+		int lmin = LocalLRange.first();
+		int lSize = LocalLRange.length();
+
 		//Resize prop matrix
-		BigPropagationMatrix.resize(lMax + 1);
-		Pivots.resize(lMax + 1);
+		BigPropagationMatrix.resize(lSize);
+		Pivots.resize(lSize);
 
 		cplx scaling = I * dt / 2.0;
 
 		cplx ham = 0.0;
 		cplx overlap = 0.0;
-		for (int l = 0; l < lMax + 1; l++)
+
+		for (int l_idx = 0; l_idx < lSize; l_idx++)
 		{
 			//Resize propagation matrix for this subspace
-			BigPropagationMatrix(l).resize(N, ldab);
-			Pivots(l).resize(N);
+			BigPropagationMatrix(l_idx).resize(N, ldab);
+			Pivots(l_idx).resize(N);
 
 			for (int i = 0; i < N; i++)
 			{
@@ -456,18 +482,19 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 					//Compute centrifugal matrix element if present
 					if (HasCentrifugalPotential)
 					{
+						double l = lmin + l_idx;
 						cplx factor = l * (l + 1.0) / (2.0 * Mass);
 						GetPotentialSlice(potentialSlice, i, CentrifugalVector);
 						ham += factor * BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
 					}
 
-					BigPropagationMatrix(l)(Ju, Iu) = overlap + scaling * ham;
-					BigPropagationMatrix(l)(Jl, Il) = overlap + scaling * ham;
+					BigPropagationMatrix(l_idx)(Ju, Iu) = overlap + scaling * ham;
+					BigPropagationMatrix(l_idx)(Jl, Il) = overlap + scaling * ham;
 				}
 			}
 
 			//Initial run to perform LU factorization of subspace propagation matrix
-			lapack.CalculateLUFactorizationBanded(BigPropagationMatrix(l) , Pivots(l));
+			lapack.CalculateLUFactorizationBanded(BigPropagationMatrix(l_idx) , Pivots(l_idx));
 		}
 
 	}
