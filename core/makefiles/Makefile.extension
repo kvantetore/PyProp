@@ -1,0 +1,58 @@
+
+PYPROP_LIB_PATH = $(PYPROP_ROOT)/pyprop/core
+PYPROP_LIBS := $(shell ls $(PYPROP_ROOT)/core/lib/lib*.a) $(PYPROP_ROOT)/core/lib/libcore.a
+
+PYTHON_MAIN  := python_main
+PYTHON_MAIN_GENERATOR := $(PYPROP_ROOT)/core/utility/python_main.py
+PYTHON_EXEC  := python-exec
+PYTHON := python
+
+#Make static exec if PYPROP_STATIC is set to 1
+ifeq ($(PYPROP_STATIC),1)
+STATIC_DEP = $(PYTHON_EXEC)
+endif
+
+#Make shared lib if PYPROP_DYNAMIC is set to 1
+ifeq ($(PYPROP_DYNAMIC),1)
+DYNAMIC_DEP = $(MODULENAME).so
+endif
+
+all: $(DYNAMIC_DEP) $(STATIC_DEP)
+
+#Make main file for static python
+$(PYTHON_MAIN).cpp: $(PYTHON_MAIN_GENERATOR) $(PYPROP_LIBS)
+	$(PYTHON) $(PYTHON_MAIN_GENERATOR) $(PYTHON_MAIN).cpp $(MODULENAME)
+
+#Make static library
+$(MODULENAME).a: $(OBJECTS) $(PYTHON_MAIN).o
+	rm -f $(MODULENAME).a
+	ar -cr $(MODULENAME).a $(OBJECTS) $(PYTHON_MAIN).o
+
+#Make static executable
+$(PYTHON_EXEC): $(MODULENAME).a
+	$(LD) $(LD_STATIC) -o $(PYTHON_EXEC) $(MODULENAME).a $(PYPROP_LIBS) $(LIBS) $(LDFLAGS) $(PYTHON_STATIC_LIBS)
+
+#Make shared library
+$(MODULENAME).so: $(OBJECTS)
+	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lcore -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
+
+#Make boost::python wrapper file
+wrapper.cpp: wrapper.pyste 
+	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
+
+semiclean:
+	rm -f *.so
+	rm -f *.o
+
+clean: semiclean
+	rm -rf .deps
+	mkdir .deps
+	rm -rf wrapper.cpp
+
+#autodependencies
+DEPDIR        = .deps
+df            = $(DEPDIR)/$(*F)
+DEPENDENCIES  = $(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
+
+-include $(DEPENDENCIES)
+

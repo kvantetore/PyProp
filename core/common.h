@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "utility/boostpythonhack.h"
 #include <complex>
 #include <cmath>
 #include <blitz/array.h>
