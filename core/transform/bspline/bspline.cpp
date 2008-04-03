@@ -474,6 +474,10 @@ blitz::Array<double, 1> BSpline::EvaluateBSplineOnGrid(VectorType grid, int bSpl
 	for (int i = 0; i < gridSize; i++)
 	{
 		double x = grid(i);
+		if ( x < KnotSequence(bSplineNumber) || x > KnotSequence(bSplineNumber+MaxSplineOrder) )
+		{
+			continue;
+		}
 		bspline(i) = EvaluateBSpline(x, MaxSplineOrder, bSplineNumber);
 	}
 
@@ -676,6 +680,18 @@ BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid
 	}
 	
 	return f;
+}
+void BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid,
+	VectorTypeCplx buffer)
+{
+	int gridSize = grid.extent(0);
+	int numberOfCoeffs = c.extent(0);
+	buffer = 0.0;
+
+	for (int i = 0; i < numberOfCoeffs; i++)
+	{
+		buffer += c(i) * EvaluateBSplineOnGrid(grid, i);	
+	}
 }
 
 /*

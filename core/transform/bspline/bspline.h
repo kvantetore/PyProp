@@ -149,6 +149,7 @@ public:
 
 	// Reconstruct on given grid
 	VectorTypeCplx ConstructFunctionFromBSplineExpansion(VectorTypeCplx, VectorType); 
+	void ConstructFunctionFromBSplineExpansion(VectorTypeCplx, VectorType, VectorTypeCplx); 
 	
 	// Various small convenient functions
 	int ComputeStartIndex(int, int);

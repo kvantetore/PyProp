@@ -69,7 +69,7 @@ execfile(__path__[0] + "/Interrupt.py")
 
 execfile(__path__[0] + "/BasisExpansion.py")
 
-#execfile(__path__[0] + "/bspline/BSpline.py")
+execfile(__path__[0] + "/bspline/BSpline.py")
 
 #Load propagators
 execfile(__path__[0] + "/propagator/init.py")
