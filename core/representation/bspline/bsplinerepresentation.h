@@ -5,6 +5,7 @@
 #include "../representation.h"
 #include "../../utility/boostpythonhack.h"
 #include "../../transform/bspline/bspline.h"
+#include "../../utility/blitzblas.h"
 
 namespace BSpline
 {
@@ -79,6 +80,16 @@ public:
 		return Grid;
 	}
 
+	virtual blitz::Array<cplx, 2> GetGlobalOverlapMatrixBlas(int rank)
+	{
+		if (rank != GetBaseRank())
+		{
+			cout << "Warning: Trying to get the wrong b-spline rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
+		}
+
+		return BSplineObject->GetBSplineOverlapMatrixBlas();		
+	}
+
 	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank)
 	{
 		if (rank != GetBaseRank())
@@ -121,12 +132,12 @@ public:
 
 	void SetupOverlapMatrix()
 	{
-		blitz::Array<double, 2> overlapBlas = BSplineObject->GetBSplineOverlapMatrixBlas();
+		blitz::Array<cplx, 2> overlapBlas = BSplineObject->GetBSplineOverlapMatrixBlas();
 		int bsplineSize = overlapBlas.extent(0);
 		int bandwidth = this->GetOverlapBandwidth(GetBaseRank());
 		int bw = (bandwidth+1) / 2;
 
-		cout << "Setting up overlap matrix " << bsplineSize << ", " << bandwidth << endl;
+		//cout << "Setting up overlap matrix " << bsplineSize << ", " << bandwidth << endl;
 
 		OverlapMatrixFullCol.resize(bsplineSize, bandwidth);
 		OverlapMatrixFullRow.resize(bandwidth, bsplineSize);
@@ -145,15 +156,15 @@ public:
 				{
 					int Jb = index + band;
 					int Ib = - band;
-					OverlapMatrixFullCol(index, band+bw-1) = overlapBlas(Jb, Ib); 
-					OverlapMatrixFullRow(band+bw-1, index) = overlapBlas(Jb, Ib); 
+					OverlapMatrixFullCol(index, band+bw-1) = real(overlapBlas(Jb, Ib)); 
+					OverlapMatrixFullRow(band+bw-1, index) = real(overlapBlas(Jb, Ib));
 				}
 				else
 				{
 					int Jb = index;
 					int Ib = band;
-					OverlapMatrixFullCol(index, band+bw-1) = overlapBlas(Jb, Ib); 
-					OverlapMatrixFullRow(band+bw-1, index) = overlapBlas(Jb, Ib); 
+					OverlapMatrixFullCol(index, band+bw-1) = real(overlapBlas(Jb, Ib)); 
+					OverlapMatrixFullRow(band+bw-1, index) = real(overlapBlas(Jb, Ib)); 
 				}
 			}
 		}

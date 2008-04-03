@@ -13,10 +13,10 @@ endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
-#TESTFILES :=  python/representation.pyste python/combinedrepresentation.pyste
-TESTFILES :=  python/distributedmodel.pyste
-BSPLINEFILES := python/bspline/bsplinerepresentation.pyste
-BSPLINEREPFILES := python/bspline/bsplinetransform.pyste
+TESTFILES :=  python/representation.pyste python/combinedrepresentation.pyste
+#TESTFILES :=  python/distributedmodel.pyste
+BSPLINEREPFILES := python/bspline/bsplinerepresentation.pyste
+BSPLINEFILES := python/bspline/bsplinetransform.pyste
 
 test: test
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(TESTFILES)

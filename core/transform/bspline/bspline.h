@@ -40,7 +40,7 @@ private:
 	MatrixType ScaledWeights;
 	MatrixType OverlapMatrix;
 	MatrixTypeCplx OverlapMatrixFull;
-	MatrixType OverlapMatrixBlas;
+	MatrixTypeCplx OverlapMatrixBlas;
 
 	//Needed by zpbsvx expert interface
 	MatrixTypeCplx OverlapMatrixExpert;
@@ -87,7 +87,7 @@ public:
 	VectorType GetQuadratureGrid(int i) { return QuadratureGrid(i, blitz::Range::all()); }
 	MatrixType GetBSplineOverlapMatrix() { return OverlapMatrix; }
 	MatrixTypeCplx GetBSplineOverlapMatrixFull() { SetupOverlapMatrixFull(); return OverlapMatrixFull; }
-	MatrixType GetBSplineOverlapMatrixBlas() { SetupOverlapMatrixBlas(); return OverlapMatrixBlas; }
+	MatrixTypeCplx GetBSplineOverlapMatrixBlas() { SetupOverlapMatrixBlas(); return OverlapMatrixBlas; }
 	MatrixTypeCplx GetBSplineOverlapMatrixExpert() { return OverlapMatrixExpert; }
 	VectorType GetQuadratureGridGlobal() { return QuadratureGridGlobal; }
 	VectorType GetQuadratureWeightsGlobal() { return QuadratureWeightsGlobal; }
@@ -157,7 +157,6 @@ public:
 	int ComputeIndexShift(int);
 	int GetGridIndex(int);
 	double ScaleAndTranslate(double, double, double);
-	
 };
 
 

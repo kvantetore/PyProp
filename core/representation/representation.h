@@ -115,6 +115,18 @@ public:
 		}
 	}
 
+	/*
+	 * Returns the overlap matrix S_{i,j}, where the bands are stored BLASwise (zhbmv).
+	 */
+	virtual blitz::Array<cplx, 2> GetGlobalOverlapMatrixBlas(int rank)
+	{
+		throw std::runtime_error("GetOverlapMatrixBlas not implemented for this representation");
+	}
+
+	virtual void MultiplyOverlapMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+	{
+		throw std::runtime_error("MultiplyOverlapMatrix not implemented for this representation");
+	}
 
 	virtual int GetOverlapBandwidth(int rank)
 	{
@@ -125,6 +137,7 @@ public:
 	{
 		return this->GetOverlapBandwidth(rank) == 1;
 	}
+
 
 	//Must override
 	virtual blitz::TinyVector<int, Rank> GetFullShape() = 0;

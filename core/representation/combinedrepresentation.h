@@ -36,6 +36,9 @@ public:
 	Representation1DPtr GetRepresentation(int rank);
 	void SetRepresentation(int rank, Representation1DPtr repr);
 	
+	//Multiply wavefunction by overlap matrix
+	void MultiplyOverlapMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+
 	//Implementation of the representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
