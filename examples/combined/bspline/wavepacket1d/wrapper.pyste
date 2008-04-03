@@ -1,0 +1,11 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("RankOnePotentialEvaluator", "potential.cpp")
+PotentialEvaluatorDynamic = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile RankOne potential for 2D
+PotentialEvaluator("CoulombPotential<1> 1","CoulombPotential_1")
+
+#Compile dynamic potentials for 2D
+PotentialEvaluatorDynamic("LaserPotential<1> 1","LaserPotential_1")
+PotentialEvaluatorDynamic("StarkPotential<1> 1","StarkPotential_1")
+
