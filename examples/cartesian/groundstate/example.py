@@ -17,7 +17,7 @@ import os
 
 #numerical modules
 from numpy import *
-import pylab
+#import pylab
 
 #hdf5
 import tables

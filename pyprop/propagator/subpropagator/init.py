@@ -10,5 +10,5 @@ execfile(__path__[0] + "/propagator/subpropagator/SphericalPropagatorBase.py")
 execfile(__path__[0] + "/propagator/subpropagator/ReducedSphericalPropagator.py")
 execfile(__path__[0] + "/propagator/subpropagator/SphericalPropagator.py")
 
-execfile(__path__[0] + "/propagator/subpropagator/BSplinePropagator.py")
+#execfile(__path__[0] + "/propagator/subpropagator/BSplinePropagator.py")
 

@@ -148,8 +148,16 @@ def FindGroundstate(**args):
 	args['config'] = "groundstate.ini"
 	args['imtime'] = True
 	prop = SetupProblem(**args)
-	
-	for t in prop.Advance(10):
+
+	silent = False
+	if "silent" in args:
+		silent = args["silent"]
+
+	outputCount = 10
+	if silent == True:
+		outputCount = 1
+
+	for t in prop.Advance(outputCount):
 		E = prop.GetEnergy()
 		print "t = %f, E = %.17f" % (t/femtosec_to_au, E)
 

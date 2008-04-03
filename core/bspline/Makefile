@@ -17,10 +17,22 @@ SOURCEFILES  := wrapper.cpp \
 
 OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libbspline
+STATICFILE   := $(PYPROP_ROOT)/core/lib/$(MODULENAME).a
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
 PYPROP_LIB_PATH := $(DESTDIR)
 LIBS         := $(LIBS)
-all: $(MODULEFILE)
+
+#Make static exec if PYPROP_STATIC is set to 1
+ifeq ($(PYPROP_STATIC),1)
+STATIC_DEP = $(STATICFILE)
+endif
+
+#Make shared lib if PYPROP_DYNAMIC is set to 1
+ifeq ($(PYPROP_DYNAMIC),1)
+DYNAMIC_DEP = $(MODULEFILE)
+endif
+
+all: $(DYNAMIC_DEP) $(STATIC_DEP)
 
 $(MODULEFILE): $(OBJECTS)
 	rm -f $(MODULEFILE)
@@ -28,6 +40,11 @@ $(MODULEFILE): $(OBJECTS)
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
+
+
+$(STATICFILE): $(OBJECTS)
+	rm -f $(STATICFILE)
+	ar -cr $(STATICFILE) $(OBJECTS)
 
 clean:
 	rm -rf .deps

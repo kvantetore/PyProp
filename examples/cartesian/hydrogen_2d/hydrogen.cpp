@@ -3,7 +3,7 @@
 #include <core/potential/dynamicpotentialevaluator.h>
 
 template<int Rank>
-class SoftColoumbPotential
+class SoftColoumbPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator

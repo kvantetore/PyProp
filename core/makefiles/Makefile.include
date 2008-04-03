@@ -1,13 +1,21 @@
 
+#Default is use dynamic linking
+PYPROP_STATIC  = 0
+PYPROP_DYNAMIC = 1
+
 #includes
 NUMPY_INCLUDE  := -I$(shell python -c "import numpy;print numpy.__path__[0]")/core/include
 PYTHON_INCLUDE := -I$(shell python -c "import distutils.sysconfig;print distutils.sysconfig.get_python_inc()")
 BOOST_INCLUDE   = $(IF, $(BOOST_ROOT), -I$(BOOST_ROOT), )
 INCLUDE         = -I. $(NUMPY_INCLUDE) $(PYTHON_INCLUDE) $(BOOST_INCLUDE)
-MAKE_DEPENDENCIES := -MD
-STATIC_LINK_DIR    = -Wl,-rpath=$(1)
-ABS_PATH           = $(shell python -c "import os; print os.path.abspath('$(1)'.strip())")
-LD_SHARED         := -shared
+MAKE_DEPENDENCIES = -MD
+STATIC_LINK_DIR   = -Wl,-rpath=$(1)
+ABS_PATH          = $(shell python -c "import os; print os.path.abspath('$(1)'.strip())")
+LD_SHARED         = -shared
+LD_STATIC         = -static
+LD_EXT			  = so
+PIC               = -fPIC
+AR				  = ar
 
 
 #libraries
@@ -17,8 +25,8 @@ LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS)
 
 #propgrams
 PYSTE = pyste $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
-CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB -fPIC 
-LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared 
+CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB $(PIC) 
+LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) $(PIC) 
 
 
 #C++ Compile rule

@@ -12,8 +12,10 @@ void MatrixVectorMultiply(const blitz::Array<cplx, 2> &A, const blitz::Array<cpl
 void MatrixVectorMultiply(const blitz::Array<double, 2> &A, const blitz::Array<double, 1> &v, blitz::Array<double, 1> &w);
 
 //Performs the matrix-vector product x = A y for hermitian banded A
+#ifndef PYPROP_USE_BLAS_ACML
 void MatrixVectorMultiplyHermitianBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 
 	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta);
+#endif	
 
 //Performs the matrix-vector product x = A y for banded A
 void MatrixVectorMultiplyBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 

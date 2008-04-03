@@ -1,8 +1,7 @@
 include makefiles/Makefile.base
-include ../Makefile.platform
 
 SUBDIRS := redirect krylov
-ifdef PYPROP_USE_ODE
+ifeq ($(PYPROP_USE_ODE),1)
 SUBDIRS := $(SUBDIRS) ode
 endif
 ifeq ($(PYPROP_USE_BSPLINE),1)
@@ -36,5 +35,3 @@ bspline:
 bsplinerep: 
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(BSPLINEREPFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
-
-

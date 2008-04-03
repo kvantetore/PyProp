@@ -10,12 +10,20 @@ SOURCEFILES  := wrapper.cpp redirect.cpp
 OBJECTS      := $(SOURCEFILES:.cpp=.o)
 MODULENAME   := libredirect
 MODULEFILE   := $(DESTDIR)/$(MODULENAME).so
+STATICFILE   := $(PYPROP_ROOT)/core/lib/$(MODULENAME).a
 
-all: $(MODULEFILE)
+all: $(MODULEFILE) $(STATICFILE)
 
-$(MODULEFILE): $(OBJECTS)
+$(STATICFILE): $(OBJECTS)
+	rm -f $(STATICFILE)
+	mkdir -p $(PYPROP_ROOT)/core/lib
+	$(AR) cr $(STATICFILE) $(OBJECTS)
+
+$(MODULEFILE): $(OBJECTS) 
 	rm -f $(MODULEFILE)
+ifdef PYPROP_SHARED	
 	$(LD) $(LD_SHARED) -o $(MODULEFILE) $(OBJECTS) $(LIBS) 
+endif	
 
 wrapper.cpp: wrapper.pyste 
 	$(PYSTE) $(INCLUDE) --out=wrapper.cpp --module=$(MODULENAME) wrapper.pyste
@@ -26,6 +34,7 @@ clean:
 	rm -rf wrapper.cpp
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
+	rm -rf $(STATICFILE)
 
 #autodependencies
 DEPDIR        = .deps

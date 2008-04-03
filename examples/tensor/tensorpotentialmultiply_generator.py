@@ -149,6 +149,15 @@ wrapped in Python for high level low intensity parts of the program.
 
 """
 
+storageGeneratorMap = { \
+	"Simple", StorageGeneratorSimple, \
+	"Hermitian", StorageGeneratorHermitian, \
+	"Diagonal", StorageGeneratorDiagonal, \
+	"Identity", StorageGeneratorIdentity, \
+	"Banded", StorageGeneratorBandedBlas, \
+}
+
+
 def PrettyPrintC(str):
 	outStr = ""
 	lines = [line.strip() for line in str.split("\n")]
@@ -377,12 +386,11 @@ class StorageGeneratorHermitian(StorageGeneratorSimple):
 
 #-----------------------------------------------------------------------------------
 
-TODO:
 class StorageGeneratorDiagonal(StorageGeneratorSimple):
 	"""
-	Generator for simple hermitian storage, that is, where the loop 
-	over index pairs is the way to do matrix multiplication, but the 
-	index pairs only include the upper part of the matrix (row < col)
+	Generator for the case where the potential is diagonal in the 
+	current rank, that is the potential is 0 for row != col.
+	In this case, we will only loop over row == col
 	"""
 
 	def __init__(self, systemRank, curRank, innerGenerator):
@@ -391,15 +399,30 @@ class StorageGeneratorDiagonal(StorageGeneratorSimple):
 	def GetLoopingCodeRecursive(self, conjugate):
 		str = """
 			do i%(rank)i = 0, N%(rank)i-1
-				row%(rank)i = i;
-				col%(rank)i = ;
+				row%(rank)i = i%(rank)i
+				col%(rank)i = i%(rank)i
 				%(innerLoop)s
-
-				col%(rank)i = pair%(rank)i(0, i%(rank)i);
-				row%(rank)i = pair%(rank)i(1, i%(rank)i);
-				%(innerLoopConjg)s
 			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate)}
+		return str
+
+#-----------------------------------------------------------------------------------
+
+class StorageGeneratorIdentity(StorageGeneratorSimple):
+	"""
+	Generator for the case where the potential is
+	independent of this rank. In this case, we will use 
+	potential index = 0 for, and loop over all row = col
+	"""
+
+	def GetLoopingCodeRecursive(self, conjugate):
+		str = """
+			i%(rank)i = 0
+			do rowi%(rank)i = 0, sourceExtent%(rank)i-1
+				col%(rank)i = row%(rank)i
+				%(innerLoop)s
+			enddo
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate)}
 		return str
 
 #-----------------------------------------------------------------------------------
@@ -446,7 +469,7 @@ class StorageGeneratorBandedBlas(StorageGeneratorBase):
 
 	def GetLoopingCodeRecursive(self, conjugate):
 		str = ""
-		#This is only if this is the innermost loop
+		#If this is the innermost loop, we can optimize it by calling blas
 		if self.InnerGenerator != None:
 			str += """
 				i%(rank)i = 0
@@ -555,14 +578,7 @@ class TensorMatrixMultiplyGenerator(object):
 		innerGenerator = None
 		for curRank in range(systemRank-1, -1, -1):
 			storageName = storageNameList[curRank]
-			if storageName == "Simple":
-				storageClass = StorageGeneratorSimple
-			elif storageName == "Hermitian":
-				storageClass = StorageGeneratorHermitian
-			elif storageName == "BandedBlas":
-				storageClass = StorageGeneratorBandedBlas
-			else:
-				raise Exception("Unknown storageName %s" % (storageName))
+			storageClass = storageGeneratorMap[storageName]
 		
 			generator = storageClass(systemRank, curRank, innerGenerator)
 			generatorList.insert(0, generator)
@@ -698,9 +714,10 @@ class TensorMatrixMultiplyGenerator(object):
 		return 'def("%(name)s", %(name)s_Wrapper);\n' % {"name": self.GetMethodName()}
 
 generatorPermutationList =  [\
-TensorMatrixMultiplyGenerator(["Simple", "BandedBlas2"]), \
-TensorMatrixMultiplyGenerator(["Simple", "BandedBlas"]), \
+TensorMatrixMultiplyGenerator(["Simple", "Banded"]), \
 ]
+
+available
 
 def PrintFortranCode():
 	for generator in generatorPermutationList:

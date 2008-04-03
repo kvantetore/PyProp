@@ -1,4 +1,3 @@
-
 SUBDIRS = core
 
 all clean pyclean: $(SUBDIRS)

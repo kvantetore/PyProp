@@ -1,8 +1,10 @@
 include makefiles/Makefile.include
+include ../Makefile.platform
 
 #output
-MODULE_NAME	= libcore
-OUTPUT		= ../pyprop/core/$(MODULE_NAME).so
+MODULE_NAME	  = libcore
+OUTPUT		  = ../pyprop/core/$(MODULE_NAME).so
+OUTPUT_STATIC = ./lib/$(MODULE_NAME).a
 
 #pyste source files
 #IMPORTANT: The order of these files ARE significant
@@ -46,6 +48,9 @@ PYSTEOUTPUTDIR   = python/pysteoutput
 PYSTEOUTPUTFILES = $(addprefix $(PYSTEOUTPUTDIR)/_, $(notdir $(PYSTEFILES:%.pyste=%.cpp)))
 PYSTEOUTPUT      = python/wrapper.cpp
 
+STATIC_MAIN     	  := utility/python_main
+STATIC_MAIN_GENERATOR := utility/python_main.py
+
 #C++ source files
 SOURCES= \
 	transform/orthopol/orthopoltools.cpp \
@@ -86,11 +91,38 @@ DEPDIR = .deps
 df = $(DEPDIR)/$(*F)
 DEPENDENCIES=$(addprefix $(DEPDIR)/, $(SOURCEFILES:%.cpp=%.P))
 
-all: $(OUTPUT)
-	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
+#Make static exec if PYPROP_STATIC is set to 1
+STATIC_EXEC = ../pyprop-exec
+ifeq ($(PYPROP_STATIC),1)
+STATIC_DEP = $(OUTPUT_STATIC) $(STATIC_EXEC)
+endif
 
-$(OUTPUT): $(OBJECTS)
-	$(LD) -o $(OUTPUT) $(OBJECTS) $(LIBS) $(LDFLAGS)
+#Make shared lib if PYPROP_DYNAMIC is set to 1
+ifeq ($(PYPROP_DYNAMIC),1)
+DYNAMIC_DEP = $(OUTPUT)
+endif
+
+all: $(STATIC_DEP) $(DYNAMIC_DEP)
+
+#Generate the pyprop-exec file from its python file
+$(STATIC_MAIN).cpp: $(OUTPUT_STATIC) 
+	python $(STATIC_MAIN_GENERATOR) $(STATIC_MAIN).cpp
+
+#Build the static python executable with all modules
+$(STATIC_EXEC): $(OUTPUT_STATIC) $(STATIC_MAIN).cpp $(STATIC_MAIN).o
+	rm -f $(STATIC_EXEC)
+	$(LD) $(LD_STATIC) -o $(STATIC_EXEC) $(STATIC_MAIN).o $(shell ls lib/lib*.a) $(OUTPUT_STATIC) $(LIBS) $(LDFLAGS) $(PYTHON_STATIC_LIBS)
+
+#Build the static library
+$(OUTPUT_STATIC): $(OBJECTS) 
+	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) all); done 
+	rm -rf $(OUTPUT_STATIC)
+	mkdir -p ./lib
+	$(AR) cr $(OUTPUT_STATIC) $(OBJECTS)
+
+#Build the shared library
+$(OUTPUT): $(OBJECTS) 
+	$(LD) $(LD_SHARED) -o $(OUTPUT) $(OBJECTS) $(LIBS) $(LDFLAGS)
 
 #PYSTE-rules
 #_%.cpp : ../%.pyste 

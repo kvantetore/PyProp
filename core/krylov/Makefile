@@ -1,15 +1,15 @@
 include ../../Makefile.platform
 
 SUBDIRS := 
-ifdef PYPROP_USE_EXPOKIT
+ifeq ($(PYPROP_USE_EXPOKIT),1)
 SUBDIRS := $(SUBDIRS) expokit
 endif
 
-ifdef PYPROP_USE_ARPACK
+ifeq ($(PYPROP_USE_ARPACK),1)
 SUBDIRS := $(SUBDIRS) arpack
 endif
 
-ifdef PYPROP_USE_PIRAM
+ifeq ($(PYPROP_USE_PIRAM),1)
 SUBDIRS := $(SUBDIRS) piram
 endif
 

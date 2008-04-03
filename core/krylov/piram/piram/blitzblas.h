@@ -7,7 +7,10 @@
 #ifdef PYPROP_USE_BLAS_MKL
 #include <mkl_cblas.h>
 #else
+extern "C"
+{
 #include <cblas.h>
+}
 #endif
 
 #define BLAS_NAME(x) cblas_ ## x
