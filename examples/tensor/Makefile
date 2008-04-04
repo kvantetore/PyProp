@@ -10,6 +10,8 @@ SOURCEFILES  := wrapper.cpp tensorpotentialmultiply_wrapper.cpp
 OBJECTS      := $(SOURCEFILES:.cpp=.o) tensorpotentialmultiply.o
 MODULENAME   := libpotential
 
+-include $(PYPROP_ROOT)/core/makefiles/Makefile.extension
+
 tensorpotentialmultiply_wrapper.cpp: tensorpotentialmultiply_generator.py
 	python -c "execfile('$<'); PrintWrapperCode()" > $*.cpp
 	
@@ -17,11 +19,10 @@ tensorpotentialmultiply.f: tensorpotentialmultiply_generator.py
 	python -c "execfile('$<'); PrintFortranCode()" > $*.f
 
 tensorpotentialmultiply.o: tensorpotentialmultiply.f
-	gfortran -g -O3 -ffree-form -ffree-line-length-none $< -c -o $*.o -fPIC
+	$(FC) $(FORTRAN_FLAGS) $< -c -o $*.o 
 #	-fbounds-check 
 
-$(MODULENAME).so: $(OBJECTS)
-	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lbspline -lcore -lgfortran -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
+#$(MODULENAME).so: $(OBJECTS)
+#	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lbspline -lcore -lgfortran -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
 
--include $(PYPROP_ROOT)/core/makefiles/Makefile.extension
 

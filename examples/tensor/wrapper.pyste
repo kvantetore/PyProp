@@ -26,3 +26,6 @@ module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\
 
 module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<1>);\n')
 module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<2>);\n')
+
+declaration_code("extern void export_tensormatrixmultiply();\n")
+module_code("export_tensormatrixmultiply();\n")

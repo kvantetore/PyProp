@@ -149,14 +149,6 @@ wrapped in Python for high level low intensity parts of the program.
 
 """
 
-storageGeneratorMap = { \
-	"Simple", StorageGeneratorSimple, \
-	"Hermitian", StorageGeneratorHermitian, \
-	"Diagonal", StorageGeneratorDiagonal, \
-	"Identity", StorageGeneratorIdentity, \
-	"Banded", StorageGeneratorBandedBlas, \
-}
-
 
 def PrettyPrintC(str):
 	outStr = ""
@@ -418,7 +410,7 @@ class StorageGeneratorIdentity(StorageGeneratorSimple):
 	def GetLoopingCodeRecursive(self, conjugate):
 		str = """
 			i%(rank)i = 0
-			do rowi%(rank)i = 0, sourceExtent%(rank)i-1
+			do row%(rank)i = 0, sourceExtent%(rank)i-1
 				col%(rank)i = row%(rank)i
 				%(innerLoop)s
 			enddo
@@ -562,8 +554,15 @@ class StorageGeneratorBandedBlas(StorageGeneratorBase):
 
 #-----------------------------------------------------------------------------------
 
-class TensorMatrixMultiplyGenerator(object):
+storageGeneratorMap = { \
+	"Simple": StorageGeneratorSimple, \
+	"Hermitian": StorageGeneratorHermitian, \
+	"Diagonal": StorageGeneratorDiagonal, \
+	"Identity": StorageGeneratorIdentity, \
+	"Banded": StorageGeneratorBandedBlas, \
+}
 
+class TensorMatrixMultiplyGenerator(object):
 
 	def __init__(self, storageNameList):
 		self.SystemRank = len(storageNameList)
@@ -713,11 +712,20 @@ class TensorMatrixMultiplyGenerator(object):
 	def GetBoostPythonCode(self):
 		return 'def("%(name)s", %(name)s_Wrapper);\n' % {"name": self.GetMethodName()}
 
-generatorPermutationList =  [\
-TensorMatrixMultiplyGenerator(["Simple", "Banded"]), \
-]
+def GetAllPermutations(systemRank, curRank):
+	if curRank == systemRank:
+		yield ()
+	else:
+		for key in storageGeneratorMap.keys():
+			for subperm in GetAllPermutations(systemRank, curRank+1):
+				yield (key,) +  subperm
 
-available
+
+generatorPermutationList = []
+for systemRank in range(1,4+1):
+	for perm in GetAllPermutations(systemRank, 0):
+		generatorPermutationList.append(TensorMatrixMultiplyGenerator(list(perm)))
+
 
 def PrintFortranCode():
 	for generator in generatorPermutationList:

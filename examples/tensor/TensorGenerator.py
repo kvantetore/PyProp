@@ -600,7 +600,7 @@ class TensorPotential(PotentialWrapper):
 		self.PotentialData = None
 		self.Name = None
 		self.psi = psi
-		self.MultiplyAlgorithm = 5
+		self.MultiplyAlgorithm = 4
 
 	def ApplyConfigSection(self, configSection):
 		#Check wheter this is a time dependent potential
@@ -635,7 +635,7 @@ class TensorPotential(PotentialWrapper):
 			pairs1 = self.BasisPairs[1]
 
 			if self.MultiplyAlgorithm == 4:
-				TensorMatrixMultiply_Simple_BandedBlas(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
+				TensorMatrixMultiply_Simple_Banded(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
 			if self.MultiplyAlgorithm == 5:
 				TensorMatrixMultiply_Simple_BandedBlas2(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
 			else:
