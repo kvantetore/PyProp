@@ -79,6 +79,18 @@ cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cp
 	return sum(conj(u) * v);
 }
 
+void MatrixVectorMultiplyHermitianBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 
+	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta)
+{
+	throw std::runtime_error("MatrixVectorMultiplyHermitianBanded not implemented, please use cblas");
+}
+
+void MatrixVectorMultiplyBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 
+	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta, int M)
+{
+	throw std::runtime_error("MatrixVectorMultiplyBanded not implemented, please use cblas");
+}
+
 //explicitly instantiate template functions
 template void VectorElementMultiply(const Array<cplx, 1> &u, const Array<cplx, 1> &v, Array<cplx, 1> &w);
 template void VectorElementMultiply(const Array<cplx, 2> &u, const Array<cplx, 2> &v, Array<cplx, 2> &w);

@@ -180,6 +180,8 @@ cplx CombinedRepresentation<Rank>::InnerProductImpl_Algo2(DataArray d1, DataArra
 	throw std::runtime_error("InnerProduct Not Implemented");
 }
 
+//Include the generated implementations
+#include "combinedrepresentation_generated.cpp"
 
 template class CombinedRepresentation<1>;
 template class CombinedRepresentation<2>;

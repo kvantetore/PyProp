@@ -68,7 +68,6 @@ SOURCES= \
 	transform/transformedgrid/tgridxymat.cpp \
 	wavefunction.cpp \
 	representation/combinedrepresentation.cpp  \
-	representation/combinedrepresentation_generated.cpp \
 	configuration.cpp \
 	transform/radialtransform.cpp \
 	transform/fouriertransform.cpp \
@@ -132,6 +131,8 @@ $(OUTPUT): $(OBJECTS)
 python/pysteoutput/_main.cpp: 
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(PYSTEFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
+
+representation/combinedrepresentation.cpp : representation/combinedrepresentation_generated.cpp
 
 representation/combinedrepresentation_generated.cpp: representation/combinedrepresentation_generator.py
 	python $< > $*.cpp
