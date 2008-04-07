@@ -1,3 +1,4 @@
+import sys
 
 class PiramSolver:
 	"""
@@ -39,6 +40,15 @@ class PiramSolver:
 		if hasattr(configSection, "krylov_debug"):
 			if configSection.krylov_debug == True:	
 				self.Debug = True
+
+		self.CounterOn = False
+		if hasattr(configSection, "counter_on"):
+			if configSection.counter_on == True:
+				self.CounterOn = True
+
+		eigenvalueCount = configSection.krylov_eigenvalue_count
+		maxIterations = configSection.krylov_max_iteration_count
+		self.TotalMaxIterations = (basisSize - eigenvalueCount) * maxIterations
 				
 
 	def Solve(self):
@@ -62,6 +72,19 @@ class PiramSolver:
 				print "Error = ", self.Solver.GetErrorEstimates()
 				print "Convergence = ", self.Solver.GetConvergenceEstimates()
 
+		if self.CounterOn and ProcId == 0:
+
+			if self.Count == 1:
+				infoStr = "Progress:   0 %"
+				sys.stdout.write(infoStr)
+				sys.stdout.flush()
+		
+			if (self.Count * 100) % self.TotalMaxIterations == 0:
+				backStr = "\b" * 15
+				infoStr =  "Progress: %3i %s" % ((self.Count * 100)/ self.TotalMaxIterations, "%")
+				sys.stdout.write(backStr + infoStr)
+				sys.stdout.flush()
+
 
 	def GetEigenvalues(self):
 		"""
@@ -71,7 +94,7 @@ class PiramSolver:
 
 	def GetEigenvector(self, index):
 		"""
-		Returns an eigenvector as an 1d numpy array.
+		Returns an eigenvector as a 1d numpy array.
 		The eigenvectors is normalized in the vector 2-norm, and can therefore not be
 		expected to be normalized in the grid norm. Assign it to a wavefunction and call 
 		psi.Normalize() to get a normalized eigenstate:

@@ -51,5 +51,18 @@ class SphericalPropagatorBase:
 		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
+	def InverseTransform(self, **args):
+		psi = self.psi
+		if "psi" in args:
+			psi = args["psi"]
+		self.Transform.InverseTransform(psi)
+		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
+
+	def ForwardTransform(self, **args):
+		psi = self.psi
+		if "psi" in args:
+			psi = args["psi"]
+		self.Transform.ForwardTransform(psi)
+		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
 
