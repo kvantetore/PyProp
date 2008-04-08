@@ -146,6 +146,15 @@ the computationally intensive loops. Then calling these kernels from C++, where 
 arrays are used to keep track of array dimensions. The C++ functions are in turned
 wrapped in Python for high level low intensity parts of the program.
 
+The code generation is organized as follows:
+
+An instance of TensorPotentialMultiplyGenerator is constructed with a list of storage Ids
+(["Simple", "Hermitian", "Banded"]), one for each rank of the potential.
+
+TensorPotentialMultiplyGenerator will then construct a snippet generator for each rank.
+The snippet generator supplies the TensorPotentialMultiplyGenerator with which function arguments
+it requires, and of which type the should be. It also supplies how to iterate over the potential
+in this rank to perform a MatrixVector multiplication.
 
 """
 
@@ -245,7 +254,7 @@ def GetFortranArrayDeclaration(paramName, rank, dataType, intent):
 #		Generators
 #-----------------------------------------------------------------------------------
 
-class StorageGeneratorBase(object):
+class SnippetGeneratorBase(object):
 	def __init__(self, systemRank, curRank, innerGenerator):
 		self.SystemRank = systemRank
 		self.CurRank = curRank
@@ -290,14 +299,14 @@ class StorageGeneratorBase(object):
 
 #-----------------------------------------------------------------------------------
 
-class StorageGeneratorSimple(StorageGeneratorBase):
+class SnippetGeneratorSimple(SnippetGeneratorBase):
 	"""
 	Generator for simple storage, that is, where the loop over index
 	pairs is the way to do matrix multiplication
 	"""
 
 	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetParameterList(self):
 		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
@@ -351,7 +360,7 @@ class StorageGeneratorSimple(StorageGeneratorBase):
 #-----------------------------------------------------------------------------------
 
 
-class StorageGeneratorHermitian(StorageGeneratorSimple):
+class SnippetGeneratorHermitian(SnippetGeneratorSimple):
 	"""
 	Generator for simple hermitian storage, that is, where the loop 
 	over index pairs is the way to do matrix multiplication, but the 
@@ -359,7 +368,7 @@ class StorageGeneratorHermitian(StorageGeneratorSimple):
 	"""
 
 	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
+		SnippetGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetLoopingCodeRecursive(self, conjugate):
 		str = """
@@ -378,7 +387,7 @@ class StorageGeneratorHermitian(StorageGeneratorSimple):
 
 #-----------------------------------------------------------------------------------
 
-class StorageGeneratorDiagonal(StorageGeneratorSimple):
+class SnippetGeneratorDiagonal(SnippetGeneratorSimple):
 	"""
 	Generator for the case where the potential is diagonal in the 
 	current rank, that is the potential is 0 for row != col.
@@ -386,7 +395,7 @@ class StorageGeneratorDiagonal(StorageGeneratorSimple):
 	"""
 
 	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
+		SnippetGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetLoopingCodeRecursive(self, conjugate):
 		str = """
@@ -400,7 +409,7 @@ class StorageGeneratorDiagonal(StorageGeneratorSimple):
 
 #-----------------------------------------------------------------------------------
 
-class StorageGeneratorIdentity(StorageGeneratorSimple):
+class SnippetGeneratorIdentity(SnippetGeneratorSimple):
 	"""
 	Generator for the case where the potential is
 	independent of this rank. In this case, we will use 
@@ -420,12 +429,12 @@ class StorageGeneratorIdentity(StorageGeneratorSimple):
 #-----------------------------------------------------------------------------------
 
 
-class StorageGeneratorBandedBlas(StorageGeneratorBase):
+class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 	"""
 	"""
 
 	def __init__(self, systemRank, curRank, innerGenerator):
-		StorageGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetParameterList(self):
 		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
@@ -551,18 +560,112 @@ class StorageGeneratorBandedBlas(StorageGeneratorBase):
 				}
 		return str
 
+class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
+	"""
+	"""
+
+	def __init__(self, systemRank, curRank, innerGenerator):
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetParameterList(self):
+		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
+		str += """
+			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
+			integer :: hermRow%(rank)i, hermCol%(rank)i 
+			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
+			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
+		""" % { "rank": self.CurRank }
+		return str
+
+	def GetInitializationCode(self):
+		str = """
+			N%(rank)i = sourceExtent%(rank)i
+
+			sourceStride%(rank)i = 1
+			destStride%(rank)i = 1
+			alpha%(rank)i = scaling
+			beta%(rank)i = 1.0d0
+			col%(rank)i = 0
+			row%(rank)i = 0
+			i%(rank)i = 0
+
+		""" % { "rank":self.CurRank }
+		return str
+
+	def GetLoopingCodeRecursive(self, conjugate):
+		str = ""
+		#If this is the innermost loop, we can optimize it by calling blas
+		if True or self.InnerGenerator != None:
+			str += """
+				i%(rank)i = 0
+				do row%(rank)i = 0, N%(rank)i - 1
+					do col%(rank)i = 0, N%(rank)i - 1
+						%(innerLoop)s	
+						i%(rank)i = i%(rank)i + 1
+					enddo
+				enddo
+				""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate) }
+
+		else:
+			str += """
+				i%(rank)i = 0
+				call zgemv( &
+					"L", & TODO: FIX THIS
+					N%(rank)i, &
+					N%(rank)i, &
+					alpha%(rank)i, &
+					potential(%(potentialIndex)s), &
+					N%(rank)i, &
+					source(%(colIndex)s), &
+					sourceStride%(rank)i, &
+					beta%(rank)i, &
+					dest(%(rowIndex)s), &
+					destStride%(rank)i &
+				)
+
+			""" % \
+			{ \
+				"rank":self.CurRank, \
+				"rowIndex": self.GetIndexString("row"), \
+				"potentialIndex": self.GetIndexString("i"), \
+				"colIndex": self.GetIndexString("col"),  \
+			}
+		return str
+
+	def GetInnerLoop(self, conjugate):
+		str = ""
+		if self.InnerGenerator != None:
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
+		else:
+			#We're at the innermost loop
+			str += """
+				dest(%(rowIndex)s) = dest(%(rowIndex)s) + potential(%(potentialIndex)s) * scaling * source(%(colIndex)s)
+			""" % \
+				{ \
+					"rowIndex": self.GetIndexString("row"), \
+					"potentialIndex": self.GetIndexString("i"), \
+					"colIndex": self.GetIndexString("col"),  \
+				}
+		return str
+
+
 
 #-----------------------------------------------------------------------------------
 
-storageGeneratorMap = { \
-	"Simple": StorageGeneratorSimple, \
-	"Hermitian": StorageGeneratorHermitian, \
-	"Diagonal": StorageGeneratorDiagonal, \
-	"Identity": StorageGeneratorIdentity, \
-	"Banded": StorageGeneratorBandedBlas, \
+snippetGeneratorMap = { \
+	"Simple": SnippetGeneratorSimple, \
+	"Hermitian": SnippetGeneratorHermitian, \
+	"Diagonal": SnippetGeneratorDiagonal, \
+	"Identity": SnippetGeneratorIdentity, \
+	"Banded": SnippetGeneratorBandedBlas, \
+	"Dense": SnippetGeneratorDenseBlas \
 }
 
-class TensorMatrixMultiplyGenerator(object):
+class TensorPotentialMultiplyGenerator(object):
 
 	def __init__(self, storageNameList):
 		self.SystemRank = len(storageNameList)
@@ -577,7 +680,7 @@ class TensorMatrixMultiplyGenerator(object):
 		innerGenerator = None
 		for curRank in range(systemRank-1, -1, -1):
 			storageName = storageNameList[curRank]
-			storageClass = storageGeneratorMap[storageName]
+			storageClass = snippetGeneratorMap[storageName]
 		
 			generator = storageClass(systemRank, curRank, innerGenerator)
 			generatorList.insert(0, generator)
@@ -603,7 +706,7 @@ class TensorMatrixMultiplyGenerator(object):
 	
 	def GetMethodName(self):
 		signature = "_".join(self.StorageNameList)
-		return "TensorMatrixMultiply_%s" % signature
+		return "TensorPotentialMultiply_%s" % signature
 
 	def GetFortranCode(self):
 		systemRank = self.SystemRank 
@@ -716,15 +819,15 @@ def GetAllPermutations(systemRank, curRank):
 	if curRank == systemRank:
 		yield ()
 	else:
-		for key in storageGeneratorMap.keys():
+		for key in snippetGeneratorMap.keys():
 			for subperm in GetAllPermutations(systemRank, curRank+1):
 				yield (key,) +  subperm
 
 
 generatorPermutationList = []
-for systemRank in range(1,4+1):
+for systemRank in range(1,2+1):
 	for perm in GetAllPermutations(systemRank, 0):
-		generatorPermutationList.append(TensorMatrixMultiplyGenerator(list(perm)))
+		generatorPermutationList.append(TensorPotentialMultiplyGenerator(list(perm)))
 
 
 def PrintFortranCode():
@@ -745,7 +848,7 @@ def PrintWrapperCode():
 		str += generator.GetWrapperCode()
 
 	str += """
-	void export_tensormatrixmultiply()
+	void export_tensorpotentialmultiply()
 	{
 		%(exportCode)s
 	}

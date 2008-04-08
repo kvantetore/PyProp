@@ -24,8 +24,8 @@ class GeometryInfoBase(object):
 	def GetBasisPairs(self):
 		raise NotImplementedException()
 
-	def GetOverlapMatrix(self):
-		raise NotImplementedException()
+	def GetStorageId(self):
+		raise NotImplementedException()	
 
 
 
@@ -60,39 +60,167 @@ class BasisfunctionBase(object):
 
 
 #------------------------------------------------------------------------------------
-#                       BSpline
+#                       Common geometries
 #------------------------------------------------------------------------------------
 
-class GeometryInfoBSplineDense(GeometryInfoBase):
+class GeometryInfoCommonDense(GeometryInfoBase):
 	"""
-	Geometry information for BSpline geometries
+	General geometry information for dense matrices
 	"""
-	def __init__(self, bsplineObject):
+	def __init__(self, rankCount, useGrid):
 		#Set member variables 
-		self.BSplineObject = bsplineObject	
+		self.RankCount = rankCount
+		self.UseGrid = useGrid
 
 	def UseGridRepresentation(self):
-		return True
+		return self.UseGrid
 	
 	def GetBasisPairCount(self):
-		return self.BSplineObject.NumberOfBSplines**2
+		return self.RankCount**2 
 		
 	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
-		
-		pairs = zeros((count, 2), dtype=int32)
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		index = 0
-		for i in xrange(self.BSplineObject.NumberOfBSplines):
-			for j in xrange(self.BSplineObject.NumberOfBSplines):
+		for i in xrange(self.RankCount):
+			for j in xrange(self.RankCount):
 				pairs[index, 0] = i
 				pairs[index, 1] = j
 				index+=1
 
 		return pairs
 
+	def GetStorageId(self):
+		return "Dense"
+
+class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
+	"""
+	General geometry information for dense matrices
+	"""
+	def __init__(self, rankCount, useGrid):
+		#Set member variables 
+		self.RankCount = rankCount	
+		self.UseGrid = useGrid
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+	
+	def GetBasisPairCount(self):
+		N = self.RankCount
+		return N * (N + 1) / 2
+		
+	def GetBasisPairs(self):
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		index = 0
+		for i in xrange(self.RankCount):
+			for j in xrange(i, self.RankCount):
+				pairs[index, 0] = i
+				pairs[index, 1] = j
+				index+=1
+
+		return pairs
+
+	def GetStorageId(self):
+		return "Hermitian"
+
+class GeometryInfoCommonDiagonal(GeometryInfoBase):
+	"""
+	General geometry information for diagonal matrices.
+
+	The matrix is diagonal in the sense that all index pairs
+	except where row==col, gives a zero contribution. In this case,
+	only the row==col elements are stored
+
+	Matrices are usually diagonal when the basis functions are the
+	eigenvectors of the potential. They will then also set UseGridRepresentation
+	to false. This is the case for the angular momentum
+	which is diagonal in the spherical harmonic representation
+
+	V(l, r) =  l*(l+1) / (2 * m * r*r)
+
+	"""
+	def __init__(self, rankCount, useGrid):
+		#Set member variables 
+		self.RankCount = rankCount	
+		self.UseGrid = useGrid
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+	
+	def GetBasisPairCount(self):
+		return self.RankCount 
+		
+	def GetBasisPairs(self):
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		index = 0
+		for i in xrange(self.RankCount):
+			pairs[index, 0] = i
+			pairs[index, 1] = i
+			index+=1
+
+		return pairs
+
+	def GetStorageId(self):
+		return "Diagonal"
+
+
+class GeometryInfoCommonIdentity(GeometryInfoBase):
+	"""
+	General geometry information for Identity matrices. 
+
+	By Identity in this setting, we mean that it is independent
+	of the variable in this rank, i.e it will be Identity in 
+	the y rank in the following example
+
+	V(x,y) = f(x)
+
+	For Identity to work properly, the basis should be orthogonal. 
+	In this case, the above function will give 
+				{  f(x) if i'==i
+	V(x,i'i) =  {
+				{  0 if i'!=i
+	if the basis is not orthogonal, we will get the overlap matrix
+	S_{i',i} if i!=i, which will ruin this scheme
+
+	To make less special cases, this class will return 1 
+	index pair, (0, 0)
+	"""
+	def __init__(self, rankCount, useGrid):
+		#Set member variables 
+		self.RankCount = rankCount	
+		self.UseGrid = useGrid
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+	
+	def GetBasisPairCount(self):
+		return 1 
+		
+	def GetBasisPairs(self):
+		pairs = zeros((1, 2), dtype=int32)
+		pairs[0, 0] = 0
+		pairs[0, 1] = 0
+
+		return pairs
+
+	def GetStorageId(self):
+		return "Identity"
+
+
+
+
+#------------------------------------------------------------------------------------
+#                       BSpline
+#------------------------------------------------------------------------------------
+
+
 class GeometryInfoBSplineBanded(GeometryInfoBase):
 	"""
 	Geometry information for BSpline geometries
+	using a very straight forward index-pair map.
+
+	This is only provided to compare with the GeometryInfoBSplineBandedBlas
+	which uses BLAS to obtain superior efficiency.
+
 	"""
 	def __init__(self, bsplineObject):
 		#Set member variables 
@@ -127,10 +255,15 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 			raise Execption()
 
 		return pairs
+	
+	def GetStorageId(self):
+		return "Simple"
 
 class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 	"""
-	Geometry information for BSpline geometries
+	Geometry information for BSpline geometries, the potential
+	is stored in the BLAS hermitian banded format such that 
+	multiplication can be done with blas calls
 	"""
 	def __init__(self, bsplineObject):
 		#Set member variables 
@@ -171,7 +304,9 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 			raise Exeption()
 
 		return pairs
-
+	
+	def GetStorageId(self):
+		return "Banded"
 
 
 from pyprop import InitBSpline
@@ -202,10 +337,14 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
 			raise Exception("TODO: Implement Identity!")
+		elif geom == "banded-old":
+			return GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded":
 			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
-			return GeometryInfoBSplineDense(self.BSplineObject)
+			return GeometryInfoCommonDense(self.BSplineObject.NumberOfBSplines, True)
+		elif geom == "hermitian":
+			return GeometryInfoCommonDense(self.BSplineObject.NumberOfBSplines, True)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
@@ -213,7 +352,8 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		#TODO: Implement for general rank
 
 		pairs = geometryInfo.GetBasisPairs()
-		RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, rank, differentiation)
+		storageId = geometryInfo.GetStorageId()
+		RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, storageId, rank, differentiation)
 
 
 
@@ -221,39 +361,11 @@ class BasisfunctionBSpline(BasisfunctionBase):
 #                       Reduced Spherical Harmonic
 #------------------------------------------------------------------------------------
 
-class GeometryInfoReducedSphHarmDense(GeometryInfoBase):
-	"""
-	Geometry information for Reduced spherical harmonic geometries
-	with no symmetries
-	"""
-	def __init__(self, sphericalHarmonicObject):
-		#Set member variables 
-		self.SphericalHarmonicObject = sphericalHarmonicObject	
-
-	def UseGridRepresentation(self):
-		return True
-	
-	def GetBasisPairCount(self):
-		return (self.SphericalHarmonicObject .GetLMax()+1)**2
-		
-	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
-		basisCount = sqrt(count)
-		
-		pairs = zeros((count, 2), dtype=int32)
-		index = 0
-		for i in xrange(basisCount):
-			for j in xrange(basisCount):
-				pairs[index, 0] = i
-				pairs[index, 1] = j
-				index+=1
-
-		return pairs
-
 class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	"""
 	Geometry information for Reduced spherical harmonic geometries
-	with delta l = +- 1 symetry
+	with delta l = +- 1 symetry, that is for potentials on the form
+	P(x, theta) = f(x) * cos(theta)
 	"""
 	def __init__(self, sphericalHarmonicObject):
 		#Set member variables 
@@ -282,34 +394,43 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 
 		return pairs
 
+	def GetStorageId(self):
+		return "Simple"
 
-class GeometryInfoReducedSphHarmDiagonal(GeometryInfoBase):
+
+class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 	"""
 	Geometry information for Reduced spherical harmonic geometries
-	with \delta l = 0 symmetry. The potential is specified in the 
-	l-basis
+	with delta l = +- 1 symetry, that is for potentials on the form
+	P(x, theta) = f(x) * cos(theta)
+
+	This is the same as SphHarmSelectionRule, only in addition
+	exploiting the hermiticity of the potential.
 	"""
-	def __init__(self, sphericalHarmonicObject):
+	def __init__(self, sphericalHarmonicObject, hermitian):
 		#Set member variables 
 		self.SphericalHarmonicObject = sphericalHarmonicObject	
 
 	def UseGridRepresentation(self):
-		return False
+		return True
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax()+1
+		return self.SphericalHarmonicObject.GetLMax() 
 		
 	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
+		basisSize = self.SphericalHarmonicObject.GetLMax()+1
 		
-		pairs = zeros((count, 2), dtype=int32)
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		index = 0
-		for i in xrange(count):
+		for i in xrange(basisSize-1):
 			pairs[index, 0] = i
-			pairs[index, 1] = i
+			pairs[index, 1] = i+1
 			index+=1
 
 		return pairs
+
+	def GetStorageId(self):
+		return "Hermitian"
 
 
 
@@ -340,11 +461,11 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			raise Exception("TODO: Implement Identity!")
+			return GeometryInfoCommonIdentity(self.LMax+1, True)
 		if geom == "diagonal":
-			return GeometryInfoReducedSphHarmDiagonal(self.SphericalHarmonicObject)
+			return GeometryInfoCommonDiagonal(self.LMax+1, False)
 		elif geom == "dense":
-			return GeometryInfoReducedSphHarmDense(self.SphericalHarmonicObject)
+			return GeometryInfoCommonDense(self.LMax+1, True)
 		elif geom == "dipoleselectionrule":
 			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject)
 		else:
@@ -356,7 +477,8 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		assert(differentiation==0, "Differentiation is not supported on Spherical Harmonics yet")
 
 		pairs = geometryInfo.GetBasisPairs()
-		RepresentPotentialInBasisReducedSphericalHarmonic(self.SphericalHarmonicObject, source, dest, pairs, rank, differentiation)
+		storageId = geometryInfo.GetStorageId()
+		RepresentPotentialInBasisReducedSphericalHarmonic(self.SphericalHarmonicObject, source, dest, pairs, storageId, rank, differentiation)
 
 
 
@@ -610,7 +732,10 @@ class TensorPotential(PotentialWrapper):
 			self.TimeFunction = lambda t: configSection.time_function(configSection, t)
 
 	def SetupStep(self, timestep):
-		self.BasisPairs = [self.GeometryList[i].GetBasisPairs() for i in range(self.psi.GetRank())]
+		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]
+
+		multiplyFuncName = "TensorPotentialMultiply_" + "_".join([geom.GetStorageId() for geom in self.GeometryList])
+		self.MultiplyFunction = eval(multiplyFuncName)
 		
 	def AdvanceStep(self, t, timestep):
 		raise NotImplementedException("TensorPotentials can not be exponentiated directly")
@@ -626,23 +751,16 @@ class TensorPotential(PotentialWrapper):
 			timeScaling = self.TimeFunction(t)
 		
 		#TODO: Implement support for parallelization. 
-		if rank == 1:
-			pairs = self.BasisPairs[0]
-			MultiplyTensorPotential_1(self.PotentialData, timeScaling, pairs, source, dest, self.MultiplyAlgorithm)
 
-		elif rank == 2:
-			pairs0 = self.BasisPairs[0]
-			pairs1 = self.BasisPairs[1]
+		#Construct argument list
+		#Default parameters
+		argList = [self.PotentialData, timeScaling, source, dest]
+		#Parameters for each storage
+		for i, geom in enumerate(self.GeometryList):
+			argList.append(self.BasisPairs[i])
 
-			if self.MultiplyAlgorithm == 4:
-				TensorMatrixMultiply_Simple_Banded(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
-			if self.MultiplyAlgorithm == 5:
-				TensorMatrixMultiply_Simple_BandedBlas2(self.PotentialData, timeScaling, source, dest, pairs0, pairs1)
-			else:
-				MultiplyTensorPotential_2(self.PotentialData, timeScaling, pairs0, pairs1, source, dest, self.MultiplyAlgorithm)
-
-		else:
-			raise NotImplementedException("Only rank=1 and rank=2 is currently implemented for TensorPotential")
+		#Perform multiplication
+		self.MultiplyFunction(*argList)
 	
 	def GetExpectationValue(self, t, timestep):
 		raise NotImplementedException("GetExpectationValue is not implemented for class %s" % (self.__class__))
@@ -737,7 +855,7 @@ class BasisPropagator(PropagatorBase):
 				#We can consolidate curPot and otherPot if all the index pairs are the same
 				canConsolidate = True
 				for rank in range(self.Rank):
-					if not numpy.all(curPot.GeometryList[rank].GetBasisPairs() == otherPot.GeometryList[rank].GetBasisPairs()):
+					if curPot.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
 						canConsolidate = False
 						break
 

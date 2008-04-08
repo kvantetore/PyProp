@@ -267,33 +267,48 @@ def TestInnerProduct():
 
 
 def TestMatrixMultiply():
-	conf = pyprop.Load("config_radial.ini")
-	prop = pyprop.Problem(conf)
-	prop.SetupStep()
+	def SetupProblem(geometry0, geometry1):
+		conf = pyprop.Load("config.ini")
+		conf.Propagation.silent = True
+		conf.KineticEnergy0.geometry0 = geometry0
+		conf.KineticEnergy0.geometry1 = geometry1
+		conf.KineticEnergy1.geometry0 = geometry0
+		conf.KineticEnergy1.geometry1 = geometry1
+		conf.TestPotential.geometry0 = geometry0
+		conf.TestPotential.geometry1 = geometry1
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+		
+		return prop
+
+	algoList = [("Banded", "Banded"), ("Banded-Old", "Banded-Old"), ("Banded-Old", "Banded"), ("Hermitian", "Hermitian"), ("Dense", "Dense")]
 
 	avgCount = 10
 	minCount = 10
 
-	tempPsi = prop.GetTempPsi()
-	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
-	#prop.psi.GetData()[1:,:] = 0
+	baseProp = SetupProblem(*algoList[0])
+	baseProp.psi.GetData()[:] = rand(*baseProp.psi.GetData().shape)
 
-	pot = prop.Propagator.BasePropagator.PotentialList[0]
 
 	algoCount = 6
 
-	for algo in [4,5]: #range(algoCount):
-		pot.MultiplyAlgorithm = algo
+	for geom1, geom2 in algoList: 
+		prop = SetupProblem(geom1, geom2)
+		prop.psi.GetData()[:] = baseProp.psi.GetData()
+		tempPsi = prop.GetTempPsi()
 		tempPsi.GetData()[:] = 0
+		pot = prop.Propagator.BasePropagator.PotentialList[0]
 		pot.MultiplyPotential(tempPsi, 0, 0)
-		#print tempPsi.GetData().real
-		#figure()
-		#pcolormesh(abs(tempPsi.GetData())**2)
 		d = tempPsi.InnerProduct(prop.psi)
-		print "Overlap (Algo %i) = %f" % (algo, abs(d)**2)
+		print "Overlap (Algo %i) = %f" % (algoList.index((geom1, geom2)), abs(d)**2)
 
-	for algo in [4,5]:
-		pot.MultiplyAlgorithm = algo
+	for geom1, geom2 in algoList: 
+		prop = SetupProblem(geom1, geom2)
+		prop.psi.GetData()[:] = baseProp.psi.GetData()
+		tempPsi = prop.GetTempPsi()
+		tempPsi.GetData()[:] = 0
+		pot = prop.Propagator.BasePropagator.PotentialList[0]
+		
 		minT = 10e10
 		for i in range(minCount):
 			tempPsi.GetData()[:] = 0
@@ -304,4 +319,4 @@ def TestMatrixMultiply():
 			t += time.time()
 			if t<minT:
 				minT = t / avgCount
-		print "Algorithm %i: %f" % (algo, minT)
+		print "Time (Algo %i) = %f" % (algoList.index((geom1, geom2)), minT)
