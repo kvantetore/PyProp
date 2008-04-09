@@ -7,7 +7,7 @@ INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
 
 PYSTEFILES   := wrapper.pyste
 SOURCEFILES  := wrapper.cpp tensorpotentialmultiply_wrapper.cpp
-OBJECTS      := $(SOURCEFILES:.cpp=.o) tensorpotentialmultiply.o
+OBJECTS      := $(SOURCEFILES:.cpp=.o) tensorpotentialmultiply.o parallel_multiply.o
 MODULENAME   := libpotential
 
 -include $(PYPROP_ROOT)/core/makefiles/Makefile.extension
@@ -21,8 +21,12 @@ tensorpotentialmultiply.f: tensorpotentialmultiply_generator.py
 tensorpotentialmultiply.o: tensorpotentialmultiply.f
 	$(FC) $(FORTRAN_FLAGS) $< -c -o $*.o 
 #	-fbounds-check 
+#
+parallel_multiply.o: parallel_multiply.f
+	mpif90 $(FORTRAN_FLAGS) $< -c -o $*.o 
+
 
 $(MODULENAME).so: $(OBJECTS)
-	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) $(LIBS) -lbspline -lcore -lgfortran -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
+	$(LD) $(LD_SHARED) -o $(MODULENAME).so $(OBJECTS) -lmpi_f90 -lmpi_f77  $(LIBS) -lbspline -lcore -lgfortran -L$(PYPROP_LIB_PATH) $(call STATIC_LINK_DIR,$(PYPROP_LIB_PATH))
 
 
