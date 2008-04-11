@@ -102,6 +102,7 @@ DYNAMIC_DEP = $(OUTPUT)
 endif
 
 all: $(STATIC_DEP) $(DYNAMIC_DEP)
+	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) all); done 
 
 #Generate the pyprop-exec file from its python file
 $(STATIC_MAIN).cpp: $(OUTPUT_STATIC) 
@@ -114,7 +115,6 @@ $(STATIC_EXEC): $(OUTPUT_STATIC) $(STATIC_MAIN).cpp $(STATIC_MAIN).o
 
 #Build the static library
 $(OUTPUT_STATIC): $(OBJECTS) 
-	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) all); done 
 	rm -rf $(OUTPUT_STATIC)
 	mkdir -p ./lib
 	$(AR) cr $(OUTPUT_STATIC) $(OBJECTS)
