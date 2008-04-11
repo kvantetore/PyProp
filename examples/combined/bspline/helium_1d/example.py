@@ -104,22 +104,6 @@ def FindIonizationProbability(**args):
 	return prop
 
 
-def FindIonizationProbabilityAmplitude():
-	amplitudeList = r_[0:2:0.2]
-	ionizationList = zeros(len(amplitudeList), dtype=double)
-
-	for i in range(len(amplitudeList)):
-		prop = FindIonizationProbability(amplitude=amplitudeList[i])
-		ionizationList[i] = 1.0 - prop.psi.GetNorm()
-
-	plot(amplitudeList, ionizationList, label="Ionization Probability")
-	xlabel("Electric Field Strength")
-	ylabel("Ionization Probability")
-	legend()
-
-	return amplitudeList, ionizationList
-
-
 def GetHamiltonMatrix(prop):
 	size = prop.psi.GetData().shape[0]
 	matrix = zeros((size, size), dtype=complex)
@@ -135,80 +119,4 @@ def GetHamiltonMatrix(prop):
 		matrix[:, i] = tempPsi.GetData()[:,1]
 		
 	return matrix
-
-
-def GetHamiltonMatrixSubspace(prop, l):
-	size = prop.psi.GetData().shape[0]
-	matrix = zeros((size, size), dtype=complex)
-	tempPsi = prop.GetTempPsi()
-
-	for i in range(size):
-		prop.psi.GetData()[:] = 0
-		prop.psi.GetData()[i,l] = 1
-
-		tempPsi.GetData()[:] = 0
-		prop.MultiplyHamiltonian(tempPsi)
-		
-		matrix[:, i] = tempPsi.GetData()[:,l]
-		
-	return matrix
-
-
-def TestInnerProduct1D(**args):
-
-	state1 = 0
-	state2 = 1
-	if 'states' in args:
-		state1 = args['states'][0]
-		state2 = args['states'][1]
-	
-	prop = SetupProblem(**args)
-
-	M = GetHamiltonMatrix1D(prop)
-	E, V = eig(M)
-	I = argsort(E)
-
-	tempPsi = prop.psi.Copy()
-	tempPsi.GetData()[:] = V[:,I[state1]]
-	tempPsi.Normalize()
-	prop.psi.GetData()[:] = V[:,I[state2]]
-	prop.psi.Normalize()
-
-	figure()
-	plot(abs(tempPsi.GetData()))
-	plot(abs(prop.psi.GetData()))
-
-	print "Energies = ", abs(E[I[state1]]), abs(E[I[state2]])
-	print "Innerproduct <%i|%i> = %1.15e" % (state1, state2, abs(prop.psi.InnerProduct(tempPsi)))
-
-	return prop
-
-
-def TestPhaseAccuracy(**args):
-	
-	state1 = 0
-	state2 = 1
-	if 'states' in args:
-		state1 = args['states'][0]
-		state2 = args['states'][1]
-	
-	prop = SetupProblem(**args)
-
-	M = GetHamiltonMatrixSubspace(prop, 0)
-	E, V = eig(M)
-	I = argsort(E)
-
-	prop.psi.GetData()[:,0] = V[:,I[state1]] + V[:,I[state2]]
-	prop.psi.Normalize()
-
-	initialPsi = prop.psi.Copy()
-
-	prop.initialCorr = []
-	prop.outputTimes = []
-	for t in prop.Advance(200): 
-		#print "t=%.2f, N=%.15f" % (t, prop.psi.GetNorm())
-		prop.initialCorr.append( prop.psi.InnerProduct(initialPsi) )
-		prop.outputTimes.append( t )
-
-	return prop
 

@@ -80,11 +80,6 @@ public:
 	double a6;
 
 
-	/*
-	 * Called once with the corresponding config section
-	 * from the configuration file. Do all one time set up routines
-	 * here.
-	 */
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("z", Z);
@@ -96,16 +91,6 @@ public:
 		config.Get("a6", a6);
 	}
 
-	/*
-	 * Called for every grid point at every time step. 
-	 *
-	 * Some general tips for max efficiency:
-	 * - If possible, move static computations to ApplyConfigSection.
-	 * - Minimize the number of branches ("if"-statements are bad)
-	 * - Minimize the number of function calls (sin, cos, exp, are bad)
-	 * - Long statements can confuse the compiler, consider making more 
-	 *   simpler statements
-	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double r = std::fabs(pos(0));
@@ -144,11 +129,6 @@ public:
 	//Potential parameters
 	double FieldStrength;
 
-	/*
-	 * Called once with the corresponding config section
-	 * from the configuration file. Do all one time set up routines
-	 * here.
-	 */
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("field_strength", FieldStrength);
@@ -178,7 +158,6 @@ public:
 	//Potential parameters
 	double Charge;
 	double SoftParam;
-	double PotentialMinimum;
 
 	/*
 	 * Called once with the corresponding config section
@@ -189,7 +168,6 @@ public:
 	{
 		config.Get("charge", Charge);
 		config.Get("soft_param", SoftParam);
-		config.Get("potential_minimum", PotentialMinimum);
 	}
 
 	/*
@@ -199,9 +177,9 @@ public:
 	{
 		double z1 = std::fabs(pos(0));
 		double z2 = std::fabs(pos(1));
-		double z12 = std::fabs(z1 - z2);
+		double z12 = z1 - z2;
 
-		return Charge / ( z12 + PotentialMinimum * exp(-SoftParam * z12) );
+		return Charge / sqrt( z12 * z12 + SoftParam);
 	}
 };
 
