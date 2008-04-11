@@ -5,7 +5,7 @@ import sys
 import os
 
 #load pyprop
-pyprop_path = "../../../"
+pyprop_path = "pyprop"
 sys.path.insert(1, os.path.abspath(pyprop_path))
 import pyprop
 pyprop = reload(pyprop)
