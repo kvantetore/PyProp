@@ -1,0 +1,12 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluatorDynamic = Template("DynamicPotentialEvaluator", "potential.cpp")
+PotentialEvaluator = Template("RankOnePotentialEvaluator", "potential.cpp")
+
+#Compile rank1 potential for 2D and 4D
+PotentialEvaluator("QuantumDotPotential<1> 2","QuantumDotPotential_2")
+PotentialEvaluator("QuantumDotPotential<1> 4","QuantumDotPotential_4")
+
+#Compile rank 2 and 4 electron correlation
+PotentialEvaluatorDynamic("TwoElectronCorrelation<2> 2", "TwoElectronCorrelation_2") 
+PotentialEvaluatorDynamic("TwoElectronCorrelation<4> 4", "TwoElectronCorrelation_4") 
+
