@@ -12,8 +12,8 @@ template<int Rank>
 class KrylovBase
 {
 public:
-	Wavefunction<Rank> *Psi;
-	Wavefunction<Rank> *TempPsi;
+	typename Wavefunction<Rank>::Ptr Psi;
+	typename Wavefunction<Rank>::Ptr TempPsi;
 	object MultiplyCallback;
 	double CurTime;
 	double TimeStep;

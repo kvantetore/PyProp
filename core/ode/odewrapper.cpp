@@ -30,8 +30,8 @@ void MultiplyHamiltonian(double *t, cplx *inBuffer, cplx *outBuffer, void *data)
 
 	//Some local variables for simplicity
 	OdeWrapper<Rank> *propagator = static_cast< OdeWrapper<Rank>* >(data);
-	Wavefunction<Rank> *psi = propagator->Psi;
-	Wavefunction<Rank> *tempPsi = propagator->TempPsi;
+	typename Wavefunction<Rank>::Ptr psi = propagator->Psi;
+	typename Wavefunction<Rank>::Ptr tempPsi = propagator->TempPsi;
 
 	//Wrap the data buffers in blitz arrays and initialize outdata to 0
 	DataVector shape = psi->GetData().shape();;
@@ -112,16 +112,16 @@ void OdeWrapper<Rank>::Setup(const Wavefunction<Rank> &psi)
 
 
 template<int Rank>
-void OdeWrapper<Rank>::AdvanceStep(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi, cplx dt, double t)
+void OdeWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t)
 {
-	int n = 2 * psi.GetData().size();	
+	int n = 2 * psi->GetData().size();	
 
 	//in, out
-	cplx* in = psi.GetData().data();
+	cplx* in = psi->GetData().data();
 
 	//Set up class variables needed for callback
-	this->Psi = &psi;
-	this->TempPsi = &tempPsi;
+	this->Psi = psi;
+	this->TempPsi = tempPsi;
 	this->MultiplyCallback = callback;
 
 	//double tout = t + sqrt(sqr(imag(dt) + sqr(real(dt))));

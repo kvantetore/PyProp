@@ -10,6 +10,7 @@ template<int Rank>
 class Wavefunction
 {
 public:
+	typedef boost::shared_ptr< Wavefunction<Rank> > Ptr;
 	typedef boost::shared_ptr< Representation<Rank> > RepresentationPtr;
 	typedef blitz::Array<cplx, Rank> DataArray;
 	typedef blitz::TinyVector<int, Rank> IndexVector;
@@ -98,8 +99,8 @@ public:
 	 * Computing values throughout the propagation (i.e. autocorrelation)
 	 * Use CopyDeep() if you need to propagate on the copied wavefunction.
 	 */
-	Wavefunction<Rank>* Copy() const;
-	Wavefunction<Rank>* CopyDeep() const;
+	Ptr Copy() const;
+	Ptr CopyDeep() const;
 	
 };
 

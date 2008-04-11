@@ -26,8 +26,8 @@ void MultiplyHamiltonian(void *data, cplx *inBuffer, cplx *outBuffer)
 
 	//Some local variables for simplicity
 	KrylovBase<Rank> *propagator = static_cast<KrylovBase<Rank>*>(data);
-	Wavefunction<Rank> *psi = propagator->Psi;
-	Wavefunction<Rank> *tempPsi = propagator->TempPsi;
+	typename Wavefunction<Rank>::Ptr psi = propagator->Psi;
+	typename Wavefunction<Rank>::Ptr tempPsi = propagator->TempPsi;
 
 	//Wrap the data buffers in blitz arrays and initialize outdata to 0
 	DataVector shape = psi->GetData().shape();

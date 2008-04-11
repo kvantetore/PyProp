@@ -7,15 +7,24 @@ try:
 except:
 	#print "Warning: could not load EXPOKIT wrapper (%s)" % sys.exc_info()[1]
 	pass
+
 try:
 	from libarpack import *
 except:
 	#print "Warning: could not load ARPACK wrapper (%s)" % sys.exc_info()[1]
 	pass
+
+try:
+	from libpamp import *
+except:
+	#print "Warning: could not load pAMP wrapper (%s)" % sys.exc_info()[1]
+	pass
+
 try:
 	from libpiram import *
 except:
 	print "Warning: could not load pIRAM wrapper (%s)" % sys.exc_info()[1]
+
 try:
 	from libode import *
 except:

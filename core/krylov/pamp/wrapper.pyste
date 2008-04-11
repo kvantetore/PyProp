@@ -1,0 +1,5 @@
+PampWrapper = Template("krylov::PampWrapper", "pampwrapper.h");
+PampWrapper("1");
+PampWrapper("2");
+PampWrapper("3");
+PampWrapper("4");

@@ -217,7 +217,7 @@ def BandedMatrixVectorMultiply(localMatrix, size, bands, localSource, localDest,
 
 def test():
 	xmax = 2.
-	N = 50
+	N = 5
 	bands = 3 
 	
 	dx = 2 * xmax / N
@@ -275,8 +275,9 @@ def test():
 			print ""
 		pypar.barrier()
 	
-	BandedMatrixVectorMultiply(localPackedA, N, bands, localPsi, localTestOutput, ProcCount, ProcId)
-	#BandedMatrixMultiply_Wrapper(localPackedA.reshape(localPackedA.size), 1.0, localPsi, localTestOutput)
+	#BandedMatrixVectorMultiply(localPackedA, N, bands, localPsi, localTestOutput, ProcCount, ProcId)
+	#BandedMatrixMultiply_Wrapper(localPackedA.reshape(localPackedA.size), 1.0, localPsi, localTestOutput, N, bands)
+	TensorPotentialMultiply_BandedDistributed(localPackedA.reshape(localPackedA.size), 1.0, localPsi, localTestOutput, N, bands)
 
 	#the verdict
 	for i in range(ProcCount):

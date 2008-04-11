@@ -100,11 +100,10 @@ void Wavefunction<Rank>::SetData(Wavefunction<Rank>::DataArray &newData)
 
 
 template<int Rank>
-Wavefunction<Rank>* 
-Wavefunction<Rank>::Copy() const
+typename Wavefunction<Rank>::Ptr Wavefunction<Rank>::Copy() const
 {
 	/* Set up representations and stuff */
-	Wavefunction<Rank>* newPsi = new Wavefunction();
+	Ptr newPsi = Ptr(new Wavefunction());
 	newPsi->SetRepresentation(this->Repr->Copy());
 	
 	/* Allocate data */
@@ -118,11 +117,10 @@ Wavefunction<Rank>::Copy() const
 }
 
 template<int Rank>
-Wavefunction<Rank>* 
-Wavefunction<Rank>::CopyDeep() const
+typename Wavefunction<Rank>::Ptr Wavefunction<Rank>::CopyDeep() const 
 {
 	/* Set up representations and stuff */
-	Wavefunction<Rank>* newPsi = new Wavefunction();
+	Ptr newPsi = Ptr(new Wavefunction());
 	newPsi->SetRepresentation(this->Repr->Copy());
 	
 	/* Allocate data */

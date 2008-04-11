@@ -7,6 +7,8 @@ from numpy import array
 from numpy import complex
 from numpy import zeros
 
+from pylab import *
+
 execfile("TensorGenerator.py")
 
 #------------------------------------------------------------------------------------
@@ -178,13 +180,27 @@ def TestStability():
 	for t in prop.Advance(50):
 		print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, prop.psi.GetNorm(), abs(prop.psi.InnerProduct(initPsi))**2)
 
+import pypar
+
 def Propagate(algo=1):
 	conf = pyprop.Load("config_radial.ini")
+	conf.Propagation.silent = pyprop.ProcId != 0
 	prop = pyprop.Problem(conf)
 	prop.psi.GetRepresentation().Algorithm = algo
 	prop.SetupStep()
+
+	#tempPsi = prop.GetTempPsi()
+	#prop.MultiplyHamiltonian(tempPsi)
+	#for i in range(pyprop.ProcCount):
+	#	if i == pyprop.ProcId:
+	#		print "proc 0"
+	#		print tempPsi.GetData()
+	#	pypar.barrier()
+	#return
+
 	for t in prop.Advance(10):
 		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
+	prop.Propagator.PampWrapper.PrintStatistics()
 
 	initPsi = prop.psi
 
@@ -206,6 +222,18 @@ def Propagate(algo=1):
 	corrList = []
 	normList = []
 
+	prop.AdvanceStep()
+	print "hei %i" % pyprop.ProcId
+
+	#for i in range(pyprop.ProcCount):
+	#	if i == pyprop.ProcId:
+	#		print "proc %i" % i
+	#		print prop.Propagator.BasePropagator.PotentialList[-1].PotentialData.shape
+	#	pypar.barrier()
+	#return
+
+	prop.AdvanceStep()
+
 	for t in prop.Advance(20):
 		n = prop.psi.GetNorm()
 		if n != n:
@@ -214,10 +242,13 @@ def Propagate(algo=1):
 		timeList.append(t)
 		normList.append(n)
 		corrList.append(c)
-		print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
-		hold(False)
-		pcolormesh(abs(prop.psi.GetData())**2)
-		draw()
+		if pyprop.ProcId == 0:
+			print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
+		#hold(False)
+		#pcolormesh(abs(prop.psi.GetData())**2)
+		#draw()
+	
+	prop.Propagator.PampWrapper.PrintStatistics()
 
 	prop.CorrelationList = array(corrList)
 	prop.NormList = array(normList)
@@ -289,9 +320,6 @@ def TestMatrixMultiply():
 	baseProp = SetupProblem(*algoList[0])
 	baseProp.psi.GetData()[:] = rand(*baseProp.psi.GetData().shape)
 
-
-	algoCount = 6
-
 	for geom1, geom2 in algoList: 
 		prop = SetupProblem(geom1, geom2)
 		prop.psi.GetData()[:] = baseProp.psi.GetData()
@@ -300,6 +328,58 @@ def TestMatrixMultiply():
 		pot = prop.Propagator.BasePropagator.PotentialList[0]
 		pot.MultiplyPotential(tempPsi, 0, 0)
 		d = tempPsi.InnerProduct(prop.psi)
+		print "Overlap (Algo %i) = %f" % (algoList.index((geom1, geom2)), abs(d)**2)
+
+	for geom1, geom2 in algoList: 
+		prop = SetupProblem(geom1, geom2)
+		prop.psi.GetData()[:] = baseProp.psi.GetData()
+		tempPsi = prop.GetTempPsi()
+		tempPsi.GetData()[:] = 0
+		pot = prop.Propagator.BasePropagator.PotentialList[0]
+		
+		minT = 10e10
+		for i in range(minCount):
+			tempPsi.GetData()[:] = 0
+			t = - time.time()
+			for j in range(avgCount):
+				pot.MultiplyPotential(tempPsi, 0, 0)
+				#prop.MultiplyHamiltonian(tempPsi)
+			t += time.time()
+			if t<minT:
+				minT = t / avgCount
+		print "Time (Algo %i) = %f" % (algoList.index((geom1, geom2)), minT)
+
+
+def TestMatrixMultiply2():
+	def SetupProblem(geometry0, geometry1):
+		conf = pyprop.Load("config_radial.ini")
+		conf.Propagation.silent = True
+		conf.Propagation.grid_potential_list = ["LaserPotential"]
+		conf.LaserPotential.geometry0 = geometry0
+		conf.LaserPotential.geometry1 = geometry1
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+		
+		return prop
+
+	algoList = [("BandedDistributed", "Banded"), ("DipoleSelectionRule", "Banded")]
+
+	avgCount = 10
+	minCount = 10
+
+	baseProp = SetupProblem(*algoList[0])
+	baseProp.psi.GetData()[:] = rand(*baseProp.psi.GetData().shape)
+
+	for geom1, geom2 in algoList: 
+		prop = SetupProblem(geom1, geom2)
+		prop.psi.GetData()[:] = baseProp.psi.GetData()
+		tempPsi = prop.GetTempPsi()
+		tempPsi.GetData()[:] = 0
+		pot = prop.Propagator.BasePropagator.PotentialList[0]
+		pot.MultiplyPotential(tempPsi, 0, 0)
+		print pot.MultiplyFunction.__name__
+		d = tempPsi.InnerProduct(prop.psi)
+		d = tempPsi.InnerProduct(tempPsi)
 		print "Overlap (Algo %i) = %f" % (algoList.index((geom1, geom2)), abs(d)**2)
 
 	for geom1, geom2 in algoList: 

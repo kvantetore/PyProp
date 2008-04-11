@@ -21,8 +21,8 @@ private:
 	piram::pIRAM<cplx> Solver;
 
 	//Temporary member variables
-	Wavefunction<Rank> *Psi;
-	Wavefunction<Rank> *TempPsi;
+	typename Wavefunction<Rank>::Ptr Psi;
+	typename Wavefunction<Rank>::Ptr TempPsi;
 	object Callback;
 
 	//test
@@ -30,8 +30,8 @@ private:
 
 public:
 	void ApplyConfigSection(const ConfigSection &config);
-	void Setup(const Wavefunction<Rank> &psi);
-	void Solve(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi);
+	void Setup(const typename Wavefunction<Rank>::Ptr psi);
+	void Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi);
 
 	void SetupResidual(blitz::Array<cplx, 1> &residual);
 	void ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);

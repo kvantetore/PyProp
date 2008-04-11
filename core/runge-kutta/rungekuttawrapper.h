@@ -26,8 +26,8 @@ public:
 
 	typedef blitz::Array<cplx, 1> DataArray1D;
 
-	Wavefunction<Rank> *Psi;
-	Wavefunction<Rank> *TempPsi;
+	typename Wavefunction<Rank>::Ptr Psi;
+	typename Wavefunction<Rank>::Ptr TempPsi;
 	object MultiplyCallback;
 	bool ImTime;
 
@@ -46,8 +46,8 @@ private:
 
 public:
 	void ApplyConfigSection(const ConfigSection &config);
-	void Setup(const Wavefunction<Rank> &psi);
-	void AdvanceStep(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi, cplx dt, double t);
+	void Setup(typename Wavefunction<Rank>::Ptr psi);
+	void AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t);
 };
 }
 

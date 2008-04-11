@@ -27,6 +27,8 @@ class GeometryInfoBase(object):
 	def GetStorageId(self):
 		raise NotImplementedException()	
 
+	def GetMultiplyArguments(self):
+		raise NotImplementedException()
 
 
 class BasisfunctionBase(object):
@@ -90,7 +92,12 @@ class GeometryInfoCommonDense(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Dense"
+		return "Simple"
+
+	def GetMultiplyArguments(self):
+		if not hasattr(self, "BasisPairs"):
+			self.BasisPairs = self.GetBasisPairs()
+		return [self.BasisPairs]
 
 class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 	"""
@@ -121,6 +128,11 @@ class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 
 	def GetStorageId(self):
 		return "Hermitian"
+
+	def GetMultiplyArguments(self):
+		if not hasattr(self, "BasisPairs"):
+			self.BasisPairs = self.GetBasisPairs()
+		return [self.BasisPairs]
 
 class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	"""
@@ -162,6 +174,45 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Diagonal"
 
+	def GetMultiplyArguments(self):
+		return []
+
+
+class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
+	"""
+	"""
+	def __init__(self, rankCount, bandCount, useGrid):
+		#Set member variables 
+		self.RankCount = rankCount	
+		self.BandCount = bandCount
+		self.UseGrid = useGrid
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+	
+	def GetBasisPairCount(self):
+		return self.RankCount * (2 * self.BandCount + 1)
+		
+	def GetBasisPairs(self):
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		index = 0
+		for i in xrange(self.RankCount):
+			for j in xrange(i-self.BandCount, i+self.BandCount+1):
+				if 0 <= j < self.RankCount:
+					packedRow = j
+					packedCol = self.BandCount - j + i
+
+					index = packedRow * (2 * self.BandCount + 1) + packedCol
+					pairs[index, 0] = i
+					pairs[index, 1] = j
+
+		return pairs
+
+	def GetStorageId(self):
+		return "BandedDistributed"
+
+	def GetMultiplyArguments(self):
+		return [self.RankCount, self.BandCount]
 
 class GeometryInfoCommonIdentity(GeometryInfoBase):
 	"""
@@ -205,7 +256,8 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Identity"
 
-
+	def GetMultiplyArguments(self):
+		return []
 
 
 #------------------------------------------------------------------------------------
@@ -259,6 +311,11 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simple"
 
+	def GetMultiplyArguments(self):
+		if not hasattr(self, "BasisPairs"):
+			self.BasisPairs = self.GetBasisPairs()
+		return [self.BasisPairs]
+
 class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 	"""
 	Geometry information for BSpline geometries, the potential
@@ -307,6 +364,9 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 	
 	def GetStorageId(self):
 		return "Banded"
+
+	def GetMultiplyArguments(self):
+		return []
 
 
 from pyprop import InitBSpline
@@ -397,6 +457,12 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simple"
 
+	def GetMultiplyArguments(self):
+		if not hasattr(self, "BasisPairs"):
+			self.BasisPairs = self.GetBasisPairs()
+		return [self.BasisPairs]
+
+
 
 class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 	"""
@@ -415,7 +481,7 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 		return True
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax() 
+		return self.SphericalHarmonicObject.GetLMax()
 		
 	def GetBasisPairs(self):
 		basisSize = self.SphericalHarmonicObject.GetLMax()+1
@@ -431,6 +497,11 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 
 	def GetStorageId(self):
 		return "Hermitian"
+
+	def GetMultiplyArguments(self):
+		if not hasattr(self, "BasisPairs"):
+			self.BasisPairs = self.GetBasisPairs()
+		return [self.BasisPairs]
 
 
 
@@ -468,6 +539,8 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 			return GeometryInfoCommonDense(self.LMax+1, True)
 		elif geom == "dipoleselectionrule":
 			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject)
+		elif geom == "bandeddistributed":
+			return GeometryInfoCommonBandedDistributed(self.LMax+1, 1, True)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
@@ -580,13 +653,15 @@ class TensorPotentialGenerator(object):
 		fullShape = repr.GetFullShape()
 		if repr.GetDistributedModel().IsSingleProc():
 			distribution = []
+			origDistribution = []
 		else:
+			origDistribution = list(repr.GetDistributedModel().GetDistribution())
 			distribution = list(repr.GetDistributedModel().GetDistribution())
 		transpose = repr.GetDistributedModel().GetTranspose() 
 
 		#5) Represent the potential in the bases
 		source = psi.GetData()
-		for rank in range(self.Rank-1,-1,-1):
+		for rank in reversed(range(self.Rank)):
 			basis = self.BasisList[rank]
 			geometryInfo = geometryList[rank]
 
@@ -637,6 +712,21 @@ class TensorPotentialGenerator(object):
 				source = dest
 
 		#done!
+
+		#Transpose back to the original distribution
+		if distribution != origDistribution:
+			#Create shape of transposed function and allocate dest buffer
+			transposedShape = transpose.CreateDistributedShape(fullShape, array(origDistribution, dtype=int32))
+			dest = zeros(transposedShape, dtype=complex)
+
+			#Transpose
+			transpose.Transpose(fullShape, source, array(distribution, int), dest, array(origDistribution, int))
+
+			#Use the new buffer
+			source = dest
+			distribution = origDistribution
+
+
 		return source
 
 
@@ -757,7 +847,7 @@ class TensorPotential(PotentialWrapper):
 		argList = [self.PotentialData, timeScaling, source, dest]
 		#Parameters for each storage
 		for i, geom in enumerate(self.GeometryList):
-			argList.append(self.BasisPairs[i])
+			argList += geom.GetMultiplyArguments()
 
 		#Perform multiplication
 		self.MultiplyFunction(*argList)
@@ -903,7 +993,7 @@ class BasisPropagator(PropagatorBase):
 				#Use the current dest as the next source, and vice versa
 				source, dest = dest, source
 				hasNonOrthogonalBasis = True
-
+		
 		#Make sure we end up with the correct array in destPsi
 		if hasNonOrthogonalBasis:
 			destPsi.GetData()[:] = source

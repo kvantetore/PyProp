@@ -3,10 +3,10 @@
 
 extern "C"
 {
-	void FORTRAN_NAME(bandedmatrixmultiply)(cplx* potential, int* potentialExtent0, double* scaling, cplx* source, int* sourceExtent0, cplx* dest, int* destExtent0, int* procCount0, int* procId0, int* communicator0);
+	void FORTRAN_NAME(bandedmatrixmultiply)(cplx* potential, int* potentialExtent0, double* scaling, cplx* source, int* sourceExtent0, cplx* dest, int* destExtent0, int* globalSize0, int* bands0, int* procCount0, int* procId0, int* communicator0);
 }
 
-void BandedMatrixMultiply_Wrapper(Array< cplx, 1 > potential, double scaling, Array< cplx, 1 > source, Array< cplx, 1 > dest)
+void BandedMatrixMultiply_Wrapper(Array< cplx, 1 > potential, double scaling, Array< cplx, 1 > source, Array< cplx, 1 > dest, int globalSize0, int bands0)
 {
 	int potentialExtent0 = potential.extent(0);
 	int sourceExtent0 = source.extent(0);
@@ -17,7 +17,7 @@ void BandedMatrixMultiply_Wrapper(Array< cplx, 1 > potential, double scaling, Ar
 	MPI_Comm_size(MPI_COMM_WORLD, &procCount);
 	MPI_Fint commHandle = MPI_Comm_c2f(MPI_COMM_WORLD);
 	
-	FORTRAN_NAME(bandedmatrixmultiply)(potential.data(), &potentialExtent0, &scaling, source.data(), &sourceExtent0, dest.data(), &destExtent0, &procCount, &procId, &commHandle);
+	FORTRAN_NAME(bandedmatrixmultiply)(potential.data(), &potentialExtent0, &scaling, source.data(), &sourceExtent0, dest.data(), &destExtent0, &globalSize0, &bands0, &procCount, &procId, &commHandle);
 }
 
 

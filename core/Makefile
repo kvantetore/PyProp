@@ -13,7 +13,8 @@ endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
-TESTFILES :=  python/representation.pyste python/combinedrepresentation.pyste
+TESTFILES :=  python/wavefunction.pyste
+
 #TESTFILES :=  python/distributedmodel.pyste
 BSPLINEREPFILES := python/bspline/bsplinerepresentation.pyste
 BSPLINEFILES := python/bspline/bsplinetransform.pyste

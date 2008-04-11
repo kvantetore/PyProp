@@ -186,7 +186,7 @@ def PrettyPrintFortran(str):
 		if line.startswith("enddo") or line.startswith("endif") or line.startswith("end subroutine"):
 			indent -= 1
 
-		outStr += "\t" * indent	+ line + "\n"
+		outStr += "    " * indent + line + "\n"
 
 		if line.startswith("if ") or line.startswith("do ") or line.startswith("subroutine"):
 			indent += 1
@@ -279,7 +279,7 @@ class SnippetGeneratorBase(object):
 		"""
 		raise Exception("NotImplemented")
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		"""
 		Returns the looping code. All variables created should be postfixed by
 		self.CurRank to indicate that they belong to this rank. At the very least, 
@@ -293,8 +293,8 @@ class SnippetGeneratorBase(object):
 		"""
 		raise Exception("NotImplemented")
 
-	def GetIndexString(self, indexPrefix):
-		return ", ".join([indexPrefix + str(i) for i in range(self.SystemRank-1,-1,-1)])
+	def GetIndexString(self, indexList):
+		return ", ".join(reversed(indexList))
 
 
 #-----------------------------------------------------------------------------------
@@ -325,32 +325,39 @@ class SnippetGeneratorSimple(SnippetGeneratorBase):
 		""" % { "rank":self.CurRank }
 		return str
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = """
 			do i%(rank)i = 0, N%(rank)i-1
 				row%(rank)i = pair%(rank)i(0, i%(rank)i);
 				col%(rank)i = pair%(rank)i(1, i%(rank)i);
 				%(innerLoop)s
 			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate) }
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex) }
 		return str
 
-	def GetInnerLoop(self, conjugate):
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		subDestIndex = destIndex + ["row%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
 		str = ""
 		if self.InnerGenerator != None:
-			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
 		else:
 			#We're at the innermost loop
 			conjg = ""
 			if conjugate:
 				conjg = "conjg"
 			str += """
-				dest(%(rowIndex)s) = dest(%(rowIndex)s) + %(conjg)s(potential(%(potentialIndex)s)) * scaling * source(%(colIndex)s)
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
 			""" % \
 				{ \
-					"rowIndex": self.GetIndexString("row"), \
-					"potentialIndex": self.GetIndexString("i"), \
-					"colIndex": self.GetIndexString("col"),  \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
 					"conjg": conjg, \
 				}
 		return str
@@ -370,7 +377,7 @@ class SnippetGeneratorHermitian(SnippetGeneratorSimple):
 	def __init__(self, systemRank, curRank, innerGenerator):
 		SnippetGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = """
 			do i%(rank)i = 0, N%(rank)i-1
 				row%(rank)i = pair%(rank)i(0, i%(rank)i);
@@ -381,7 +388,13 @@ class SnippetGeneratorHermitian(SnippetGeneratorSimple):
 				row%(rank)i = pair%(rank)i(1, i%(rank)i);
 				%(innerLoopConjg)s
 			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
+		""" % \
+		    { \
+				"rank":self.CurRank, \
+		        "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+		        "innerLoopConjg": self.GetInnerLoop(not conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+			}
+
 		return str
 
 
@@ -394,17 +407,28 @@ class SnippetGeneratorDiagonal(SnippetGeneratorSimple):
 	In this case, we will only loop over row == col
 	"""
 
+	def GetParameterList(self):
+		parameterList = []
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+		str = ""
+		str += """
+			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i
+		""" % { "rank": self.CurRank }		
+		return str
+
 	def __init__(self, systemRank, curRank, innerGenerator):
 		SnippetGeneratorSimple.__init__(self, systemRank, curRank, innerGenerator)
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = """
 			do i%(rank)i = 0, N%(rank)i-1
 				row%(rank)i = i%(rank)i
 				col%(rank)i = i%(rank)i
 				%(innerLoop)s
 			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate)}
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex) }
 		return str
 
 #-----------------------------------------------------------------------------------
@@ -416,14 +440,25 @@ class SnippetGeneratorIdentity(SnippetGeneratorSimple):
 	potential index = 0 for, and loop over all row = col
 	"""
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetParameterList(self):
+		parameterList = []
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+		str = ""
+		str += """
+			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i
+		""" % { "rank": self.CurRank }
+		return str
+
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = """
 			i%(rank)i = 0
 			do row%(rank)i = 0, sourceExtent%(rank)i-1
 				col%(rank)i = row%(rank)i
 				%(innerLoop)s
 			enddo
-		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate)}
+		""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex) }
 		return str
 
 #-----------------------------------------------------------------------------------
@@ -437,11 +472,11 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetParameterList(self):
-		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
+		parameterList = []
 		return parameterList
 
 	def GetParameterDeclarationCode(self):
-		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
+		str = ""
 		str += """
 			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
 			integer :: hermRow%(rank)i, hermCol%(rank)i 
@@ -468,7 +503,7 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 		""" % { "rank":self.CurRank }
 		return str
 
-	def GetLoopingCodeRecursive(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = ""
 		#If this is the innermost loop, we can optimize it by calling blas
 		if self.InnerGenerator != None:
@@ -512,9 +547,18 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 					
 					i%(rank)i = i%(rank)i + (- bsplineCount%(rank)i + hermRow%(rank)i + bandCount%(rank)i)
 				enddo
-			""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate), "innerLoopConjg": self.GetInnerLoop(not conjugate)}
+			""" % \
+			    { \
+					"rank":self.CurRank, \
+			        "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+			        "innerLoopConjg": self.GetInnerLoop(not conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+				}
 
 		else:
+			subDestIndex = destIndex + ["0"]
+			subSourceIndex = sourceIndex + ["0"]
+			subPotentialIndex = potentialIndex + ["0"]
+
 			str += """
 				i%(rank)i = 0
 				call zhbmv( &
@@ -522,45 +566,56 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 					bsplineCount%(rank)i, &
 					subDiagonals%(rank)i, &
 					alpha%(rank)i, &
-					potential(%(potentialIndex)s), &
+					%(potential)s(%(potentialIndex)s), &
 					bandCount%(rank)i, &
-					source(%(colIndex)s), &
+					%(source)s(%(colIndex)s), &
 					sourceStride%(rank)i, &
 					beta%(rank)i, &
-					dest(%(rowIndex)s), &
+					%(dest)s(%(rowIndex)s), &
 					destStride%(rank)i &
 				)
-
 			""" % \
-			{ \
-				"rank":self.CurRank, \
-				"rowIndex": self.GetIndexString("row"), \
-				"potentialIndex": self.GetIndexString("i"), \
-				"colIndex": self.GetIndexString("col"),  \
-			}
+				{ \
+					"rank": self.CurRank, \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjugate, \
+				}
 		return str
 
-	def GetInnerLoop(self, conjugate):
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		subDestIndex = destIndex + ["row%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
 		str = ""
 		if self.InnerGenerator != None:
-			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
 		else:
 			#We're at the innermost loop
 			conjg = ""
 			if conjugate:
 				conjg = "conjg"
 			str += """
-				dest(%(rowIndex)s) = dest(%(rowIndex)s) + %(conjg)s(potential(%(potentialIndex)s)) * scaling * source(%(colIndex)s)
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
 			""" % \
 				{ \
-					"rowIndex": self.GetIndexString("row"), \
-					"potentialIndex": self.GetIndexString("i"), \
-					"colIndex": self.GetIndexString("col"),  \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
 					"conjg": conjg, \
 				}
 		return str
+	
 
-class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
+class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 	"""
 	"""
 
@@ -568,89 +623,320 @@ class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
 		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
 
 	def GetParameterList(self):
-		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
+		parameterList = []
+		parameterList += [("globalSize%i" % self.CurRank, "scalar", "integer")]
+		parameterList += [("bands%i" % self.CurRank, "scalar", "integer")]
 		return parameterList
 
 	def GetParameterDeclarationCode(self):
-		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
+
+		tempDimension = ["0:destExtent%i-1" % i for i in range(self.CurRank+1, self.SystemRank)]
+		sendTempDim = ["0:1"] + tempDimension 
+		recvTempDim = ["0:0"] + tempDimension 
+
+		str = ""
 		str += """
-			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
-			integer :: hermRow%(rank)i, hermCol%(rank)i 
-			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
-			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
-		""" % { "rank": self.CurRank }
+			integer, intent(in) :: globalSize%(rank)i, bands%(rank)i
+			integer :: i%(rank)i, row%(rank)i, col%(rank)i
+			
+			!temporary arrays TODO:FIX TEMPS
+			complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
+			complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
+			integer :: tempIndex%(rank)i
+			
+			!Row/Col indices for calculating row vector product
+			integer :: globalPackedRow%(rank)i, globalPackedCol%(rank)i 
+			integer :: localPackedRow%(rank)i, localPackedCol%(rank)i 
+			integer :: localStartCol%(rank)i, localEndCol%(rank)i
+			integer :: globalCol%(rank)i, globalRow%(rank)i 
+			
+			!Indices to map between local and global index ranges
+			integer :: globalStartIndex%(rank)i, paddedLocalSize%(rank)i, localSize%(rank)i
+			
+			!MPI variables
+			integer :: deltaProc%(rank)i, sourceProc%(rank)i, destProc%(rank)i
+			integer :: error%(rank)i, tag%(rank)i, sendSize%(rank)i 
+			integer :: recvRequest%(rank)i, sendRequest%(rank)i 
+			integer :: waitRecieve%(rank)i, waitSend%(rank)i
+			integer :: procId%(rank)i, procCount%(rank)i, communicator%(rank)i
+		
+		 	!Indices for the recieved data
+		  	integer :: sourceRow%(rank)i, sourceGlobalStartIndex%(rank)i, sourceGlobalRow%(rank)i
+		""" % \
+			{ \
+				"rank": self.CurRank, \
+				"recvTempDim": self.GetIndexString(recvTempDim), \
+				"sendTempDim": self.GetIndexString(sendTempDim), \
+			}
 		return str
 
 	def GetInitializationCode(self):
 		str = """
-			N%(rank)i = sourceExtent%(rank)i
+			call MPI_Comm_rank(MPI_COMM_WORLD, procId%(rank)i, error%(rank)i)
+			call MPI_Comm_size(MPI_COMM_WORLD, procCount%(rank)i, error%(rank)i)
+			communicator%(rank)i = MPI_COMM_WORLD
 
-			sourceStride%(rank)i = 1
-			destStride%(rank)i = 1
-			alpha%(rank)i = scaling
-			beta%(rank)i = 1.0d0
-			col%(rank)i = 0
-			row%(rank)i = 0
-			i%(rank)i = 0
-
-		""" % { "rank":self.CurRank }
-		return str
-
-	def GetLoopingCodeRecursive(self, conjugate):
-		str = ""
-		#If this is the innermost loop, we can optimize it by calling blas
-		if True or self.InnerGenerator != None:
-			str += """
-				i%(rank)i = 0
-				do row%(rank)i = 0, N%(rank)i - 1
-					do col%(rank)i = 0, N%(rank)i - 1
-						%(innerLoop)s	
-						i%(rank)i = i%(rank)i + 1
-					enddo
-				enddo
-				""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate) }
-
-		else:
-			str += """
-				i%(rank)i = 0
-				call zgemv( &
-					"L", & TODO: FIX THIS
-					N%(rank)i, &
-					N%(rank)i, &
-					alpha%(rank)i, &
-					potential(%(potentialIndex)s), &
-					N%(rank)i, &
-					source(%(colIndex)s), &
-					sourceStride%(rank)i, &
-					beta%(rank)i, &
-					dest(%(rowIndex)s), &
-					destStride%(rank)i &
-				)
-
-			""" % \
+			localSize%(rank)i = sourceExtent%(rank)i
+			globalStartIndex%(rank)i = GetGlobalStartIndex(globalSize%(rank)i, procCount%(rank)i, procId%(rank)i)
+			paddedLocalSize%(rank)i = GetPaddedLocalSize(globalSize%(rank)i, procCount%(rank)i)
+			
+			sourceRow%(rank)i = -1
+			sendSize%(rank)i = %(sendSize)s
+			tag%(rank)i = 0
+		""" % \
 			{ \
-				"rank":self.CurRank, \
-				"rowIndex": self.GetIndexString("row"), \
-				"potentialIndex": self.GetIndexString("i"), \
-				"colIndex": self.GetIndexString("col"),  \
+				"rank": self.CurRank, \
+				"sendSize": " * ".join(["1"] + ["destExtent%i" %i for i in range(self.CurRank+1, self.SystemRank)])
 			}
 		return str
 
-	def GetInnerLoop(self, conjugate):
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		innerRankCount = self.SystemRank - self.CurRank - 1
+		str = ""
+		#If this is the innermost loop, we can optimize it by calling blas
+		str += """
+			waitRecieve%(rank)i = 0
+			waitSend%(rank)i = 0
+			tempIndex%(rank)i = 1
+
+			!Iterate over all rows of the matrix for the columns stored on proc
+			do row%(rank)i = -bands%(rank)i, paddedLocalSize%(rank)i+bands%(rank)i-1
+			
+				!----------------------------------------------------------------------------
+				!                         Computation
+				!----------------------------------------------------------------------------
+				
+				! Perform multiplication of the local part of the vector on 
+				! the part of the array that this proc has
+				sendTemp%(rank)i(%(allSendTempIndex)s) = 0
+				globalRow%(rank)i = row%(rank)i + globalStartIndex%(rank)i
+
+				! If the local row-index actually maps to a row in the global matrix
+				! (otherwise we're on a proc near the boundary)
+				if (0.le.globalRow%(rank)i.and.globalRow%(rank)i.lt.globalSize%(rank)i) then
+					
+					!Loop over all cols that are stored locally
+					localStartCol%(rank)i = max(0, row%(rank)i - bands%(rank)i)
+					localEndCol%(rank)i = min(row%(rank)i + bands%(rank)i + 1, localSize%(rank)i)
+					do col%(rank)i = localStartCol%(rank)i, localEndCol%(rank)i-1
+						globalCol%(rank)i = col%(rank)i + globalStartIndex%(rank)i
+						
+						!PackedRows and -Cols are for C-style arrays
+						!i.e. row indexes the max strided rank
+						!     col indexes the min strided rank
+						!in fortran packed(col, row) gives the expected value
+						call MapRowToColPacked(globalRow%(rank)i, globalCol%(rank)i, globalSize%(rank)i, bands%(rank)i, globalPackedRow%(rank)i, globalPackedCol%(rank)i)
+						
+						localPackedRow%(rank)i = globalPackedRow%(rank)i - globalStartIndex%(rank)i
+						localPackedCol%(rank)i = globalPackedCol%(rank)i
+						
+						!index in local packed array
+						i%(rank)i = localPackedRow%(rank)i * (2 * bands%(rank)i + 1) + localPackedCol%(rank)i
+						
+						!write(*,*) globalPackedRow%(rank)i, globalPackedCol%(rank)i, i%(rank)i
+						
+						!Matrix Vector Multiplication
+						%(innerLoop)s
+					enddo
+				endif
+				
+				!----------------------------------------------------------------------------
+				!                         Communication
+				!----------------------------------------------------------------------------
+				
+				! Theese are the sends and recvs from the previous step. wait for them
+				! now instead of in the previous iteration in order to try to overlap computation 
+				! and communication
+				if (waitSend%(rank)i .eq. 1) then
+					call MPI_Wait(sendRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+				endif
+				if (waitRecieve%(rank)i .eq. 1) then
+					call MPI_Wait(recvRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+					%(dest)s(%(sourceDestIndex)s) = %(dest)s(%(sourceDestIndex)s) + recvTemp%(rank)i(%(allRecvTempIndex)s)
+				endif
+				
+				! Find out which procs to send and recv from
+				destProc%(rank)i = GetOwnerProcId(globalSize%(rank)i, procCount%(rank)i, globalRow%(rank)i)
+				deltaProc%(rank)i = destProc%(rank)i - procId%(rank)i
+				sourceProc%(rank)i = procId%(rank)i - deltaProc%(rank)i
+				
+				!Check if we're to recieve some data this interation
+				waitRecieve%(rank)i = %(rank)i
+				sourceGlobalStartIndex%(rank)i = GetGlobalStartIndex(globalSize%(rank)i, procCount%(rank)i, sourceProc%(rank)i)
+				sourceGlobalRow%(rank)i = row%(rank)i + sourceGlobalStartIndex%(rank)i
+				if (0.le.sourceGlobalRow%(rank)i.and.sourceGlobalRow%(rank)i.lt.globalSize%(rank)i.and.0.le.sourceProc%(rank)i.and.sourceProc%(rank)i.lt.procCount%(rank)i.and.deltaProc%(rank)i.ne.0) then
+					!write(*,*) "Recieving ", procId%(rank)i, " <- ", sourceProc%(rank)i
+					call MPI_Irecv(recvTemp%(rank)i, sendSize%(rank)i, MPI_DOUBLE_COMPLEX, sourceProc%(rank)i, tag%(rank)i, communicator%(rank)i, recvRequest%(rank)i, error%(rank)i)
+					waitRecieve%(rank)i = 1
+					!Calculate where we want to store this value
+					sourceRow%(rank)i =  sourceGlobalRow%(rank)i - globalStartIndex%(rank)i
+				endif
+				
+				!If we have computed a value this iteration we need to store it
+				!locally or send it to another proc
+				waitSend%(rank)i = 0
+				if (0.le.globalRow%(rank)i.and.globalRow%(rank)i.lt.globalSize%(rank)i) then
+					if (deltaProc%(rank)i.eq.0) then
+						%(dest)s(%(destIndex)s) = %(dest)s(%(destIndex)s) + sendTemp%(rank)i(%(allSendTempIndex)s)
+					else
+						!Store the value we're sending in a temp value
+						!TODO: Eliminiate this copy by alternating between
+						!temp arrays
+						call MPI_ISend(sendTemp%(rank)i(%(zeroSendTempIndex)s), sendSize%(rank)i, MPI_DOUBLE_COMPLEX, destProc%(rank)i, tag%(rank)i, communicator%(rank)i, sendRequest%(rank)i, error%(rank)i)
+						waitSend%(rank)i = 1
+					endif
+				endif
+
+				!Use the next tempIndex for the next computation
+				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 1)
+			enddo
+			
+			! Theese are the sends and recvs from the last step. 
+			if (waitSend%(rank)i .eq. 1) then
+				call MPI_Wait(sendRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+			endif
+			if (waitRecieve%(rank)i .eq. 1) then
+				call MPI_Wait(recvRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+				%(dest)s(%(sourceDestIndex)s) = %(dest)s(%(sourceDestIndex)s) + recvTemp%(rank)i(%(allRecvTempIndex)s)
+			endif
+
+
+		""" % \
+			{ \
+				"rank":self.CurRank, \
+				"innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+				"source" : sourceName, \
+				"dest" : destName, 
+				"potential": potentialName, \
+				"sourceDestIndex": self.GetIndexString( destIndex + ["sourceRow%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"destIndex": self.GetIndexString( destIndex + ["row%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"allSendTempIndex": self.GetIndexString( ["tempIndex%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"allRecvTempIndex": self.GetIndexString( ["0"] + [":"] * innerRankCount ), \
+				"zeroSendTempIndex": self.GetIndexString( ["tempIndex%i" % self.CurRank] + ["0"] * innerRankCount ), \
+			}
+
+		return str
+
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		destName = "sendTemp%i" % self.CurRank
+		subDestIndex = ["tempIndex%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
 		str = ""
 		if self.InnerGenerator != None:
-			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
 		else:
 			#We're at the innermost loop
+			conjg = ""
+			if conjugate:
+				conjg = "conjg"
 			str += """
-				dest(%(rowIndex)s) = dest(%(rowIndex)s) + potential(%(potentialIndex)s) * scaling * source(%(colIndex)s)
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
 			""" % \
 				{ \
-					"rowIndex": self.GetIndexString("row"), \
-					"potentialIndex": self.GetIndexString("i"), \
-					"colIndex": self.GetIndexString("col"),  \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjg, \
 				}
 		return str
+
+
+#class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
+#	"""
+#	"""
+#
+#	def __init__(self, systemRank, curRank, innerGenerator):
+#		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+#
+#	def GetParameterList(self):
+#		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
+#		return parameterList
+#
+#	def GetParameterDeclarationCode(self):
+#		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
+#		str += """
+#			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
+#			integer :: hermRow%(rank)i, hermCol%(rank)i 
+#			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
+#			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
+#		""" % { "rank": self.CurRank }
+#		return str
+#
+#	def GetInitializationCode(self):
+#		str = """
+#			N%(rank)i = sourceExtent%(rank)i
+#
+#			sourceStride%(rank)i = 1
+#			destStride%(rank)i = 1
+#			alpha%(rank)i = scaling
+#			beta%(rank)i = 1.0d0
+#			col%(rank)i = 0
+#			row%(rank)i = 0
+#			i%(rank)i = 0
+#
+#		""" % { "rank":self.CurRank }
+#		return str
+#
+#	def GetLoopingCodeRecursive(self, conjugate):
+#		str = ""
+#		#If this is the innermost loop, we can optimize it by calling blas
+#		if True or self.InnerGenerator != None:
+#			str += """
+#				i%(rank)i = 0
+#				do row%(rank)i = 0, N%(rank)i - 1
+#					do col%(rank)i = 0, N%(rank)i - 1
+#						%(innerLoop)s	
+#						i%(rank)i = i%(rank)i + 1
+#					enddo
+#				enddo
+#				""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate) }
+#
+#		else:
+#			str += """
+#				i%(rank)i = 0
+#				call zgemv( &
+#					"L", & TODO: FIX THIS
+#					N%(rank)i, &
+#					N%(rank)i, &
+#					alpha%(rank)i, &
+#					potential(%(potentialIndex)s), &
+#					N%(rank)i, &
+#					source(%(colIndex)s), &
+#					sourceStride%(rank)i, &
+#					beta%(rank)i, &
+#					dest(%(rowIndex)s), &
+#					destStride%(rank)i &
+#				)
+#
+#			""" % \
+#			{ \
+#				"rank":self.CurRank, \
+#				"rowIndex": self.GetIndexString("row"), \
+#				"potentialIndex": self.GetIndexString("i"), \
+#				"colIndex": self.GetIndexString("col"),  \
+#			}
+#		return str
+#
+#	def GetInnerLoop(self, conjugate):
+#		str = ""
+#		if self.InnerGenerator != None:
+#			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
+#		else:
+#			#We're at the innermost loop
+#			str += """
+#				dest(%(rowIndex)s) = dest(%(rowIndex)s) + potential(%(potentialIndex)s) * scaling * source(%(colIndex)s)
+#			""" % \
+#				{ \
+#					"rowIndex": self.GetIndexString("row"), \
+#					"potentialIndex": self.GetIndexString("i"), \
+#					"colIndex": self.GetIndexString("col"),  \
+#				}
+#		return str
 
 
 
@@ -662,7 +948,8 @@ snippetGeneratorMap = { \
 	"Diagonal": SnippetGeneratorDiagonal, \
 	"Identity": SnippetGeneratorIdentity, \
 	"Banded": SnippetGeneratorBandedBlas, \
-	"Dense": SnippetGeneratorDenseBlas \
+#	"Dense": SnippetGeneratorDenseBlas, \
+    "BandedDistributed": SnippetGeneratorBandedDistributed, \
 }
 
 class TensorPotentialMultiplyGenerator(object):
@@ -727,7 +1014,9 @@ class TensorPotentialMultiplyGenerator(object):
 		str = """
 		subroutine %(methodName)s(%(parameterString)s)
 		
+			use IndexTricks
 			implicit none
+			include "mpif.h"
 			include "parameters.f"
 		""" % { "methodName": self.GetMethodName(), "rank": systemRank, "parameterString": parameterString}
 		str += GetFortranArrayDeclaration("potential", systemRank, "complex (kind=dbl)", "in")
@@ -736,7 +1025,7 @@ class TensorPotentialMultiplyGenerator(object):
 		str += GetFortranArrayDeclaration("dest", systemRank, "complex (kind=dbl)", "inout")
 		str += "".join([gen.GetParameterDeclarationCode() for gen in generatorList])
 		str += "".join([gen.GetInitializationCode() for gen in generatorList])
-		str += generatorList[0].GetLoopingCodeRecursive(False)
+		str += generatorList[0].GetLoopingCodeRecursive(conjugate=False, destName="dest", destIndex=[], sourceName="source", sourceIndex=[], potentialName="potential", potentialIndex=[])
 		str += """
 		end subroutine %(methodName)s
 		""" % { "methodName": self.GetMethodName() }
@@ -820,8 +1109,9 @@ def GetAllPermutations(systemRank, curRank):
 		yield ()
 	else:
 		for key in snippetGeneratorMap.keys():
-			for subperm in GetAllPermutations(systemRank, curRank+1):
-				yield (key,) +  subperm
+			if key != "BandedDistributed" or curRank == 0:
+				for subperm in GetAllPermutations(systemRank, curRank+1):
+					yield (key,) +  subperm
 
 
 generatorPermutationList = []
@@ -831,6 +1121,87 @@ for systemRank in range(1,2+1):
 
 
 def PrintFortranCode():
+	commonFortran = """
+		module IndexTricks
+			contains
+			subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
+				implicit none
+				integer, intent(in) :: row, col, fullSize, bands
+				integer, intent(out) :: packedRow, packedCol
+
+				packedRow = col
+				packedCol = bands - col + row
+			end subroutine
+
+			function GetGlobalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
+				implicit none
+				integer, intent(in) :: fullSize, procCount, procId
+				integer :: rest, paddedSize, globalStartIndex
+
+				paddedSize	= fullSize
+				rest = mod(fullSize, procCount)
+				if (rest .ne. 0) then
+					paddedSize = paddedSize + procCount - rest
+				endif
+				globalStartIndex = (paddedSize / procCount) * procId
+
+					return
+			end function	
+
+			function GetDistributedSize(fullSize, procCount, procId) result(distributedSize)
+				implicit none
+				integer, intent(in) :: fullSize, procCount, procId
+				integer :: rest, distributedSize, paddedDistribSize
+
+				rest = mod(fullSize, procCount)
+				if (rest.eq.0) then
+						distributedSize = fullSize / procCount;
+				else
+					paddedDistribSize = (fullSize + procCount - rest) / procCount 
+					distributedSize = fullSize - paddedDistribSize * procId
+					distributedSize = max(distributedSize, 0)
+					distributedSize = min(distributedSize, paddedDistribSize)
+				endif
+
+				return
+			end function 
+
+			function GetPaddedLocalSize(fullSize, procCount) result(localSize)
+				implicit none
+				integer, intent(in) :: fullSize, procCount
+				integer :: rest, paddedSize, localSize
+
+				paddedSize = fullSize
+				rest = mod(fullSize, procCount)
+				if (rest .ne. 0) then
+					paddedSize = paddedSize + procCount - rest
+				endif
+				localSize = paddedSize / procCount
+
+				return
+			end function 
+
+			function GetOwnerProcId(fullSize, procCount, globalIndex) result(procId)
+				implicit none
+				integer, intent(in) :: fullSize, procCount, globalIndex
+				integer :: rest, paddedSize, procId, localSize
+
+				include "parameters.f"
+					
+				paddedSize = fullSize
+				rest = mod(fullSize, procCount)
+				if (rest .ne. 0) then
+					paddedSize = paddedSize + procCount - rest
+				endif
+				localSize = paddedSize / procCount
+				!Fortran does not 
+				procId = floor( real(globalIndex, kind=dbl) / real(localSize, kind=dbl) )
+
+				return
+			end function	
+		 
+	end module
+	"""
 	for generator in generatorPermutationList:
 		print generator.GetFortranCode()
 

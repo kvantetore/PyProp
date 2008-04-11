@@ -1,5 +1,6 @@
-#ifndef PIRAM_BLITZLAPACK_H
-#define PIRAM_BLITZLAPACK_H
+
+#ifndef _BLITZLAPACK_H
+#define _BLITZLAPACK_H
 
 #include <blitz/array.h>
 #include <complex>
@@ -31,6 +32,7 @@ extern "C"
 
 	void LAPACK_NAME(zgetri)( int* N, cplx* A, int* LDA, int* IPIV, cplx* WORK, int* LWORK, int* INFO );
 	void LAPACK_NAME(zgetrf)( int* N, int* M, cplx* A, int* LDA, int* IPIV, int* INFO );
+	void LAPACK_NAME(zgetrs)( char* TRANS, int* N, int* NRHS, cplx* A, int* LDA, int* IPIV, cplx* B, int* LDB, int* INFO );
 
 	void LAPACK_NAME(zgbtrs)( char* TRANS, int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO ); 
 	void LAPACK_NAME(zgbtrf)( int* M, int* N, int* KL, int* KU, cplx* AB, int* LDAB, int* IPIV, int* INFO );
@@ -90,40 +92,84 @@ public:
 		MatrixEquilibriumDisabled
 	};
 
+	/*
+	 * General Dense
+	 */
+	//LU Factorization
 	int CalculateMatrixInverse(MatrixType &matrix, VectorTypeInt &pivot);
 	int CalculateLUFactorization(MatrixType &matrix, VectorTypeInt &pivot);
+	int SolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide);
+	int SolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, VectorType &rightHandSide)
+	{
+		TinyVector<int, 2> shape(1, rightHandSide.extent(0));
+		TinyVector<int, 2> stride(rightHandSide.extent(0)*rightHandSide.stride(0), rightHandSide.stride(0));
+		MatrixType rhsMatrix(rightHandSide.data, shape, stride, neverDeleteData);
+		return SolveGeneralFactored(transpose, factoredMatrix, pivot, rhsMatrix);
+	}
 
+	//Eigenvector Factorization
 	int CalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 			MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
 			MatrixType &rightEigenvectors);
 
-	int CalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
-			MatrixType &matrix, DoubleVectorType &eigenvalues);
-
+	//QR Factorization
 	int CalculateQRFactorization(MatrixType &matrix, VectorType &reflectors);
-	//void CompleteQRFactorization(MatrixType R, VectorType reflectors, MatrixType Q);
 	int CompleteQRFactorization(MatrixType &matrix, VectorType &reflectors);
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix );
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, VectorType &vector );
 
+	
+	/*
+	 * Hermitian Dense
+	 */
+	int CalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
+			MatrixType &matrix, DoubleVectorType &eigenvalues);
+
+
+	/* 
+	 * Hermitian Banded
+	 */
 	int CalculateEigenvectorFactorizationGeneralizedHermitianBanded(bool calculateEigenvetors, HermitianStorage storage, MatrixType &matrixA, 
 			MatrixType &matrixB, DoubleVectorType &eigenvalues, MatrixType &eigenvectors);
 
-	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
 
-	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char* EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, DoubleVectorType forwardErrorEstimate, DoubleVectorType backwardErrorEstimate);
-
+	/*
+	 * Positive Definite Banded
+	 */
 	int CalculateCholeskyFactorizationPositiveDefiniteBanded(HermitianStorage storage, MatrixType equationMatrix);
 	int SolvePositiveDefiniteBandedFactored(HermitianStorage storage, MatrixType factoredMatrix, MatrixType rightHandSide);
+	int SolvePositiveDefiniteBandedFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, VectorType &rightHandSide)
+	{
+		TinyVector<int, 2> shape(1, rightHandSide.extent(0));
+		TinyVector<int, 2> stride(rightHandSide.extent(0)*rightHandSide.stride(0), rightHandSide.stride(0));
 
+		MatrixType rhsMatrix(rightHandSide.data, shape, stride, neverDeleteData);
+		return SolvePositiveDefiniteBandedFactored(transpose, factoredMatrix, pivot, rhsMatrix);
+	}
+
+	
+	/* 
+	 * General Banded 
+	 */
+	int SolveGeneralBandedSystemOfEquations(MatrixType &equationMatrix, VectorTypeInt &pivotVector, VectorType &rightHandVector, int &subDiagonals, int &superDiagonals);
 	int CalculateLUFactorizationBanded(MatrixType equationMatrix, VectorTypeInt pivots);
 	int SolveBandedFactored(MatrixType factoredMatrix, VectorTypeInt pivots, VectorType rightHandSide);
+
+
+	/*
+	 * Expert interface
+	 */
+	int SolvePositiveDefiniteBandedSystemOfEquations(MatrixFactoring fact, HermitianStorage storage, MatrixType equationMatrix, MatrixType factoredMatrix, char* EQUED, DoubleVectorType S, MatrixType rightHandSide, MatrixType solution, double* conditionEstimate, DoubleVectorType forwardErrorEstimate, DoubleVectorType backwardErrorEstimate);
+
+
 
 private:
 	Array<std::complex<double>, 1> complexDoubleWork;
 	Array<std::complex<float>, 1> complexSingleWork;
 	Array<double, 1> doubleWork;
 	Array<float, 1> singleWork;
+
+	void PreconditionSolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide);
 
 	void PreconditionCalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
 		MatrixType &matrix, VectorType &eigenvalues, MatrixType &leftEigenvectors, 
@@ -150,6 +196,17 @@ private:
  * Check wheter all parameters are valid to the BLAS functions. 
  * This is type independent, and need only be written once
  */
+
+template<class T>
+void LAPACK<T>::PreconditionSolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide)
+{
+	BZPRECONDITION(factoredMatrix.extent(0) == factoredMatrix.extent(1));
+	BZPRECONDITION(factoredMatrix.stride(1) == 1);
+	BZPRECONDITION(pivot.extent(0) == factoredMatrix.extent(0));
+	BZPRECONDITION(pivot.stride(0) == 1);
+	BZPRECONDITION(rightHandSide.extent(1) == factoredMatrix.extent(0));
+	BZPRECONDITION(rightHandSide.stride(1) == 1);
+}
 
 template<class T>
 void LAPACK<T>::PreconditionCalculateEigenvectorFactorizationHermitian(bool calculateEigenvectors, HermitianStorage storage, 
@@ -244,6 +301,7 @@ void LAPACK<T>::PreconditionSolvePositiveDefiniteBandedSystemOfEquations(MatrixT
  * Implementation for complex<double>
  */
 
+
 template<>
 inline int LAPACK<cplx>::CalculateLUFactorization(MatrixType &matrix, blitz::Array<int, 1> &pivot)
 {
@@ -265,6 +323,27 @@ inline int LAPACK<cplx>::CalculateLUFactorization(MatrixType &matrix, blitz::Arr
 
 	return info;
 }
+
+template<>
+inline int LAPACK<cplx>::SolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide)
+{
+	PreconditionSolveGeneralFactored(transpose, factoredMatrix, pivot, rightHandSide);
+
+	char transChar = transpose == TransposeNone ? 'N' : 'C';
+	int N = factoredMatrix.extent(1);
+	int lda = factoredMatrix.stride(0);
+	int ldb = rightHandSide.stride(0);
+	int nrhs = rightHandSide.extent(0);
+	int info;
+
+	LAPACK_NAME(zgetrs)( &transChar, &N, &nrhs, factoredMatrix.data(), &lda, pivot.data(), rightHandSide.data(), &ldb, &info );
+	if (info != 0)
+	{
+		cout << "WARNING: zgetrs could not back substitute LU factorization, info = " << info << endl;
+	}	
+	return info;
+}
+
 
 template<>
 inline int LAPACK<cplx>::CalculateMatrixInverse(MatrixType &matrix, blitz::Array<int, 1> &pivot)

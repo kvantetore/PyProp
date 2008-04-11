@@ -136,19 +136,27 @@ template<int Rank> void CombinedRepresentation<Rank>
 {
 	using namespace blitz;
 
-	blitz::Array<cplx, 2> overlapMatrixBlas = GetRepresentation(rank)->GetGlobalOverlapMatrixBlas(rank);
-
-	//Map the data to a 3D array, where the b-spline part is the middle rank
-	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
-	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
-
-	for (int i = 0; i < srcData.extent(0); i++)
+	if (this->IsOrthogonalBasis(rank))
 	{
-		for (int j = 0; j < srcData.extent(2); j++)
+		//Todo: should multiply weights
+		dstPsi.GetData() = srcPsi.GetData();
+	}
+	else
+	{
+		blitz::Array<cplx, 2> overlapMatrixBlas = GetRepresentation(rank)->GetGlobalOverlapMatrixBlas(rank);
+		
+		//Map the data to a 3D array, where the b-spline part is the middle rank
+		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+		
+		for (int i = 0; i < srcData.extent(0); i++)
 		{
-			Array<cplx, 1> in = srcData(i, Range::all(), j);
-			Array<cplx, 1> out = dstData(i, Range::all(), j);
-			MatrixVectorMultiplyHermitianBanded(overlapMatrixBlas, in, out, 1.0, 0.0);
+			for (int j = 0; j < srcData.extent(2); j++)
+			{
+				Array<cplx, 1> in = srcData(i, Range::all(), j);
+				Array<cplx, 1> out = dstData(i, Range::all(), j);
+				MatrixVectorMultiplyHermitianBanded(overlapMatrixBlas, in, out, 1.0, 0.0);
+			}
 		}
 	}
 

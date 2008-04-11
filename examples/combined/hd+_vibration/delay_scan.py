@@ -23,6 +23,32 @@ def PrintAxisPosition(event):
 #            Parse input files
 #-----------------------------------------------------------------
 
+def MakeFourierPlot():
+	t1, c1 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_22.00fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_24.50fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	t3, c3 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_26.20fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+
+	d1 = 1 - sum(c1, axis=1)
+	d2 = 1 - sum(c2, axis=1)
+	d3 = 1 - sum(c3, axis=1)
+
+	N = len(t1)
+	dt = t1[1] - t1[0]
+
+	k = fft.helper.fftfreq(N, dt)
+
+	figure()
+	plot(k[:N/2]**2, abs(fft.fft(d1)[:N/2]), label="22fs (states 2,3)")
+	plot(k[:N/2]**2, abs(fft.fft(d2)[:N/2]), label="24.5fs (states 3,4)")
+	plot(k[:N/2]**2, abs(fft.fft(d3)[:N/2]), label="26.2fs (states 4,5)")
+	legend()
+
+	figure()
+	plot(t1, d1, label="22fs (states 2,3)")
+	plot(t2, d2, label="24.5fs (states 3,4)")
+	plot(t3, d3, label="26.2fs (states 4,5)")
+	legend()
+
 class DelayScanPlot():
 	def __init__(self, molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1, useExistingFigure=False, figureTitle=None, cmap=None, color=None):
 		#Disable interactive when plotting
@@ -684,11 +710,11 @@ def SubmitAllFinalControl():
 	"""
 
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=22*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+		controlIntensity=20e13, controlDelay=22*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=24.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+		controlIntensity=20e13, controlDelay=24.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=26.2*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+		controlIntensity=20e13, controlDelay=26.2*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 
 
 def SubmitFinalControlExperiment(**args):

@@ -13,6 +13,10 @@ ifeq ($(PYPROP_USE_PIRAM),1)
 SUBDIRS := $(SUBDIRS) piram
 endif
 
+ifeq ($(PYPROP_USE_PAMP),1)
+SUBDIRS := $(SUBDIRS) pamp
+endif
+
 all:
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 

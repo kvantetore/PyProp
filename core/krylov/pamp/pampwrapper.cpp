@@ -1,4 +1,4 @@
-#include "piramsolver.h"
+#include "pampwrapper.h"
 
 #include <core/wavefunction.h>
 #include <core/representation/representation.h>
@@ -6,44 +6,29 @@
 #include <core/utility/fortran.h>
 #include <core/utility/blitztricks.h>
 
+#include "../piram/piram/functors.h"
+
 namespace krylov
 {
 
 using namespace boost::python;
 
-/* Functors for pIRAM */
+/* Functors for pAMP */
 template<int Rank>
 class PypropOperatorFunctor : public piram::OperatorFunctor<cplx>
 {
 public:
 	typedef boost::shared_ptr< PypropOperatorFunctor > Ptr;
 
-	PypropOperatorFunctor(PiramSolver<Rank> *solver) : Solver(solver) {}
+	PypropOperatorFunctor(PampWrapper<Rank> *propagator) : Propagator(propagator) {}
 
 	virtual void operator()(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out) 
 	{
-		Solver->ApplyOperator(in, out);
+		Propagator->ApplyOperator(in, out);
 	}
 
 private:
-	PiramSolver<Rank>* Solver;
-};
-
-template<int Rank>
-class PypropSetupResidualFunctor : public piram::SetupResidualFunctor<cplx>
-{
-public:
-	typedef boost::shared_ptr< PypropSetupResidualFunctor > Ptr;
-
-	PypropSetupResidualFunctor(PiramSolver<Rank> *solver) : Solver(solver) {}
-
-	virtual void operator()(blitz::Array<cplx, 1> &residual) 
-	{
-		Solver->SetupResidual(residual);
-	}
-
-private:
-	PiramSolver<Rank>* Solver;
+	PampWrapper<Rank>* Propagator;
 };
 
 template<int Rank>
@@ -138,21 +123,9 @@ public:
 };
 
 
-/* Implementation of PiramSolver */
-
+/* Implementation of PampWrapper */
 template<int Rank>
-void PiramSolver<Rank>::SetupResidual(blitz::Array<cplx, 1> &residual)
-{
-	if (Psi == 0)
-	{
-		throw std::runtime_error("Psi is 0");
-	}
-
-	residual = MapToRank1(Psi->GetData());
-}
-
-template<int Rank>
-void PiramSolver<Rank>::ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output)
+void PampWrapper<Rank>::ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output)
 {
 	if (Psi == 0)
 	{
@@ -176,61 +149,58 @@ void PiramSolver<Rank>::ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array
 	Psi->SetData(inData);
 	TempPsi->SetData(outData);
 
-	Callback(Psi, TempPsi);
+	Callback(Psi, TempPsi, TimeStep, CurTime);
 
 	//Restore the former buffers
 	Psi->SetData(oldData);
-	TempPsi->SetData(oldTempData);}
-
-
-template<int Rank>
-void PiramSolver<Rank>::ApplyConfigSection(const ConfigSection &config)
-{
-	config.Get("krylov_basis_size", Solver.BasisSize);
-	config.Get("krylov_tolerance", Solver.Tolerance);
-	config.Get("krylov_eigenvalue_count", Solver.EigenvalueCount);
-	config.Get("krylov_max_iteration_count", Solver.MaxRestartCount);
-	config.Get("krylov_use_random_start", Solver.UseRandomStart);
+	TempPsi->SetData(oldTempData);
 }
 
 
 template<int Rank>
-void PiramSolver<Rank>::Setup(const typename Wavefunction<Rank>::Ptr psi)
+void PampWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
-	Solver.MatrixSize = psi->GetData().size();
-    Solver.DisableMPI = psi->GetRepresentation()->GetDistributedModel()->IsSingleProc();
-
-	Solver.SetupResidual = typename PypropSetupResidualFunctor<Rank>::Ptr( new PypropSetupResidualFunctor<Rank>(this) );
-	Solver.MatrixOperator = typename PypropOperatorFunctor<Rank>::Ptr( new PypropOperatorFunctor<Rank>(this) );
-
-	Solver.Setup();
+	config.Get("krylov_basis_size", Propagator.BasisSize);
 }
 
 
 template<int Rank>
-void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi)
+void PampWrapper<Rank>::Setup(const typename Wavefunction<Rank>::Ptr psi)
+{
+	Propagator.MatrixSize = psi->GetData().size();
+    Propagator.DisableMPI = psi->GetRepresentation()->GetDistributedModel()->IsSingleProc();
+	Propagator.MatrixOperator = typename PypropOperatorFunctor<Rank>::Ptr( new PypropOperatorFunctor<Rank>(this) );
+	Propagator.Setup();
+}
+
+
+template<int Rank>
+void PampWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t)
 {
 	//The callback-functions uses these variables
 	this->Psi = psi;
 	this->TempPsi = tempPsi;
 	this->Callback = callback;
+	this->CurTime = t;
+	this->TimeStep = dt;
 
 	//Use our custom integration
-	//typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
-	//Solver.Integration = integration;
-	
-	Solver.Solve();
-	Solver.Postprocess();
+	typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
+	Propagator.Integration = integration;
+
+	typename Wavefunction<Rank>::DataArray vector = psi->GetData();
+	blitz::Array<cplx, 1> vector1d = MapToRank1(vector);
+	Propagator.PropagateVector(vector1d, dt);
 
 	//Zero the pointers to avoid mishaps
 	this->Psi = typename Wavefunction<Rank>::Ptr();
 	this->TempPsi = typename Wavefunction<Rank>::Ptr();
 }
 
-template class PiramSolver<1>;
-template class PiramSolver<2>;
-template class PiramSolver<3>;
-template class PiramSolver<4>;
+template class PampWrapper<1>;
+template class PampWrapper<2>;
+template class PampWrapper<3>;
+template class PampWrapper<4>;
 
 } //Namespace
 	
