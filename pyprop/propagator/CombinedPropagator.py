@@ -40,9 +40,7 @@ class CombinedPropagator(PropagatorBase):
 
 		self.SetupPotential(dt)
 
-		propagatorsReversed = list(self.SubPropagators)
-		propagatorsReversed.reverse()
-		for prop in propagatorsReversed:
+		for prop in reversed(self.SubPropagators):
 			prop.SetupStepConjugate(dt/2.)
 			#parallelization
 			if prop.TransformRank == self.Rank-1 and not IsSingleProc():
@@ -71,9 +69,7 @@ class CombinedPropagator(PropagatorBase):
 		self.MultiplyPotential(destPsi, t, dt)
 
 		#second halfstep
-		propagatorsReversed = list(self.SubPropagators)
-		propagatorsReversed.reverse()
-		for prop in propagatorsReversed:
+		for prop in reversed(self.SubPropagators):
 			#advance step
 			prop.MultiplyHamiltonianConjugate(destPsi, t, dt/2.)
 			#parallelization
@@ -97,9 +93,7 @@ class CombinedPropagator(PropagatorBase):
 		self.ApplyPotential(t, dt)
 
 		#second halfstep
-		propagatorsReversed = list(self.SubPropagators)
-		propagatorsReversed.reverse()
-		for prop in propagatorsReversed:
+		for prop in reversed(self.SubPropagators):
 			#advance step
 			prop.AdvanceStepConjugate(t, dt/2.)
 			#parallelization

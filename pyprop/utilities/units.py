@@ -49,21 +49,34 @@ def SItoAtomic(number,what):
 # Unit type conversion
 #
 def AngularFrequencyAtomicFromWavelengthSI(wavelength):
-  "Wavelength [nm] -> angular freq. [a.u]"
+  """
+  Wavelength [nm] -> angular freq. [a.u]
+  """
   return SItoAtomic(2*pi*constantsSI.lightSpeed/(wavelength*1e-9),UNIT_FREQUENCY)
 
 def ElectricFieldAtomicFromIntensitySI(intensity):
-  "Intensity [W/cm**2] -> E-field strength [a.u.]"
+  """
+  Intensity [W/cm**2] -> E-field strength [a.u.]
+  """
   return SItoAtomic(sqrt(intensity/0.0013),UNIT_FIELD_STRENGTH)
 
 def WavelengthSIFromAngularFrequencyAtomic(freq):
-  "Angular frequency [a.u] -> Wavelength [nm]"
+  """
+  Angular frequency [a.u] -> Wavelength [nm]
+  """
   return 1e9*2*pi*constantsSI.lightSpeed/(AtomicToSI(freq,UNIT_FREQUENCY))
 
 def IntensitySIFromElectricFieldAtomic(efield):
-  "Electric field [a.u.] -> Intensity [W/cm**2]"
+  """
+  Electric field [a.u.] -> Intensity [W/cm**2]
+  """
   return 0.0013*(AtomicToSI(efield,UNIT_FIELD_STRENGTH))**2 
 
+def EnergyElectronVoltFromAU(energy):
+	"""
+	Energy [J] -> Energy [eV]
+	"""
+	return constantsAU.energy * energy / constantsAU.charge
 #
 # Constants
 #

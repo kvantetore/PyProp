@@ -97,12 +97,11 @@ class Problem:
 			print "Starting setup timestep..."
 			print "    Setting up Propagator."
 			if self.Propagator != None:
-				self.Propagator.SetupStep(self.TimeStep )
+				self.Propagator.SetupStep(self.TimeStep)
 
 			print "    Setting up initial wavefunction"
 			self.SetupWavefunction()
 			
-			self.PropagatedTime = 0
 			print "Setup timestep complete."
 	
 			#Disable redirect
@@ -125,10 +124,10 @@ class Problem:
 		if self.Propagator.RenormalizeActive:
 			self.psi.Normalize()
 
-		if abs(real(self.TimeStep)) < 1e-10:
+		if abs(self.TimeStep.real) < 1e-10:
 			self.PropagatedTime += abs(self.TimeStep)
 		else:
-			self.PropagatedTime += real(self.TimeStep)
+			self.PropagatedTime += self.TimeStep.real
 
 
 	def MultiplyHamiltonian(self, dstPsi):
@@ -165,8 +164,16 @@ class Problem:
 			InterruptHandler.Register()
 	
 		index = 0
-		while self.PropagatedTime < duration:
-			#next timestep	
+
+		if self.TimeStep.real == 0:
+			#negative imaginary time
+			stoppingCriterion = lambda: (self.Duration - self.PropagatedTime) > 0.5 * abs(self.TimeStep)
+		else:
+			#real time
+			stoppingCriterion = lambda: (self.Duration - self.PropagatedTime) * sign(self.TimeStep) > 0.5 * abs(self.TimeStep)
+
+		while stoppingCriterion():
+			#next timestep
 			self.AdvanceStep()
 
 			#check keyboard interrupt
@@ -247,8 +254,9 @@ class Problem:
 	
 	#Initialization-----------------------------------------------
 	def ApplyConfigSection(self, configSection):
-			self.TimeStep = configSection.timestep
+			self.TimeStep = complex(configSection.timestep)
 			self.Duration = configSection.duration
+
 
 	def SetupWavefunction(self):
 		"""

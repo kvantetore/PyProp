@@ -54,6 +54,7 @@ class Config:
 			section = Section(sectionName, cfg)
 			section.Config = self
 			self.__dict__[sectionName] = section
+			self.cfgObj = cfg
 
 	def GetSection(self, sectionName):
 		return self.__dict__[sectionName]
@@ -62,8 +63,7 @@ class Config:
 		if hasattr(other, "ApplyConfig"):
 			#print "Applying config to ", other.__class__.__name__
 			other.ApplyConfig(self)
-	
-			
+
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
 	#hierarchy

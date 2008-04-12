@@ -7,16 +7,13 @@ class Krotov:
 
 	More precisely, given the TDSE:
 	
-	             d            /                        \ 
-				---- Psi = -i | H_0 + sum( u_i(t)X_i ) | Psi
-				 dt           \                        / 
+	     d            /                        \ 
+	    ---- Psi = -i | H_0 + sum( u_i(t)X_i ) | Psi
+	     dt           \                        / 
 	
 	for a given H_0 (time independent) and controls (scalars) u_i, Krotov solves
 
-            ______     |            ____
-			\	 /	   |    ____   /    \ 
-			 \	/	   |    ____   |    |
-			  \/	\__/           \____/
+	    grad(J) = 0
 
 	where J =  <F|Psi> - mu \sum( \int_0^T |u_i(t)|**2 dt ).
 	"""
@@ -25,18 +22,33 @@ class Krotov:
 		self.BaseProblem = prop
 		self.PsiSize = prop.psi.GetRepresentation().VectorSize
 
+		#Get time step and propagation time from config
+		self.TimeStep = prop.Config.Propagation.timestep
+		self.PropagationTime = prop.Config.Propagation.duration
+
 		# Shortcuts to the salient control parameters
 		self.ControlCutoff = prop.Config.Krotov.control_cutoff
 		self.EnergyPenalty = prop.Config.Krotov.energy_penalty
 		self.MaxIterations = prop.Config.Krotov.max_iterations
 		self.YieldRequirement = prop.Config.Krotov.yield_requirement
-		self.TimeGridSize = prop.Config.Krotov.time_grid_size
-		self.TimeStep = prop.Config.Propagation.timestep
-		self.StoreSteps = int(round(self.BaseProblem.Duration / self.TimeStep / self.TimeGridSize))
-		self.Omega = prop.Config.ControlFunction.omega
+		self.TimeGridSize = int(self.PropagationTime / self.TimeStep)
+		self.TimeGridResolution = self.TimeStep
+		if hasattr(prop.Config.Krotov, "time_grid_size"):
+			self.TimeGridSize = prop.Config.Krotov.time_grid_size
+			self.TimeGridResolution = self.PropagationTime / self.TimeGridSize
 
+		#Set control cutoff from time step
+		err = 1e-6
+		self.ControlCutoff = err / self.TimeStep**2
+
+		#Check for the debug option
+		self.Debug = False
+		if hasattr(prop.Config.Krotov, "debug"):
+			self.Debug = prop.Config.Krotov.debug
+		
 		#Keep the calculated J's (shows convergence)
 		self.J = []
+		self.Yield = []
 
 		#A matrix to hold previous backward propagation solutions (for each time step)
 		self.BackwardSolution = zeros((self.PsiSize, self.TimeGridSize), dtype = complex)
@@ -45,8 +57,8 @@ class Krotov:
 		self.SetupTargetState()
 
 		#Create a copy of the wavefunction to calculate H|psi>
-		self.TempPsi = prop.GetTempPsi()
-		self.TempPsi2 = prop.psi.Copy()
+		self.TempPsi = prop.psi.CopyDeep()
+		self.TempPsi2 = prop.psi.CopyDeep()
 
 		#Find control function (potential)
 		for potential in prop.Propagator.PotentialList:
@@ -54,10 +66,7 @@ class Krotov:
 				self.ControlFunction = potential
 
 		#A vector to store the optimized control function
-		self.ControlVector = zeros((self.TimeGridSize), dtype = float)
-		self.ControlVector = ones(self.TimeGridSize, dtype = float) * self.ControlFunction.ConfigSection.e0
-		#self.ControlVector = (random.rand(self.TimeGridSize) - 0.5) * 2.0
-		#self.ControlVector = self.ControlVector / max(abs(self.ControlVector)) * self.ControlFunction.ConfigSection.e0
+		self.ControlVector = ones(self.TimeGridSize, dtype = double) * self.ControlFunction.ConfigSection.e0
 
 
 	def Run(self):
@@ -76,13 +85,20 @@ class Krotov:
 			# Forward propagation
 			self.ForwardPropagation()
 
-			# Interlude: project on target state and check yield
-			#            If yield is reached, set flag and cycle
+			# Project on target state and check yield.
 			targetProjection = self.ComputeTargetProjection()
 			currentYield = abs(targetProjection)**2
-			energyTerm = self.EnergyPenalty * sum(numpy.abs(self.ControlVector)**2) * self.TimeStep
-			self.J += [currentYield - energyTerm]
-			print "Yield = ", currentYield, " J = ", self.J[-1]
+			self.Yield.append(currentYield)
+
+			#Get value of cost functional
+			energyTerm = self.EnergyPenalty * self.TimeGridResolution \
+				* sum(numpy.abs(self.ControlVector)**2)
+			curJ = currentYield - energyTerm
+			self.J.append(curJ)
+			norm = self.BaseProblem.psi.GetNorm()
+			print "Yield = %.8f, J = %.8f, norm = %.15f" % (currentYield, curJ, norm)
+
+			#Desired yield reached? -> Finished
 			if( currentYield > self.YieldRequirement ):
 				print "Yield reached!"
 				self.__YieldNotReached = False
@@ -93,38 +109,58 @@ class Krotov:
 
 			self.currIter += 1
 
-
-	def ComputeCostFunctional(self):
-		"""
-		"""
-		raise NotImplementedError, 'Not implemented yet'
+		#A final forward propagation
+		#if self.__YieldNotReached:
+		#	self.ForwardPropagation()
 
 
-	def ComputeNewControlFunction(self, timeGridIndex):
+	def ComputeNewControlFunction(self, timeGridIndex, t):
 		"""
-		Helper function, updates the control function based on backward propagation solution.
+		Updates the control function based on backward propagation solution:
+
+		    E(t) = - 1 / mu * imag(<etta|X|psi>)
+
+		where E is the new control, mu is the energy penalty, |etta> is the
+		backward solution and X the control matrix.
 		"""
+		#Compute new control function. First the control matrix
+		#is multiplied on the current forward solution, and then
+		#the result is projected onto the backward solution. 
 		self.ControlFunction.ConfigSection.e0 = 1.0
-		self.TempPsi.GetData()[:] = 0.0
+		self.TempPsi.Clear()
+		self.TempPsi2.Clear()
 		self.ControlFunction.MultiplyPotential(self.TempPsi,0,0)
 		self.TempPsi2.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
-		newControl = conj(self.TempPsi2.InnerProduct(self.TempPsi))
+		newControl = self.TempPsi2.InnerProduct(self.TempPsi)
 		fieldValue = -imag(newControl) / (2.0 * self.EnergyPenalty)
 		
-		# Warn if dt * fieldValue is to great
+		# Warn if dt**2 * fieldValue is to great
 		errorOrder = abs(self.TimeStep**2 * fieldValue)
-		if(errorOrder > 1e-6):
+		if(errorOrder > 1e-6 and self.Debug == True):
 			print "Warning: Omitted dexp terms not small (", errorOrder, ")!"
 	
 		# Check if control amplitude exceeds control cutoff, and store
-		#self.ControlVector[timeGridIndex] = min(abs(self.ControlCutoff), abs(fieldValue)) * sign(fieldValue)
-		self.ControlVector[timeGridIndex] = fieldValue
+		#fieldValue = min(abs(self.ControlCutoff), abs(fieldValue)) * sign(fieldValue)
+
+		#Update control function. We apply a window function to
+		#force control to be zero at beginning and end. Since we
+		#are potentially making a _lot_ of integration steps in
+		#some cases, the current time as reported by the propagator
+		#may drift off the mark by several orders of magnitude. To
+		#avoid the sin()-window going negative, we take the max()
+		#of it with 0.
+		T = self.BaseProblem.Duration
+		mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
+		self.ControlVector[timeGridIndex] = sqrt(mask) * fieldValue
 
 
 	def ComputeTargetProjection(self):
 		"""
+		Project solution on target state
 		"""
-		return conj(self.TargetState.InnerProduct(self.BaseProblem.psi))
+
+		#Note: Argument is complex conjugated
+		return self.BaseProblem.psi.InnerProduct(self.TargetState)
 
 
 	def ForwardPropagation(self):
@@ -134,29 +170,20 @@ class Krotov:
 		
 		print "Forward propagation, pass ", self.currIter
 
-		self.SetupStep(self.TimeStep)
-		self.BaseProblem.SetupWavefunction()
+		self.SetupStep(Direction.Forward)
+		
+		#Initial step
+		if self.currIter > 0:
+			self.ComputeNewControlFunction(0,0.0)
+		self.ControlFunction.ConfigSection.e0 = self.ControlVector[0]
 
-		index = 0
-		timeGridIndex = 0
-		while self.BaseProblem.PropagatedTime < self.BaseProblem.Duration-1:
-			
-			# Time to do something?
-			if (index % self.StoreSteps == 0):
-				if not (self.currIter == 0):
-					self.ComputeNewControlFunction(timeGridIndex)
+		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize)):
+			if idx < self.TimeGridSize - 1:
+				if self.currIter > 0:
+					self.ComputeNewControlFunction(idx + 1, t)
+				self.ControlFunction.ConfigSection.e0 = self.ControlVector[idx + 1]
 
-				# Update control function
-				self.ControlFunction.ConfigSection.e0 = self.ControlVector[timeGridIndex]
-
-				timeGridIndex += 1
-				
-			self.BaseProblem.AdvanceStep()
-			index += 1
-
-			# Check for convergence here
-
-
+	
 	def BackwardPropagation(self, targetProjection):
 		"""
 		Propagate backwards from T to 0. Terminal condition is Psi(T) = <F|Psi_forward(T)> |F>,
@@ -165,41 +192,54 @@ class Krotov:
 
 		print "Backward propagation, pass ", self.currIter
 
-		self.SetupStep(-self.TimeStep)
-		self.BaseProblem.PropagatedTime = self.BaseProblem.Duration
+		self.SetupStep(Direction.Backward)
 
 		# Set the initial state
 		self.BaseProblem.psi.GetData()[:] = targetProjection * self.TargetState.GetData()[:]
+		
+		#Set control and store backward solution for t = T
+		self.ControlFunction.ConfigSection.e0 = self.ControlVector[self.TimeGridSize - 1]
+		#self.BackwardSolution[:, self.TimeGridSize - 1] = self.BaseProblem.psi.GetData()[:]
 
-		index = 0
-		timeGridIndex = 0
-		while self.BaseProblem.PropagatedTime > 0.0:
+		T = self.PropagationTime
+		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
+			self.BackwardSolution[:, self.TimeGridSize - idx - 1] = self.BaseProblem.psi.GetData()[:]
+			if idx < self.TimeGridSize - 1:
+				self.ControlFunction.ConfigSection.e0 = self.ControlVector[self.TimeGridSize - idx - 2]
 
-			# Use control function from forward propagation
-			if (index % self.StoreSteps == 0):
-				timeGridIndex += 1
-				self.ControlFunction.ConfigSection.e0 = self.ControlVector[self.TimeGridSize - timeGridIndex]
 
-				# Store backward solution for next iteration
-				self.BackwardSolution[:, self.TimeGridSize - timeGridIndex] = self.BaseProblem.psi.GetData()[:]
-
-			# Propagate one step
-			self.BaseProblem.AdvanceStep()
-
-			index += 1
-
-	def SetupStep(self,timeStep):
+	def SetupStep(self, direction):
 		"""
 		Helper function; set up propagator for forward or backward run
 		"""
-		self.BaseProblem.TimeStep = timeStep
-		self.BaseProblem.PropagatedTime = 0.0
+
+		if direction == Direction.Forward:
+			self.BaseProblem.TimeStep = complex(self.TimeStep)
+			self.BaseProblem.StartTime = 0.0
+			self.BaseProblem.Duration = self.PropagationTime
+			self.BaseProblem.SetupStep()
+
+		elif direction == Direction.Backward:
+			self.BaseProblem.TimeStep = -complex(self.TimeStep)
+			self.BaseProblem.StartTime = self.PropagationTime
+			self.BaseProblem.Duration = 0.0
+			self.BaseProblem.SetupStep()
 
 	
 	def SetupTargetState(self):
 		"""
 		Set up the desired target state
 		"""
-		self.TargetState = self.BaseProblem.psi.Copy()
-		self.TargetState.GetData()[:] = 0.0
-		self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] = self.BaseProblem.Config.FinalState.population
+		self.TargetState = self.BaseProblem.psi.CopyDeep()
+		self.TargetState.Clear()
+		
+		self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] \
+			= self.BaseProblem.Config.FinalState.population[:]
+
+		self.TargetState.Normalize()
+
+
+
+class Direction:
+	Forward = 0
+	Backward = 1
