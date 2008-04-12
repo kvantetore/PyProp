@@ -51,6 +51,12 @@ GetGlobalOverlapMatrixFullCol(int rank)
 	return GetRepresentation(rank)->GetGlobalOverlapMatrixFullCol(rank);
 }
 
+template<int Rank> blitz::Array<cplx, 2> CombinedRepresentation<Rank>::
+GetGlobalOverlapMatrixBlas(int rank)
+{
+	return GetRepresentation(rank)->GetGlobalOverlapMatrixBlas(rank);
+}
+
 template<int Rank> int CombinedRepresentation<Rank>::
 GetOverlapBandwidth(int rank)
 {

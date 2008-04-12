@@ -46,6 +46,7 @@ public:
 	virtual blitz::Array<double, 1> GetLocalWeights(int rank);
 	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullRow(int rank);
 	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank);
+	virtual blitz::Array<cplx, 2> GetGlobalOverlapMatrixBlas(int rank);
 	virtual int GetOverlapBandwidth(int rank);
 	virtual void ApplyConfigSection(const ConfigSection &config);
 

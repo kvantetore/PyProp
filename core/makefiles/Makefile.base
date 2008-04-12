@@ -42,6 +42,7 @@ PYSTEFILES = \
 	python/wavefunction.pyste \
 	python/blitzblas.pyste \
 	python/combinedabsorber.pyste \
+	python/tensorpotential.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
@@ -79,11 +80,15 @@ SOURCES= \
 	python/pysteoutput/_main.cpp \
 	finitediff/exponentialfinitedifference.cpp \
 	utility/timer.cpp \
+	tensorpotential/tensorpotentialmultiply_wrapper.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 
+FORTRAN_SOURCES = \
+	tensorpotential/tensorpotentialmultiply.f90 
+
 #C++ object files
-OBJECTS=$(SOURCES:.cpp=.o)
+OBJECTS=$(SOURCES:.cpp=.o) $(FORTRAN_SOURCES:.f90=.o)
 
 #autodependencies
 DEPDIR = .deps
@@ -111,7 +116,7 @@ $(STATIC_MAIN).cpp: $(OUTPUT_STATIC)
 #Build the static python executable with all modules
 $(STATIC_EXEC): $(OUTPUT_STATIC) $(STATIC_MAIN).cpp $(STATIC_MAIN).o
 	rm -f $(STATIC_EXEC)
-	$(LD) $(LD_STATIC) -o $(STATIC_EXEC) $(STATIC_MAIN).o $(shell ls lib/lib*.a) $(OUTPUT_STATIC) $(LIBS) $(LDFLAGS) $(PYTHON_STATIC_LIBS)
+	$(LD) $(LD_STATIC) -o $(STATIC_EXEC) $(STATIC_MAIN).o $(shell ls lib/lib*.a) $(OUTPUT_STATIC) $(LIBS) $(LDFLAGS) $(PYTHON_STATIC_LIBS) $(FORTRAN_LIBS)
 
 #Build the static library
 $(OUTPUT_STATIC): $(OBJECTS) 
@@ -132,11 +137,25 @@ python/pysteoutput/_main.cpp:
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) $(PYSTEFILES)
 	$(PYSTE) --multiple --out=$(PYSTEOUTPUTDIR) --module=$(MODULE_NAME) --generate-main $(PYSTEFILES)
 
+#CombinedRepresentation depends on some of the generated code
 representation/combinedrepresentation.cpp : representation/combinedrepresentation_generated.cpp
+representation/combinedrepresentation.cpp : tensorpotential/tensorpotentialmultiply_wrapper.cpp
 
+#Generate combined representation inner product code
 representation/combinedrepresentation_generated.cpp: representation/combinedrepresentation_generator.py
 	python $< > $*.cpp
-	
+
+#Generate tensorpotential code
+tensorpotential/tensorpotentialmultiply_wrapper.cpp: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintWrapperCode()" > $*.cpp
+	python -c "execfile('$<'); PrintWrapperHeader()" > $*.h
+
+#Generate tensorpotential code
+tensorpotential/tensorpotentialmultiply.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode()" > tensorpotential/tensorpotentialmultiply.f90
+
+
+
 clean:
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 	rm -rf .deps
@@ -154,6 +173,10 @@ clean:
 	rm -f transform/transformedgrid/*.o
 	rm -f representation/bspline/*.o
 	rm -f representation/combinedrepresentation_generated.cpp
+	rm -f tensorpotential/tensorpotentialmultiply.f
+	rm -f tensorpotential/tensorpotentialmultiply_wrapper.cpp
+	rm -f tensorpotential/tensorpotentialmultiply_wrapper.h
+	rm -f indextricks.mod
 	rm -f $(OBJECTS)
 	
 pyclean:

@@ -7,14 +7,15 @@ INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
 
 PYSTEFILES   := wrapper.pyste
 SOURCEFILES  := wrapper.cpp tensorpotentialmultiply_wrapper.cpp
-OBJECTS      := $(SOURCEFILES:.cpp=.o) tensorpotentialmultiply.o parallel_multiply.o
+OBJECTS      := $(SOURCEFILES:.cpp=.o) tensorpotentialmultiply.o parallel_multiply.o test.o
 MODULENAME   := libpotential
 
 -include $(PYPROP_ROOT)/core/makefiles/Makefile.extension
 
 tensorpotentialmultiply_wrapper.cpp: tensorpotentialmultiply_generator.py
 	python -c "execfile('$<'); PrintWrapperCode()" > $*.cpp
-	
+	python -c "execfile('$<'); PrintWrapperHeader()" > $*.h
+
 tensorpotentialmultiply.f: tensorpotentialmultiply_generator.py
 	python -c "execfile('$<'); PrintFortranCode()" > $*.f
 
@@ -23,6 +24,9 @@ tensorpotentialmultiply.o: tensorpotentialmultiply.f
 #	-fbounds-check 
 #
 parallel_multiply.o: parallel_multiply.f
+	mpif90 $(FORTRAN_FLAGS) $< -c -o $*.o 
+
+test.o: test.f
 	mpif90 $(FORTRAN_FLAGS) $< -c -o $*.o 
 
 

@@ -267,34 +267,132 @@ def LaserFunction(conf, t):
 
 import time
 def TestInnerProduct():
-	conf = pyprop.Load("config_radial.ini")
+	conf = pyprop.Load("config.ini")
 	conf.Propagation.grid_potential_list = []
 	prop = pyprop.Problem(conf)
 	
-	avgCount = 100
+	avgCount = 10
 	minCount = 10
 
 	tempPsi = prop.GetTempPsi()
+	tempPsi2 = prop.psi.Copy()
+	tempPsi3 = prop.psi.Copy()
 	
 	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
 	tempPsi.GetData()[:] = rand(*prop.psi.GetData().shape)
 
-	for algo in range(1,3):
+	generator = prop.Propagator.BasePropagator.TensorPotentialGenerator
+
+	#Use TensorPotentialGenerator to construct potential in basis
+	geometryList = generator.GetGeometryList(conf.InnerProductPotential1)
+	potentialData = generator.GeneratePotential(conf.InnerProductPotential1)
+	innerProductPotential1 = TensorPotential(prop.psi)
+	conf.InnerProductPotential1.Apply(innerProductPotential1)
+	innerProductPotential1.GeometryList = geometryList
+	innerProductPotential1.PotentialData = potentialData
+	innerProductPotential1.Name = "InnerProdPotential1"
+	innerProductPotential1.SetupStep(0)
+
+	#Use TensorPotentialGenerator to construct potential in basis
+	geometryList = generator.GetGeometryList(conf.InnerProductPotential2)
+	potentialData = generator.GeneratePotential(conf.InnerProductPotential2)
+	innerProductPotential2 = TensorPotential(tempPsi2)
+	conf.InnerProductPotential2.Apply(innerProductPotential2)
+	innerProductPotential2.GeometryList = geometryList
+	innerProductPotential2.PotentialData = potentialData
+	innerProductPotential2.Name = "InnerProdPotential2"
+	innerProductPotential2.SetupStep(0)
+
+	#Use TensorPotentialGenerator to construct potential in basis
+	geometryList = generator.GetGeometryList(conf.InnerProductPotential3)
+	potentialData = generator.GeneratePotential(conf.InnerProductPotential3)
+	innerProductPotential3 = TensorPotential(tempPsi3)
+	conf.InnerProductPotential3.Apply(innerProductPotential3)
+	innerProductPotential3.GeometryList = geometryList
+	innerProductPotential3.PotentialData = potentialData
+	innerProductPotential3.Name = "InnerProdPotential3"
+	innerProductPotential3.SetupStep(0)
+
+	repr = prop.psi.GetRepresentation()
+	overlapMatrix0 = repr.GetGlobalOverlapMatrixBlas(0)
+	overlapMatrix1 = repr.GetGlobalOverlapMatrixBlas(1)
+	overlapMatrix2 = repr.GetGlobalOverlapMatrixBlas(2)
+
+	def NewInnerProduct():
+		tempPsi2.GetData()[:] = 0
+		tempPsi3.GetData()[:] = 0
+		innerProductPotential1.MultiplyPotential(tempPsi2, 0, 0)
+		innerProductPotential2.MultiplyPotential(tempPsi3, 0, 0)
+		tempPsi2.GetData()[:] = 0
+		innerProductPotential3.MultiplyPotential(tempPsi2, 0, 0)
+		return VectorDotProduct(tempPsi, tempPsi2)
+
+	def NewInnerProduct2():
+		tempPsi2.GetData()[:] = 0
+		tempPsi3.GetData()[:] = 0
+		repr.MultiplyOverlapMatrix(prop.psi, tempPsi2, 0)
+		repr.MultiplyOverlapMatrix(tempPsi2, tempPsi3, 1)
+		repr.MultiplyOverlapMatrix(tempPsi3, tempPsi2, 2)
+		return VectorDotProduct(tempPsi, tempPsi2)
+
+	def NewInnerProduct3():
+		tempPsi2.GetData()[:] = 0
+		tempPsi3.GetData()[:] = 0
+
+		N1, N2, N3 = tempPsi.GetData().shape
+
+		source = prop.psi.GetData().reshape(1, N1, N2*N3)
+		dest = tempPsi2.GetData().reshape(1, N1, N2*N3)
+		MultiplyOverlapMatrix(overlapMatrix0, source, dest)
+
+		source = tempPsi2.GetData().reshape(N1, N2, N3)
+		dest = tempPsi3.GetData().reshape(N1, N1, N3)
+		MultiplyOverlapMatrix(overlapMatrix1, source, dest)
+
+		source = tempPsi3.GetData().reshape(N1*N2, N3, 1)
+		dest = tempPsi2.GetData().reshape(N1*N2, N3, 1)
+		MultiplyOverlapMatrix(overlapMatrix2, source, dest)
+
+		return VectorDotProduct(tempPsi, tempPsi2)
+
+
+
+	for algo in range(1,6):
 		prop.psi.GetRepresentation().Algorithm = algo
-		n = prop.psi.InnerProduct(tempPsi)
+		if algo == 3:
+			innerProduct = NewInnerProduct
+		elif algo == 4:
+			innerProduct = NewInnerProduct2
+		elif algo == 5:
+			innerProduct = NewInnerProduct3
+		else:
+			innerProduct = lambda: prop.psi.InnerProduct(tempPsi)
+
+		prop.psi.GetRepresentation().Algorithm = algo
+		n = innerProduct()
 		print "Norm (Algo %i) = %f" % (algo, abs(n)**2)
 
-	for algo in range(1,3):
+	for algo in range(1,6):
 		prop.psi.GetRepresentation().Algorithm = algo
+		if algo == 3:
+			innerProduct = NewInnerProduct
+		elif algo == 4:
+			innerProduct = NewInnerProduct2
+		elif algo == 5:
+			innerProduct = NewInnerProduct3
+		else:
+			innerProduct = lambda: prop.psi.InnerProduct(tempPsi)
+
 		minT = 1e10
 		for i in range(minCount):
 			t = - time.time()
 			for j in range(avgCount):
-				n = prop.psi.InnerProduct(tempPsi)
+				n = innerProduct()
 			t += time.time()
 			if t<minT:
 				minT = t / avgCount
 		print "Algorithm %i: %f" % (algo, minT)
+
 
 
 def TestMatrixMultiply():

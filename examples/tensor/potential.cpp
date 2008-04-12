@@ -3,10 +3,17 @@
 
 #include <core/transform/bspline/bspline.h>
 #include <core/utility/blitztricks.h>
+#include <core/utility/blitzblas.h>
 
 #include <core/transform/reducedspherical/reducedsphericaltools.h>
 
 using namespace blitz;
+
+template<int Rank>
+cplx VectorDotProduct(Wavefunction<Rank> &psi1, Wavefunction<Rank> &psi2)
+{
+	return VectorInnerProduct(psi1.GetData(), psi2.GetData());
+}
 
 template<class TBase, int Rank>
 void RepresentPotentialInBasisBSpline( BSpline::BSpline::Ptr bsplineObject, Array<TBase, Rank> source, Array<TBase, Rank> dest, Array<int, 2> indexPair, std::string storageId, int rank, int differentiation )

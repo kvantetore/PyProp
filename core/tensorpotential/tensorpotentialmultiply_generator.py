@@ -1143,7 +1143,7 @@ for systemRank in range(1,3+1):
 
 
 def PrintFortranCode():
-	commonFortran = """
+	print """
 		module IndexTricks
 			contains
 			subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
@@ -1229,9 +1229,10 @@ def PrintFortranCode():
 
 def PrintWrapperCode():
 	str = """
-	#include <core/common.h>
-	#include <core/utility/fortran.h>
 	#include <boost/python.hpp>
+
+	#include "../common.h"
+	#include "../utility/fortran.h"
 	#include "tensorpotentialmultiply_wrapper.h"
 
 	namespace TensorPotential
@@ -1258,7 +1259,7 @@ def PrintWrapperCode():
 
 def PrintWrapperHeader():
 	str = """
-	#include <core/common.h>
+	#include "../common.h"
 
 	namespace TensorPotential
 	{

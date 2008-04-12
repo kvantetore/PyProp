@@ -396,7 +396,8 @@ class BasisfunctionBSpline(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			raise Exception("TODO: Implement Identity!")
+			print "WARNING: Identity geometry might not do what you expect for BSplines"
+			return GeometryInfoCommonIdentity(self.BSplineObject.NumberOfBSplines, True)
 		elif geom == "banded-old":
 			return GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded":
@@ -413,7 +414,12 @@ class BasisfunctionBSpline(BasisfunctionBase):
 
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
-		RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, storageId, rank, differentiation)
+		if storageId == "Identity":
+			sourceSlice = [slice(0, None, None)]*len(source.shape)
+			sourceSlice[rank] = slice(0, 1, None)
+			dest[:] = source[sourceSlice]
+		else:
+			RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, storageId, rank, differentiation)
 
 
 

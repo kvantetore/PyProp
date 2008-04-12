@@ -21,7 +21,7 @@ AR				  = ar
 #libraries
 LAPACK_LIBS = -llapack_pic -lf77blas -lcblas -latlas
 BOOST_LIBS  = -lboost_python
-LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS)
+LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS) $(FORTRAN_LIBS)
 
 #propgrams
 PYSTE = pyste $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
@@ -36,5 +36,12 @@ LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) $(PIC)
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $(df).P; \
 	  rm -f $*.d
+
+#Fortran Compile rule
+%.o : %.f90
+	$(FC) $(FORTRAN_FLAGS) $< -c -o $*.o 
+
+%.o : %.f
+	$(FC) $(FORTRAN_FLAGS) $< -c -o $*.o 
 
 

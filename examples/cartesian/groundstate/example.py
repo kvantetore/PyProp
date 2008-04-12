@@ -216,10 +216,12 @@ def Propagate():
 	#Propagate the system to the time specified in propagation.ini,
 	#printing the autocorrelation function, and plotting the wavefunction
 	#10 evenly spaced times during the propagation
-	for t in prop.Advance(100):
+	for t in prop.Advance(10):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		if pyprop.ProcId == 0:
 			print "t = ", t, ", P(t) = ", corr
 		#pyprop.Plot2DFull(prop)
+
+	return prop
 
 	
