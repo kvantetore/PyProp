@@ -256,6 +256,7 @@ class Problem:
 	def ApplyConfigSection(self, configSection):
 			self.TimeStep = complex(configSection.timestep)
 			self.Duration = configSection.duration
+			self.PropagatedTime = 0
 
 
 	def SetupWavefunction(self):
