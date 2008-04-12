@@ -1,0 +1,3 @@
+declaration_code("namespace TensorPotential { extern void export_tensorpotentialmultiply(); } \n")
+module_code("TensorPotential::export_tensorpotentialmultiply();\n")
+
