@@ -75,17 +75,32 @@ def FindGroundstate(**args):
 	return prop
 
 def FindEigenstates(**args):
+	"""
+	Use PIRAM to calculate some eigenstates. Then store these and the 
+	corresponding energies to HDF5 files.
+	"""
+
+	#Setup problem and call PIRAM solver
 	prop = SetupProblem(**args)
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 
+	#Create output dir if it does not exist
+	try:
+		os.mkdir("eigenvectors")
+	except:
+		pass
+
+	#Proc 0 saves the eigenvalues
 	if pyprop.ProcId == 0:
-		try:
-			mkdir("eigenvectors")
 		print solver.GetEigenvalues()
-		for i in size(solver.GetEigenvalues()):
-			prop.psi.GetData()[:] = solver.GetEigenvectors()[:,0]
-			SaveWavefunction("eigenvectors/eigenvector%02i.h5" % i)
+		h5file = tables.openFile("eigenvectors/eigenvalues.h5", "w")
+		h5file.createArray("/", "eigenvalues", solver.GetEigenvalues())
+		h5file.close()
+
+	for i in range(size(solver.GetEigenvalues())):
+		solver.SetEigenvector(prop.psi, i)
+		SaveWavefunction("eigenvectors/eigenvector%02i.h5" % i, "/wavefunction%02i" % i, prop.psi)
 	
 	return solver
 
