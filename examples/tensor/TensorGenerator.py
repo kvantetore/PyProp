@@ -830,7 +830,7 @@ class TensorPotential(PotentialWrapper):
 	def SetupStep(self, timestep):
 		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]
 
-		multiplyFuncName = "TensorPotentialMultiply_" + "_".join([geom.GetStorageId() for geom in self.GeometryList])
+		multiplyFuncName = "pyprop.core.TensorPotentialMultiply_" + "_".join([geom.GetStorageId() for geom in self.GeometryList])
 		self.MultiplyFunction = eval(multiplyFuncName)
 		
 	def AdvanceStep(self, t, timestep):

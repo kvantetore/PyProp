@@ -29,9 +29,6 @@ module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<1>);\n')
 module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<2>);\n')
 module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<3>);\n')
 
-declaration_code("extern void export_tensorpotentialmultiply();\n")
-module_code("export_tensorpotentialmultiply();\n")
-
 #declaration_code('#include "parallel_multiply_wrapper.cpp"')
 #module_code('def("BandedMatrixMultiply_Wrapper", BandedMatrixMultiply_Wrapper);')
 
