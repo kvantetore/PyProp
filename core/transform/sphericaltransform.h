@@ -14,18 +14,11 @@
 template<int Rank>
 class SphericalTransform
 {
-private:
-	int LmDataName;			//
-	int AngularDataName;
-
 public:
 	SphericalTransformTensorGrid transform;
 
 	//Constructors
-	SphericalTransform() :
-			LmDataName(-1),
-			AngularDataName(-1)
-	{}
+	SphericalTransform() {}
 
 	// get the legendre polinomials evaluated at cos(theta) in shtools object
 	// alternative: use the constructor with the Wavefunction argument
@@ -55,60 +48,48 @@ public:
 	 */
 	void ForwardTransform(Wavefunction<Rank> &psi)
 	{
-		if (LmDataName == -1)
-		{
-			//This is the first time this function is called. That means the
-			//active data buffer is the grid representation and we must allocate
-			//a new buffer for spherical harmonic representation
-			AngularDataName = psi.GetActiveBufferName();
+		//Get shape of dest array
+		blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
+		int lmSize = transform.GetAssociatedLegendrePolynomial().extent(1);
+		shape(Rank-1) = lmSize;
 
-			blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
-			int lmSize = transform.GetAssociatedLegendrePolynomial().extent(1);
-			shape(Rank-1) = lmSize;
-			LmDataName = psi.AllocateData(shape);
+		//Get destination buffer
+		int lmDataName = psi.GetAvailableDataBufferName(shape);
+		if (lmDataName == -1)
+		{
+			//Allocate dest array if if does not exist
+			lmDataName = psi.AllocateData(shape);
 		}
 
-		//Check that we've got the right active databuffer
-		if (AngularDataName != psi.GetActiveBufferName())
-		{
-			throw std::runtime_error("Active databuffer is not what is should be...");
-		}
-	
 		blitz::Array<cplx, Rank> srcData(psi.GetData());
-		blitz::Array<cplx, Rank> dstData(psi.GetData(LmDataName));
+		blitz::Array<cplx, Rank> dstData(psi.GetData(lmDataName));
 
 		//The last rank is the spherical rank
 		transform.ForwardTransform(srcData, dstData, Rank-1);
-		psi.SetActiveBuffer(LmDataName);
+		psi.SetActiveBuffer(lmDataName);
 	}
 
 	void InverseTransform(Wavefunction<Rank> &psi)
 	{
-		if (AngularDataName == -1)
+		//Get shape of dest array
+		blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
+		int omegaSize = transform.GetOmegaGrid().extent(0);
+		shape(Rank-1) = omegaSize;
+
+		//Get destination buffer
+		int angularDataName = psi.GetAvailableDataBufferName(shape);
+		if (angularDataName == -1)
 		{
-			//This is the first time any transform function is called on this
-			//class. That means the active data buffer is the spherical harmonic
-			//representation, and we must allocate a data buffer for the
-			//grid data.
-			blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
-			int omegaSize = transform.GetOmegaGrid().extent(0);
-			shape(Rank-1) = omegaSize;
-	
-			AngularDataName = psi.AllocateData(shape);
-			LmDataName = psi.GetActiveBufferName();
+			//Allocate dest array if if does not exist
+			angularDataName = psi.AllocateData(shape);
 		}
 
-		if (LmDataName != psi.GetActiveBufferName())
-		{
-			throw std::runtime_error("Active data buffer is not the lm buffer");
-		}
-		
 		blitz::Array<cplx, Rank> srcData(psi.GetData());
-		blitz::Array<cplx, Rank> dstData(psi.GetData(AngularDataName));
+		blitz::Array<cplx, Rank> dstData(psi.GetData(angularDataName));
 	
 		//The last rank is the spherical rank
 		transform.InverseTransform(srcData, dstData, Rank-1);
-		psi.SetActiveBuffer(AngularDataName);
+		psi.SetActiveBuffer(angularDataName);
 	}
 
 	// Creates a spherical harmonic representation based on an Angular representation

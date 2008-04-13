@@ -132,17 +132,34 @@ class CartesianPropagator(PropagatorBase):
 			fullShape = self.psi.GetRepresentation().GetFullShape()
 			print fullShape, self.Distribution2
 			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
-			#allocate wavefunction
-			self.TransposeBuffer1 = self.psi.GetActiveBufferName()
-			self.TransposeBuffer2 = self.psi.AllocateData(distribShape)
+		
+			self.DistributedShape1 = array(self.psi.GetData().shape)
+			self.DistributedShape2 = distribShape
+
 
 	def Transpose(self, stage, psi):
 		distrModel = psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
 			if stage == 1:
-				distrModel.ChangeDistribution(psi, self.Distribution2, self.TransposeBuffer2)
+				newDistrib = self.Distribution2
+				newShape = self.DistributedShape2
+				#Get transpose buffer
+				transposeBufferName = psi.GetAvailableDataBufferName(newShape)
+				if transposeBufferName == -1:
+					transposeBufferName = psi.AllocateData(newShape)
+				#Change Distribution
+				distrModel.ChangeDistribution(psi, newDistrib, transposeBufferName)
+
 			elif stage == 2:
-				distrModel.ChangeDistribution(psi, self.Distribution1, self.TransposeBuffer1)
+				newDistrib = self.Distribution1
+				newShape = self.DistributedShape1
+				#Get transpose buffer
+				transposeBufferName = psi.GetAvailableDataBufferName(newShape)
+				if transposeBufferName == -1:
+					transposeBufferName = psi.AllocateData(newShape)
+				#Change Distribution
+				distrModel.ChangeDistribution(psi, newDistrib, transposeBufferName)
+			
 			else:
 				raise "Invalid stage %i" % stage
 		

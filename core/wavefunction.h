@@ -2,6 +2,7 @@
 #define WAVEFUNCTION_H
 
 #include "common.h"
+#include "utility/databuffer.h"
 #include <vector>
 
 template<int Rank> class Representation;
@@ -14,19 +15,13 @@ public:
 	typedef boost::shared_ptr< Representation<Rank> > RepresentationPtr;
 	typedef blitz::Array<cplx, Rank> DataArray;
 	typedef blitz::TinyVector<int, Rank> IndexVector;
-	typedef boost::shared_ptr< DataArray > DataArrayPtr;
-	typedef std::vector<DataArrayPtr> DataArrayVector;
+	typedef std::vector< DataBuffer<Rank> > DataBufferList;
 		
-private:
-	RepresentationPtr Repr;
-	DataArrayVector WavefunctionData;
-	int ActiveBufferName;
-			
-public:
 	blitz::Array<cplx, Rank> Data;
 	
-	Wavefunction() 
+	Wavefunction()
 	{
+		ActiveBufferName = -1;
 	}
 	
 	void SetRepresentation(RepresentationPtr repr)
@@ -39,12 +34,12 @@ public:
 		return Repr;
 	}
 	
-	blitz::Array<cplx, Rank> GetData()
+	blitz::Array<cplx, Rank>& GetData()
 	{
 		return Data;
 	}
 
-	const blitz::Array<cplx, Rank> GetData() const
+	const blitz::Array<cplx, Rank>& GetData() const
 	{
 		return Data;
 	}
@@ -73,7 +68,13 @@ public:
 
 	/* Set the current buffer name to reference another data buffer*/
 	void SetData(DataArray &newData);
-	
+
+	/* Methods for locking and unlocking data buffers */
+	void LockBuffer(int bufferName);
+	void UnLockBuffer(int bufferName);
+	int GetAvailableDataBufferName(const blitz::TinyVector<int, Rank> &shape) const;
+	bool HasAvailableBuffer(const blitz::TinyVector<int, Rank> &shape) const;
+
 	int GetRank() const
 	{
 		return Rank;
@@ -107,6 +108,11 @@ public:
 	Ptr Copy() const;
 	Ptr CopyDeep() const;
 	
+private:
+	RepresentationPtr Repr;
+	DataBufferList WavefunctionData;
+	int ActiveBufferName;
+
 };
 
 

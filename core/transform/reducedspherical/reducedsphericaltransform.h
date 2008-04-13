@@ -19,8 +19,6 @@ template<int Rank>
 class ReducedSphericalTransform
 {
 private:
-	int SphDataName;			//
-	int AngularDataName;
 	int BaseRank;
 
 public:
@@ -28,8 +26,6 @@ public:
 
 	//Constructors
 	ReducedSphericalTransform() :
-			SphDataName(-1),
-			AngularDataName(-1),
 			BaseRank(-1)
 	{}
 

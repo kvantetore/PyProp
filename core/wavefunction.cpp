@@ -17,7 +17,7 @@ size_t Wavefunction<Rank>::GetMemoryFootprint() const
 	size_t size = 0;
 	for (size_t i = 0; i < WavefunctionData.size(); i++)
 	{
-		size += WavefunctionData[i]->size();
+		size += WavefunctionData[i].GetArray().size();
 	}
 	return size * sizeof(cplx);
 }
@@ -43,7 +43,7 @@ int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 		<< " (~ " << byteCount / (1024*1024) << "MB)"
 		<< std::endl;
 	
-	DataArrayPtr data = DataArrayPtr( new DataArray(shape) );
+	DataBuffer<Rank> data(shape);
 	int newName = WavefunctionData.size();
 	WavefunctionData.push_back(data);
 	return newName;
@@ -54,7 +54,9 @@ int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 template<int Rank>
 void Wavefunction<Rank>::FreeData(int bufferName) 
 {
-	(*WavefunctionData[bufferName]).resize(0);
+	LockBuffer(bufferName);
+	WavefunctionData[bufferName].FreeArray();
+	UnLockBuffer(bufferName);
 }
 
 /* Returns the name of the active data buffer */
@@ -71,7 +73,16 @@ template<int Rank>
 int Wavefunction<Rank>::SetActiveBuffer(int bufferName)
 {
 	int oldActiveBufferName = GetActiveBufferName();
-	Data.reference(*WavefunctionData[bufferName]);
+
+	//Get lock on the new array
+	LockBuffer(bufferName);
+	if (oldActiveBufferName != -1)
+	{
+		UnLockBuffer(oldActiveBufferName);
+	}
+
+	//Reference the data
+	Data.reference(WavefunctionData[bufferName].GetArray());
 	ActiveBufferName = bufferName;
 	return oldActiveBufferName;
 }
@@ -80,24 +91,58 @@ int Wavefunction<Rank>::SetActiveBuffer(int bufferName)
 template<int Rank>
 typename Wavefunction<Rank>::DataArray& Wavefunction<Rank>::GetData(int bufferName)
 {
-	return *WavefunctionData[bufferName];
+	return WavefunctionData[bufferName].GetArray();
 }
 
 
 template<int Rank>
 const typename Wavefunction<Rank>::DataArray& Wavefunction<Rank>::GetData(int bufferName) const
 {
-	return *WavefunctionData[bufferName];
+	return WavefunctionData[bufferName].GetArray();
 }
 
 
 template<int Rank>
 void Wavefunction<Rank>::SetData(Wavefunction<Rank>::DataArray &newData)
 {
-	WavefunctionData[GetActiveBufferName()]->reference(newData);
+	WavefunctionData[GetActiveBufferName()].GetArray().reference(newData);
 	Data.reference(newData);
 }
 
+template<int Rank>
+void Wavefunction<Rank>::LockBuffer(int bufferName)
+{
+	WavefunctionData[bufferName].Lock();
+}
+
+template<int Rank>
+void Wavefunction<Rank>::UnLockBuffer(int bufferName)
+{
+	WavefunctionData[bufferName].UnLock();
+}
+
+template<int Rank>
+int Wavefunction<Rank>::GetAvailableDataBufferName(const blitz::TinyVector<int, Rank> &shape) const
+{
+	//See if there is an existing buffer of correct size
+	for (unsigned int i=0; i<WavefunctionData.size(); i++)
+	{
+		if (WavefunctionData[i].IsAvailable())
+		{
+			if (WavefunctionData[i] == shape)
+			{
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+template<int Rank>
+bool Wavefunction<Rank>::HasAvailableBuffer(const blitz::TinyVector<int, Rank> &shape) const
+{
+	return GetAvailableDataBufferName(shape) >= 0;
+}
 
 template<int Rank>
 typename Wavefunction<Rank>::Ptr Wavefunction<Rank>::Copy() const
