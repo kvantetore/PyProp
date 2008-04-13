@@ -27,6 +27,7 @@ private:
 	DataArray1D Work;
 	blitz::Array<int, 1> Iwork;
 	double OutputTime;
+	double StartTime;
 
 public:
 	void ApplyConfigSection(const ConfigSection &config);
@@ -36,6 +37,11 @@ public:
 	double GetPropagatedTime()
 	{
 		return OutputTime;
+	}
+
+	void SetStartTime(double time)
+	{
+		this->StartTime = time;
 	}
 };
 

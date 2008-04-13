@@ -2,6 +2,7 @@
 import sys
 import os
 from numpy import conj
+import pylab
 
 #pytables
 import tables
@@ -61,7 +62,7 @@ def GetDiagonalElements(psi, config, potential):
 	A funtion to provide diagonal (energy) matrix elements
 	"""
 
-	potential[:] = pylab.load('input/energies')[:config.size]
+	potential[:] = pylab.load('input/energies.dat')[:config.size] * config.scaling
 
 
 def GetFieldMatrixElements(psi, config):

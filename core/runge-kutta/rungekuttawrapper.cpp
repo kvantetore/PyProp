@@ -106,8 +106,17 @@ void RungeKuttaWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction
 	this->TempPsi = tempPsi;
 	this->MultiplyCallback = callback;
 
-	this->ImTime = std::abs(imag(dt)) > 1e-10;
-	double timeStep = std::abs(dt);
+	double timeStep;
+	if (std::abs(imag(dt)) > 1e-10)
+	{
+		this->ImTime = true;
+		timeStep = std::abs(dt);
+	}
+	else
+	{
+		this->ImTime = false;
+		timeStep = std::real(dt);
+	}
 
 	int status = gsl_odeiv_step_apply(Integrator, t, timeStep, inout, y_err, 0, 0, &sys);
 

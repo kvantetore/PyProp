@@ -95,6 +95,12 @@ void OdeWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 	{
 		cout << "Using Default Absolute error " << this->AbsoluteError << endl;
 	}
+
+	this->StartTime = 0;
+	if (config.HasValue("start_time"))
+	{
+		config.Get("start_time", this->StartTime);
+	}
 }
 
 
@@ -107,7 +113,7 @@ void OdeWrapper<Rank>::Setup(const Wavefunction<Rank> &psi)
 	this->Work.resize(workspaceSize);
 	this->Iwork.resize(50);
 	this->Flag = 1;
-	this->OutputTime = 0;
+	this->OutputTime = this->StartTime;
 }
 
 
@@ -124,9 +130,18 @@ void OdeWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>:
 	this->TempPsi = tempPsi;
 	this->MultiplyCallback = callback;
 
-	//double tout = t + sqrt(sqr(imag(dt) + sqr(real(dt))));
-	this->ImTime = std::abs(imag(dt)) > 1e-10;
-	double tout = t + std::abs(dt);
+	double timeStep;
+	if (std::abs(imag(dt)) > 1e-10)
+	{
+		this->ImTime = std::abs(imag(dt)) > 1e-10;
+		timeStep = std::abs(dt);
+	}
+	else
+	{
+		timeStep = std::real(dt);
+	}
+
+	double tout = this->OutputTime + timeStep;
 
 	cOde(MultiplyHamiltonian<Rank>, this, n, in, this->OutputTime, tout, this->RelativeError, this->AbsoluteError, this->Flag, this->Work.data(), this->Iwork.data());
 

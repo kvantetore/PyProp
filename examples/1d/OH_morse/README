@@ -1,0 +1,16 @@
+This is an example of a 1D Morse oscillator model of the Hydrogen-Oxygen molecule.
+
+We are using a Cartesian (FFT) propagator, which seems to be well suited for systems of this type.
+
+Some physical data
+------------------
+
+Hydrogen mass:       1837.3623595944798 a.u.
+Oxygen mass:         29166.217982728809 a.u.
+Reduced mass:        1728.4749213315472 a.u.
+Ground state energy: -0.190472 a.u. (?)
+
+References
+----------
+Zhu and Rabitz, J. Chem. Phys. 1998 [doi: 10.1063/1.476575]
+

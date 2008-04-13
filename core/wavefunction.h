@@ -93,6 +93,11 @@ public:
 		Data /= norm;
 		return norm;
 	}
+
+	void Clear()
+	{
+		Data = 0;
+	}
 	
 	/* Make a copy of the currently active data buffer only.
 	 * Use this method when you want a copy of the wavefunction for

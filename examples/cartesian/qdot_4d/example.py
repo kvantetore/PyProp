@@ -197,3 +197,22 @@ def GetHamiltonMatrixSubspace(prop, l):
 		
 	return matrix
 
+
+def TestSoftParameter():
+
+	conf = SetupConfig()
+
+	E = []
+	softParams = [0.005, 0.01, 0.02, 0.04, 0.06]
+
+	for s in softParams:
+		conf.TwoElectronCorrelation.soft_param = s
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+
+		for t in prop.Advance(True):
+			pass
+
+		E.append(prop.GetEnergyExpectationValue())
+
+	return E

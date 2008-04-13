@@ -20,7 +20,7 @@ d = 0.005
 e = 0.15
 
 def GetSparseMatrix(psi, config):
-	matrix = pylab.load("d130_50stk-matel")
+	matrix = pylab.load("/home/raymond/sci/dev/Krotov/matrixElements/d130_50stk-matel")
 	row = array(matrix[:,0], dtype=int) - 1
 	col = array(matrix[:,1], dtype=int) - 1
 	matelem = array(matrix[:,2], dtype=complex)

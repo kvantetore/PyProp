@@ -149,8 +149,9 @@ class Krotov:
 		#may drift off the mark by several orders of magnitude. To
 		#avoid the sin()-window going negative, we take the max()
 		#of it with 0.
-		T = self.BaseProblem.Duration
-		mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
+		#T = self.BaseProblem.Duration
+		#mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
+		mask = 1.0
 		self.ControlVector[timeGridIndex] = sqrt(mask) * fieldValue
 
 
@@ -217,12 +218,16 @@ class Krotov:
 			self.BaseProblem.TimeStep = complex(self.TimeStep)
 			self.BaseProblem.StartTime = 0.0
 			self.BaseProblem.Duration = self.PropagationTime
+			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
 			self.BaseProblem.SetupStep()
 
 		elif direction == Direction.Backward:
 			self.BaseProblem.TimeStep = -complex(self.TimeStep)
 			self.BaseProblem.StartTime = self.PropagationTime
 			self.BaseProblem.Duration = 0.0
+			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
 			self.BaseProblem.SetupStep()
 
 	
