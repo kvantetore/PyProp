@@ -54,6 +54,9 @@ reload(utilities)
 import serialization
 reload(serialization)
 
+import plotting
+reload(plotting)
+
 execfile(__path__[0] + "/Distribution.py")
 execfile(__path__[0] + "/Enum.py")
 execfile(__path__[0] + "/Potential.py")
