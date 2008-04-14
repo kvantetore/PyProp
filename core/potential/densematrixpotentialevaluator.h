@@ -238,7 +238,7 @@ public:
 				}
 				inPos(MatrixRowRank) = matrixIterator.position()(Rank);
 				
-				TempData(outPos) += *matrixIterator * v(inPos);
+				TempData(outPos) += std::conj(*matrixIterator) * v(inPos);
 			}
 		}
 		if (MatrixMultiplyAlgorithm == 1)

@@ -64,6 +64,14 @@ class Config:
 			#print "Applying config to ", other.__class__.__name__
 			other.ApplyConfig(self)
 
+	def SetOption(self, section, option, value):
+		"""
+		Update 'option' in 'section' with 'value'. Both the Config
+		object and the original ConfigParser object is updated.
+		"""
+		self.cfgObj.set(section, option, "%s" % value)
+		self.__dict__[section].Set(option, value)
+
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
 	#hierarchy

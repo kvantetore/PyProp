@@ -7,6 +7,7 @@ import tables
 
 #numerical modules
 from numpy import *
+from numpy import max as nmax
 import pylab
 
 #home grown modules
@@ -41,6 +42,7 @@ def GetDenseMatrix(psi, config):
 
 def GetDiagonalElements(psi, config, potential):
 	potential[:] = pylab.load('energies.dat')
+	#potential *= 0.5
 
 def Propagate():
 	conf = pyprop.Load("config.ini")
@@ -62,11 +64,31 @@ def Propagate():
 	corr.append(abs(prop.psi.GetData()[:])**2)
 	times += [prop.PropagatedTime]
 	print "Time = ", prop.PropagatedTime, ", initial state correlation = ", corr[-1][0]
-	#pylab.plot(times, corr)
-
-	print "refcount ", sys.getrefcount(init), sys.getrefcount(prop.Propagator)
 
 	return prop
+
+
+def CompareFortran(**args):
+	conf = pyprop.Load("config_compare_fortran.ini")
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	init = prop.psi.Copy()
+
+	for t in prop.Advance(5):
+		corr = abs(prop.psi.InnerProduct(init))**2
+		print "Time = %f, initial state correlation = %f" % (t, corr)
+
+	corr = abs(prop.psi.InnerProduct(init))**2
+	t = prop.PropagatedTime
+	print "Time = %f, initial state correlation = %f" % (t, corr)
+
+	#Load fortran data and compare
+	fdata = pylab.load("fortran_propagation.dat")
+	print "Max difference pyprop/fortran: %e" % nmax(abs(prop.psi.GetData())**2 - fdata[-1,1:])
+
+	return prop
+
 
 
 #class SparseMatrix(tables.IsDescription):

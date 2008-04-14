@@ -211,7 +211,7 @@ class Krotov:
 
 	def SetupStep(self, direction):
 		"""
-		Helper function; set up propagator for forward or backward run
+		Set up propagator for forward or backward run
 		"""
 
 		if direction == Direction.Forward:
