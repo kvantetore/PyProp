@@ -267,7 +267,7 @@ def LaserFunction(conf, t):
 
 import time
 def TestInnerProduct():
-	conf = pyprop.Load("config.ini")
+	conf = pyprop.Load("config_radial.ini")
 	conf.Propagation.grid_potential_list = []
 	prop = pyprop.Problem(conf)
 	
@@ -280,6 +280,8 @@ def TestInnerProduct():
 	
 	prop.psi.GetData()[:] = rand(*prop.psi.GetData().shape)
 	tempPsi.GetData()[:] = rand(*prop.psi.GetData().shape)
+
+	"""
 
 	generator = prop.Propagator.BasePropagator.TensorPotentialGenerator
 
@@ -354,16 +356,16 @@ def TestInnerProduct():
 		MultiplyOverlapMatrix(overlapMatrix2, source, dest)
 
 		return VectorDotProduct(tempPsi, tempPsi2)
+	"""
 
 
-
-	for algo in range(1,6):
+	for algo in range(1,4):
 		prop.psi.GetRepresentation().Algorithm = algo
-		if algo == 3:
+		if algo == 4:
 			innerProduct = NewInnerProduct
-		elif algo == 4:
-			innerProduct = NewInnerProduct2
 		elif algo == 5:
+			innerProduct = NewInnerProduct2
+		elif algo == 6:
 			innerProduct = NewInnerProduct3
 		else:
 			innerProduct = lambda: prop.psi.InnerProduct(tempPsi)
@@ -372,13 +374,13 @@ def TestInnerProduct():
 		n = innerProduct()
 		print "Norm (Algo %i) = %f" % (algo, abs(n)**2)
 
-	for algo in range(1,6):
+	for algo in range(1,4):
 		prop.psi.GetRepresentation().Algorithm = algo
-		if algo == 3:
+		if algo == 4:
 			innerProduct = NewInnerProduct
-		elif algo == 4:
-			innerProduct = NewInnerProduct2
 		elif algo == 5:
+			innerProduct = NewInnerProduct2
+		elif algo == 6:
 			innerProduct = NewInnerProduct3
 		else:
 			innerProduct = lambda: prop.psi.InnerProduct(tempPsi)

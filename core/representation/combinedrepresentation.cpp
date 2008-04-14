@@ -126,6 +126,112 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	{
 		return InnerProductImpl_Algo2(d1, d2);
 	}
+	else if (Algorithm == 3)
+	{
+		blitz::TinyVector<int, Rank> shape = d1.shape();
+		
+		blitz::Array<cplx, Rank> temp1;
+		blitz::Array<cplx, Rank> temp2;
+		
+		int tempName[2];
+		int tempNamePsi[2];
+		Wavefunction<Rank>* psiList[2];
+		for (int i=0; i<2; i++)
+		{
+			tempName[i] = -1;
+			tempNamePsi[i] = -1;
+		}
+		psiList[0] = const_cast<Wavefunction<Rank>*>(&w1);
+		psiList[1] = const_cast<Wavefunction<Rank>*>(&w2);
+
+		//Find any available buffers of correct size on any of the wavefunctions
+		for (int i=0; i<2; i++)
+		{
+			//See if there is an available buffer in psi j
+			for (int j=0; j<2; j++)
+			{
+				int name = psiList[j]->GetAvailableDataBufferName(shape);
+				if (name != -1)
+				{
+					tempName[i] = name;
+					tempNamePsi[i] = j;
+					psiList[j]->LockBuffer(name);
+					break;
+				}
+			}
+		}
+
+		//If we didnt find two available buffers, we must allocate
+		//We'll allocate on w2
+		for (int i=0; i<2; i++)
+		{
+			if (tempName[i] == -1)
+			{
+				tempName[i] = psiList[1]->AllocateData(shape);
+				tempNamePsi[i] = 1;
+				psiList[1]->LockBuffer(tempName[i]);
+			}
+		}
+
+		//Get the actual data buffers
+		temp1.reference(psiList[tempNamePsi[0]]->GetData(tempName[0]));
+		temp2.reference(psiList[tempNamePsi[1]]->GetData(tempName[1]));
+
+		//Perform MatrixVector multiplication
+		//first step
+		//
+		
+		for (int i=0; i<Rank; i++)
+		{
+			if (i != 0 && this->GetDistributedModel()->IsDistributedRank(i))
+			{
+				throw std::runtime_error("This inner product only supports distribution in rank0");
+			}
+
+			if (this->IsOrthogonalBasis(i))
+			{
+				if (i == 0)
+				{
+					temp1 = d2;
+				}
+				continue;
+				//TODO: Add support for weights
+			}
+
+			blitz::Array<cplx, 2> overlapMatrix = this->GetGlobalOverlapMatrixBlas(i);
+			//Reshape the overlap matrix into a N-d array suitable for TensorPotentialMultiply
+			blitz::TinyVector<int, Rank> overlapShape = 1;
+			overlapShape(i) = overlapMatrix.size();
+			blitz::TinyVector<int, Rank> overlapStride = 1;
+			for (int j=0; j<i; j++)
+			{
+				overlapStride(j) = overlapMatrix.size();
+			}
+			blitz::Array<cplx, Rank> overlapTensor(overlapMatrix.data(), overlapShape, overlapStride, blitz::neverDeleteData);
+
+			if (i==0)
+			{
+				temp1 = 0;
+				TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, d2, temp1);
+			}
+			else
+			{
+				temp2 = 0;
+				TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, temp1, temp2);
+				blitz::swap(temp1, temp2);
+			}
+		}
+
+		//Calculate inner product by overlap of the vectors
+		cplx innerProduct = VectorInnerProduct(d1, temp1);
+
+		for (int i=0; i<2; i++)
+		{
+			psiList[tempNamePsi[i]]->UnLockBuffer(tempName[i]);
+		}
+	
+		return innerProduct;
+	}
 	else
 	{
 		cout << "Unknown InnerProduct algorithm " << Algorithm << endl;
@@ -133,6 +239,7 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	}
 
 }
+
 
 /*
  * Multiply rank of wavefunction by overlapmatrix

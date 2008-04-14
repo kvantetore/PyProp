@@ -943,13 +943,13 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 #-----------------------------------------------------------------------------------
 
 snippetGeneratorMap = { \
-	"Simple": SnippetGeneratorSimple, \
-	"Hermitian": SnippetGeneratorHermitian, \
-	"Diagonal": SnippetGeneratorDiagonal, \
-	"Identity": SnippetGeneratorIdentity, \
-	"Banded": SnippetGeneratorBandedBlas, \
+	"Simp": SnippetGeneratorSimple, \
+	"Herm": SnippetGeneratorHermitian, \
+	"Diag": SnippetGeneratorDiagonal, \
+	"Ident": SnippetGeneratorIdentity, \
+	"Band": SnippetGeneratorBandedBlas, \
 #	"Dense": SnippetGeneratorDenseBlas, \
-    "BandedDistributed": SnippetGeneratorBandedDistributed, \
+    "Distr": SnippetGeneratorBandedDistributed, \
 }
 
 class TensorPotentialMultiplyGenerator(object):
@@ -1131,13 +1131,14 @@ def GetAllPermutations(systemRank, curRank):
 		yield ()
 	else:
 		for key in snippetGeneratorMap.keys():
-			if key != "BandedDistributed" or curRank == 0:
-				for subperm in GetAllPermutations(systemRank, curRank+1):
-					yield (key,) +  subperm
+			if key != "Distr" or curRank == 0:
+				if (key == "Ident" or key == "Band") or systemRank < 4:
+					for subperm in GetAllPermutations(systemRank, curRank+1):
+						yield (key,) +  subperm
 
 
 generatorPermutationList = []
-for systemRank in range(1,3+1):
+for systemRank in range(1,4+1):
 	for perm in GetAllPermutations(systemRank, 0):
 		generatorPermutationList.append(TensorPotentialMultiplyGenerator(list(perm)))
 

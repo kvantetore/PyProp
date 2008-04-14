@@ -270,8 +270,46 @@ def RecurseAlgorithm2InnerLoop(rank, curRank):
 	return str
 
 
+#---------------------------------------------------------------------------------------------------------
+#    Algorithm 
+#---------------------------------------------------------------------------------------------------------
+
+def GenerateAlgorithm3(rank):
+	def GenerateRankOneBody(storageId):
+		methodBody = ""
+		for i in range(rank):
+			methodBody += """
+				if (rank == %(curRank)s)
+				{
+					TensorPotential::TensorPotentialMultiply_%(storageIdString)s_Wrapper(potential, scaling, source, dest);
+				}
+			""" % { \
+				"rank": rank, \
+				"curRank": i, \
+				"storageIdString": "_".join(["Ident"]*i + [storageId] + ["Ident"]*(rank-i-1)), \
+			}
+		return methodBody
+
+	str = ""
+	for storageId in ["Band"]:
+		str += """
+		void TensorPotentialMultiply_Rank1_%(storageId)s(int rank, blitz::Array<cplx, %(rank)i> potential, double scaling, blitz::Array<cplx, %(rank)i> &source, blitz::Array<cplx, %(rank)i> &dest)
+		{
+			%(body)s
+		}
+		""" % { \
+			"rank": rank, \
+			"storageId": storageId, \
+			"body": GenerateRankOneBody(storageId), \
+		}
+
+	return str
+		
+
 for i in range(1,4+1):
 	print '#include "combinedrepresentation.h"'
+	print '#include "../tensorpotential/tensorpotentialmultiply_wrapper.h"'
 	print PrettyPrint(GenerateAlgorithm1(i))
 	print PrettyPrint(GenerateAlgorithm2(i))
+	print PrettyPrint(GenerateAlgorithm3(i))
 

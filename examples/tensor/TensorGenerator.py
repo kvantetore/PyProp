@@ -92,7 +92,7 @@ class GeometryInfoCommonDense(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Simple"
+		return "Simp"
 
 	def GetMultiplyArguments(self):
 		if not hasattr(self, "BasisPairs"):
@@ -127,7 +127,7 @@ class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Hermitian"
+		return "Herm"
 
 	def GetMultiplyArguments(self):
 		if not hasattr(self, "BasisPairs"):
@@ -172,7 +172,7 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Diagonal"
+		return "Diag"
 
 	def GetMultiplyArguments(self):
 		return []
@@ -209,7 +209,7 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "BandedDistributed"
+		return "Distr"
 
 	def GetMultiplyArguments(self):
 		return [self.RankCount, self.BandCount]
@@ -254,7 +254,7 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Identity"
+		return "Ident"
 
 	def GetMultiplyArguments(self):
 		return []
@@ -309,7 +309,7 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 		return pairs
 	
 	def GetStorageId(self):
-		return "Simple"
+		return "Simp"
 
 	def GetMultiplyArguments(self):
 		if not hasattr(self, "BasisPairs"):
@@ -363,7 +363,7 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 		return pairs
 	
 	def GetStorageId(self):
-		return "Banded"
+		return "Band"
 
 	def GetMultiplyArguments(self):
 		return []
@@ -414,7 +414,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
-		if storageId == "Identity":
+		if storageId == "Ident":
 			sourceSlice = [slice(0, None, None)]*len(source.shape)
 			sourceSlice[rank] = slice(0, 1, None)
 			dest[:] = source[sourceSlice]
@@ -461,7 +461,7 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Simple"
+		return "Simp"
 
 	def GetMultiplyArguments(self):
 		if not hasattr(self, "BasisPairs"):
@@ -502,7 +502,7 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 		return pairs
 
 	def GetStorageId(self):
-		return "Hermitian"
+		return "Herm"
 
 	def GetMultiplyArguments(self):
 		if not hasattr(self, "BasisPairs"):

@@ -287,12 +287,12 @@ void pAMP<T>::PerformArnoldiStep()
 	Timers["Arnoldi Step (Orthogonalization)"].Stop();
 	//- Remove the projection from the residual
 	blas.AddVector(TempVector, -1.0, Residual);
-	T residualNorm = CalculateGlobalNorm(Residual);
+	//T residualNorm = CalculateGlobalNorm(Residual);
 
 	//If necessary, perform any reorthogonalization steps to ensure that all 
 	//arnoldi vectors are orthogonal
 	Timers["Arnoldi Step"].Stop();
-	PerformOrthogonalization(origNorm, residualNorm);
+	//PerformOrthogonalization(origNorm, residualNorm);
 	Timers["Arnoldi Step"].Start();
 	
 	//Update the Hessenberg Matrix

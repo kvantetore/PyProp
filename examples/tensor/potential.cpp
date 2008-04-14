@@ -27,7 +27,7 @@ void RepresentPotentialInBasisBSpline( BSpline::BSpline::Ptr bsplineObject, Arra
 	int postCount = source3d.extent(2);
 	int pairCount = indexPair.extent(0);
 
-	bool isHermitian = storageId == "Hermitian";
+	bool isHermitian = storageId == "Herm";
 	double scaling = 1;
 
 	for (int preIndex=0; preIndex<preCount; preIndex++)
@@ -73,7 +73,7 @@ void RepresentPotentialInBasisReducedSphericalHarmonic( ReducedSphericalToolsPtr
 	Array<double, 1> weights = obj->GetWeights();
 	
 	dest3d = 0;
-	bool isHermitian = storageId == "Hermitian";
+	bool isHermitian = storageId == "Herm";
 	double scaling = 1;
 
 	for (int preIndex=0; preIndex<preCount; preIndex++)
