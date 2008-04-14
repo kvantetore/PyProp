@@ -138,6 +138,7 @@ void OdeWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>:
 	}
 	else
 	{
+		this->ImTime = std::abs(imag(dt)) > 1e-10;
 		timeStep = std::real(dt);
 	}
 
