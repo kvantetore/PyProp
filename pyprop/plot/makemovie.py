@@ -13,7 +13,7 @@ frame_dpi = 100
 frame_size = 600
 bitrate = 8000
 tmpdir = "/movie"
-name = "output.avi"
+movie_name = "output.avi"
 
 [Rebuilder]
 rank0 = [-10, 10, 100]
@@ -23,10 +23,11 @@ lmax = 1
 
 class MakeMovie:
 
-	def __init__(self, wavefunctionRebuilder):
+	def __init__(self, wavefunctionRebuilder=None):
 
 		self.Rebuilder = wavefunctionRebuilder
-		self.Propagator = self.Rebuilder.Propagator
+		if wavefunctionRebuilder != None:
+			self.Propagator = self.Rebuilder.Propagator
 
 	def ApplyConfigSection(self, configSection):
 		self.Encoder = configSection.encoder
