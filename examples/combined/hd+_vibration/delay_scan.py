@@ -23,31 +23,171 @@ def PrintAxisPosition(event):
 #            Parse input files
 #-----------------------------------------------------------------
 
+def MakeFourierPlotEvenOdd():
+	#tControl, cControl = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_all_phase_0.00pi_pump_5fs_5e13_scaling_2.h5", partitionCount=0)
+	#t1, c1 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_293.00fs_5e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	#t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_306.00fs_5e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+
+	s1 = s_[:]
+	d1 = 1 - sum(c1[s1], axis=1)
+	N1 = len(d1)
+	k1 = fft.helper.fftfreq(N1, 1.0*femtosec_to_au) * 2*pi
+
+	s2 = s_[:]
+	d2 = 1 - sum(c2[s2], axis=1)
+	N2 = len(d2)
+	k2 = fft.helper.fftfreq(N2, 1.0*femtosec_to_au) * 2*pi
+
+	E, V = LoadBoundEigenstates(molecule="d2+", radialScaling=2)
+	
+	figure(figsize=(11,11))
+	b = [-1, 15, 0, 0.4]
+	a = [0.005, 0.016, 0, 230]
+	subplots_adjust(wspace=0.05)
+
+	ticks = diff(E)
+	labels = ["$v_{%i} - v_{%i}$" % (i+1, i) for i,e in enumerate(ticks)]
+
+	#293fs
+	ax = subplot(2, 2, 0 + 2*0 + 1)
+	tIndex = where(tControl == 293)[0][0]
+	CorrelationBarPlot(cControl[tIndex,:], ax)
+	ax.axis(b)
+	xticks(fontsize=12)
+	ylabel("Control Pulse @ 293fs", fontsize=12)
+	title("Vibrational Distribution", fontsize=12)
+
+	ax = subplot(2, 2, 1 + 2*0 + 1)
+	ax.plot(k1[:N1/2], abs(fft.fft(d1)[:N1/2]), label="293fs (states 2,3)")
+	for dE in E[2:] - E[:-2]: ax.axvline(dE, color="r")
+	for dE in diff(E): ax.axvline(dE, color="k")
+	yticks([])
+	#xticks(ticks, labels, rotation=45, fontsize=12)
+	ax.axis(a)
+	title("Fourier Transformed Dissociation Yield", fontsize=12)
+
+	#306fs
+	ax = subplot(2, 2, 0 + 2*1 + 1)
+	tIndex = where(tControl == 306)[0][0]
+	CorrelationBarPlot(cControl[tIndex,:], ax)
+	ax.axis(b)
+	xticks(fontsize=12)
+	ylabel("Control Pulse @ 306fs", fontsize=12)
+	
+	ax = subplot(2, 2, 1 + 2*1 + 1)
+	ax.plot(k2[:N2/2], abs(fft.fft(d2)[:N2/2]), label="306fs (states 3,4)")
+	for dE in E[2:] - E[:-2]: ax.axvline(dE, color="r")
+	for dE in diff(E): ax.axvline(dE, color="k")
+	yticks([])
+	#xticks(ticks, labels, rotation=45, fontsize=12)
+	ax.axis(a)
+
+	
+	#Second figure
+	figure()
+	plot(t1, 1-sum(c1, axis=1), "r", label="22fs (states 2,3)")
+	#plot(t1[s1], d1, "r,")
+
+	plot(t2, 1-sum(c2, axis=1), "g", label="24.5fs (states 3,4)")
+	#plot(t2[s2], d2, "g,")
+
+	legend()
+	show()
+
+
 def MakeFourierPlot():
-	t1, c1 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_22.00fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
-	t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_24.50fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
-	t3, c3 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_26.20fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	#tControl, cControl = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_all_phase_0.00pi_pump_5fs_20e13_scaling_2.h5", partitionCount=0)
+	#t1, c1 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_22.00fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	#t2, c2 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_24.50fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
+	#t3, c3 = GetScanDelayCorrelation(outputfile="outputfiles/d2+/final_control_all_control_26.20fs_20e13_probe_5fs_30e13_scaling_2.h5", partitionCount=0)
 
-	d1 = 1 - sum(c1, axis=1)
-	d2 = 1 - sum(c2, axis=1)
-	d3 = 1 - sum(c3, axis=1)
+	s1 = s_[:]
+	d1 = 1 - sum(c1[s1], axis=1)
+	N1 = len(d1)
+	k1 = fft.helper.fftfreq(N1, 1.0*femtosec_to_au) * 2*pi
 
-	N = len(t1)
-	dt = t1[1] - t1[0]
+	s2 = s_[:]
+	d2 = 1 - sum(c2[s2], axis=1)
+	N2 = len(d2)
+	k2 = fft.helper.fftfreq(N2, 1.0*femtosec_to_au) * 2*pi
 
-	k = fft.helper.fftfreq(N, dt)
+	s3 = s_[:]
+	d3 = 1 - sum(c3[s3], axis=1)
+	N3 = len(d3)
+	k3 = fft.helper.fftfreq(N3, 1.0*femtosec_to_au) * 2*pi
+
+
+	E, V = LoadBoundEigenstates(molecule="d2+", radialScaling=2)
+	
+	figure(figsize=(11,11))
+	b = [-1, 15, 0, 0.4]
+	a = [0.00480, 0.0080, 0, 230]
+	subplots_adjust(wspace=0.05)
+
+	ticks = diff(E)
+	labels = ["$v_{%i} - v_{%i}$" % (i+1, i) for i,e in enumerate(ticks)]
+
+	#22fs
+	ax = subplot(3, 2, 0 + 2*0 + 1)
+	tIndex = where(tControl == 22)[0][0]
+	CorrelationBarPlot(cControl[tIndex,:], ax)
+	ax.axis(b)
+	xticks(fontsize=12)
+	ylabel("Control Pulse @ 22fs", fontsize=12)
+	title("Vibrational Distribution", fontsize=12)
+
+	ax = subplot(3, 2, 1 + 2*0 + 1)
+	ax.plot(k1[:N1/2], abs(fft.fft(d1)[:N1/2]), label="22fs (states 2,3)")
+	for dE in E[2:] - E[:-2]: ax.axvline(dE, color="r")
+	#for dE in diff(E): ax.axvline(dE, color="k")
+	yticks([])
+	xticks(ticks, labels, rotation=45, fontsize=12)
+	ax.axis(a)
+	title("Fourier Transformed Dissociation Yield", fontsize=12)
+
+	#24.5fs
+	ax = subplot(3, 2, 0 + 2*1 + 1)
+	tIndex = where(tControl == 24.5)[0][0]
+	CorrelationBarPlot(cControl[tIndex,:], ax)
+	ax.axis(b)
+	xticks(fontsize=12)
+	ylabel("Control Pulse @ 24.5fs", fontsize=12)
+	
+	ax = subplot(3, 2, 1 + 2*1 + 1)
+	ax.plot(k2[:N2/2], abs(fft.fft(d2)[:N2/2]), label="24.5fs (states 3,4)")
+	for dE in E[2:] - E[:-2]: ax.axvline(dE, color="r")
+	#for dE in diff(E): ax.axvline(dE, color="k")
+	yticks([])
+	xticks(ticks, labels, rotation=45, fontsize=12)
+	ax.axis(a)
+
+	#26.2fs
+	ax = subplot(3, 2, 0 + 2*2 + 1)
+	tIndex = where(tControl == 26.5)[0][0]
+	CorrelationBarPlot(cControl[tIndex,:], ax)
+	ax.axis(b)
+	xticks(fontsize=12)
+	ylabel("Control Pulse @ 26.2fs", fontsize=12)
+		
+	ax = subplot(3, 2, 1 + 2*2 + 1)
+	ax.plot(k3[:N3/2], abs(fft.fft(d3)[:N3/2]), label="26.2fs (states 4,5)")
+	for dE in E[2:] - E[:-2]: ax.axvline(dE, color="r")
+	#for dE in diff(E): ax.axvline(dE, color="k")
+	yticks(E)
+	xticks(ticks, labels, rotation=45, fontsize=12)
+	ax.axis(a)
 
 	figure()
-	plot(k[:N/2]**2, abs(fft.fft(d1)[:N/2]), label="22fs (states 2,3)")
-	plot(k[:N/2]**2, abs(fft.fft(d2)[:N/2]), label="24.5fs (states 3,4)")
-	plot(k[:N/2]**2, abs(fft.fft(d3)[:N/2]), label="26.2fs (states 4,5)")
-	legend()
+	plot(t1, 1-sum(c1, axis=1), "r", label="22fs (states 2,3)")
+	#plot(t1[s1], d1, "r,")
 
-	figure()
-	plot(t1, d1, label="22fs (states 2,3)")
-	plot(t2, d2, label="24.5fs (states 3,4)")
-	plot(t3, d3, label="26.2fs (states 4,5)")
+	plot(t2, 1-sum(c2, axis=1), "g", label="24.5fs (states 3,4)")
+	#plot(t2[s2], d2, "g,")
+
+	plot(t3, 1-sum(c3, axis=1), "b", label="26.2fs (states 4,15)")
+	#plot(t3[s3], d3, "b,")
 	legend()
+	show()
 
 class DelayScanPlot():
 	def __init__(self, molecule, filename, partitionCount=0, figureSize=30*cm_to_inch, batchMode=False, radialScaling=1, useExistingFigure=False, figureTitle=None, cmap=None, color=None):
@@ -695,27 +835,21 @@ def SubmitAllFinalControl():
 		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
 		controlIntensity=20e13, controlDelay=493*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
-
+	"""
 	#293fs delay (even states)
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
+	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[310:3000:1], molecule="d2+", controlDuration=duration5fs, controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[310:4000], molecule="d2+", controlDuration=duration5fs, controlIntensity=5e13, controlDelay=293*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 
 	#306fs delay (odd states)
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
-	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:800:0.25], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
-	"""
+	#SubmitFinalControlExperiment(radialScaling=2, delayList=r_[310:3000:1], molecule="d2+", controlDuration=duration5fs, controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[310:4000], molecule="d2+", controlDuration=duration5fs, controlIntensity=5e13, controlDelay=306*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=20e13, controlDelay=22*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+		controlIntensity=20e13, controlDelay=22*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=20e13, controlDelay=24.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
+		controlIntensity=20e13, controlDelay=24.5*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 	SubmitFinalControlExperiment(radialScaling=2, delayList=r_[0:4000:1], molecule="d2+", controlDuration=duration5fs, \
-		controlIntensity=20e13, controlDelay=26.2*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=30e13)
-
+		controlIntensity=20e13, controlDelay=26.2*femtosec_to_au, pulseDuration=duration5fs, pulseIntensity=40e13)
 
 def SubmitFinalControlExperiment(**args):
 	args["outputfile"] = "outputfiles/%s/final_control_%s_control_%.2ffs_%ie13_probe_%ifs_%ie13_scaling_%i.h5" % \
@@ -732,7 +866,8 @@ def SubmitFinalControlExperiment(**args):
 	print args["outputfile"]
 
 	#Submit:
-	SubmitDelayScanStallo(**args)
+	args["partitionCount"] = args.get("partitionCount", 64)
+	SubmitDelayScan(**args)
 
 	##Make Plots
 	#datafile = args["outputfile"].replace("%i", "all")
@@ -758,7 +893,8 @@ def SubmitFinalExperiment(**args):
 	print args["outputfile"]
 
 	#Submit:
-	SubmitDelayScanStallo(**args)
+	args["partitionCount"] = args.get("partitionCount", 64)
+	SubmitDelayScan(**args)
 
 	##Make Plots
 	#datafile = args["outputfile"].replace("%i", "all")
@@ -781,7 +917,8 @@ def SubmitPhaseExperiment(**args):
 		)
 
 	print args["outputfile"]
-	SubmitDelayScanStallo(**args)
+	args["partitionCount"] = args.get("partitionCount", 64)
+	SubmitDelayScan(**args)
 
 
 
@@ -798,9 +935,11 @@ def SubmitControlPumpExperiment(**args):
 		)
 
 	print args["outputfile"]
-	SubmitDelayScanStallo(**args)
+	args["partitionCount"] = args.get("partitionCount", 64)
+	SubmitDelayScan(**args)
 
-def SubmitDelayScanStallo(**args):
+
+def SubmitDelayScanIPython1(**args):
 	delayList = args["delayList"]
 	outputfile = args["outputfile"]
 	molecule = args["molecule"]
@@ -849,6 +988,9 @@ def SubmitDelayScanStallo(**args):
 
 	print "Done."
 
+
+import pyprop.utilities.submitpbs_stallo as submitpbs
+
 def SubmitDelayScan(**args):
 	delayList = args["delayList"]
 	outputfile = args["outputfile"]
@@ -856,24 +998,27 @@ def SubmitDelayScan(**args):
 	partitionCount = args["partitionCount"]
 
 	partitionSize = int(ceil(len(delayList)/float(partitionCount)))
+	partitionStep = delayList[1] - delayList[0] #Assume equidistant delayList
 
 	plist = []
 	
 	for i in range(partitionCount):
-		args["delayList"] = delayList[i*partitionSize:(i+1)*partitionSize]
+		start = min(i*partitionSize, len(delayList))
+		end = min((i+1)*partitionSize, len(delayList))
+		delaySlice = slice(delayList[start-1]+partitionStep, delayList[end-1]+partitionStep, partitionStep)
+		args["delayList"] = delaySlice
 		args["outputfile"] = outputfile % i
 
-		executable = './run_delay_scan.py %s > /dev/null' % commands.mkarg(repr(args))  
-		plist.append(os.popen(executable))
+		script = submitpbs.SubmitScript()
+		script.interconnect = None
+		script.executable = './run_delay_scan.py'
+		script.parameters = commands.mkarg(repr(args))  
+		script.ppn = 1
+		script.nodes = 1
+		script.walltime = submitpbs.timedelta(hours=2)
+		print "\n".join(script.CreateScript())
+		#script.Submit()
 
-	while len(plist) > 0:
-		for p in plist:
-			try: 
-				print p.next()
-			except StopIteration:
-				print p.close()
-				plist.remove(p)
-				break
 
 
 #------------------------------------------------------------------------------	
@@ -885,6 +1030,8 @@ def RunDelayScan(**args):
 	delayList = args["delayList"]
 	outputfile = args["outputfile"]
 	molecule = args["molecule"]
+	args["silent"] = True
+	args["configSilent"] = True
 
 	print "USING OUTPUTFILE ", outputfile
 

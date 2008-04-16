@@ -24,6 +24,156 @@ execfile("serialization.py")
 execfile("potential.py")
 execfile("load_cmap.py")
 
+import pyprop.plotting as myplot
+
+def CorrelationBarPlot(corr, ax=None):
+	if ax == None:
+		ax = gca()
+	
+	basisCount = len(corr)
+	left = r_[:basisCount] - 0.4
+	bar(left, corr)
+	
+
+def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
+	fig = gcf()
+	clf()
+
+	probePulse = GetLaserField(conf.ProbePulsePotential, t*femtosec_to_au)
+	controlPulse = GetLaserField(conf.ControlPulsePotential, t*femtosec_to_au)
+	pulse = probePulse + controlPulse
+
+	ax = fig.gca()
+	ax.set_position([0.05,0.05,0.9,0.68])
+	ax.plot(r, potData)
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 + potData[:,0], "k")
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 + potData[:,1], "k")
+	ax.axis([0,10,-0.65,-0.1])
+	yticks([])
+
+	ax = axes([0.52, 0.77, 0.43, 0.20])
+	ax.plot(t, pulse, "b")
+	ax.plot([t[frameIndex]], [pulse[frameIndex]], "r.", markersize=10)
+	ax.axis([0, t[-1], 1.2*min(pulse), 1.2*max(pulse)])
+	yticks([])
+
+	basisCount = corr.shape[1]
+	ax = axes([0.05, 0.77, 0.43, 0.20])
+	ax.bar(r_[:basisCount], corr[frameIndex, :])
+	ax.axis([0, basisCount, 0, 1.1*numpy.max(corr)])
+	yticks([])
+
+
+def MakeMovie(**args):
+	conf = SetupConfig(**args)
+	prop = SetupProblem(**args)
+	potData = prop.Propagator.PotentialList[0].Potential.GetPotentialData().copy()
+	del prop
+
+	interactive = rcParams["interactive"]
+	rcParams["interactive"] = False
+
+	generateFrames = args.get("generateFrames", True)
+	generateMovie = args.get("generateMovie", True)
+	isTest = args.get("isTest", False)
+
+	if generateFrames:
+		t, corr, X, Y, r, rad = Propagate(**args)
+		
+		figure(figsize=(8,8))
+		for i, curT in enumerate(t):
+			progressStr = "%#3i%s Complete" % (i*100 / float(len(t)), "%")
+			sys.stdout.write(progressStr)
+			sys.stdout.flush()
+			sys.stdout.write("\b"*len(progressStr))
+			MakeMovieFrame(conf, i, t, corr, r, rad, potData)
+			if isTest:
+				show()
+				return
+			savefig("movie/frame%05i.png" % i)
+
+		close()
+
+	if generateMovie:
+		mymovie = myplot.MakeMovie()
+		conf.Movie.Apply(mymovie)
+		mymovie.CreateMovie()
+
+	rcParams["interactive"] = interactive
+
+def LoadDifferenceBasis(**args):
+	boundE, boundV = LoadBoundEigenstates(**args)
+	V = zeros((2*(len(boundE)/2), boundV.shape[1]), dtype=boundV.dtype)
+	E = zeros((2*(len(boundE)/2)), dtype=boundE.dtype)
+	for i in range(len(boundE)/2):
+		V[2*i,:] = (boundV[2*i,:] - boundV[2*i+1,:]) / sqrt(2)
+		V[2*i+1,:] = (boundV[2*i,:] + boundV[2*i+1,:]) / sqrt(2)
+		E[2*i] = (boundE[2*i] + boundE[2*i+1]) / 2.0
+		E[2*i+1] = (boundE[2*i] + boundE[2*i+1]) / 2.0
+
+	return E, V
+
+		
+
+
+def MakeOddEvenMovie(**args):
+	args['config'] = "config.ini"
+	args['imtime'] = False
+	inputfile = GetInputFile(**args)
+
+	conf = SetupConfig(**args)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	LoadInitialState(prop, **args)
+	initPsi = prop.psi.Copy()
+
+	E, V = LoadDifferenceBasis(**args)
+
+	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	dr = diff(r)[0]
+
+	outputCount = 500
+	if "outputCount" in args:
+		outputCount = args["outputCount"]
+
+	curIndex = 0
+
+	interactive = rcParams["interactive"]
+	rcParams["interactive"] = False
+
+	figure(figsize=(8,8))
+
+	def output():
+		corr = abs(dot(V, prop.psi.GetData()[:,0]))**2
+		curtime = t/femtosec_to_au
+		
+		progressStr = "%#3i%s Complete" % (curIndex*100 / float(outputCount), "%")
+		sys.stdout.write(progressStr)
+		sys.stdout.flush()
+		sys.stdout.write("\b"*len(progressStr))
+
+		clf()
+		CorrelationBarPlot(corr)
+		axis([-1,20,0,0.35])
+		title("t = %3.3f" % curtime)
+		savefig("movie/frame%05i.png" % curIndex)
+
+	
+	#output initial state
+	for t in prop.Advance(outputCount):
+		output()
+		curIndex += 1
+
+	output()
+
+	mymovie = myplot.MakeMovie()
+	conf.Movie.Apply(mymovie)
+	mymovie.CreateMovie()
+
+	rcParams["interactive"] = interactive
+
+
 def ConcatenateHDF5(inFileList, outFile, outputMode="w"):
 	"""
 	Concatenates several HDF5 files to one file.
@@ -160,11 +310,31 @@ def Propagate(**args):
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 
+	if "initStates" in args:
+		initStates = args["initStates"]
+		initPsi.GetData()[:] = 0
+		for state in initStates:
+			initPsi.GetData()[:,0] += boundV[state,:]
+			print "Input Energy = ", boundE[state]
+			
+
+	if "testEnergy" in args:
+		initStates = args["initStates"]
+		prop.psi.GetData()[:] = 0
+		for state in initStates:
+			prop.psi.GetData()[:,0] = boundV[state,:]
+			print prop.GetEnergyExpectationValue() - boundE[state]
+
+		return
+
+		
+
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	dr = diff(r)[0]
 	timeList = []
 	corrList = []
 	radialData = []
+	expectRList = []
 
 
 	outputCount = 500
@@ -179,6 +349,10 @@ def Propagate(**args):
 		"""
 		corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
 		radialData.append(prop.psi.GetData().copy())
+		expectR = dr*sum( conj(prop.psi.GetData()[:,0]) * r * prop.psi.GetData()[:,0] ) 
+		#only calc <R> for the bound potential
+		#dr*sum( conj(prop.psi.GetData()[:,1]) * r * prop.psi.GetData()[:,1] )
+		expectRList.append(expectR)
 		
 		timeList.append(t/femtosec_to_au)
 
@@ -219,6 +393,8 @@ def Propagate(**args):
 		prop.psi.GetData()[:,0] = data
 
 		plot(r, abs(prop.psi.GetData()[:,0].copy())**2)
+
+	
 
 
 	prop.Duration = fullDuration
