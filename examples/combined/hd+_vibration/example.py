@@ -24,7 +24,10 @@ execfile("serialization.py")
 execfile("potential.py")
 execfile("load_cmap.py")
 
-import pyprop.plotting as myplot
+try:
+	import pyprop.plotting as myplot
+except:
+	print "pyprop.plotting not available"
 
 def CorrelationBarPlot(corr, ax=None):
 	if ax == None:

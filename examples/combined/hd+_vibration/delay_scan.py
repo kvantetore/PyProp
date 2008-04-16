@@ -1003,11 +1003,14 @@ def SubmitDelayScan(**args):
 	plist = []
 	
 	for i in range(partitionCount):
-		start = min(i*partitionSize, len(delayList))
+		start = min(i*partitionSize, len(delayList)-1)
 		end = min((i+1)*partitionSize, len(delayList))
-		delaySlice = slice(delayList[start-1]+partitionStep, delayList[end-1]+partitionStep, partitionStep)
+		delaySlice = slice(delayList[start], delayList[end-1]+partitionStep, partitionStep)
 		args["delayList"] = delaySlice
 		args["outputfile"] = outputfile % i
+
+		if i != 0:
+			continue
 
 		script = submitpbs.SubmitScript()
 		script.interconnect = None
@@ -1015,7 +1018,7 @@ def SubmitDelayScan(**args):
 		script.parameters = commands.mkarg(repr(args))  
 		script.ppn = 1
 		script.nodes = 1
-		script.walltime = submitpbs.timedelta(hours=2)
+		script.walltime = submitpbs.timedelta(hours=6)
 		print "\n".join(script.CreateScript())
 		#script.Submit()
 
