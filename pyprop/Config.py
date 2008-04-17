@@ -2,7 +2,7 @@ import os
 import ConfigParser
 
 class Section:
-	
+
 	def __init__(self, name, cfg=None):
 		self.name = name
 		if cfg != None:
@@ -43,10 +43,9 @@ class Section:
 		if hasattr(other,"ApplyConfigSection"):
 			#print "Applying config section to ", other.__class__.__name__
 			other.ApplyConfigSection(self)
-			
-		
+
 class Config:
-	
+
 	def __init__(self, cfg):
 		for sectionName in cfg.sections():
 			if sectionName in ["GetSection"]:
@@ -64,13 +63,21 @@ class Config:
 			#print "Applying config to ", other.__class__.__name__
 			other.ApplyConfig(self)
 
-	def SetOption(self, section, option, value):
+	def SetValue(self, section, optionName, value, ignoreSerializationError=False):
 		"""
-		Update 'option' in 'section' with 'value'. Both the Config
+		Update 'optionName' in 'section' with 'value'. Both the Config
 		object and the original ConfigParser object is updated.
+		If an un-repr-able is passed, exception is raised unless 'ignoreSerializationError'
+		is set to True.
 		"""
-		self.cfgObj.set(section, option, "%s" % value)
-		self.__dict__[section].Set(option, value)
+		try:
+			eval(repr(value))
+		except:
+			if not ignoreSerializationError:
+				raise Exception("Object cannot be serialized: %s", repr(value))
+
+		self.cfgObj.set(section, optionName, repr(value))
+		self.__dict__[section].Set(optionName, value)
 
 def Load(fileName, silent=True):
 	#Find all imported files in the config files

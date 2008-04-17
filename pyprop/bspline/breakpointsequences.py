@@ -65,3 +65,25 @@ def QuadraticLinearBreakpointSequence(rmin, rmax, n, joinPoint):
 	#print "r0 = ", r0, " alpha = ", alpha, " beta = ", beta
 
 	return xi
+
+def ExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
+	"""
+	Compute exponential/linear breakpoint sequence. An inner region defined by
+	[rmin, rpartition] have exponentially spaced points, whereas the outer region
+	defined by (rpartition, rmax] is linearly spaced. The parameter 'n' specifies
+	the number of points in the inner region. The outer region is constructed such
+	that the grid point spacing equals that of the two last outermost points in the
+	inner region.
+	"""
+
+	#Setup inner/exponential region
+	h = rpartition - rmin
+	xi = [ rmin + h * ( exp(gamma * float(i - 1) / float(n -1)) - 1 ) / ( exp(gamma) - 1 ) \
+	       for i in range(1, n + 1) ]
+
+	#Setup outer/linear region
+	h = xi[-1] - xi[-2]
+	xi += [x for x in frange(rpartition + h, rmax, h)]
+
+	return xi
+

@@ -12,7 +12,7 @@ total_frames = 200
 frame_dpi = 100
 frame_size = 600
 bitrate = 8000
-tmpdir = "/movie"
+tmpdir = "movie"
 movie_name = "output.avi"
 
 [Rebuilder]
@@ -39,9 +39,15 @@ class MakeMovie:
 		self.TmpDir = configSection.tmpdir
 		self.MovieName = configSection.movie_name
 
-	def CreateFrames(self):
+	def PlotFrame(self, curIter, t):
+		X, Y, psi = self.Rebuilder.BuildWavefunction()
+		pylab.imshow(abs(psi)**2, extent=(self.Rebuilder.GridExtent))
+
+
+	def CreateFrames(self, plotFunction = PlotFrame):
 	
 		#Plot non-interactively
+		interactive = pylab.rcParams['interactive']
 		pylab.rcParams['interactive'] = False
 		figSizeInch = self.FrameSize / float(self.FrameDPI)
 		pylab.figure(figsize = (figSizeInch, figSizeInch), dpi = self.FrameDPI)
@@ -60,14 +66,14 @@ class MakeMovie:
 			sys.stdout.write(10 * "\b")
 			sys.stdout.write("%3i / %3i" % (i, self.TotalFrames))
 			sys.stdout.flush()
-			
-			X, Y, psi = self.Rebuilder.BuildWavefunction()
-			pylab.imshow(abs(psi)**2, extent=(self.Rebuilder.GridExtent))
+			#X, Y, psi = self.Rebuilder.BuildWavefunction()
+			#pylab.imshow(abs(psi)**2, extent=(self.Rebuilder.GridExtent))
+			plotFunction(i, t)
 			pylab.savefig("%s/frame%03i.png" % (self.TmpDir, i), dpi = self.FrameDPI)
 			pylab.clf()
 
 		print "Done creating movie frames!"
-
+		pylab.rcParams['interactive'] = interactive
 
 	def CreateMovie(self):
 		print "Now creating movie..."

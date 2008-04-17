@@ -18,7 +18,6 @@ class BSPLINE(core.BSpline):
 		"""
 		"""
 		self.MaxSplineOrder = conf.order
-		self.NumberOfBreakpoints = conf.xsize
 
 		self.CreateBreakpointSequence(conf)
 		self.CreateContinuitySequence(conf)
@@ -69,11 +68,19 @@ class BSPLINE(core.BSpline):
 			                                           conf.xmax, \
 			                                           conf.xsize, \
 			                                           conf.joinpoint)
+		elif(conf.bpstype == 'exponentiallinear'):
 
+			bpsSeq = ExponentialLinearBreakpointSequence(conf.xmin, \
+			                                           conf.xpartition, \
+			                                           conf.xmax, \
+			                                           conf.xsize, \
+			                                           conf.gamma)
+		
 		else:
 			raise NameError, "Sequence not recognized!"
 		
-		self.ResizeBreakpointSequence( len(bpsSeq) )
+		self.NumberOfBreakpoints = len(bpsSeq)
+		self.ResizeBreakpointSequence( self.NumberOfBreakpoints )
 		self.GetBreakpointSequence()[:] = array(bpsSeq)
 
 

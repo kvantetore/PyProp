@@ -20,7 +20,8 @@ class Krotov:
 
 	def __init__(self, prop):
 		self.BaseProblem = prop
-		self.PsiSize = prop.psi.GetRepresentation().VectorSize
+		#self.PsiSize = prop.psi.GetRepresentation().VectorSize
+		self.PsiSize = prop.psi.GetData().size
 
 		#Get time step and propagation time from config
 		self.TimeStep = prop.Config.Propagation.timestep
@@ -149,9 +150,8 @@ class Krotov:
 		#may drift off the mark by several orders of magnitude. To
 		#avoid the sin()-window going negative, we take the max()
 		#of it with 0.
-		#T = self.BaseProblem.Duration
-		#mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
-		mask = 1.0
+		T = self.BaseProblem.Duration
+		mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
 		self.ControlVector[timeGridIndex] = sqrt(mask) * fieldValue
 
 
@@ -200,7 +200,7 @@ class Krotov:
 		
 		#Set control and store backward solution for t = T
 		self.ControlFunction.ConfigSection.e0 = self.ControlVector[self.TimeGridSize - 1]
-		#self.BackwardSolution[:, self.TimeGridSize - 1] = self.BaseProblem.psi.GetData()[:]
+		self.BackwardSolution[:, self.TimeGridSize - 1] = self.BaseProblem.psi.GetData()[:]
 
 		T = self.PropagationTime
 		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
