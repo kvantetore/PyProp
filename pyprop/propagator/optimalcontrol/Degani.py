@@ -54,7 +54,7 @@ class Degani(OptimalControl):
 
 	def Setup(self):
 		self.M = numpy.zeros((self.NumberOfControls, self.NumberOfControls), dtype=double)
-		self.b = numpy.zeros((self.NumberOfControls), dtype=double)
+		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 
 		self.TempPsi3 = self.BaseProblem.psi.CopyDeep()
 
@@ -73,32 +73,21 @@ class Degani(OptimalControl):
 		backward solution and X the control matrix.
 		"""
 
-		#if direction == Direction.Backward and not self.UpdateBackward:
-		#	for a in range(self.NumberOfControls):
-		#		self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
-		#	return
+		if direction == Direction.Backward and not self.UpdateBackward:
+			for a in range(self.NumberOfControls):
+				self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
+			return
 
 		self.SetupVectorB(timeGridIndex, direction)
 		self.SetupMatrixM(timeGridIndex, direction)
 
 		#newControls = linalg.solve(self.M, self.b)
-		newControls = self.b[:] / self.M[:]
-
-		#Update control function. We apply a window function to
-		#force control to be zero at beginning and end. Since we
-		#are potentially making a _lot_ of integration steps in
-		#some cases, the current time as reported by the propagator
-		#may drift off the mark by several orders of magnitude. To
-		#avoid the sin()-window going negative, we take the max()
-		#of it with 0.
-		#T = self.BaseProblem.Duration
-		#mask = max(sin(pi * min(t,T) / (T - self.TimeStep)), 0.0)
-		mask = 1.0
+		newControls = self.b[0] / self.M[0,:]
 
 		#Update controls
 		for a in range(self.NumberOfControls):
-			self.ControlVectors[a, timeGridIndex] = sqrt(mask) * newControls[a]
-			self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
+			self.ControlVectors[a, timeGridIndex] = newControls[a]
+			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
 	
 	def ComputeCostFunctional(self, currentYield):
@@ -126,7 +115,7 @@ class Degani(OptimalControl):
 	def SetupVectorB(self, timeGridIndex, direction):
 
 		commutatorScaling = 1j * self.TimeStep / 2.0
-		self.TempPsi3.GetData()[:] = self.BaseProblem.psi.GetData()[:]
+		#self.TempPsi3.GetData()[:] = self.BaseProblem.psi.GetData()[:]
 		
 		for a in range(self.NumberOfControls):
 			self.ControlFunctionList[a].ConfigSection.strength = 1.0
@@ -142,7 +131,7 @@ class Degani(OptimalControl):
 			#
 			self.TempPsi.Clear()
 			self.ControlFunctionList[a].MultiplyPotential(self.TempPsi,0,0)
-			self.TempPsi2.GetData()[:] = self.TempPsi.GetData()[:]
+			#self.TempPsi2.GetData()[:] = self.TempPsi.GetData()[:]
 
 			#Then we do X_a * H_0 * |psi>. The steps involved are:
 			#
@@ -152,35 +141,37 @@ class Degani(OptimalControl):
 			#    4. Clear TmpPsi again
 			#    5. Perform X_a * |psi> and store in TmpPsi
 			#    6. Store TmpPsi in TmpPsi2
-			self.TempPsi.Clear()
-			self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
-			self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
-			self.TempPsi.Clear()
-			self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
-			self.TempPsi2.GetData()[:] += commutatorScaling * self.TempPsi.GetData()[:]
+			#self.TempPsi.Clear()
+			#self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
+			#self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
+			#self.TempPsi.Clear()
+			#self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
+			#self.TempPsi2.GetData()[:] += commutatorScaling * self.TempPsi.GetData()[:]
 
 			#H_0 * X_a * |psi>
-			self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
-			self.TempPsi.Clear()
-			self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
-			self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
-			self.TempPsi.Clear()
-			self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
-			self.TempPsi2.GetData()[:] -= commutatorScaling * self.TempPsi.GetData()[:]
+			#self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
+			#self.TempPsi.Clear()
+			#self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
+			#self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
+			#self.TempPsi.Clear()
+			#self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
+			#self.TempPsi2.GetData()[:] -= commutatorScaling * self.TempPsi.GetData()[:]
 
 			#Now inner product
 			if direction == Direction.Forward:
-				self.TempPsi.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+				self.TempPsi2.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+				self.b[a] = -numpy.imag(self.TempPsi2.InnerProduct(self.TempPsi))
 			else:
-				self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
-			self.b[a] = -numpy.imag(self.TempPsi.InnerProduct(self.TempPsi2))
+				self.TempPsi2.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
+				self.b[a] = -numpy.imag(self.TempPsi.InnerProduct(self.TempPsi2))
+
 
 			#Last, the penalty matrix
 			if not self.PenaltyMatrixIsDiagonal:
 				pass #do something here
 
 			#Reset |psi>
-			self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
+			#self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
 
 	def SetupMatrixM(self, timeGridIndex, direction):
 

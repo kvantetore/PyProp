@@ -143,23 +143,19 @@ class OptimalControl:
 		print "Backward propagation, pass ", self.currIter
 
 		self.SetupStep(Direction.Backward)
-		self.InitializeControls(Direction.Backward)
+		#self.InitializeControls(Direction.Backward)
 
 		# Set the initial state
 		self.BaseProblem.psi.GetData()[:] = targetProjection * self.TargetState.GetData()[:]
 		
+		#Update controls
 		self.ComputeNewControlFunctions(self.TimeGridSize - 1, self.PropagationTime, Direction.Backward)
-
-		#Set control and store backward solution for t = T
-		#self.BackwardSolution[:, self.TimeGridSize - 1] = self.BaseProblem.psi.GetData()[:]
 
 		T = self.PropagationTime
 		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
-			self.BackwardSolution[:, self.TimeGridSize - idx - 1] = self.BaseProblem.psi.GetData()[:]
-			if idx < self.TimeGridSize - 2:
+			self.BackwardSolution[:, self.TimeGridSize - 1 - idx] = self.BaseProblem.psi.GetData()[:]
+			if idx < self.TimeGridSize - 1:
 				self.ComputeNewControlFunctions(self.TimeGridSize - idx - 2, t, Direction.Backward)
-			#if idx < self.TimeGridSize - 1:
-			#	self.ControlFunction.ConfigSection.e0 = self.ControlVector[self.TimeGridSize - idx - 2]
 
 	
 	def SetupStep(self, direction):
