@@ -13,7 +13,10 @@ execfile(__path__[0] + "/propagator/ExponentialFiniteDifferencePropagator.py")
 execfile(__path__[0] + "/propagator/OdePropagator.py")
 execfile(__path__[0] + "/propagator/RungeKuttaPropagator.py")
 execfile(__path__[0] + "/propagator/VectorPropagator.py")
-execfile(__path__[0] + "/propagator/Krotov.py")
+#execfile(__path__[0] + "/propagator/Krotov.py")
 
 #init subpropagators
 execfile(__path__[0] + "/propagator/subpropagator/init.py")
+
+#init optimal control solvers
+execfile(__path__[0] + "/propagator/optimalcontrol/init.py")
