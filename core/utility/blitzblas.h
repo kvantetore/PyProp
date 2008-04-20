@@ -36,5 +36,17 @@ double VectorInnerProduct(const blitz::Array<double, Rank> &u, const blitz::Arra
 template<int Rank>
 cplx VectorInnerProduct(const blitz::Array<cplx, Rank> &u, const blitz::Array<cplx, Rank> &v);
 
+template<int Rank>
+void ScaleVector(cplx scaling, blitz::Array<cplx, Rank> &x)
+{
+	x *= scaling;
+}
+
+template<int Rank>
+void CopyVector(cplx sourceScaling, const blitz::Array<cplx, Rank> &source, cplx destScaling, blitz::Array<cplx, Rank> &dest)
+{
+	dest = sourceScaling * source + destScaling * dest;
+}
+
 #endif
 

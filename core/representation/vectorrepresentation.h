@@ -3,11 +3,11 @@
 
 #include "../common.h"
 #include "../mpi/distributedmodel.h"
-#include "representation.h"
+#include "orthogonalrepresentation.h"
 #include "cartesianrange.h"
 #include "../utility/blitzblas.h"
 
-class VectorRepresentation : public Representation<1>
+class VectorRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef boost::shared_ptr< VectorRepresentation > Ptr;
@@ -41,7 +41,7 @@ public:
 	/** 
 	Returns the portion of the weights local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (Weights.size() == 0)
 		{

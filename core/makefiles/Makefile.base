@@ -54,6 +54,7 @@ STATIC_MAIN_GENERATOR := utility/python_main.py
 
 #C++ source files
 SOURCES= \
+	representation/overlapmatrix.cpp \
 	transform/orthopol/orthopoltools.cpp \
 	transform/orthopol/orthopolpropagator.cpp \
 	representation/reducedspherical/thetarepresentation.cpp \

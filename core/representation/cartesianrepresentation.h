@@ -65,16 +65,35 @@ public:
 	/** 
 	Returns the portion of the weights local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		int effectiveRank = rank - this->GetBaseRank();
-		return this->GetDistributedModel()->GetLocalArray(Range(effectiveRank).GetWeights(), rank);
+		return Range(effectiveRank).GetWeights();
 	}	
+
+	/*
+	 * Returns the product of all dx
+	 */
+	double GetScalarWeight()
+	{
+		double weight = 1;
+		for (int i=0; i<Rank; i++)
+		{
+			weight *= Range(i).Dx;
+		}
+		return weight;
+	}
 
 	//Implementation of the Representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual void ApplyConfigSection(const ConfigSection &cfg);
+
+	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+	virtual void MultiplyOverlap(Wavefunction<Rank> &psi);
+	virtual void SolveOverlap(Wavefunction<Rank> &psi);
+	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
+	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
 };
 
 #endif

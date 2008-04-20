@@ -7,8 +7,7 @@ def InitBSpline(conf):
 	bspline.ApplyConfigSection(conf)
 	bspline.CreateBSplineTable()
 	bspline.CreateBSplineDerivative2Table()
-	bspline.ComputeOverlapMatrix()
-	bspline.SetupOverlapMatrixExpert()
+	bspline.SetupOverlap()
 	return bspline
 
 

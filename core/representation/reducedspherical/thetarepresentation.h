@@ -2,7 +2,7 @@
 #define REDUCEDSPHERICAL_THETAREPRESENTATION_H
 
 #include "../../common.h"
-#include "../representation.h"
+#include "../orthogonalrepresentation.h"
 #include "thetarange.h"
 
 namespace ReducedSpherical
@@ -13,9 +13,7 @@ namespace ReducedSpherical
  * The distribution of (theta) can be chosen when creating the
  * omega range.
  */
-typedef Representation<1> Representation1D;
-
-class ThetaRepresentation : public Representation1D
+class ThetaRepresentation : public OrthogonalRepresentation
 {
 public:
 	ThetaRange Range;                          //The points chosen for the angular grid
@@ -62,13 +60,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 
 	/** Apply config, and set up Range

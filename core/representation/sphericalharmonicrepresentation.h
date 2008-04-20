@@ -2,7 +2,7 @@
 #define LMREPRESENTATION_H
 
 #include "../common.h"
-#include "representation.h"
+#include "orthogonalrepresentation.h"
 #include "lmrange.h"
 
 /** Represents the wavefunction in a spherical harmonic (l,m) basis.
@@ -10,7 +10,7 @@
   * Ylm with l == Range.MaxL, which leaves Range.Count() == (1 + MaxL)**2
   * functions 
   */
-class SphericalHarmonicRepresentation : public Representation<1>
+class SphericalHarmonicRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef shared_ptr<SphericalHarmonicRepresentation> Ptr;
@@ -62,13 +62,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong sphharm rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 	
 	/** 

@@ -267,29 +267,7 @@ void MultiplyTensorPotential_2(blitz::Array<TBase, 2> potentialData, double scal
 */
 }
 
-template<int Rank>
-void SolveForOverlapMatrix(BSpline::BSpline::Ptr bspline, blitz::Array<cplx, Rank> source, blitz::Array<cplx, Rank> dest, int rank)
-{
-	typedef Array<cplx, 3> Array3D;
-	typedef Array<cplx, 1> Array1D;
-	Array3D source3d = MapToRank3(source, rank, 1);
-	Array3D dest3d = MapToRank3(dest, rank, 1);
 
-	int preCount = source3d.extent(0);
-	int postCount = source3d.extent(2);
-
-	blitz::Array<cplx, 1> tempData(source.extent(rank));
-	
-	for (int preIndex=0; preIndex<preCount; preIndex++)
-	{
-		for (int postIndex=0; postIndex<postCount; postIndex++)
-		{
-			tempData = source3d(preIndex, blitz::Range::all(), postIndex);
-			bspline->SolveForOverlapMatrix(tempData);
-			dest3d(preIndex, blitz::Range::all(), postIndex) = tempData;
-		}
-	}
-}
 
 template<int Rank>
 class KineticEnergyPotential : public PotentialBase<Rank>

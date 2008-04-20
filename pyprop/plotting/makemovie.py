@@ -38,6 +38,9 @@ class MakeMovie:
 		self.BitRate = configSection.bitrate
 		self.TmpDir = configSection.tmpdir
 		self.MovieName = configSection.movie_name
+		self.InputFileName = None
+		if hasattr(configSection, "input_name"):
+			self.InputFileName = configSection.input_name
 
 	def PlotFrame(self, curIter, t):
 		X, Y, psi = self.Rebuilder.BuildWavefunction()
@@ -83,7 +86,10 @@ class MakeMovie:
 				print "WARNING: ffmpeg with mpeg-codec does not support fps < 20!"
 	
 			framerate = max(self.FrameRate, 20)
-			encoderCmd += " -i %s%s " % (self.TmpDir, "/frame%3d.png")
+			if self.InputFileName != None:
+				encoderCmd += " -i %s" % self.InputFileName
+			else:
+				encoderCmd += " -i %s%s " % (self.TmpDir, "/frame%3d.png")
 			encoderCmd += " -r %i" % framerate
 			encoderCmd += " -b %ik -bufsize %ik -f mpeg2video -s %ix%i" % (self.BitRate, self.BitRate, self.FrameSize, self.FrameSize)
 			encoderCmd += "  %s" % self.MovieName
@@ -95,5 +101,9 @@ class MakeMovie:
 			encoderCmd += " mf://%s/*png" % self.TmpDir
 			encoderCmd += " -o %s" % self.MovieName
 
+		else:
+			raise Exception("Unknown encoder '%s'" % encoderCmd)
+
+		print "Running Encoder: %s" % encoderCmd
 		os.system(encoderCmd)
 

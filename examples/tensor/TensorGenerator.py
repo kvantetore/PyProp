@@ -886,7 +886,7 @@ class BasisPropagator(PropagatorBase):
 		self.TensorPotentialGenerator = TensorPotentialGenerator(representation = self.psi.GetRepresentation())
 
 		#We need the temp array for solving overlap matrix eqns
-		self.TempData = zeros(self.psi.GetData().shape, dtype=complex)
+		self.TempPsi2 = self.psi.Copy()
 
 	def ApplyConfig(self, config):
 		#Create any precalculated potentials 
@@ -982,38 +982,37 @@ class BasisPropagator(PropagatorBase):
 
 	def MultiplyHamiltonian(self, destPsi, t, dt):
 		#Multiply potentials
+		destPsi.GetData()[:] = 0
 		self.MultiplyPotential(destPsi, t, dt)
 
 		#Solve for all overlap matrices
 		repr = self.psi.GetRepresentation()
-		source = destPsi.GetData()
-		dest = self.TempData
-		hasNonOrthogonalBasis = False
-		for i in range(self.Rank):
-			isOrthogonal = repr.IsOrthogonalBasis(i)
-			if not isOrthogonal:
-				#Solve for the overlap matrix for this rank
-				#overlapMatrix = repr.GetGlobalOverlapMatrix(i)
-				self.SolveForOverlapMatrix(source, dest, None, i)
-				
-				#Use the current dest as the next source, and vice versa
-				source, dest = dest, source
-				hasNonOrthogonalBasis = True
+		repr.SolveOverlap(destPsi)
+
+	def MultiplyHamiltonianBalancedOverlap(self, destPsi, t, dt):
+		#Store input psi
+		self.TempPsi2.GetData()[:] = self.psi.GetData()
+
+		#Solve for all overlap matrices
+		repr = self.psi.GetRepresentation()
+		repr.SolveSqrtOverlap(False, self.psi)
 		
-		#Make sure we end up with the correct array in destPsi
-		if hasNonOrthogonalBasis:
-			destPsi.GetData()[:] = source
-		
+		#Multiply potentials
+		destPsi.GetData()[:] = 0
+		self.MultiplyPotential(destPsi, t, dt)
+
+		#Solve for all overlap matrices
+		repr = destPsi.GetRepresentation()
+		repr.SolveSqrtOverlap(True, destPsi)
+
+		#Restore input psi back to its original state
+		self.psi.GetData()[:] = self.TempPsi2.GetData()
+	
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")
 
 	def GetBasisFunction(self, rank, basisIndex):
 		raise NotImplementedException("Implement GetBasisFunction...")
-
-	def SolveForOverlapMatrix(self, source, dest, overlapMatrix, rank):
-		bspline = self.psi.GetRepresentation().GetRepresentation(rank).GetBSplineObject()
-		SolveForOverlapMatrix(bspline, source, dest, rank)
-	
 
 
 

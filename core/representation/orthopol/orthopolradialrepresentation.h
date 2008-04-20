@@ -2,13 +2,13 @@
 #define ORTHOPOLRADIALREPRESENTATION_H
 
 #include "../../common.h"
-#include "../representation.h"
+#include "../orthogonalrepresentation.h"
 #include "orthopolrange.h"
 
 namespace OrthoPol
 {
 
-class OrthoPolRadialRepresentation : public Representation<1>
+class OrthoPolRadialRepresentation : public OrthogonalRepresentation
 {
 public:
 	OrthoPolRange Range;
@@ -61,13 +61,13 @@ public:
 		return Range.GetGrid();
 	}
 
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 
 	/** Apply config, and set up Range

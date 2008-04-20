@@ -26,8 +26,6 @@ using namespace blitz;
 
 class MatrixTranspose
 {
-private:
-	int value;
 public:
 	MatrixTranspose(int value) : value(value) {}
 
@@ -59,8 +57,80 @@ public:
 	static const int None = 1; 
 	static const int Transpose = 2;
 	static const int Conjugate = 3;
+
+private:
+	int value;
 };
 
+class MatrixHermitianStorage
+{
+public:
+	MatrixHermitianStorage(int value) : value(value) {}
+
+	bool operator==(const MatrixHermitianStorage &other) const
+	{
+		return other.value == value;
+	}
+
+	bool operator==(int otherValue) const
+	{
+		return otherValue == value;
+	}
+
+	operator char()
+	{
+		if (value == Upper) return 'U';
+		if (value == Lower) return 'L';
+		return -1;
+	}
+
+	operator CBLAS_UPLO()
+	{
+		if (value == Upper) return CblasUpper;
+		return CblasLower;
+	}
+
+	static const int Upper = 1; 
+	static const int Lower = 2;
+
+private:
+	int value;
+};
+
+class MatrixDiagonal
+{
+public:
+	MatrixDiagonal(int value) : value(value) {}
+
+	bool operator==(const MatrixDiagonal &other) const
+	{
+		return other.value == value;
+	}
+
+	bool operator==(int otherValue) const
+	{
+		return otherValue == value;
+	}
+
+	operator char()
+	{
+		if (value == Unit) return 'U';
+		if (value == NonUnit) return 'N';
+		return -1;
+	}
+
+	operator CBLAS_DIAG()
+	{
+		if (value == Unit) return CblasUnit;
+		return CblasNonUnit;
+	}
+
+	static const int Unit = 1; 
+	static const int NonUnit = 2;
+
+private:
+	int value;
+};
 
 template <class T>
 class BLAS
@@ -102,7 +172,18 @@ public:
 		MultiplyMatrixVector(MatrixTranspose::None, matrix, 1.0, src, 0.0, dst);
 	}
 
+	//NOTE: Matrices are supposed to be in a special storage format (see zhbmv documentation for details)
+	// xHBMV: dest = alpha * matrix * source + beta * dest
+	void MultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage storage, const MatrixType &matrix, cplx alpha, const VectorType &source, cplx beta, VectorType &dest);
 
+	// xTBMV: in place matrix-vector multiplication for triangular matrices
+	void MultiplyMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector);
+
+	//NOTE: Matrices are supposed to be in a special storage format (see zhbmv documentation for details)
+	// xTBSV: Triangular backsubstitution of banded matrices
+	void SolveMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector);
+
+	
 	/*
 	 * BLAS Level 3
 	 */
@@ -125,7 +206,9 @@ private:
 	void PreconditionVectorNorm(VectorType &x);
 	void PreconditionMultiplyMatrixVector(MatrixTranspose transpose, MatrixType &matrix, T srcScaling, VectorType &src, T dstScaling, VectorType &dst);
 	void PreconditionMultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixTranspose transposeB, T srcScaling, MatrixType &a, MatrixType &b, T dstScaling, MatrixType &dst);
-
+	void PreconditionMultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage storage, const MatrixType &matrix, cplx alpha, const VectorType &source, cplx beta, VectorType &dest);
+	void PreconditionSolveMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector);
+	void PreconditionMultiplyMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector);
 };
 
 
@@ -238,6 +321,31 @@ void BLAS<T>::PreconditionMultiplyMatrixMatrix(MatrixTranspose transposeA, Matri
 #endif
 }
 
+//xHBMV Matrix mutliply for banded hermitian matrices. See zhbmv for details about storage format
+template<class T>
+inline void BLAS<T>::PreconditionMultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage storage, const MatrixType &matrix, cplx alpha, const VectorType &source, cplx beta, VectorType &dest)
+{
+	BZPRECONDITION(matrix.stride(1) == 1);
+	BZPRECONDITION(matrix.extent(0) == source.extent(0));
+	BZPRECONDITION(matrix.extent(0) == dest.extent(0));
+}
+
+// xTBMV: in place matrix-vector multiplication for triangular matrices
+template<class T>
+inline void BLAS<T>::PreconditionMultiplyMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector)
+{
+	BZPRECONDITION(matrix.stride(1) == 1);
+	BZPRECONDITION(matrix.extent(0) == vector.extent(0));
+}
+
+// xTBSV: Triangular backsubstitution of banded matrices
+template<class T>
+inline void BLAS<T>::PreconditionSolveMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector)
+{
+	BZPRECONDITION(matrix.stride(1) == 1);
+	BZPRECONDITION(matrix.extent(0) == vector.extent(0));
+}
+
 
 /* std::complex< double > implementation */
 
@@ -322,6 +430,60 @@ inline void BLAS<cplx>::MultiplyMatrixMatrix(MatrixTranspose transposeA, MatrixT
 	BLAS_NAME(zgemm)(CblasColMajor, transA, transB, rowsA, rowsB, colsDst, 
 		&srcScaling, a.data(), a.stride(0), b.data(), b.stride(0), 
 		&dstScaling, dst.data(), dst.stride(0));
+}
+
+//xHBMV Matrix mutliply for banded hermitian matrices. See zhbmv for details about storage format
+template<>
+void inline BLAS<cplx>::MultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage storage, const MatrixType &matrix, cplx alpha, const VectorType &source, cplx beta, VectorType &dest)
+{
+	PreconditionMultiplyMatrixVectorBandedHermitian(storage, matrix, alpha, source, beta, dest);
+
+	int N = matrix.extent(0);
+	int LDA = matrix.extent(1);
+	int K = LDA - 1;
+	int incX = source.stride(0);
+	int incY = dest.stride(0);
+
+	CBLAS_UPLO uplo = (CBLAS_UPLO)storage;
+
+	BLAS_NAME(zhbmv)(CblasColMajor, uplo, N, K, &alpha, matrix.data(), LDA, source.data(), incX, &beta, dest.data(), incY);
+}
+
+// xTBMV: in place matrix-vector multiplication for triangular matrices
+template<>
+inline void BLAS<cplx>::MultiplyMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector)
+{
+	PreconditionMultiplyMatrixVectorBandedTriangular(storage, transpose, unitDiagonal, matrix, vector);
+
+	int k = matrix.extent(1)-1;
+	int N = matrix.extent(0);
+	int lda = matrix.stride(0);
+	int incx = vector.stride(0);
+
+	CBLAS_UPLO uplo = (CBLAS_UPLO)storage;
+	CBLAS_TRANSPOSE transA = (CBLAS_TRANSPOSE)transpose;
+	CBLAS_DIAG diag = (CBLAS_DIAG)unitDiagonal;
+
+	BLAS_NAME(ztbmv)(CblasColMajor, uplo, transA, diag, N, k, matrix.data(), lda, vector.data(), incx);
+}
+
+
+// xTBSV: Triangular backsubstitution of banded matrices
+template<>
+inline void BLAS<cplx>::SolveMatrixVectorBandedTriangular(MatrixHermitianStorage storage, MatrixTranspose transpose, MatrixDiagonal unitDiagonal, const MatrixType &matrix, VectorType &vector)
+{
+	PreconditionSolveMatrixVectorBandedTriangular(storage, transpose, unitDiagonal, matrix, vector);
+
+	int k = matrix.extent(1)-1;
+	int N = matrix.extent(0);
+	int lda = matrix.stride(0);
+	int incx = vector.stride(0);
+
+	CBLAS_UPLO uplo = (CBLAS_UPLO)storage;
+	CBLAS_TRANSPOSE transA = (CBLAS_TRANSPOSE)transpose;
+	CBLAS_DIAG diag = (CBLAS_DIAG)unitDiagonal;
+
+	BLAS_NAME(ztbsv)(CblasColMajor, uplo, transA, diag, N, k, matrix.data(), lda, vector.data(), incx);
 }
 
 }} //Namespaces

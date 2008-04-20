@@ -33,7 +33,7 @@ private:
 public:
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const typename Wavefunction<Rank>::Ptr psi);
-	void AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t);
+	void AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t, bool usePypropIntegration);
 
 	void ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);
 

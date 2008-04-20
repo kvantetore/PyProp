@@ -3,6 +3,7 @@
 
 #include "../common.h"
 #include "../mpi/distributedmodel.h"
+#include "overlapmatrix.h"
 
 template<int Rank> class Wavefunction;
 
@@ -67,82 +68,90 @@ public:
 		return this->GetDistributedModel()->GetLocalArray(GetGlobalGrid(rank), rank);
 	}
 
-	/*
-	 * Returns the overlap matrix S_{i,j}, where the bands are stored colwise, i.e.
-	 * S_{i,j} = overlapMatrix(i, i-j+bw)
-	 * where |i - j| <= bw
-	 * This means that elements of the same row (of different bands) are stored contiguously in memory
-	 */
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank)
+	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
 	{
-		if (IsOrthogonalBasis(rank))
-		{
-			//For orthogonal basises the overlap matrix is diagonal with the weights on the diagonal
-			blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
-
-			blitz::TinyVector<int, 2> shape(weights.extent(0), 1);
-			blitz::TinyVector<int, 2> stride(1, 1);
-			blitz::Array<double, 2> overlapMatrix(weights.data(), shape, stride, blitz::neverDeleteData);
-			return overlapMatrix;
-		}
-		else
-		{
-			throw std::runtime_error("OverlapMatrix not implemented for this representation");
-		}
+		return this->GetDistributedModel()->GetLocalArray(GetGlobalWeights(rank), rank);
 	}
 
 	/*
-	 * Returns the overlap matrix S_{i,j}, where the bands are stored rowwise, i.e.
-	 * S_{i,j} = overlapMatrix(i-j+bw, j)
+	 * Overlap Matrix related stuff
+	 */
+
+	/*
+	 * Returns the overlap matrix for a given rank. For orthogonal ranks, this will be a 
+	 * diagonal matrix, while for non-orthogonal basises, it will be a banded matrix
+	 * (Only compact basises are supported for now)
+	 */
+	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank)
+	{
+			throw std::runtime_error("OverlapMatrix not implemented for this representation");
+	}
+
+	/* 
+	 * These are methods from OverlapMatrix, only operated on wavefunctions for all ranks
 	 *
-	 * This means that elements of the same band is stored contigously in memory
+	 * Non-Orthogonal basises will typically implement these by calling methods on OverlapMatrix
+	 * while orthogonal basises will use the weights to implement it more efficiently
 	 */
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullRow(int rank)
-	{
-		if (IsOrthogonalBasis(rank))
-		{
-			//For orthogonal basises the overlap matrix is diagonal with the weights on the diagonal
-			blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
 
-			blitz::TinyVector<int, 2> shape(1, weights.extent(0));
-			blitz::TinyVector<int, 2> stride(1, 1);
-			blitz::Array<double, 2> overlapMatrix(weights.data(), shape, stride, blitz::neverDeleteData);
-			return overlapMatrix;
-		}
-		else
-		{
-			throw std::runtime_error("OverlapMatrix not implemented for this representation");
-		}
+	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+	{
+		throw std::runtime_error("MultiplyOverlap not implemented for this representation");
 	}
 
 	/*
-	 * Returns the overlap matrix S_{i,j}, where the bands are stored BLASwise (zhbmv).
+	 * Multiplies the overlap matrix on the wavefunction in-place Psi := S Psi
+	 * S is the tensor product of the overlap matrices for each rank
 	 */
-	virtual blitz::Array<cplx, 2> GetGlobalOverlapMatrixBlas(int rank)
+	virtual void MultiplyOverlap(Wavefunction<Rank> &psi) 
 	{
-		throw std::runtime_error("GetOverlapMatrixBlas not implemented for this representation");
+		throw std::runtime_error("MultiplyOverlap not implemented for this representation");
 	}
 
-	virtual void MultiplyOverlapMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+	/* 
+	 * Solves the overlap matrix on the wavefunction in-place S Psi = Psi
+	 * S is the tensor product of the overlap matrices for each rank
+	 */
+	virtual void SolveOverlap(Wavefunction<Rank> &psi) 
 	{
-		throw std::runtime_error("MultiplyOverlapMatrix not implemented for this representation");
+		throw std::runtime_error("SolveOverlap not implemented for this representation");
 	}
 
-	virtual int GetOverlapBandwidth(int rank)
+	/* 
+	 * Multiplies the sqrt(overlap) or conj(sqrt(S)) matrix on the wavefunction in-place
+	 * Psi := sqrt(S) Psi = Psi
+	 * S is the tensor product of the overlap matrices for each rank
+	 * sqrt(S) = sqrt(S_0) x sqrt(S_1) ...
+	 * The square root a positive definite matrix is the cholesky factorization.
+	 */
+	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi) 
 	{
-		return 1;
+		throw std::runtime_error("MultiplySqrtOverlap not implemented for this representation");
 	}
 
+	/* 
+	 * Solves the sqrt(overlap) or conj(sqrt(S)) matrix on the wavefunction in-place sqrt(S) Psi = Psi
+	 * S is the tensor product of the overlap matrices for each rank
+	 * sqrt(S) = sqrt(S_0) x sqrt(S_1) ...
+	 * The square root a positive definite matrix is the cholesky factorization.
+	 */
+	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi) 
+	{
+		throw std::runtime_error("SolveSqrtOverlap not implemented for this representation");
+	}
+
+	/*
+	 * Checks if the given rank is orthogonal (has diagonal overlap matrix) or not
+	 */
 	bool IsOrthogonalBasis(int rank)
 	{
-		return this->GetOverlapBandwidth(rank) == 1;
+		return this->GetGlobalOverlapMatrix(rank)->GetSuperDiagonals() == 0;
 	}
-
 
 	//Must override
 	virtual blitz::TinyVector<int, Rank> GetFullShape() = 0;
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2) = 0;
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank) = 0;
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank) = 0;
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank) = 0;
 	virtual void ApplyConfigSection(const ConfigSection &config) = 0;
 	virtual RepresentationPtr Copy() = 0;

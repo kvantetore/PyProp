@@ -11,7 +11,9 @@ PotentialEvaluator("DipoleLaserPotential<2> 2","DipoleLaserPotential_2")
 
 PotentialEvaluator("AngularKineticEnergyPotential<2> 2","AngularKineticEnergyPotential_2")
 
+PotentialEvaluator("RadialHarmonicPotential<1> 1","RadialHarmonicPotential_1")
 PotentialEvaluator("RadialHarmonicPotential<2> 2","RadialHarmonicPotential_2")
+PotentialEvaluator("RadialCoulombPotential<1> 1","RadialCoulombPotential_1")
 PotentialEvaluator("RadialCoulombPotential<2> 2","RadialCoulombPotential_2")
 
 module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 1>);\n')
@@ -25,9 +27,6 @@ module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentP
 module_code('def("MultiplyTensorPotential_1", MultiplyTensorPotential_1<cplx>);\n')
 module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\n')
 
-module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<1>);\n')
-module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<2>);\n')
-module_code('def("SolveForOverlapMatrix", SolveForOverlapMatrix<3>);\n')
 
 #declaration_code('#include "parallel_multiply_wrapper.cpp"')
 #module_code('def("BandedMatrixMultiply_Wrapper", BandedMatrixMultiply_Wrapper);')

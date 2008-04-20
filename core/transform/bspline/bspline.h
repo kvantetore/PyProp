@@ -3,6 +3,7 @@
 
 #include "../../utility/blitzlapack.h"
 #include "../../utility/boostpythonhack.h"
+#include "../../representation/overlapmatrix.h"
 
 namespace BSpline
 {
@@ -38,20 +39,8 @@ private:
 	MatrixType BSplineDerivative2Table;
 	MatrixType QuadratureGrid;
 	MatrixType ScaledWeights;
-	MatrixType OverlapMatrix;
-	MatrixTypeCplx OverlapMatrixFull;
-	MatrixTypeCplx OverlapMatrixBlas;
 
-	//Needed by zpbsvx expert interface
-	MatrixTypeCplx OverlapMatrixExpert;
-	MatrixTypeCplx FactoredOverlapMatrix;
-	VectorType OverlapScaleFactors;
-	VectorType ForwardErrorEstimate;
-	VectorType BackwardErrorEstimate;
-
-	bool OverlapMatrixComputed;
-	bool OverlapMatrixFullComputed;
-	bool OverlapMatrixBlasComputed;
+	OverlapMatrix::Ptr Overlap;
 
 public:
 
@@ -66,9 +55,6 @@ public:
 	BSpline() 
 	{ 
 		eps = 1e-15; 
-		OverlapMatrixComputed = false;
-		OverlapMatrixFullComputed = false;
-		OverlapMatrixBlasComputed = false;
 		ProjectionAlgorithm = 0;
 		LapackAlgorithm = 0;
 	}
@@ -85,12 +71,9 @@ public:
 	VectorType GetWeights() { return Weights; }
 	VectorType GetNodes() { return Nodes; }
 	VectorType GetQuadratureGrid(int i) { return QuadratureGrid(i, blitz::Range::all()); }
-	MatrixType GetBSplineOverlapMatrix() { return OverlapMatrix; }
-	MatrixTypeCplx GetBSplineOverlapMatrixFull() { SetupOverlapMatrixFull(); return OverlapMatrixFull; }
-	MatrixTypeCplx GetBSplineOverlapMatrixBlas() { SetupOverlapMatrixBlas(); return OverlapMatrixBlas; }
-	MatrixTypeCplx GetBSplineOverlapMatrixExpert() { return OverlapMatrixExpert; }
 	VectorType GetQuadratureGridGlobal() { return QuadratureGridGlobal; }
 	VectorType GetQuadratureWeightsGlobal() { return QuadratureWeightsGlobal; }
+	OverlapMatrix::Ptr GetOverlap() { return Overlap; }
 
 	// Functions to set the length of various sequences
 	void ResizeBreakpointSequence(int size) { BreakpointSequence.resize(size); }
@@ -102,7 +85,6 @@ public:
 	void ResizeNodes(int size) { Nodes.resize(size); }
 	void ResizeQuadratureGridGlobal(int size) { QuadratureGridGlobal.resize(size); }
 	void ResizeQuadratureWeightsGlobal(int size) { QuadratureWeightsGlobal.resize(size); }
-	//void ResizeOverlapMatrix(int size) { OverlapMatrix.Resize(size); }
 
 	// B-spline evaluation functions
 	double EvaluateBSpline(double, int, int);
@@ -133,10 +115,7 @@ public:
 	void CreateBSplineTable();
 	//void CreateBSplineTableBlas();
 	void CreateBSplineDerivative2Table();
-	void ComputeOverlapMatrix();
-	void SetupOverlapMatrixFull();
-	void SetupOverlapMatrixBlas();
-	void SetupOverlapMatrixExpert();
+	void SetupOverlap();
 
 	// B-spline-expansion related functions
 	VectorTypeCplx ExpandFunctionInBSplines(object);
@@ -200,6 +179,23 @@ inline int BSpline::GetGridIndex(int knotIndex)
 {
 	return KnotGridIndexMap(knotIndex);
 }
+
+
+
+class BSplineOverlapMatrixEvaluator : public OverlapMatrixEvaluator
+{
+public:
+	BSplineOverlapMatrixEvaluator(BSpline* bsplineObject) : BSplineObject(bsplineObject) {}
+	virtual ~BSplineOverlapMatrixEvaluator() {}
+
+	virtual double operator()(int row, int col) const
+	{
+		return BSplineObject->BSplineOverlapIntegral(row, col);
+	}
+
+private:
+	BSpline* BSplineObject;
+};
 
 
 

@@ -36,20 +36,22 @@ public:
 	Representation1DPtr GetRepresentation(int rank);
 	void SetRepresentation(int rank, Representation1DPtr repr);
 	
-	//Multiply wavefunction by overlap matrix
-	void MultiplyOverlapMatrix(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
-
 	//Implementation of the representation interface.
 	virtual blitz::TinyVector<int, Rank> GetFullShape();
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank);
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank);
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullRow(int rank);
-	virtual blitz::Array<double, 2> GetGlobalOverlapMatrixFullCol(int rank);
-	virtual blitz::Array<cplx, 2> GetGlobalOverlapMatrixBlas(int rank);
-	virtual int GetOverlapBandwidth(int rank);
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank);
 	virtual void ApplyConfigSection(const ConfigSection &config);
 
+	/*
+	 * Overlap Matrix related stuff
+	 */
+	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank);
+	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+	virtual void MultiplyOverlap(Wavefunction<Rank> &psi);
+	virtual void SolveOverlap(Wavefunction<Rank> &psi);
+	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
+	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
 };
 
 #endif

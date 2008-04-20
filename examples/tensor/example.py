@@ -198,6 +198,7 @@ def Propagate(algo=1):
 	#	pypar.barrier()
 	#return
 
+
 	for t in prop.Advance(10):
 		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
 	prop.Propagator.PampWrapper.PrintStatistics()
@@ -426,12 +427,14 @@ def TestMatrixMultiply():
 		tempPsi = prop.GetTempPsi()
 		tempPsi.GetData()[:] = 0
 		pot = prop.Propagator.BasePropagator.PotentialList[0]
-		pot.MultiplyPotential(tempPsi, 0, 0)
+		#pot.MultiplyPotential(tempPsi, 0, 0)
+		prop.MultiplyHamiltonian(tempPsi)
 		d = tempPsi.InnerProduct(prop.psi)
 		print "Overlap (Algo %i) = %f" % (algoList.index((geom1, geom2)), abs(d)**2)
 
 	for geom1, geom2 in algoList: 
 		prop = SetupProblem(geom1, geom2)
+		print prop.Propagator.BasePropagator.SolveAlgorithm
 		prop.psi.GetData()[:] = baseProp.psi.GetData()
 		tempPsi = prop.GetTempPsi()
 		tempPsi.GetData()[:] = 0
@@ -442,8 +445,8 @@ def TestMatrixMultiply():
 			tempPsi.GetData()[:] = 0
 			t = - time.time()
 			for j in range(avgCount):
-				pot.MultiplyPotential(tempPsi, 0, 0)
-				#prop.MultiplyHamiltonian(tempPsi)
+				#pot.MultiplyPotential(tempPsi, 0, 0)
+				prop.MultiplyHamiltonian(tempPsi)
 			t += time.time()
 			if t<minT:
 				minT = t / avgCount

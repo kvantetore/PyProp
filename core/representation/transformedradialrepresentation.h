@@ -3,14 +3,14 @@
 
 #include "../common.h"
 #include "transformedrange.h"
-#include "representation.h"
+#include "orthogonalrepresentation.h"
 
 /** Represents the wavefunction in a spherical harmonic (l,m) basis.
   * The spherical harmonic of highest order which is represented is 
   * Ylm with l == Range.MaxL, which leaves Range.Count() == (1 + MaxL)**2
   * functions 
   */
-class TransformedRadialRepresentation : public Representation<1>
+class TransformedRadialRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef shared_ptr<TransformedRadialRepresentation> Ptr;
@@ -59,13 +59,13 @@ public:
 		return Range.GetGrid();
 	}
 
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong transformed radial rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 
 	/** Apply config, and set up Range

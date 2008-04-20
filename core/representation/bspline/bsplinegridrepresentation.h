@@ -2,7 +2,7 @@
 #define BSPLINEGRID_REPRESENTATION_H
 
 #include "../../common.h"
-#include "../representation.h"
+#include "../orthogonalrepresentation.h"
 #include "../../utility/boostpythonhack.h"
 #include "../../transform/bspline/bspline.h"
 
@@ -13,7 +13,7 @@ namespace BSpline
  * Represents the wavefunction on b-spline quadrature 
  * grid points.
  */
-class BSplineGridRepresentation : public Representation<1>
+class BSplineGridRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef blitz::Array<double, 1> VectorType;
@@ -65,13 +65,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Weights, rank);
+		return Weights;
 	}
 
 	void SetupRepresentation(BSpline::Ptr p);

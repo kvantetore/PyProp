@@ -17,14 +17,8 @@ blitz::TinyVector<int, Rank> CartesianRepresentation<Rank>::GetFullShape()
 template<int Rank>
 cplx CartesianRepresentation<Rank>::InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2)
 {
-	double weight = 1;
-	for (int i=0; i<Rank; i++)
-	{
-		weight *= Range(i).Dx;
-	}
-	
+	double weight = GetScalarWeight();
 	return VectorInnerProduct(w1.Data, w2.Data) * weight;
-	//return sum(conj(w1.Data) * w2.Data) * weight;
 }
 
 template <int Rank>
@@ -55,6 +49,37 @@ void CartesianRepresentation<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 		Range(i) = CartesianRange(min, max, count);
 	}
 }
+
+template<int Rank>
+void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+{
+	CopyVector(Range(rank).Dx, srcPsi.GetData(), 0.0, dstPsi.GetData());
+}
+
+template<int Rank>
+void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
+{
+	ScaleVector(GetScalarWeight(), psi.GetData());
+}
+
+template<int Rank>
+void CartesianRepresentation<Rank>::SolveOverlap(Wavefunction<Rank> &psi)
+{
+	ScaleVector(1./GetScalarWeight(), psi.GetData());
+}
+
+template<int Rank>
+void CartesianRepresentation<Rank>::MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi)
+{
+	ScaleVector(sqrt(GetScalarWeight()), psi.GetData());
+}
+
+template<int Rank>
+void CartesianRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi)
+{
+	ScaleVector(1.0/sqrt(GetScalarWeight()), psi.GetData());
+}
+
 
 template class CartesianRepresentation<1>;
 template class CartesianRepresentation<2>;

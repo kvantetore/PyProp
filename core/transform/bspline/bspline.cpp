@@ -1,5 +1,6 @@
 #include "bspline.h"
 #include "../../utility/blitzblas.h"
+#include "../../krylov/piram/piram/blitzblas.h"
 #include "../../utility/blitztricks.h"
 
 namespace BSpline
@@ -271,6 +272,13 @@ double BSpline::BSplineOverlapIntegral(VectorType f, int i, int j)
 {
 	using namespace blitz;
 
+	if (j < i)
+	{
+		int temp = j;
+		j = i;
+		i = temp;
+	}
+
 	// Overlap only nonzero if |i - j| < splineOrder
 	if ( abs(i - j) >= MaxSplineOrder )
 	{
@@ -515,16 +523,7 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
 	 * Solving banded linear system of equations 
 	 *  to obtain expansion coefficients 
 	 */
-	SetupOverlapMatrixFull();
-	int offDiagonalBands = MaxSplineOrder - 1;
-	VectorTypeInt pivot(NumberOfBSplines);
-	pivot = 0;
-	
-	linalg::LAPACK<cplx> lapack;
-	lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, b, 
-		offDiagonalBands, offDiagonalBands);
-
-	OverlapMatrixFullComputed = false;
+	SolveForOverlapMatrix(b);
 	
 	return b;
 }
@@ -627,40 +626,7 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
  */
 void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
 {
-	using namespace blitz;
-
-	if (LapackAlgorithm == 0)
-	{
-		SetupOverlapMatrixFull();
-		int offDiagonalBands = MaxSplineOrder - 1;
-		VectorTypeInt pivot(NumberOfBSplines);
-		pivot = 0;
-		
-		linalg::LAPACK<cplx> lapack;
-		lapack.SolveGeneralBandedSystemOfEquations(OverlapMatrixFull, pivot, vector, 
-			offDiagonalBands, offDiagonalBands);
-
-		OverlapMatrixFullComputed = false;
-	}
-	else if (LapackAlgorithm == 1)
-	{
-		Array<cplx, 2> input = MapToRank2(vector, 0);
-	
-		linalg::LAPACK<cplx> lapack;
-		lapack.SolvePositiveDefiniteBandedFactored(lapack.HermitianUpper, OverlapMatrixExpert, input);
-		/*
-		double conditionEstimate;
-		char EQUED = 'Y';
-		lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsFactored, lapack.HermitianUpper, OverlapMatrixExpert, 
-		FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, input, output, &conditionEstimate, ForwardErrorEstimate,
-			BackwardErrorEstimate);
-		*/
-
-	}
-	else
-	{
-		cout << "ERROR: Unknown LAPACK solver algorithm " << LapackAlgorithm << endl;
-	}
+	Overlap->SolveOverlapVector(vector);
 }
 
 /*
@@ -684,7 +650,7 @@ BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid
 void BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid,
 	VectorTypeCplx buffer)
 {
-	int gridSize = grid.extent(0);
+	//int gridSize = grid.extent(0);
 	int numberOfCoeffs = c.extent(0);
 	buffer = 0.0;
 
@@ -753,198 +719,10 @@ blitz::Array<cplx, 1> BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeC
 	return function;
 }
 
-
-/*
- * Compute b-spline overlap matrix. The matrix is banded due to
- * compactness of the b-splines, and symmetric positive definite.
- * For easier use with LAPACK routines, we store only the upper
- * bands in the manner specified by LAPACK.
- *
- * LAPACK indices are computed from
- *
- *     I =  MaxSplineOrder - 1 + i - j
- *     J = j
- *	
- *	where we have -1 from FORTRAN->C conversion of original
- *	formula.
- */
-void BSpline::ComputeOverlapMatrix()
+void BSpline::SetupOverlap()
 {
-	OverlapMatrix.resize(NumberOfBSplines, MaxSplineOrder);
-	OverlapMatrix = 0.0;
-
-	for (int i = 0; i < NumberOfBSplines; i++)
-	{
-		int jMax = std::min(i+MaxSplineOrder, NumberOfBSplines);
-		for (int j = i; j < jMax ; j++)
-		{
-			OverlapMatrix(j, MaxSplineOrder - 1 + i - j) = BSplineOverlapIntegral(i, j);
-		}
-	}
-
-	OverlapMatrixComputed = true;
-}
-
-/*
- * Compute b-spline overlap matrix, stored according to LAPACK routine zpbsvx.
- * This is an expert interface, which allows us to do an initial computation
- * of equilibriated Cholesky factorization. Subsequent computation should 
- * therefore be faster than using the non-expert interface.
- *
- * LAPACK indices are computed from
- *
- *     I =  MaxSplineOrder - 1 + i - j
- *     J = j
- *	
- *	where we have -1 from FORTRAN->C conversion of original
- *	formula.
- *
- */
-void BSpline::SetupOverlapMatrixExpert()
-{
-	using namespace blitz;
-
-	OverlapMatrixExpert.resize(NumberOfBSplines, MaxSplineOrder);
-	FactoredOverlapMatrix.resize(NumberOfBSplines, MaxSplineOrder);
-	OverlapScaleFactors.resize(NumberOfBSplines);
-	ForwardErrorEstimate.resize(1);
-	BackwardErrorEstimate.resize(1);
-
-	OverlapMatrixExpert = 0.0;
-	for (int i = 0; i < NumberOfBSplines; i++)
-	{
-		int jMax = std::min(i+MaxSplineOrder, NumberOfBSplines);
-		for (int j = i; j < jMax ; j++)
-		{
-			OverlapMatrixExpert(j, MaxSplineOrder - 1 + i - j) = BSplineOverlapIntegral(i, j);
-		}
-	}
-
-	//Initial run to perform Cholesky factorization
-	linalg::LAPACK<cplx> lapack;
-	lapack.CalculateCholeskyFactorizationPositiveDefiniteBanded(lapack.HermitianUpper, OverlapMatrixExpert);
-
-	/*
-	Array<cplx, 2> testVectorIn, testVectorOut;
-	testVectorIn.resize(1, NumberOfBSplines);
-	testVectorOut.resize(1, NumberOfBSplines);
-	testVectorIn = 0.0;
-	testVectorOut = 0;
-	char EQUED = 'Y';
-	double conditionEstimate;
-	linalg::LAPACK<cplx> lapack;
-	lapack.SolvePositiveDefiniteBandedSystemOfEquations(lapack.MatrixIsNotEquilibrated, lapack.HermitianUpper, OverlapMatrixExpert, 
-	FactoredOverlapMatrix, &EQUED, OverlapScaleFactors, testVectorIn, testVectorOut, &conditionEstimate, ForwardErrorEstimate,
-		BackwardErrorEstimate);
-
-	cout << OverlapScaleFactors << endl;
-	*/
-}
-
-
-/*
- * Setup "full" overlap matrix for use with LAPACK routine zgbmv.
- * Both upper and lower bands are stored, in a manner required by
- * said routine.
- */
-void BSpline::SetupOverlapMatrixFull()
-{
-	int k = MaxSplineOrder;
-
-	if (!OverlapMatrixComputed)
-	{ 
-		ComputeOverlapMatrix();
-	}
-	
-	if (OverlapMatrixFullComputed) { return; }
-
-	if (OverlapMatrixFull.extent(0) != NumberOfBSplines)
-	{
-		int ldab = 3 * k - 2;
-		OverlapMatrixFull.resize(NumberOfBSplines, ldab);
-	}
-
-	for (int i = 0; i < NumberOfBSplines; i++)
-	{
-		int jMax = std::min(i+MaxSplineOrder, NumberOfBSplines);
-		for (int j = i; j < jMax ; j++)
-		{
-			// OverlapMatrix is stored according to (another) LAPACK
-			// specification, so first we must map its indices to
-			// "ordinary" matrix indices.
-			int J = j;
-			int I = k - 1 + i - j;
-
-			// Then we use the zgbsv-map. However, since this is
-			// a full matrix we must transpose to obtain lower
-			// triangle. This is done by flipping (i,j)->(j,i)
-			// where (i,j) are the "ordinary" indices.
-			int J2 = j;
-			int I2 = 2 * k - 2 + i - j; 
-			int J_lower = i;
-			int I_lower = 2 * k - 2 + j - i; 
-			OverlapMatrixFull(J2, I2) = OverlapMatrix(J, I);
-			OverlapMatrixFull(J_lower, I_lower) = OverlapMatrix(J, I);
-		}
-	}
-
-	OverlapMatrixFullComputed = true;
-}
-
-
-/*
- * Setup overlap matrix for use with BLAS routine zhbmv.
- * Both upper and lower bands are stored, in a manner required by
- * said routine.
- */
-void BSpline::SetupOverlapMatrixBlas()
-{
-	int k = MaxSplineOrder;
-	int N = NumberOfBSplines;
-
-	//Check that overlap matrix has been computed
-	if (!OverlapMatrixComputed)
-	{ 
-		ComputeOverlapMatrix();
-	}
-
-	//Check if BLAS overlap matrix has been set up
-	if (OverlapMatrixBlasComputed) { return; }
-
-	//Check that size of OverlapMatrixBlas is correct; otherwise resize
-	if ( (OverlapMatrixBlas.extent(0) != N) || (OverlapMatrixBlas.extent(1) != k) )
-	{
-		OverlapMatrixBlas.resize(N, k);
-	}
-
-	
-	OverlapMatrixBlas = 0;
-
-	for (int j = 0; j < N; j++)
-	{
-		int iMax = std::min(j + k, N);
-		for (int i = j; i < iMax; i++)
-		//for (int i = j; i < N; i++)
-		{
-			/* 
-			 * OverlapMatrix is stored according to (another) LAPACK
-			 * specification, so first we must map its indices to
-			 * "ordinary" matrix indices.
-			 */
-			int J = i;
-			int I = k - 1 + j - i;
-
-			//BLAS index map from "normal" indices
-			int Jb = j;
-			int Ib = i - j;
-
-			//Set up blas matrix
-			OverlapMatrixBlas(Jb, Ib) = OverlapMatrix(J, I);
-			//OverlapMatrixBlas(Jb, Ib) = BSplineOverlapIntegral(j, i);
-		}
-	}
-
-	OverlapMatrixBlasComputed = true;
+	BSplineOverlapMatrixEvaluator evaluator(this);
+	Overlap = OverlapMatrix::Ptr(new OverlapMatrix(NumberOfBSplines, MaxSplineOrder - 1, evaluator));
 }
 
 

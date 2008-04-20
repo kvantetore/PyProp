@@ -379,7 +379,6 @@ void Propagator<Rank>::SetupLapackMatrices(const cplx &dt)
 	 * Get full b-bspline overlap matrix from b-bspline object,
 	 * since it is already stored on LAPACK form
 	 */
-	OverlapMatrix.reference( BSplineObject->GetBSplineOverlapMatrixFull().copy() );
 
 	//Array to hold slices of a RankOne potential, if present
 	Array<double, 1> potentialSlice(BSplineObject->GetBSpline(0).extent(0));

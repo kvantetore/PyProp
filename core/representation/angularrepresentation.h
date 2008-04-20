@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include "../common.h"
-#include "representation.h"
+#include "orthogonalrepresentation.h"
 #include "omegarange.h"
 
 
@@ -11,9 +11,8 @@
   * The distribution of (theta, phi) can be chosen when creating the
   * omega range.
   */
-typedef Representation<1> Representation1D;
 
-class AngularRepresentation : public Representation1D
+class AngularRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef shared_ptr<AngularRepresentation> Ptr;
@@ -45,7 +44,6 @@ public:
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
 		throw std::runtime_error("AngularRepresentation::InnerProduct is not implemented");
-		return sum(conj(w1.Data) * w2.Data * GetLocalWeights(GetBaseRank())); 
 	}
 
 	/** 
@@ -61,15 +59,15 @@ public:
 	}
 
 	/** 
-	Returns the portion of the grid local to the current processor.
+	Returns the portion of the weights local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong angular rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 
 	/** 

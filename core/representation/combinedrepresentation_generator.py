@@ -86,8 +86,8 @@ def RecurseAlgorithm1OuterLoop(rank, curRank):
 		for i in range(rank):
 			str += """
 		
-				int bw%(rank)i = (GetOverlapBandwidth(%(rank)i) + 1) / 2;
-				blitz::Array<double, 2> overlapFull%(rank)i = this->GetGlobalOverlapMatrixFullCol(%(rank)i);
+				blitz::Array<double, 2> overlapFull%(rank)i = this->GetGlobalOverlapMatrix(%(rank)i)->GetOverlapFullCol();
+				int bw%(rank)i = (overlapFull%(rank)i.extent(1) + 1) / 2;
 			""" % { "rank" : i }
 
 
@@ -192,8 +192,8 @@ def RecurseAlgorithm2OuterLoop(rank, curRank):
 	if curRank == 0:
 		for i in range(rank):
 			str += """
-				int bw%(rank)i = (GetOverlapBandwidth(%(rank)i) + 1) / 2;
-				blitz::Array<double, 2> overlapFull%(rank)i = this->GetGlobalOverlapMatrixFullRow(%(rank)i);
+				blitz::Array<double, 2> overlapFull%(rank)i = this->GetGlobalOverlapMatrix(%(rank)i)->GetOverlapFullRow();
+				int bw%(rank)i = (overlapFull%(rank)i.extent(0) + 1) / 2;
 			""" % { "rank" : i }
 
 

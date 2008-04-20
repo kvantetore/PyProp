@@ -39,7 +39,11 @@ class PamPropagator(PropagatorBase):
 		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
 
 	def AdvanceStep(self, t, dt):
-		self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t)
+		repr = self.psi.GetRepresentation()
+		repr.MultiplySqrtOverlap(False, self.psi)
+		self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, False)
+		repr.SolveSqrtOverlap(False, self.psi)
+		#self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, True)
 
 	def MatVecCallback(self, psi, tempPsi, dt, t):
 		#assert psi == self.psi
@@ -50,7 +54,8 @@ class PamPropagator(PropagatorBase):
 		self.psi.GetRepresentation().SetDistributedModel(self.PsiDistrib)
 		tempPsi.GetRepresentation().SetDistributedModel(self.TempDistrib)
 
-		self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+		self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
+		#self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
 
 		#outN = self.TempPsi.GetNorm()
 		#if outN < 0.001:

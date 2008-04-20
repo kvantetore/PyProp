@@ -232,6 +232,7 @@ void pAMP<T>::PerformInitialArnoldiStep()
 
 	//Normalize Residual
 	T norm = CalculateGlobalNorm(Residual);
+	//cout << "Initial norm = " << norm << endl;
 
 	blas.ScaleVector(Residual, 1.0/norm);
 
@@ -494,7 +495,13 @@ void pAMP<T>::PadeExponential(MatrixType A, MatrixType output, int order)
 	Q = Q - P;
 
 	//Do (I + 2*inv(Q)*P)
-	lapack.CalculateLUFactorization(Q, pivot);
+	int error = lapack.CalculateLUFactorization(Q, pivot);
+	if (error != 0)
+	{
+		cout << "Could solve " << Q << endl;
+		cout << "H = " << A << endl;
+		throw std::runtime_error("Error in pAMP");
+	}
 	lapack.SolveGeneralFactored(LAPACK::TransposeNone, Q, pivot, P);
 	output = 2.0 * P;
 	for (int i=0; i<N; i++)
@@ -527,6 +534,7 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 	 *            = Q exp(H)[0, :]
 	 */
 
+	//cout << "H = " << HessenbergMatrix << endl;
 	HessenbergMatrix *= - dt * cplx(0., 1.);
 	ScalingPadeExponential(HessenbergMatrix, HessenbergExp, -1, -1);
 

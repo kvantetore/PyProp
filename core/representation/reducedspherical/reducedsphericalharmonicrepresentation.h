@@ -2,7 +2,7 @@
 #define LMREPRESENTATION_H
 
 #include "../../common.h"
-#include "../representation.h"
+#include "../orthogonalrepresentation.h"
 #include "lrange.h"
 
 namespace ReducedSpherical
@@ -13,7 +13,7 @@ namespace ReducedSpherical
   * Ylm with l == Range.MaxL, which leaves Range.Count() == (1 + MaxL)**2
   * functions 
   */
-class ReducedSphericalHarmonicRepresentation : public Representation<1>
+class ReducedSphericalHarmonicRepresentation : public OrthogonalRepresentation
 {
 public:
 	typedef shared_ptr<ReducedSphericalHarmonicRepresentation> Ptr;
@@ -55,13 +55,13 @@ public:
 	/** 
 	Returns the portion of the grid local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetLocalWeights(int rank)
+	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
 			cout << "Warning: Trying to get the wrong sphharm rank. Got " << rank << ", expected " << GetBaseRank() <<  endl;
 		}
-		return this->GetDistributedModel()->GetLocalArray(Range.GetWeights(), rank);
+		return Range.GetWeights();
 	}
 	
 	/** 

@@ -175,7 +175,7 @@ void PampWrapper<Rank>::Setup(const typename Wavefunction<Rank>::Ptr psi)
 
 
 template<int Rank>
-void PampWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t)
+void PampWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t, bool usePypropIntegration)
 {
 	//The callback-functions uses these variables
 	this->Psi = psi;
@@ -185,8 +185,11 @@ void PampWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>
 	this->TimeStep = dt;
 
 	//Use our custom integration
-	typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
-	Propagator.Integration = integration;
+	if (usePypropIntegration)
+	{
+		typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
+		Propagator.Integration = integration;
+	}
 
 	typename Wavefunction<Rank>::DataArray vector = psi->GetData();
 	blitz::Array<cplx, 1> vector1d = MapToRank1(vector);

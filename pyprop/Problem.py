@@ -220,7 +220,6 @@ class Problem:
 		Calculates the total energy of the problem by finding the expectation value 
 		of the Hamiltonian
 		"""
-		#TODO: Make this more efficient by not allocating a new data set every time
 		self.psi.Normalize()
 
 		#Make copy of wavefunction
