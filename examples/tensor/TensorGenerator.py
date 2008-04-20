@@ -836,10 +836,10 @@ class TensorPotential(PotentialWrapper):
 	def AdvanceStep(self, t, timestep):
 		raise NotImplementedException("TensorPotentials can not be exponentiated directly")
 
-	def MultiplyPotential(self, destPsi, t, timestep):
-		rank = self.psi.GetRank()
+	def MultiplyPotential(self, srcPsi, destPsi, t, timestep):
+		rank = srcPsi.GetRank()
 		
-		source = self.psi.GetData()
+		source = srcPsi.GetData()
 		dest = destPsi.GetData()
 
 		timeScaling = 1.0
@@ -983,7 +983,7 @@ class BasisPropagator(PropagatorBase):
 	def MultiplyHamiltonian(self, destPsi, t, dt):
 		#Multiply potentials
 		destPsi.GetData()[:] = 0
-		self.MultiplyPotential(destPsi, t, dt)
+		self.MultiplyPotential(self.psi, destPsi, t, dt)
 
 		#Solve for all overlap matrices
 		repr = self.psi.GetRepresentation()
@@ -999,7 +999,7 @@ class BasisPropagator(PropagatorBase):
 		
 		#Multiply potentials
 		destPsi.GetData()[:] = 0
-		self.MultiplyPotential(destPsi, t, dt)
+		self.MultiplyPotential(self.psi, destPsi, t, dt)
 
 		#Solve for all overlap matrices
 		repr = destPsi.GetRepresentation()
