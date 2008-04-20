@@ -42,7 +42,7 @@ public:
 		return Storage;
 	}
 	
-	void ApplyPotential(Wavefunction<Rank> &psi, cplx dt)
+	void ApplyPotential(Wavefunction<Rank> &psi, cplx dt, const cplx scaling)
 	{
 		ValidatePsi(psi);
 
@@ -52,12 +52,12 @@ public:
 		}
 		else
 		{
-			const cplx scaling = - cplx(0.0, 1.0) * dt;
-			psi.GetData() *= exp(scaling * PotentialData);
+			const cplx timeFactor = - cplx(0.0, 1.0) * dt;
+			psi.GetData() *= exp(timeFactor * scaling * PotentialData);
 		}
 	}
 
-	void MultiplyPotential(Wavefunction<Rank> &psi, Wavefunction<Rank> &destPsi, const cplx &dt)
+	void MultiplyPotential(Wavefunction<Rank> &psi, Wavefunction<Rank> &destPsi, const cplx &dt, const cplx &scaling)
 	{
 		ValidatePsi(psi);
 
@@ -68,11 +68,11 @@ public:
 		{
 			const cplx imaginaryUnit = cplx(0.0, 1.0);
 			cplx scale = - 1.0 / (imaginaryUnit * dt);
-			dest += log(PotentialData) * scale * src;
+			dest += scaling * log(PotentialData) * scale * src;
 		}
 		else
 		{
-			dest += PotentialData * src;
+			dest += scaling * PotentialData * src;
 		}
 	}
 

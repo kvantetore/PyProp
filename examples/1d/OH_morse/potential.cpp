@@ -44,21 +44,13 @@ public:
 
 
 template<int Rank>
-class LaserPotential : public PotentialBase<Rank>
+class DipoleMoment : public PotentialBase<Rank>
 {
 public:
-	//Required by DynamicPotentialEvaluator
-	cplx TimeStep;
-	double CurTime;
 
 	//Potential parameters
-	double PulseDuration;
-	double Frequency;
-	double Amplitude;
-
-	//Calculated parameters
-	double convolutionFrequency;
-	double currentAmplitude;
+	double Mu;
+	double XStar;
 
 	/*
 	 * Called once with the corresponding config section
@@ -67,28 +59,8 @@ public:
 	 */
 	void ApplyConfigSection(const ConfigSection &config)
 	{
-		config.Get("pulse_duration", PulseDuration);
-		config.Get("frequency", Frequency);
-		config.Get("amplitude", Amplitude);
-
-		convolutionFrequency = M_PI / PulseDuration;
-	}
-
-	/*
-	 * Called once every timestep
-	 */
-	void CurTimeUpdated()
-	{
-		if (CurTime > PulseDuration)
-		{
-			currentAmplitude = 0;
-		}
-		else
-		{
-			currentAmplitude = Amplitude;
-			currentAmplitude *= sqr(sin(CurTime * convolutionFrequency));
-			currentAmplitude *= cos(CurTime * Frequency);
-		}
+		config.Get("mu", Mu);
+		config.Get("x_star", XStar);
 	}
 
 	/*
@@ -96,8 +68,8 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double r = std::abs(pos(0));
-		return currentAmplitude * r;
+		double x = pos(0);
+		return Mu * x * exp(-x / XStar);
 	}
 };
 

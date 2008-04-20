@@ -3,6 +3,7 @@ import sys
 import os
 from numpy import conj
 import pylab
+from numpy import fft
 
 #pytables
 import tables
@@ -62,7 +63,7 @@ def GetDiagonalElements(psi, config, potential):
 	A funtion to provide diagonal (energy) matrix elements
 	"""
 
-	potential[:] = pylab.load('input/energies.dat')[:config.size] * config.scaling
+	potential[:] = pylab.load(config.file_name)[:config.size] * config.scaling
 
 
 def GetFieldMatrixElements(psi, config):
@@ -88,6 +89,37 @@ def Run():
 	krotov.Run()
 
 	return krotov
+
+def GetPulseSpectrum(krotov):
+	"""
+	"""
+	
+	dw = 2 * pi * fft.fftshift(fft.fftfreq(len(krotov.ControlVector), krotov.TimeGridResolution))
+	pulseSpectrum = fft.fftshift(fft.fft(krotov.ControlVector))
+
+	return dw, pulseSpectrum
+
+
+def Commutator(A,B):
+	"""
+	Computes the commutator [A,B] = AB-BA
+	"""
+	return dot(A,B) - dot(B, A)
+
+
+def NestedCommutatorTypeI(A, B, depth):
+	"""
+	Computes the nested commutator [A,[A,...,[A,B]...]],
+	that is, an inner commutator of C = [A,B] and then
+	then recursively the commutator [A,C] until desired 
+	depth is reached.
+	"""
+	C = Commutator(A,B)
+	for d in range(depth):
+		C = Commutator(A,C)
+	
+	return C
+	
 
 def TextToHDFDense(fileName, vectorSize, scaling):
 

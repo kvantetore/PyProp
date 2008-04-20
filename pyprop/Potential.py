@@ -137,6 +137,15 @@ class StaticPotentialWrapper(PotentialWrapper):
 			self.Storage = self.Potential.StorageModel(self.ConfigSection.storage_model)
 			print "Using static potential storage model %s" % self.Storage
 
+		#Get time function if defined; check for correct storage model
+		self.HasTimeFunction = False
+		if hasattr(self.ConfigSection, "time_function"):
+			if self.Storage == self.Potential.StorageModel.StorageExpValue:
+				raise RunTimeException("Cannot have both time_function and StorageExpValue!")
+			else:
+				self.TimeFunction = self.ConfigSection.time_function
+				self.HasTimeFunction = True
+
 		self.Potential.InitializePotential(self.psi, self.Storage)
 
 		if hasattr(self.ConfigSection, "grid_function"):
@@ -187,7 +196,10 @@ class StaticPotentialWrapper(PotentialWrapper):
 			self.Potential.GetPotentialData()[:] = self.psi.GetData()[:]
 				
 	def AdvanceStep(self, t, dt):
-		self.Potential.ApplyPotential(self.psi, dt)
+		scaling = 1.0
+		if self.HasTimeFunction:
+			scaling = complex(self.TimeFunction(self.ConfigSection, t))
+		self.Potential.ApplyPotential(self.psi, dt, scaling)
 
 	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		if self.Storage == StaticStorageModel.StorageExpValue:
@@ -195,7 +207,8 @@ class StaticPotentialWrapper(PotentialWrapper):
 		elif self.Storage == -1:
 			raise Exception("what! %s" % self)
 		else:
-			self.Potential.MultiplyPotential(srcPsi, destPsi, dt)
+			scaling = complex(self.TimeFunction(self.ConfigSection, t))
+			self.Potential.MultiplyPotential(srcPsi, destPsi, dt, scaling)
 
 	def GetExpectationValue(self, t, dt):
 		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)

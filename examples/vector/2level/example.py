@@ -21,7 +21,8 @@ d = 0.005
 e = 0.15
 
 def GetSparseMatrix(psi, config):
-	matrix = pylab.load("/home/raymond/sci/dev/Krotov/matrixElements/d130_50stk-matel")
+	#matrix = pylab.load("/home/raymond/sci/dev/Krotov/matrixElements/d130_50stk-matel")
+	matrix = pylab.load("/home/raymond/sci/dev/qdot4d/CreateMatrixElements/lene/d130_50stk_newRay-matel")
 	row = array(matrix[:,0], dtype=int) - 1
 	col = array(matrix[:,1], dtype=int) - 1
 	matelem = array(matrix[:,2], dtype=complex)
@@ -41,8 +42,7 @@ def GetDenseMatrix(psi, config):
 	return matrix
 
 def GetDiagonalElements(psi, config, potential):
-	potential[:] = pylab.load('energies.dat')
-	#potential *= 0.5
+	potential[:] = pylab.load(config.file_name) * config.scaling
 
 def Propagate():
 	conf = pyprop.Load("config.ini")
@@ -64,6 +64,7 @@ def Propagate():
 	corr.append(abs(prop.psi.GetData()[:])**2)
 	times += [prop.PropagatedTime]
 	print "Time = ", prop.PropagatedTime, ", initial state correlation = ", corr[-1][0]
+	prop.corr = asarray(corr)
 
 	return prop
 
@@ -85,7 +86,7 @@ def CompareFortran(**args):
 
 	#Load fortran data and compare
 	fdata = pylab.load("fortran_propagation.dat")
-	print "Max difference pyprop/fortran: %e" % nmax(abs(prop.psi.GetData())**2 - fdata[-1,1:])
+	print "Max difference pyprop/fortran: %e" % nmax(abs(prop.psi.GetData())**2 - fdata[1:])
 
 	return prop
 

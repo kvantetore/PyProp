@@ -75,23 +75,31 @@ class Degani(OptimalControl):
 		where E is the new control, mu is the energy penalty, |etta> is the
 		backward solution and X the control matrix.
 		"""
-
+		
+		#Should we skip update on backward propagation?
 		if direction == Direction.Backward and not self.UpdateBackward:
-			for a in range(self.NumberOfControls):
-				self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
-			return
-
+			self.UpdateControls(self.ControlVectors[:,timeGridIndex])
+		
+		#Set up linear system of equations for the new controls
 		self.SetupVectorB(timeGridIndex, direction)
 		self.SetupMatrixM(timeGridIndex, direction)
 
+		#Solve lin. system to find new controls
 		newControls = linalg.solve(self.M, self.b)
 
 		#Update controls
+		self.UpdateControls(newControls)
+
+	
+	def UpdateControls(self, newControls):
+		"""
+		Update controls from list newControls
+		"""
 		for a in range(self.NumberOfControls):
 			self.ControlVectors[a, timeGridIndex] = newControls[a]
 			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
-	
+
 	def SetupVectorB(self, timeGridIndex, direction):
 		"""
 		Case 1: Controls are commuting

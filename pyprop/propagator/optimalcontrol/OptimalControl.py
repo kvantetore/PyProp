@@ -114,7 +114,7 @@ class OptimalControl:
 	
 	def ComputeNewControlFunctions(self, timeGridIndex, t, direction):
 		"""
-		Updates the control function based
+		Computes new control function based on current TDSE solution
 		"""
 		raise NotImplementedError
 
@@ -154,6 +154,15 @@ class OptimalControl:
 			self.ForwardSolution[:, idx] = self.BaseProblem.psi.GetData()[:]
 			if idx < self.TimeGridSize - 1 and self.currIter > 0:
 				self.ComputeNewControlFunctions(idx+1, t, Direction.Forward)
+	
+
+	def UpdateControls(self, newControls):
+		"""
+		Update controls from list newControls
+		"""
+		for a in range(self.NumberOfControls):
+			self.ControlVectors[a, timeGridIndex] = newControls[a]
+			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
 	
 	def BackwardPropagation(self, targetProjection):
@@ -205,10 +214,20 @@ class OptimalControl:
 		"""
 		self.TargetState = self.BaseProblem.psi.CopyDeep()
 		self.TargetState.Clear()
-		
-		self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] \
-			= self.BaseProblem.Config.FinalState.population[:]
 
+		if self.BaseProblem.Config.FinalStates.type == "vector":
+			
+			self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] \
+				= self.BaseProblem.Config.FinalState.population[:]
+
+		elif self.BaseProblem.Config.FinalStates.type == "function":
+			grid = self.Psi.GetRepresentation().GetLocalGrid(0)
+			func = self.BaseProblem.Config.FinalStates.grid_function
+			self.TargetState.GetData()[:] = func(self.BaseProblem.Config.FinalStates, grid)
+
+		else:
+			raise Exception("Unknown target specification")
+			
 		self.TargetState.Normalize()
 
 	

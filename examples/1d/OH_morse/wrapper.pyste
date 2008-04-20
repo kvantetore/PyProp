@@ -2,5 +2,6 @@
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Compile potential for 1D
-PotentialEvaluator("MorsePotential<1> 1","MorsePotential_1")
+PotentialEvaluator("MorsePotential<1> 1", "MorsePotential_1")
+PotentialEvaluator("DipoleMoment<1> 1", "DipoleMoment_1")
 
