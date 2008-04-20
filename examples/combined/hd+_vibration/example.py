@@ -29,6 +29,30 @@ try:
 except:
 	print "pyprop.plotting not available"
 
+def RunCheckerboardTest(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseIntensity"] = 0.5e14
+	args["pulseDuration"] = 5*sqrt(2)*femtosec_to_au
+	args["duration"] = 350*femtosec_to_au
+	args["outputCount"] = 200
+	args["fastForward"] = 250*femtosec_to_au
+
+	delayList = array([-1000, 293, 306])
+	output = {}
+	for delay in delayList:
+		args["pulseDelay"] = delay*femtosec_to_au
+		t, c, X, Y, r, psi = Propagate(**args)
+		output["t"] = t
+		output["corr_%i" % delay] = c
+		output["psi_%i" % delay] = psi
+
+	return output	
+
+
+
 def CorrelationBarPlot(corr, ax=None):
 	if ax == None:
 		ax = gca()
@@ -37,6 +61,60 @@ def CorrelationBarPlot(corr, ax=None):
 	left = r_[:basisCount] - 0.4
 	bar(left, corr)
 	
+
+def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
+	if ax == None:
+		ax = gca()
+	
+	basisCount = len(corr)
+	left = r_[:basisCount] - 0.4
+	bar(left, abs(corr)**2)
+
+	if axisHeight == None:
+		axisHeight = ax.axis()[3]
+	axisWidth = len(corr) + 1
+
+	winWidth = ax.get_window_extent().width()
+	winHeight = ax.get_window_extent().height()
+
+	scale = winWidth * axisHeight / (winHeight * axisWidth)
+
+	yStart = - scale / (1 - scale)
+	yEnd = axisHeight
+	
+	xStart = -1
+	xEnd = len(corr)
+
+	ax.axis([xStart, xEnd, yStart, yEnd])
+
+	for i, curCorr in enumerate(corr[:-1]):
+		if abs(corr[i])**2 > 1e-4:
+			theta1 = arctan2(corr[i].imag, corr[i].real)
+			theta2 = arctan2(corr[i+1].imag, corr[i+1].real)
+			theta = theta1# - theta2
+		
+			xCenter = i# + 0.5
+			yCenter = yStart / 2
+			xy = [xCenter, yCenter]
+		
+			width = 0.7
+			height = 2 * abs(yCenter) * 0.7
+			ell = matplotlib.patches.Ellipse(xy=xy, width=width, height=height, facecolor="w")
+			ax.add_artist(ell)
+		
+			dx = width/2. * cos(+pi/2 - theta)
+			dy = height/2. * sin(+pi/2 - theta)
+			lin = matplotlib.patches.Line2D(xdata=[xCenter, xCenter+dx], ydata=[yCenter, yCenter+dy])
+			ax.add_artist(lin)
+		
+	draw_if_interactive()
+	
+	return ax.axis()
+		
+
+	
+	
+
 
 def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
 	fig = gcf()
@@ -57,13 +135,13 @@ def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
 	ax = axes([0.52, 0.77, 0.43, 0.20])
 	ax.plot(t, pulse, "b")
 	ax.plot([t[frameIndex]], [pulse[frameIndex]], "r.", markersize=10)
-	ax.axis([0, t[-1], 1.2*min(pulse), 1.2*max(pulse)])
+	ax.axis([t[0], t[-1], 1.2*min(pulse), 1.2*max(pulse)])
 	yticks([])
 
 	basisCount = corr.shape[1]
 	ax = axes([0.05, 0.77, 0.43, 0.20])
-	ax.bar(r_[:basisCount], corr[frameIndex, :])
-	ax.axis([0, basisCount, 0, 1.1*numpy.max(corr)])
+	curAxis = list(CorrelationBarPlotPhase(corr[frameIndex,:10], ax, 1.1*numpy.max(corr)))
+	#ax.axis([-1, basisCount, 0, 1.1*numpy.max(corr)])
 	yticks([])
 
 
@@ -157,7 +235,7 @@ def MakeOddEvenMovie(**args):
 		sys.stdout.write("\b"*len(progressStr))
 
 		clf()
-		CorrelationBarPlot(corr)
+		CorrelationBarPlot(abs(corr)**2)
 		axis([-1,20,0,0.35])
 		title("t = %3.3f" % curtime)
 		savefig("movie/frame%05i.png" % curIndex)
@@ -313,12 +391,19 @@ def Propagate(**args):
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 
+	initProj = dot(boundV, prop.psi.GetData()[:,0])
+	print real(initProj)
+	raise Exception() 
+	initPhases = numpy.arctan2(initProj.imag, initProj.real)
+
 	if "initStates" in args:
 		initStates = args["initStates"]
 		initPsi.GetData()[:] = 0
 		for state in initStates:
 			initPsi.GetData()[:,0] += boundV[state,:]
 			print "Input Energy = ", boundE[state]
+		initPsi.Normalize()
+		prop.psi.GetData()[:] = initPsi.GetData()
 			
 
 	if "testEnergy" in args:
@@ -330,7 +415,10 @@ def Propagate(**args):
 
 		return
 
-		
+	relativePhase = "initial"
+	if "relativePhase" in args:
+		relativePhase = args["relativePhase"]
+		print "Using relative phase '%s'" % relativePhase
 
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	dr = diff(r)[0]
@@ -350,7 +438,13 @@ def Propagate(**args):
 		advance loops, and creating an inner function like this is a 
 		nice way of grouping the output functionality
 		"""
-		corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
+		if relativePhase == "initial":
+			curPhases = initPhases
+		elif relativePhase == "follow":
+			curPhases = initPhases - boundE * t
+		else:
+			raise Exception("Unknown relativePhase '%s'" % relativePhase)
+		corrList.append(dot(boundV, prop.psi.GetData()[:,0]) * exp(-1.0j * curPhases))
 		radialData.append(prop.psi.GetData().copy())
 		expectR = dr*sum( conj(prop.psi.GetData()[:,0]) * r * prop.psi.GetData()[:,0] ) 
 		#only calc <R> for the bound potential
@@ -358,6 +452,9 @@ def Propagate(**args):
 		expectRList.append(expectR)
 		
 		timeList.append(t/femtosec_to_au)
+
+
+	""" Don't use pump pulse
 
 	#output initial state
 	t = 0
@@ -380,12 +477,15 @@ def Propagate(**args):
 				output()
 
 	prop.psi.Normalize()
+	"""
 
 	if "removeStates" in args:
 		if args["removeStates"] == "odd":
 			states = r_[1:len(boundE):2]
 		elif args["removeStates"] == "even":
 			states = r_[0:len(boundE):2]
+		elif iterable(args["removeStates"]):
+			states = array(args["removeStates"], dtype=int)
 		else:
 			raise Exception("Invalid removeStates %s" % args["removeStates"])
 		
@@ -395,13 +495,21 @@ def Propagate(**args):
 			data -= dot(conj(boundV[i, :]), data) * boundV[i,:]/dr
 		prop.psi.GetData()[:,0] = data
 
-		plot(r, abs(prop.psi.GetData()[:,0].copy())**2)
+		#plot(r, abs(prop.psi.GetData()[:,0].copy())**2)
+
+	if "fastForward" in args:
+		fastForward = args["fastForward"]
+		proj = dot(boundV, prop.psi.GetData()[:,0])
+		proj *= exp(-1.0j*fastForward*boundE)
+		prop.psi.GetData()[:] = 0
+		prop.psi.GetData()[:,0] = dot(conj(boundV.transpose()), proj) / dr
+		prop.PropagatedTime = fastForward
 
 	
-
-
-	prop.Duration = fullDuration
+	#prop.Duration = fullDuration
 	tPrev = 0
+	t = prop.PropagatedTime
+	output()
 	for t in prop.Advance(outputCount):
 		output()
 		if t-tPrev > 20*femtosec_to_au:
@@ -410,7 +518,7 @@ def Propagate(**args):
 			print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
 			tPrev = t
 
-
+	t = prop.PropagatedTime
 	output()
 
 	norm = prop.psi.GetNorm()

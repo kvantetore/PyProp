@@ -1090,6 +1090,8 @@ def PropagateDelayScan(**args):
 
 	pulseStart = conf.ProbePulsePotential.delay
 	pulseDuration = conf.ProbePulsePotential.duration
+
+	calculateEnergyDistribution = args.get("calculateEnergyDistribution", True)
 	
 	output = tables.openFile(outputfile, "a")
 	try:
@@ -1104,7 +1106,8 @@ def PropagateDelayScan(**args):
 			normList.append(prop.psi.GetNorm())
 			psiTimeList.append(prop.PropagatedTime)
 			psiList.append(prop.psi.GetData().reshape((1,) + prop.psi.GetData().shape))
-			energyDistribution.append(array(CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)))
+			if calculateEnergyDistribution:
+				energyDistribution.append(array(CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)))
 			corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
 		
 		#-1) Pump in the initial wavepacket
@@ -1146,7 +1149,8 @@ def PropagateDelayScan(**args):
 		SaveArray(output, outputpath, "initstateProjection", array(initCorrList))
 		SaveArray(output, outputpath, "norm", array(normList))
 		SaveArray(output, outputpath, "timeWavefunction", array(psiTimeList))
-		SaveArray(output, outputpath, "energyDistribution", array(energyDistribution))
+		if calculateEnergyDistribution:
+			SaveArray(output, outputpath, "energyDistribution", array(energyDistribution))
 		SaveArray(output, "/", "energy", E)
 		psiList.close()
 
