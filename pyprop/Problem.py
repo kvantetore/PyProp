@@ -184,6 +184,7 @@ class Problem:
 			#negative imaginary time
 			stoppingCriterion = lambda: (self.StartTime + self.Duration - self.PropagatedTime) > 0.5 * abs(self.TimeStep)
 		else:
+			endTime = self.StartTime + sign(self.TimeStep) * self.Duration
 			#real time
 			stoppingCriterion = lambda: abs(self.PropagatedTime - endTime) > 0.5 * abs(self.TimeStep)
 

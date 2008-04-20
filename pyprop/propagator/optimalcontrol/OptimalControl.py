@@ -54,7 +54,6 @@ class OptimalControl:
 
 		#Make a list of the control functions
 		self.ControlFunctionList = []
-		print self.PotentialList
 		for controlFunc in self.ControlFunctionNamesList:
 			for potential in self.PotentialList:
 				if potential.Name == controlFunc:
@@ -174,8 +173,6 @@ class OptimalControl:
 		#Update controls
 		self.ComputeNewControlFunctions(self.TimeGridSize - 1, self.PropagationTime, Direction.Backward)
 
-		T = self.PropagationTime
-		#for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
 		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize)):
 			self.BackwardSolution[:, self.TimeGridSize - 1 - idx] = self.BaseProblem.psi.GetData()[:]
 			if idx < self.TimeGridSize - 1:
@@ -188,19 +185,9 @@ class OptimalControl:
 		"""
 
 		if direction == Direction.Forward:
-		#	self.BaseProblem.TimeStep = complex(self.TimeStep)
-		#	self.BaseProblem.StartTime = 0.0
-		#	self.BaseProblem.Duration = self.PropagationTime
-		#	if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-		#		self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
 			self.BaseProblem.RestartPropagation(complex(self.TimeStep), 0.0, self.PropagationTime)
 
 		elif direction == Direction.Backward:
-			#self.BaseProblem.TimeStep = -complex(self.TimeStep)
-			#self.BaseProblem.StartTime = self.PropagationTime
-			#self.BaseProblem.Duration = 0.0
-			#if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-			#	self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
 			self.BaseProblem.RestartPropagation(-complex(self.TimeStep), self.PropagationTime, self.PropagationTime)
 
 		#Apply initial condition
