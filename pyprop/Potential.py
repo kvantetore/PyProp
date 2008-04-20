@@ -204,10 +204,12 @@ class StaticPotentialWrapper(PotentialWrapper):
 	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		if self.Storage == StaticStorageModel.StorageExpValue:
 			self.PotentialEvaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
-		elif self.Storage == -1:
-			raise Exception("what! %s" % self)
+		#elif self.Storage == -1:
+		#	raise Exception("what! %s" % self)
 		else:
-			scaling = complex(self.TimeFunction(self.ConfigSection, t))
+			scaling = 1.0
+			if self.HasTimeFunction:
+				scaling = self.TimeFunction(self.ConfigSection, t)
 			self.Potential.MultiplyPotential(srcPsi, destPsi, dt, scaling)
 
 	def GetExpectationValue(self, t, dt):
