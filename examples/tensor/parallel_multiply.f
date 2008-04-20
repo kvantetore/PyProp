@@ -1,3 +1,8 @@
+! This file is deprecated. tensorpotentialmultiply_generator.py can generate a more
+! flexible version of this routine
+!
+
+
 module IndexTricks
 contains
 subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)

@@ -35,6 +35,4 @@ module_code('def("VectorDotProduct", VectorDotProduct<1>);')
 module_code('def("VectorDotProduct", VectorDotProduct<2>);')
 module_code('def("VectorDotProduct", VectorDotProduct<3>);')
 
-declaration_code('#include "parallel_multiply_wrapper.cpp"')
-module_code('def("MultiplyOverlapMatrix", MultiplyOverlapMatrix_Wrapper);')
 

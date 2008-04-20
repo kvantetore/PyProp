@@ -2,6 +2,12 @@ execfile("example.py")
 
 """
 
+IMPORTANT: This file is not being maintained. It was implemented
+to serve as a test for the parallelization scheme for matrix-vector multiplication
+tensorpotentialmultiply_generator.py can now generate routines for parallelization
+even for multidimensional arrays. It might be easier to see how the algorithm
+works in this file rather than in the generator file...
+
 Global Matrix is N-by-N banded Hermitian matrix with
 k offdiagonal bands
 
