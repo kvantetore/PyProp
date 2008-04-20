@@ -24,7 +24,7 @@ class Degani(OptimalControl):
 		"""
 		self.Config = config.Degani
 
-		#Get the list of control function potentialss
+		#Get the list of control function potentials
 		self.ControlFunctionNamesList = self.Config.control_functions
 		self.NumberOfControls = len(self.ControlFunctionNamesList)
 
@@ -51,17 +51,20 @@ class Degani(OptimalControl):
 
 		self.PenaltyMatrixIsDiagonal = True
 
+		self.ControlsAreCommuting = True
 
 	def Setup(self):
 		self.M = numpy.zeros((self.NumberOfControls, self.NumberOfControls), dtype=double)
 		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 
 		self.TempPsi3 = self.BaseProblem.psi.CopyDeep()
+		self.TempPsi4 = self.BaseProblem.psi.CopyDeep()
 
 		#Find h0 potential
 		for potential in self.PotentialList:
 			if potential.Name == self.Config.h0[0]:
 				self.H_0 = potential
+
 
 	def ComputeNewControlFunctions(self, timeGridIndex, t, direction):
 		"""
@@ -81,8 +84,7 @@ class Degani(OptimalControl):
 		self.SetupVectorB(timeGridIndex, direction)
 		self.SetupMatrixM(timeGridIndex, direction)
 
-		#newControls = linalg.solve(self.M, self.b)
-		newControls = self.b[0] / self.M[0,:]
+		newControls = linalg.solve(self.M, self.b)
 
 		#Update controls
 		for a in range(self.NumberOfControls):
@@ -90,102 +92,114 @@ class Degani(OptimalControl):
 			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
 	
-	def ComputeCostFunctional(self, currentYield):
-		penalty = 0
-		for a in range(self.NumberOfControls):
-			#penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), numpy.dot(self.PenaltyMatrix, self.ControlVectors[a,:]))
-			penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), self.PenaltyMatrix * self.ControlVectors[a,:])
-		return currentYield - penalty
-
-
-	def ComputeTargetProjection(self):
-		"""
-		Project solution on target state
-		"""
-
-		#Note: Argument is complex conjugated
-		return self.BaseProblem.psi.InnerProduct(self.TargetState)
-
-
-	def SetupPenaltyMatrix(self):
-		self.PenaltyMatrix = numpy.ones(self.TimeGridSize)
-		self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
-
-	
 	def SetupVectorB(self, timeGridIndex, direction):
+		"""
+		Case 1: Controls are commuting
+		Case 2: Controls are not commuting
+		"""
 
-		commutatorScaling = 1j * self.TimeStep / 2.0
-		#self.TempPsi3.GetData()[:] = self.BaseProblem.psi.GetData()[:]
+		#Calculate the constants to be multiplied on the two
+		#commutators that appear in the expression for b
+		if direction == Direction.Forward:
+			commutatorScaling1 = 1j * self.TimeStep / 2.0
+			commutatorScaling2 = -self.TimeStep**2 / 6.0
+		else:
+			commutatorScaling1 = -1j * self.TimeStep / 2.0
+			commutatorScaling2 = -self.TimeStep**2 / 6.0
 		
+		#Loop over all controls
 		for a in range(self.NumberOfControls):
 			self.ControlFunctionList[a].ConfigSection.strength = 1.0
 
-			#We must compute (X_a - ih/2 * [H_0, X_a]) * |psi>
-			self.TempPsi2.Clear()
-			
-			#First we compute X_a * |psi>. This involves three steps:
-			#
-			#    1. Clear TmpPsi
-			#    2. Perform X_a * |psi> and store in TmpPsi
-			#    3. Store TmpPsi in TmpPsi2
-			#
-			self.TempPsi.Clear()
-			self.ControlFunctionList[a].MultiplyPotential(self.TempPsi,0,0)
-			#self.TempPsi2.GetData()[:] = self.TempPsi.GetData()[:]
+			#CASE 1: Controls are commuting
+			if self.ControlsAreCommuting:
+				#X * |psi>
+				self.TempPsi.Clear()
+				self.ControlFunctionList[a].MultiplyPotential(self.Psi, self.TempPsi,0,0)
+				self.TempPsi4.GetData()[:] = self.TempPsi.GetData()[:]
 
-			#Then we do X_a * H_0 * |psi>. The steps involved are:
-			#
-			#    1. Clear TmpPsi
-			#    2. Perform H_0 * |psi> and store in TmpPsi
-			#    3. Set |psi> = TmpPsi
-			#    4. Clear TmpPsi again
-			#    5. Perform X_a * |psi> and store in TmpPsi
-			#    6. Store TmpPsi in TmpPsi2
-			#self.TempPsi.Clear()
-			#self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
-			#self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
-			#self.TempPsi.Clear()
-			#self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
-			#self.TempPsi2.GetData()[:] += commutatorScaling * self.TempPsi.GetData()[:]
+				#ih/2 * [H_0, X] * |psi>
+				self.MultiplyCommutatorAB(self.H_0, self.ControlFunctionList[a], self.Psi, self.TempPsi, self.TempPsi2)
+				self.TempPsi4.GetData()[:] +=  commutatorScaling1 * self.TempPsi2.GetData()[:]
 
-			#H_0 * X_a * |psi>
-			#self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
-			#self.TempPsi.Clear()
-			#self.ControlFunctionList[a].MultiplyPotential(self.TempPsi, 0, 0)
-			#self.BaseProblem.psi.GetData()[:] = self.TempPsi.GetData()[:]
-			#self.TempPsi.Clear()
-			#self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
-			#self.TempPsi2.GetData()[:] -= commutatorScaling * self.TempPsi.GetData()[:]
+				# h/6 * [H_0, [H_0, X]] * |psi>
+				self.MultiplyCommutatorAAB(self.H_0, self.ControlFunctionList[a], self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+				self.TempPsi4.GetData()[:] += commutatorScaling2 * self.TempPsi3.GetData()[:]
 
-			#Now inner product
-			if direction == Direction.Forward:
-				self.TempPsi2.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
-				self.b[a] = -numpy.imag(self.TempPsi2.InnerProduct(self.TempPsi))
+			#CASE 2: Controls are not commuting
 			else:
-				self.TempPsi2.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
-				self.b[a] = -numpy.imag(self.TempPsi.InnerProduct(self.TempPsi2))
+				pass #for now
 
+			#Now perform innerproduct
+			if direction == Direction.Forward:
+				self.TempPsi.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+				self.b[a] = -numpy.imag(self.TempPsi.InnerProduct(self.TempPsi4))
+			else:
+				self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
+				self.b[a] = -numpy.imag(self.TempPsi4.InnerProduct(self.TempPsi))
 
 			#Last, the penalty matrix
 			if not self.PenaltyMatrixIsDiagonal:
 				pass #do something here
 
-			#Reset |psi>
-			#self.BaseProblem.psi.GetData()[:] = self.TempPsi3.GetData()[:]
 
 	def SetupMatrixM(self, timeGridIndex, direction):
+		"""
+		Case 1: Only one control
+		Case 2: Controls are commuting
+		Case 3: Controls are not commuting
+		"""
 
 		self.M[:] = 0
-		for a in range(self.NumberOfControls):
-			for b in range(self.NumberOfControls):
-				if a == b:
-					self.M[a,b] = self.PenaltyMatrix[timeGridIndex] / self.TimeStep
-	#			else:
-	#				#X_a * X_b * |psi>
-	#				self.TempPsi.Clear()
-	#				self.H_0.MultiplyPotential(self.TempPsi, 0, 0)
-	#				self.ControlFunctionList[a].MultiplyPotential(self.TempPsi,0,0)
-	#				self.TempPsi2.GetData()[:] = commutatorScaling * self.TempPsi.GetData()[:]
+
+		#Penalty matrix factor
+		energyPenalty = self.PenaltyMatrix[timeGridIndex] / self.TimeStep
+
+		commutatorScaling = -self.TimeStep**2 / 6.0
+		
+		#CASE 1: One control
+		if self.NumberOfControls == 1:
+			#Commutator part h**2/6 [A,[B,A]]
+			self.MultiplyCommutatorABA(self.ControlFunctionList[0], self.H_0, self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+
+			matrixElementM = 0
+			if direction == Direction.Forward:
+				self.TempPsi.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+				matrixElementM -= numpy.imag(commutatorScaling * self.TempPsi.InnerProduct(self.TempPsi3))
+			else:
+				self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
+				matrixElementM -= numpy.imag(commutatorScaling * self.TempPsi3.InnerProduct(self.TempPsi))
+
+			self.M[0,0] = energyPenalty + matrixElementM
+
+		#CASE 2: Controls are commuting
+		elif self.ControlsAreCommuting:
+			for a in range(self.NumberOfControls):
+				for b in range(self.NumberOfControls):
+
+					#Diagonal commutator part h**2/6 [X,[H_0,Y]]
+					if a == b:
+						self.MultiplyCommutatorABA(self.ControlFunctionList[0], self.H_0, self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+						
+						#Energy penalty
+						self.M[a,b] += energyPenalty
+					
+					#Off-diagonal commutator part h**2/6 [X,[H_0,X]]
+					else:
+						self.MultiplyCommutatorABC(self.ControlFunctionList[a], self.H_0, self.ControlFunctionList[b], self.Psi, \
+							self.TempPsi, self.TempPsi2, self.TempPsi3)
+				
+					#Project on forward or backward solution
+					if direction == Direction.Forward:
+						self.TempPsi.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+						self.M[a,b] -= numpy.imag(commutatorScaling * self.TempPsi.InnerProduct(self.TempPsi3))
+					else:
+						self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
+						self.M[a,b] -= numpy.imag(commutatorScaling * self.TempPsi3.InnerProduct(self.TempPsi))
+
+		#CASE 3: Controls are not commuting
+		else:
+			pass #for now
 
 
 

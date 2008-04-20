@@ -1,10 +1,23 @@
 
 class OptimalControl:
 	"""
+	Some description here.
+
+	PenaltyMatrix:
+
+	    The PenaltyMatrix (A) provides a cost measure for a given control. It can be built do penalize
+		a wide variety of pulse aspects, such as frequency, fluency (overall energy penalty), pulse
+		shape (windoved energy penalty), etc. However, since it is a quite large matrix (if it is full),
+		the number of time intervals squared, we need to keep it sparse. In practise, the types of 
+		penalties can be divided into two types: diagonal in time-space and diagonal in frequency-space.
+		Since the penalty is computed from u^T A u, where the controls u are time-dependent, we use
+		FFT to diagonlise A for frequency penalties: u^T A u = u^T IFFT{ A' {FFT{u}} }, and we only need
+		to store the diagonal matrix A'.
 	"""
 	
 	def __init__(self, prop):
 		self.BaseProblem = prop
+		self.Psi = prop.psi
 		self.PsiSize = prop.psi.GetData().size
 		self.PotentialList = prop.Propagator.PotentialList
 	
@@ -100,9 +113,11 @@ class OptimalControl:
 
 
 	def ComputeCostFunctional(self, currentYield):
-		"""
-		"""
-		raise NotImplementedError
+		penalty = 0
+		for a in range(self.NumberOfControls):
+			#penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), numpy.dot(self.PenaltyMatrix, self.ControlVectors[a,:]))
+			penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), self.PenaltyMatrix * self.ControlVectors[a,:])
+		return currentYield - penalty
 
 
 	def ComputeTargetProjection(self):
@@ -180,6 +195,11 @@ class OptimalControl:
 			self.BaseProblem.SetupStep()
 
 	
+	def SetupPenaltyMatrix(self):
+		self.PenaltyMatrix = numpy.ones(self.TimeGridSize)
+		self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
+	
+
 	def SetupTargetState(self):
 		"""
 		Set up the desired target state
@@ -197,10 +217,131 @@ class OptimalControl:
 		for a in range(self.NumberOfControls):
 			self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, direction]
 
-	
-	def SetupPenaltyMatrix(self):
-		raise NotImplementedError
 
+	def MultiplyCommutatorAB(self, A, B, psi, tmpPsi, outPsi):
+		"""
+		[A,B] * |psi> = AB * |psi> - BA * |psi>. Result is returned
+		in outPsi.
+		"""
+
+		tmpPsi.Clear()
+		outPsi.Clear()
+
+		#Calculate -BA * |psi> store in outPsi
+		A.MultiplyPotential(psi, tmpPsi, 0, 0)
+		B.MultiplyPotential(tmpPsi, outPsi, 0, 0)
+		outPsi.GetData()[:] *= -1.0
+
+		#Calculate AB * |psi> store in outPsi
+		tmpPsi.Clear()
+		B.MultiplyPotential(psi, tmpPsi, 0, 0)
+		A.MultiplyPotential(tmpPsi, outPsi, 0, 0)
+
+
+	def MultiplyCommutatorAAB(self, A, B, psi, tmpPsi1, tmpPsi2, outPsi):
+		"""
+		Multiply the commutator [A,[A,B]]] on psi. Result is returned in outPsi.
+		All buffers are destroyed.
+
+		Straightforward expansion of the commutator would require 12 matrix-vector 
+		multiplications. However, we write:
+
+		    P1 = A |psi>
+		    P2 = B |psi>
+
+		giving
+
+		    [A,[A,B]] = AAB - 2*ABA +  BAA = AA*P2 - 2*AB*P1 + BA*P1
+
+		where we now must do only 8 matrix-vector multiplications.
+		"""
+		#Clear buffers
+		tmpPsi1.Clear()
+		tmpPsi2.Clear()
+		outPsi.Clear()
+
+		#Calculate P1
+		A.MultiplyPotential(psi, tmpPsi1, 0, 0)
+
+		#Calculate BA*P1 and store in outPsi
+		A.MultiplyPotential(tmpPsi1, outPsi, 0, 0)
+		B.MultiplyPotential(outPsi, tmpPsi2, 0, 0)
+		outPsi.GetData()[:] = tmpPsi2.GetData()[:]
+
+		#Calculate -2*AB*P1 and add to outPsi
+		tmpPsi2.Clear()
+		B.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		A.MultiplyPotential(tmpPsi2, tmpPsi1, 0, 0)
+		outPsi.GetData()[:] -= tmpPsi1.GetData()[:]
+
+		#Calculate P2
+		tmpPsi1.Clear()
+		B.MultiplyPotential(psi, tmpPsi1, 0, 0)
+
+		#Calculate AA*P2
+		tmpPsi2.Clear()
+		A.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		A.MultiplyPotential(tmpPsi2, tmpPsi1,0, 0)
+		outPsi.GetData()[:] += tmpPsi1.GetData()[:]
+
+
+	def MultiplyCommutatorABA(self, A, B, psi, tmpPsi1, tmpPsi2, outPsi):
+		"""
+		Multiply the commutator [A,[B,A]]] on psi. Result is returned in outPsi.
+		All buffers are destroyed. Since [A,[B,A]] = -[A,[A,B]], we just call
+		on MultiplyCommutatorAAB and multiply the result by -1
+		"""
+		self.MultiplyCommutatorAAB(A, B, psi, tmpPsi1, tmpPsi2, outPsi)
+		outPsi.GetData()[:] *= -1
+
+
+	def MultiplyCommutatorABC(self, A, B, C, psi, tmpPsi1, tmpPsi2, outPsi):
+		"""
+		Multiply the commutator [A,[B,C]] on psi. Result is returned in outPsi.
+
+		[A,[B,C]] = [A,BC-CB] = ABC - ACB - BCA + CBA 
+		"""
+
+		def ClearBuffers():
+			tmpPsi1.Clear()
+			tmpPsi2.Clear()
+			outPsi.Clear()
+
+		#Clear buffers
+		ClearBuffers()
+
+		#Calculate CBA and store in outPsi
+		A.MultiplyPotential(psi, tmpPsi1, 0, 0)
+		B.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		C.MultiplyPotential(tmpPsi2, tmpPsi1, 0, 0)
+		outPsi.GetData()[:] = tmpPsi1.GetData()
+
+		#Calculate -BCA and add to outPsi
+		ClearBuffers()
+		A.MultiplyPotential(psi, tmpPsi1, 0, 0)
+		C.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		B.MultiplyPotential(tmpPsi2, tmpPsi1, 0, 0)
+		outPsi.GetData()[:] -= tmpPsi1.GetData()[:]
+
+		#Calculate -ACB 
+		ClearBuffers()
+		B.MultiplyPotential(psi, tmpPsi1, 0, 0)
+		C.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		A.MultiplyPotential(tmpPsi2, tmpPsi1, 0, 0)
+		outPsi.GetData()[:] -= tmpPsi1.GetData()[:]
+
+		#Calculate ABC
+		ClearBuffers()
+		C.MultiplyPotential(psi, tmpPsi1, 0, 0)
+		B.MultiplyPotential(tmpPsi1, tmpPsi2, 0, 0)
+		tmpPsi1.Clear()
+		A.MultiplyPotential(tmpPsi2, tmpPsi1, 0, 0)
+		outPsi.GetData()[:] = tmpPsi1.GetData()[:]
 
 
 class Direction:
