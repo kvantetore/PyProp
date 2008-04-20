@@ -215,15 +215,15 @@ class OptimalControl:
 		self.TargetState = self.BaseProblem.psi.CopyDeep()
 		self.TargetState.Clear()
 
-		if self.BaseProblem.Config.FinalStates.type == "vector":
+		if self.BaseProblem.Config.FinalState.type == "vector":
 			
 			self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] \
 				= self.BaseProblem.Config.FinalState.population[:]
 
 		elif self.BaseProblem.Config.FinalStates.type == "function":
 			grid = self.Psi.GetRepresentation().GetLocalGrid(0)
-			func = self.BaseProblem.Config.FinalStates.grid_function
-			self.TargetState.GetData()[:] = func(self.BaseProblem.Config.FinalStates, grid)
+			func = self.BaseProblem.Config.FinalState.grid_function
+			self.TargetState.GetData()[:] = func(self.BaseProblem.Config.FinalState, grid)
 
 		else:
 			raise Exception("Unknown target specification")

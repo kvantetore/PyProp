@@ -97,7 +97,7 @@ class BSPLINE(core.BSpline):
 
 		# Vanilla: maximum continuity at interior points,
 		#          maximum multiplicity at end points.
-		if(conf.continuity == 'vanilla'):
+		if (conf.continuity == 'vanilla'):
 			continuitySeq[:] = (self.MaxSplineOrder - 1) * ones(n_, dtype='int')
 			continuitySeq[0] = 0
 			continuitySeq[-1] = 0
@@ -106,10 +106,21 @@ class BSPLINE(core.BSpline):
 		#       maximum multiplicity - 1 at end points.
 		#       This will remove the nonzero spline and
 		#       endpoints, giving zero boundary conditions.
-		if(conf.continuity == 'zero'):
+		elif (conf.continuity == 'zero'):
 			continuitySeq[:] = (self.MaxSplineOrder - 1) * ones(n_, dtype='int')
 			continuitySeq[0] = 1
 			continuitySeq[-1] = 1
+		
+		elif (conf.continuity == "custom"):
+			continuitySeq[:] = (self.MaxSplineOrder - 1) * ones(n_, dtype='int')
+			continuitySeq[0] = conf.left_point_continuity
+			continuitySeq[-1] = self.right_point_continuity
+
+		else:
+			raise Exception("Unknown continuity type!")
+
+
+			
 
 
 	def CreateKnotSequence(self):
