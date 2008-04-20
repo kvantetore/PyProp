@@ -1,3 +1,4 @@
+import warnings
 
 class OptimalControl:
 	"""
@@ -20,6 +21,8 @@ class OptimalControl:
 		self.Psi = prop.psi
 		self.PsiSize = prop.psi.GetData().size
 		self.PotentialList = prop.Propagator.PotentialList
+		if hasattr(self.BaseProblem.Propagator, "BasePropagator"):
+			self.PotentialList = self.BaseProblem.Propagator.BasePropagator.PotentialList
 	
 		#Get time step and propagation time from config
 		self.TimeStep = prop.TimeStep.real
@@ -51,10 +54,15 @@ class OptimalControl:
 
 		#Make a list of the control functions
 		self.ControlFunctionList = []
+		print self.PotentialList
 		for controlFunc in self.ControlFunctionNamesList:
 			for potential in self.PotentialList:
 				if potential.Name == controlFunc:
 					self.ControlFunctionList += [potential]
+
+		#Check that we actually got some control functions
+		if len(self.ControlFunctionList) == 0:
+			raise Exception("Did not find any control functions!")
 
 		#A vector to store the optimized control functions
 		self.ControlVectors = ones((self.NumberOfControls, self.TimeGridSize), dtype = double)
@@ -167,7 +175,8 @@ class OptimalControl:
 		self.ComputeNewControlFunctions(self.TimeGridSize - 1, self.PropagationTime, Direction.Backward)
 
 		T = self.PropagationTime
-		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
+		#for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize, duration = T)):
+		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize)):
 			self.BackwardSolution[:, self.TimeGridSize - 1 - idx] = self.BaseProblem.psi.GetData()[:]
 			if idx < self.TimeGridSize - 1:
 				self.ComputeNewControlFunctions(self.TimeGridSize - idx - 2, t, Direction.Backward)
@@ -179,20 +188,23 @@ class OptimalControl:
 		"""
 
 		if direction == Direction.Forward:
-			self.BaseProblem.TimeStep = complex(self.TimeStep)
-			self.BaseProblem.StartTime = 0.0
-			self.BaseProblem.Duration = self.PropagationTime
-			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
-			self.BaseProblem.SetupStep()
+		#	self.BaseProblem.TimeStep = complex(self.TimeStep)
+		#	self.BaseProblem.StartTime = 0.0
+		#	self.BaseProblem.Duration = self.PropagationTime
+		#	if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+		#		self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
+			self.BaseProblem.RestartPropagation(complex(self.TimeStep), 0.0, self.PropagationTime)
 
 		elif direction == Direction.Backward:
-			self.BaseProblem.TimeStep = -complex(self.TimeStep)
-			self.BaseProblem.StartTime = self.PropagationTime
-			self.BaseProblem.Duration = 0.0
-			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
-			self.BaseProblem.SetupStep()
+			#self.BaseProblem.TimeStep = -complex(self.TimeStep)
+			#self.BaseProblem.StartTime = self.PropagationTime
+			#self.BaseProblem.Duration = 0.0
+			#if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+			#	self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
+			self.BaseProblem.RestartPropagation(-complex(self.TimeStep), self.PropagationTime, self.PropagationTime)
+
+		#Apply initial condition
+		self.BaseProblem.SetupWavefunction()
 
 	
 	def SetupPenaltyMatrix(self):

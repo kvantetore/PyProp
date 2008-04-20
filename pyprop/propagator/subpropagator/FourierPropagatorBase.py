@@ -75,7 +75,7 @@ class FourierPropagatorBase:
 		self.TransformForward(dstPsi)
 		
 		for pot in self.FourierPotentials:
-			pot.MultiplyPotential(dstPsi, t, dt)
+			pot.MultiplyPotential(self.psi, dstPsi, t, dt)
 
 		self.TransformInverse(dstPsi)
 		self.TransformInverse(self.psi)

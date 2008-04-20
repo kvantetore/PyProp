@@ -66,7 +66,7 @@ class CombinedPropagator(PropagatorBase):
 			prop.MultiplyHamiltonian(destPsi, t, dt/2.)
 
 		#the potential is in the middle, so it does one full step
-		self.MultiplyPotential(destPsi, t, dt)
+		self.MultiplyPotential(self.psi, destPsi, t, dt)
 
 		#second halfstep
 		for prop in reversed(self.SubPropagators):

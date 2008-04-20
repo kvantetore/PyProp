@@ -83,7 +83,7 @@ class Problem:
 		
 		
 	#Propagation-------------------------------------------------
-	def SetupStep(self):
+	def SetupStep(self, skipWavefunctionSetup=False):
 		"""
 		Runs the nescescary setup routines to allow propagation.
 
@@ -100,7 +100,8 @@ class Problem:
 				self.Propagator.SetupStep(self.TimeStep)
 
 			print "    Setting up initial wavefunction"
-			self.SetupWavefunction()
+			if not skipWavefunctionSetup:
+				self.SetupWavefunction()
 			
 			print "Setup timestep complete."
 	
@@ -111,6 +112,20 @@ class Problem:
 			#Diasable redirect
 			Redirect.Disable()
 			raise	
+
+	def RestartPropagation(self, timestep, startTime, propagationTime):
+		"""
+		Resets propagation time, duration and timestep for all propagators,
+		allowing the problem object to be propagated again without having
+		to call SetupStep.
+		"""
+		self.TimeStep = timestep
+		self.PropagatedTime = startTime
+		self.StartTime = startTime
+		self.Duration = propagationTime
+		if self.Propagator != None:
+				self.Propagator.RestartPropagation(timestep, startTime, propagationTime)
+
 
 	def AdvanceStep(self):
 		"""
@@ -136,7 +151,7 @@ class Problem:
 		"""
 		self.Propagator.MultiplyHamiltonian(dstPsi, self.PropagatedTime, self.TimeStep )
 
-	def Advance(self, yieldCount, duration=0):
+	def Advance(self, yieldCount, duration=None):
 		"""
 		Returns a generator for advancing the wavefunction a number of timesteps. 
 		If duration is specified the wavefunction is propagated until propagated 
@@ -147,7 +162,7 @@ class Problem:
 		If is a boolean, yieldCount=True will make this function yield every timestep
 		and yieldCount=False will make it yield one time. (at the last timestep (i think))
 		"""
-		if duration == 0:
+		if duration == None:
 			duration = self.Duration
 
 		#Determine how often we should yield.
@@ -167,10 +182,10 @@ class Problem:
 
 		if self.TimeStep.real == 0:
 			#negative imaginary time
-			stoppingCriterion = lambda: (self.Duration - self.PropagatedTime) > 0.5 * abs(self.TimeStep)
+			stoppingCriterion = lambda: (self.StartTime + self.Duration - self.PropagatedTime) > 0.5 * abs(self.TimeStep)
 		else:
 			#real time
-			stoppingCriterion = lambda: (self.Duration - self.PropagatedTime) * sign(self.TimeStep) > 0.5 * abs(self.TimeStep)
+			stoppingCriterion = lambda: abs(self.PropagatedTime - endTime) > 0.5 * abs(self.TimeStep)
 
 		while stoppingCriterion():
 			#next timestep
@@ -257,6 +272,10 @@ class Problem:
 			self.TimeStep = complex(configSection.timestep)
 			self.Duration = configSection.duration
 			self.PropagatedTime = 0
+			self.StartTime = 0
+			if hasattr(configSection, "start_time"):
+				self.StartTime = configSection["start_time"]
+				self.PropagatedTime = self.StartTime
 
 
 	def SetupWavefunction(self):

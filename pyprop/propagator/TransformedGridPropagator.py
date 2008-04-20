@@ -98,4 +98,4 @@ class TransformedGridPropagator(PropagatorBase):
 		if self.SplittingOrder == 2:
 			dt /= 2.0
 		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
-		self.MultiplyPotential(dstPsi, t, dt)
+		self.MultiplyPotential(self.psi, dstPsi, t, dt)

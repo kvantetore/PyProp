@@ -47,7 +47,7 @@ class CartesianPropagator(PropagatorBase):
 	def MultiplyHamiltonian(self, destPsi, t, dt):
 		#self.MultiplyPotential(destPsi, t, dt/2.)
 		self.MultiplyKineticEnergy(destPsi, t, dt)
-		self.MultiplyPotential(destPsi, t, dt/2.)
+		self.MultiplyPotential(self.psi, destPsi, t, dt/2.)
 
 	def TransformForward(self, psi):
 		# transform into fourier space
@@ -97,7 +97,7 @@ class CartesianPropagator(PropagatorBase):
 		self.TransformForward(destPsi)
 	
 		# apply kinetic energy potential
-		self.KineticPotential.MultiplyPotential(destPsi, t, dt) 
+		self.KineticPotential.MultiplyPotential(self.psi, destPsi, t, dt) 
 		
 		# transform back into real space
 		self.TransformInverse(destPsi)

@@ -95,13 +95,13 @@ class PotentialWrapper:
 		"""
 		pass
 
-	def MultiplyPotential(self, destPsi, t, timestep):
+	def MultiplyPotential(self, srcPsi, destPsi, t, timestep):
 		"""
 		Performs "Matrix"-vector multiplication between the potential and the wavefunction. 
 		For diagonal potentials this is simply an element-wise multiplication. This
 		is used by ODE-based and krylov-based propagators.
 
-		destPsi += V psi
+		destPsi += V srcPsi
 		"""
 		raise "MultiplyPotential is not implemented for class %s" % (self.__class__)
 	
@@ -124,12 +124,14 @@ class StaticPotentialWrapper(PotentialWrapper):
 	def __init__(self, psi):
 		self.Potential = CreateInstanceRank("core.StaticPotential", psi.GetRank())
 		self.psi = psi
+		self.Storage = -1
 
 	def ApplyConfigSection(self, configSection):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 	
 	def SetupStep(self, timeStep):
 		#Determine storage model
+		print "Setting up static potential %s" % self
 		self.Storage = self.Potential.StorageModel.StorageExpValue
 		if hasattr(self.ConfigSection, "storage_model"):
 			self.Storage = self.Potential.StorageModel(self.ConfigSection.storage_model)
@@ -187,11 +189,13 @@ class StaticPotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Potential.ApplyPotential(self.psi, dt)
 
-	def MultiplyPotential(self, destPsi, t, dt):
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		if self.Storage == StaticStorageModel.StorageExpValue:
-			self.PotentialEvaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+			self.PotentialEvaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
+		elif self.Storage == -1:
+			raise Exception("what! %s" % self)
 		else:
-			self.Potential.MultiplyPotential(self.psi, destPsi, dt)
+			self.Potential.MultiplyPotential(srcPsi, destPsi, dt)
 
 	def GetExpectationValue(self, t, dt):
 		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)
@@ -222,8 +226,8 @@ class DynamicPotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Evaluator.ApplyPotential(self.psi, dt, t)
 
-	def MultiplyPotential(self, destPsi, t, dt):
-		self.Evaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
+		self.Evaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
 
 	def GetExpectationValue(self, t, dt):
 		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
@@ -250,8 +254,8 @@ class RankOnePotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Evaluator.ApplyPotential(self.psi, dt, t)
 
-	def MultiplyPotential(self, destPsi, t, dt):
-		self.Evaluator.MultiplyPotential(self.psi, destPsi, dt, t)
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
+		self.Evaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
 
 	def GetExpectationValue(self, t, dt):
 		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
@@ -291,8 +295,8 @@ class CrankNicholsonPotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Evaluator.UpdateWavefunction(self.psi, t, dt)
 
-	def MultiplyPotential(self, dstPsi, t, dt):
-		self.Evaluator.MultiplyOperator(self.psi, dstPsi, t, dt)
+	def MultiplyPotential(self, srcPsi, dstPsi, t, dt):
+		self.Evaluator.MultiplyOperator(srcPsi, dstPsi, t, dt)
 
 
 class SparseMatrixParticle(tables.IsDescription):
@@ -385,8 +389,8 @@ class MatrixPotentialWrapper(PotentialWrapper):
 	def AdvanceStep(self, t, dt):
 		self.Potential.ApplyPotential(self.psi, dt, self.GetTimeValue(t))
 
-	def MultiplyPotential(self, destPsi, t, dt):
-		self.Potential.MultiplyPotential(self.psi, destPsi, self.GetTimeValue(t))
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
+		self.Potential.MultiplyPotential(srcPsi, destPsi, self.GetTimeValue(t))
 
 	def GetExpectationValue(self, t, dt):
 		return self.GetTimeValue(t) * self.Potential.CalculateExpectationValue(self.psi)

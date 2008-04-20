@@ -66,7 +66,7 @@ class OrthoPolRadialPropagator:
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
-		self.AddedPotential.MultiplyPotential(dstPsi, t, dt)
+		self.AddedPotential.MultiplyPotential(self.psi, dstPsi, t, dt)
 
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
 		pass

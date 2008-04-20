@@ -27,6 +27,13 @@ class PropagatorBase:
 	def SetupStep(self, dt):
 		print "    Setting up Potentials."
 		self.SetupPotential(dt)
+	
+	def RestartPropagation(self, timestep, startTime, propagationTime):
+		"""
+		Implement on inheriting propagator if any particular restarting
+		needs to be done.
+		"""
+		pass
 
 	def AdvanceStep(self, t, dt):
 		ApplyPotential(self.TimeStep)
@@ -51,12 +58,15 @@ class PropagatorBase:
 		for potential in self.PotentialList:
 			potential.AdvanceStep(t, dt)
 
-	def MultiplyPotential(self, destPsi, t, dt):
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		if dt == None:
 			dt = self.TimeStep
 
 		for potential in self.PotentialList:
-			potential.MultiplyPotential(destPsi, t, dt)
+			potential.MultiplyPotential(srcPsi, destPsi, t, dt)
+
+	def GetPotentialList(self):
+		raise NotImplementedError
 			
 			
 	

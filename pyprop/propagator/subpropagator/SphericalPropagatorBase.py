@@ -38,7 +38,7 @@ class SphericalPropagatorBase:
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		if self.Potential != None:
-			self.Potential.MultiplyPotential(dstPsi, t, dt)
+			self.Potential.MultiplyPotential(self.psi, dstPsi, t, dt)
 
 		self.Transform.InverseTransform(self.psi)
 		self.Transform.InverseTransform(dstPsi)

@@ -4,6 +4,7 @@
 #----------------------------------------------------------------------------------------------------
 class VectorPropagator(PropagatorBase):
 	def __init__(self, psi):
+		self.Psi = psi
 		PropagatorBase.__init__(self, psi)
 
 	def ApplyConfig(self, config): 
@@ -19,6 +20,6 @@ class VectorPropagator(PropagatorBase):
 		raise NotImplementedException("Only MultiplyHamiltonian-base propagators are implemented for VectorPropagator")
 
 	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.MultiplyPotential(destPsi, t, dt)
+		self.MultiplyPotential(self.Psi, destPsi, t, dt)
 
 

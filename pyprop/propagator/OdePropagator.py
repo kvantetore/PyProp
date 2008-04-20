@@ -19,6 +19,12 @@ class OdePropagator(PropagatorBase):
 		#Set up the ODE propagator
 		config.Apply(self.OdeWrapper)
 
+	def RestartPropagation(self, timestep, startTime, propagationTime):
+		"""
+		Set start time on OdeWrapper.
+		"""
+		self.OdeWrapper.SetStartTime(startTime)
+
 	def ApplyConfigSection(self, configSection): 
 		self.__Base.ApplyConfigSection(self, configSection)
 
@@ -66,4 +72,7 @@ class OdePropagator(PropagatorBase):
 
 	def GetBasisFunction(self, rank, basisIndex):
 		return self.BasePropagator.GetBasisFunction(rank, basisIndex)
+
+	def GetPotentialList(self):
+		return self.BasePropagator.GetPotentialList()
 
