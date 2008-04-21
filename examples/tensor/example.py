@@ -201,7 +201,7 @@ def Propagate(algo=1):
 
 	for t in prop.Advance(10):
 		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
-	prop.Propagator.PampWrapper.PrintStatistics()
+	#prop.Propagator.PampWrapper.PrintStatistics()
 
 	initPsi = prop.psi
 
@@ -249,7 +249,7 @@ def Propagate(algo=1):
 		#pcolormesh(abs(prop.psi.GetData())**2)
 		#draw()
 	
-	prop.Propagator.PampWrapper.PrintStatistics()
+	#prop.Propagator.PampWrapper.PrintStatistics()
 
 	prop.CorrelationList = array(corrList)
 	prop.NormList = array(normList)

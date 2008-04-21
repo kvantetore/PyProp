@@ -3,6 +3,9 @@
 
 #include "../common.h"
 
+/*
+ * Abstract overlap matrix evaluation functor
+ */
 class OverlapMatrixEvaluator
 {
 public: 
@@ -12,6 +15,10 @@ public:
 	virtual double operator()(int row, int col) const = 0;
 };
 
+/*
+ * overlap matrix evaluation functor for orthogonal basises with 
+ * non-equal weights
+ */
 class OverlapMatrixEvaluatorDiagonal : public OverlapMatrixEvaluator
 {
 public: 
@@ -33,6 +40,33 @@ public:
 private:
 	blitz::Array<double, 1> Weights;
 };
+
+/*
+ * Overlap matrix evaluation functor for orthogonal basises 
+ * with scalar weight
+ */
+class OverlapMatrixEvaluatorScalar : public OverlapMatrixEvaluator
+{
+public: 
+	OverlapMatrixEvaluatorScalar(double scalarWeight) : ScalarWeight(scalarWeight) {}
+	virtual ~OverlapMatrixEvaluatorScalar() {}
+
+	virtual double operator()(int row, int col) const 
+	{
+		if (row != col) 
+		{
+			return 0;
+		}
+		else 
+		{
+			return ScalarWeight;
+		}
+	}
+
+private:
+	double ScalarWeight;
+};
+
 
 
 /*

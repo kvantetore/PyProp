@@ -29,6 +29,68 @@ try:
 except:
 	print "pyprop.plotting not available"
 
+def PlotSingleStatePropagation(**args):
+	#initStates = [3,4,5,6]
+	initStates = [8]
+	pulseDelay = args["pulseDelay"]
+	args["duration"] = 350*femtosec_to_au
+	args["fastForward"] = 250*femtosec_to_au
+	args["outputCount"] = 1
+	args["relativePhase"] = "follow"
+	args["silent"] = True
+	args["configSilent"] = True
+	
+	for state in initStates:
+		figure()
+		args["initStates"] = [state]
+		t, c, X, Y, Z, W = Propagate(**args)
+		CorrelationBarPlotPhase(c[-1,:15], axisHeight=.6)
+		xlabel("Vibrational Level")
+		ylabel("Distribution Probability and Phase-Shift")
+		title("Final distribution for initial v=%i. Pulse @ %i" % (state, pulseDelay / femtosec_to_au))
+		
+
+def PlotTransitionMatrixElements(**args):
+	matrix = real(GetTransitionMatrixElements(**args))
+	figure()
+	left = r_[0:matrix.shape[0]]
+	bar(left-0.1125, diagonal(matrix), width=0.25)
+	bar(left[:-1]+0.1125, diagonal(matrix,1), width=0.25, color="r")
+	bar(left[1:]-0.25-0.1125, diagonal(matrix,-1), width=0.25, color="g")
+	title("Matrix elements < i | c**2 | j > for |i-j| = 0, 1")
+	xlabel("Vibrational states. Red is coupling to higher vibrational levels, Green is coupling to lower vib levels")
+	ylabel("Coupling Strength")
+	axis((-0.5, 7.5, -.8, 2))
+
+def GetTransitionMatrixElements(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	prop = SetupProblem(**args)
+
+	dr = prop.psi.GetRepresentation().GetLocalWeights(0)[0]
+	coupling = GetElectronicCouplingBates(prop.psi, prop.Config.ProbePulsePotential)
+	E, V = LoadRotatedBoundEigenstates(**args)
+
+	#calculate matrix <v_i | c | v_ii>
+	N = len(E)
+	matrix = zeros((N, N), dtype=complex)
+	for row in range(N):
+		for col in range(N):
+			matrix[row, col] = dot(V[row,:], coupling**2 * conj(V[col,:])) / dr
+
+	return matrix
+
+def GetPhaseDelay(**args):
+	initStates=args["initStates"]
+	if len(initStates) != 1:
+		raise Exception("Please specify one init state")
+
+	args["relativePhase"] = "follow"
+	t, c, X, Y, r, psi = Propagate(**args)	
+
+	phases = arctan2(c[-1,:].imag, c[-1,:].real)
+	return phases[initStates[0]]
+
 def RunCheckerboardTest(**args):
 	args["silent"] = True
 	args["configSilent"] = True
@@ -169,6 +231,8 @@ def MakeMovie(**args):
 			sys.stdout.write("\b"*len(progressStr))
 			MakeMovieFrame(conf, i, t, corr, r, rad, potData)
 			if isTest:
+				clf()
+				MakeMovieFrame(conf, len(t)-1, t, corr, r, rad, potData)
 				show()
 				return
 			savefig("movie/frame%05i.png" % i)
@@ -386,14 +450,12 @@ def Propagate(**args):
 	LoadInitialState(prop, **args)
 	initPsi = prop.psi.Copy()
 
-	boundE, boundV = LoadBoundEigenstates(**args)
+	boundE, boundV = LoadRotatedBoundEigenstates(**args)
 	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 
 	initProj = dot(boundV, prop.psi.GetData()[:,0])
-	print real(initProj)
-	raise Exception() 
 	initPhases = numpy.arctan2(initProj.imag, initProj.real)
 
 	if "initStates" in args:

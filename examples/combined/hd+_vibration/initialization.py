@@ -362,6 +362,30 @@ def LoadBoundEigenstates(**args):
 
 	return E1, V1
 
+def LoadRotatedBoundEigenstates(**args):
+	"""
+	Loads the eigenstates, and rotates them such that all
+	the franck condon coefficients are real and positive
+	"""
+	args["silent"] = True
+	args["configSilent"] = True
+
+	#Get eigenstates
+	E, V = LoadBoundEigenstates(**args)
+
+	#Get initial state
+	prop = SetupProblem(**args)
+	LoadInitialState(prop, **args)
+
+	#Expand initial state in eigenstaes
+	initProj = dot(V, prop.psi.GetData()[:,0])
+	initPhases = numpy.arctan2(initProj.imag, initProj.real)
+	for i in range(len(E)):
+		V[i,:] *= exp(-1.0j * initPhases[i])
+	
+	return E, V
+	
+
 def LoadContinuumEigenstates(**args):
 	threshold = -0.5
 	upperThreshold = 0.0

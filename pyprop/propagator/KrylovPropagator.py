@@ -39,7 +39,12 @@ class ExpokitPropagator(PropagatorBase):
 		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
 
 	def AdvanceStep(self, t, dt):
+		repr = self.psi.GetRepresentation()
+		repr.MultiplySqrtOverlap(False, self.psi)
 		self.ExpokitPropagator.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t)
+		repr.SolveSqrtOverlap(False, self.psi)
+
+		#self.ExpokitPropagator.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t)
 
 	def MatVecCallback(self, psi, tempPsi, dt, t):
 		#assert psi == self.psi
@@ -50,7 +55,8 @@ class ExpokitPropagator(PropagatorBase):
 		self.psi.GetRepresentation().SetDistributedModel(self.PsiDistrib)
 		tempPsi.GetRepresentation().SetDistributedModel(self.TempDistrib)
 
-		self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+		self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
+		#self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
 
 		#outN = self.TempPsi.GetNorm()
 		#if outN < 0.001:

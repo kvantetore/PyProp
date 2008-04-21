@@ -2,13 +2,10 @@
 #define CARTESIANRANGE_H
 
 #include "../common.h"
+#include "overlapmatrix.h"
 
 class CartesianRange
 {
-private:
-	blitz::Array<double, 1> Grid;
-	blitz::Array<double, 1> Weights;
-	
 public:
 	double Min;
 	double Max;
@@ -91,6 +88,21 @@ public:
 		
 		return *this;
 	}
+
+	OverlapMatrix::Ptr GetOverlapMatrix()
+	{
+		if (GlobalOverlapMatrix == 0)
+		{
+			OverlapMatrixEvaluatorScalar evaluator(Dx);
+			GlobalOverlapMatrix = OverlapMatrix::Ptr(new OverlapMatrix(Count, 0, evaluator));
+		}
+		return GlobalOverlapMatrix;
+	}
+
+private:
+	blitz::Array<double, 1> Grid;
+	blitz::Array<double, 1> Weights;
+	OverlapMatrix::Ptr GlobalOverlapMatrix;
 };
 
 

@@ -114,7 +114,7 @@ class BSPLINE(core.BSpline):
 		elif (conf.continuity == "custom"):
 			continuitySeq[:] = (self.MaxSplineOrder - 1) * ones(n_, dtype='int')
 			continuitySeq[0] = conf.left_point_continuity
-			continuitySeq[-1] = self.right_point_continuity
+			continuitySeq[-1] = conf.right_point_continuity
 
 		else:
 			raise Exception("Unknown continuity type!")

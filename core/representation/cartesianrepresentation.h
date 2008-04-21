@@ -3,8 +3,8 @@
 
 #include "../common.h"
 #include "../mpi/distributedmodel.h"
-#include "representation.h"
 #include "cartesianrange.h"
+#include "representation.h"
 
 template<int Rank>
 class CartesianRepresentation : public Representation<Rank>
@@ -94,6 +94,7 @@ public:
 	virtual void SolveOverlap(Wavefunction<Rank> &psi);
 	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
 	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
+	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank);
 };
 
 #endif

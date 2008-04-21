@@ -80,6 +80,11 @@ void CartesianRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunctio
 	ScaleVector(1.0/sqrt(GetScalarWeight()), psi.GetData());
 }
 
+template<int Rank>
+OverlapMatrix::Ptr CartesianRepresentation<Rank>::GetGlobalOverlapMatrix(int rank)
+{
+	return Range(rank).GetOverlapMatrix();
+}
 
 template class CartesianRepresentation<1>;
 template class CartesianRepresentation<2>;
