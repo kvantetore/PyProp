@@ -88,17 +88,7 @@ class Degani(OptimalControl):
 		newControls = linalg.solve(self.M, self.b)
 
 		#Update controls
-		self.UpdateControls(newControls)
-
-	
-	def UpdateControls(self, newControls):
-		"""
-		Update controls from list newControls
-		"""
-		for a in range(self.NumberOfControls):
-			self.ControlVectors[a, timeGridIndex] = newControls[a]
-			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
-
+		self.UpdateControls(newControls, timeGridIndex)
 
 	def SetupVectorB(self, timeGridIndex, direction):
 		"""

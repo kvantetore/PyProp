@@ -156,7 +156,7 @@ class OptimalControl:
 				self.ComputeNewControlFunctions(idx+1, t, Direction.Forward)
 	
 
-	def UpdateControls(self, newControls):
+	def UpdateControls(self, newControls, timeGridIndex):
 		"""
 		Update controls from list newControls
 		"""
