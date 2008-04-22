@@ -4,6 +4,18 @@
  * it is to be used
  */
 
+#include "../krylov/piram/piram/blitzblas.h"
+
+const int blitz::linalg::MatrixTranspose::None; 
+const int blitz::linalg::MatrixTranspose::Transpose;
+const int blitz::linalg::MatrixTranspose::Conjugate;
+
+const int blitz::linalg::MatrixHermitianStorage::Upper; 
+const int blitz::linalg::MatrixHermitianStorage::Lower;
+
+const int blitz::linalg::MatrixDiagonal::Unit; 
+const int blitz::linalg::MatrixDiagonal::NonUnit;
+
 
 //Use cblas interface
 extern "C"
