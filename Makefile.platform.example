@@ -3,9 +3,10 @@
 #Compiler options set here will be included by makefiles in all subdirs
 
 #Use these flags for speed
-CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g  -O3 -funroll-loops
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g -O3 -funroll-loops
 #CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG 
-CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_DISABLE_THREADS
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_THREADSAFE
+#CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
 LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 
 #Use these flags for debugging
@@ -13,7 +14,7 @@ LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 #CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT -DBZ_DEBUG -DPYPROP_USE_BLAS 
 
 MPICXX         := mpicxx
-BOOST_LIBS     := -lboost_python
+BOOST_LIBS     := -lboost_python-mt
 #PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
 PYSTE_INCLUDE  := -I/opt/openmpi/include
 #LAPACK_LIBS = -lmkl_core 

@@ -39,26 +39,21 @@ class BSplinePropagator:
 		print "        Setup Forward Transform"
 		self.Transform.SetupStep(self.psi, self.BSplineObject, self.TransformRank)
 		print "        Setup Inverse Transform"
-		self.Transform.InverseTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationGrid)
+		self.InverseTransform(self.psi)
 
 
 	def AdvanceStep(self, t, dt):
 		self.Propagator.AdvanceStep(self.psi)
-		self.InverseTransform()
+		self.InverseTransform(self.psi)
 
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		self.Propagator.MultiplyHamiltonian(self.psi, dstPsi)
-		#self.Potential.MultiplyPotential(dstPsi, t, dt)
-		self.Transform.InverseTransform(self.psi)
-		self.Transform.InverseTransform(dstPsi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationGrid)
-		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationGrid)
+		self.InverseTransform(self.psi)
+		self.InverseTransform(dstPsi)
 
 
 	def SetupStepConjugate(self, dt):
-		
 		# Allocate arrays for b-spline potential and centrifugal potential
 		globalGridSize = self.BSplineObject.GetQuadratureGridGlobal().size
 		potentialVector = zeros(globalGridSize, dtype=double)
@@ -84,42 +79,32 @@ class BSplinePropagator:
 			potentialVector[:] = potential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
 
 			# Set up propagator w/potential
-			self.Transform.ForwardTransform(self.psi)
-			self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
-			assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
+			self.ForwardTransform(self.psi)
 			self.Propagator.Setup(dt, self.psi, self.BSplineObject, potentialVector, self.TransformRank)
 
 		else:
 
 			# Set up propagator without potentials
-			self.Transform.ForwardTransform(self.psi)
-			self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
-			assert(self.RepresentationBSpline == self.psi.GetRepresentation().GetRepresentation(self.TransformRank))
+			self.ForwardTransform(self.psi)
 			self.Propagator.Setup(dt, self.psi, self.BSplineObject, self.TransformRank)
 
 	
 	def AdvanceStepConjugate(self, t, dt):
-		self.ForwardTransform()
+		self.ForwardTransform(self.psi)
 		self.Propagator.AdvanceStep(self.psi)
 
 	
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
-		self.Transform.ForwardTransform(self.psi)
-		self.Transform.ForwardTransform(dstPsi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
-		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
+		self.ForwardTransform(self.psi)
+		self.ForwardTransform(dstPsi)
 
 
-	def ForwardTransform(self, **args):
-		psi = self.psi
-		if "psi" in args:
-			psi = args["psi"]
+	def ForwardTransform(self, psi):
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.Transform.ForwardTransform(psi)
 		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationBSpline)
 
-	def InverseTransform(self, **args):
-		psi = self.psi
-		if "psi" in args:
-			psi = args["psi"]
+	def InverseTransform(self, psi):
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.Transform.InverseTransform(psi)
 		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationGrid)

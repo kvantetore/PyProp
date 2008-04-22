@@ -18,50 +18,39 @@ class SphericalPropagatorBase:
 
 	def SetupStepConjugate(self, dt):
 		#Transform from Grid to Spherical Harmonics
-		self.Transform.ForwardTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
+		self.ForwardTransform(self.psi)
 
 	def AdvanceStep(self, t, dt):
 		if self.Potential != None:
 			self.Potential.AdvanceStep(t, dt)
 
-		self.Transform.InverseTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
+		self.InverseTransform(self.psi)
 
 	def AdvanceStepConjugate(self, t, dt):
-		self.Transform.ForwardTransform(self.psi)
+		self.ForwardTransform(self.psi)
 
 		if self.Potential != None:
 			self.Potential.AdvanceStep(t, dt)
 
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
 	def MultiplyHamiltonian(self, dstPsi, t, dt):
 		if self.Potential != None:
 			self.Potential.MultiplyPotential(self.psi, dstPsi, t, dt)
 
-		self.Transform.InverseTransform(self.psi)
-		self.Transform.InverseTransform(dstPsi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
-		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
+		self.InverseTransform(self.psi)
+		self.InverseTransform(dstPsi)
 
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
-		self.Transform.ForwardTransform(self.psi)
-		self.Transform.ForwardTransform(dstPsi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
-		dstPsi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
+		self.ForwardTransform(self.psi)
+		self.ForwardTransform(dstPsi)
 
-	def InverseTransform(self, **args):
-		psi = self.psi
-		if "psi" in args:
-			psi = args["psi"]
+	def InverseTransform(self, psi):
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.Transform.InverseTransform(psi)
-		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
+		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
 
-	def ForwardTransform(self, **args):
-		psi = self.psi
-		if "psi" in args:
-			psi = args["psi"]
+	def ForwardTransform(self, psi):
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.Transform.ForwardTransform(psi)
 		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationSphericalHarmonic)
 
