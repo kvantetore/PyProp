@@ -7,7 +7,7 @@ from numpy import array
 from numpy import complex
 from numpy import zeros
 
-from pylab import *
+#from pylab import *
 
 execfile("TensorGenerator.py")
 

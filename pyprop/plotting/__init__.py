@@ -1,5 +1,5 @@
 
-execfile(__path__[0] + "/makemovie.py")
+execfile(__path__[0] + "/moviemaker.py")
 
 
 

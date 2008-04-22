@@ -1,6 +1,7 @@
 import os
 import sys
 import pylab
+import tables
 
 """
 Example config sections:
@@ -21,7 +22,7 @@ rank1 = [-10, 10, 100]
 lmax = 1
 """
 
-class MakeMovie:
+class MovieMaker:
 
 	def __init__(self, wavefunctionRebuilder=None):
 
@@ -48,7 +49,10 @@ class MakeMovie:
 
 
 	def CreateFrames(self, plotFunction = PlotFrame):
-	
+		"""
+		Propagate the wavefunction, storing movie frames for the duration.
+		"""
+
 		#Plot non-interactively
 		interactive = pylab.rcParams['interactive']
 		pylab.rcParams['interactive'] = False
@@ -78,7 +82,51 @@ class MakeMovie:
 		print "Done creating movie frames!"
 		pylab.rcParams['interactive'] = interactive
 
+
+	def PlotFramesFromHDF5(self, **args):
+		"""
+		Make movie frames from wavefunctions stored in HDF5 files.
+		"""
+
+		wavefunctionFile = args["wavefunctionFile"]
+		wavefunctionDataset = args["wavefunctionDataset"]
+
+		print "Creating frames..."
+
+		#Create tmp directory to hold movie and image frames
+		try:
+			os.mkdir(self.TmpDir, 0755)
+		except:
+			print "Could not make tmp directory (%s)" % self.TmpDir
+			raise Exception
+
+		#Plot non-interactively
+		interactive = pylab.rcParams['interactive']
+		pylab.rcParams['interactive'] = False
+		figSizeInch = self.FrameSize / float(self.FrameDPI)
+		pylab.figure(figsize = (figSizeInch, figSizeInch), dpi = self.FrameDPI)
+	
+
+		psi = self.Rebuilder.Propagator.psi
+		for i in range(self.TotalFrames):
+			#Load wavefunction
+			h5file = tables.openFile("%s%04i.h5" % (wavefunctionFile, i), "r")
+			psi.GetData()[:] = h5file.getNode(wavefunctionDataset)[:]
+			h5file.close()
+
+			#Create movie frame
+			self.PlotFrame(i, 0)
+			pylab.savefig("%s/frame%03i.png" % (self.TmpDir, i), dpi = self.FrameDPI)
+			pylab.clf()
+
+		print "Done creating movie frames!"
+		pylab.rcParams['interactive'] = interactive
+
+
 	def CreateMovie(self):
+		"""
+		Make movie from pre-made movie frames.
+		"""
 		print "Now creating movie..."
 		encoderCmd = self.Encoder
 		if self.Encoder == "ffmpeg":

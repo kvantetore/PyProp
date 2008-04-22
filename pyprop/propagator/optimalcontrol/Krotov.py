@@ -85,19 +85,6 @@ class Krotov(OptimalControl):
 			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
 	
-	def ComputeCostFunctional(self, currentYield):
-		penalty = 0
-		for a in range(self.NumberOfControls):
-			#penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), numpy.dot(self.PenaltyMatrix, self.ControlVectors[a,:]))
-			penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), self.PenaltyMatrix * self.ControlVectors[a,:])
-		return currentYield - penalty
-
-
-	def SetupPenaltyMatrix(self):
-		self.PenaltyMatrix = numpy.ones(self.TimeGridSize)
-		self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
-
-	
 	def SetupVectorB(self, timeGridIndex, direction):
 
 		for a in range(self.NumberOfControls):
@@ -127,7 +114,7 @@ class Krotov(OptimalControl):
 		for a in range(self.NumberOfControls):
 			for b in range(self.NumberOfControls):
 				if a == b:
-					self.M[a,b] = self.PenaltyMatrix[timeGridIndex] / self.TimeStep
+					self.M[a,b] = self.PenaltyMatrix[timeGridIndex] / self.TimeGridResolution
 	#			else:
 	#				#X_a * X_b * |psi>
 	#				self.TempPsi.Clear()

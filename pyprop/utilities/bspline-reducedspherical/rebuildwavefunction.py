@@ -24,6 +24,8 @@ class WavefunctionRebuilderBRS:
 		self.GridExtent = (self.RankInfo[0][RankIndex.min], self.RankInfo[0][RankIndex.max], \
 			self.RankInfo[1][RankIndex.min], self.RankInfo[1][RankIndex.max])
 
+		self.InfoLevel = 0
+
 	def Setup(self):
 		self.x, self.z = self.SetupCartesianMesh()
 		self.X, self.Z = meshgrid(self.x, self.z)
@@ -36,7 +38,7 @@ class WavefunctionRebuilderBRS:
 			self.baseprop = self.Propagator.Propagator
 
 		#Get b-spline object
-		self.bsplineObj = baseprop.SubPropagators[0].BSplineObject
+		self.bsplineObj = self.baseprop.SubPropagators[0].BSplineObject
 
 		self.r_flat = self.R.ravel()
 
@@ -51,9 +53,11 @@ class WavefunctionRebuilderBRS:
 			zSize = self.z.size
 			
 			psi = zeros((xSize, zSize))
-			pyprop.Redirect.redirect_stdout.stdout.write("l = ")
 
-			for l in range(LMax + 1):
+			if self.Infolevel > 0:
+				pyprop.Redirect.redirect_stdout.stdout.write("l = ")
+
+			for l in range(self.LMax + 1):
 				pyprop.Redirect.redirect_stdout.stdout.write("%i, " % l)
 				pyprop.Redirect.redirect_stdout.stdout.flush()
 
@@ -67,7 +71,7 @@ class WavefunctionRebuilderBRS:
 		finally:
 			pyprop.Redirect.Disable()
 
-		return X, Y, psi
+		return self.X, self.Z, psi
 
 	def SetupSphericalCoordinates(self, x, z):
 		r = zeros((x.size, z.size))

@@ -70,7 +70,7 @@ class OptimalControl:
 
 	
 	def Setup(self):
-		raise NotImplementedError
+		pass
 
 
 	def Run(self):
@@ -123,7 +123,8 @@ class OptimalControl:
 		penalty = 0
 		for a in range(self.NumberOfControls):
 			#penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), numpy.dot(self.PenaltyMatrix, self.ControlVectors[a,:]))
-			penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), self.PenaltyMatrix * self.ControlVectors[a,:])
+			penalty += self.TimeGridResolution * numpy.dot(self.ControlVectors[a,:],  \
+				self.PenaltyMatrix[:] * self.ControlVectors[a,:])
 		return currentYield - penalty
 
 
@@ -205,7 +206,8 @@ class OptimalControl:
 	
 	def SetupPenaltyMatrix(self):
 		self.PenaltyMatrix = numpy.ones(self.TimeGridSize)
-		self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
+		#self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
+		self.PenaltyMatrix[:] *= self.EnergyPenalty
 	
 
 	def SetupTargetState(self):

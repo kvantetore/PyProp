@@ -171,7 +171,7 @@ class ZhuRabitz(OptimalControl):
 		for a in range(self.NumberOfControls):
 			for b in range(self.NumberOfControls):
 				if a == b:
-					self.M[a,b] = self.PenaltyMatrix[timeGridIndex] / self.TimeStep
+					self.M[a,b] = self.PenaltyMatrix[timeGridIndex] / self.TimeGridResolution
 	#			else:
 	#				#X_a * X_b * |psi>
 	#				self.TempPsi.Clear()

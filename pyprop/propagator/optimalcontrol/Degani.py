@@ -151,7 +151,7 @@ class Degani(OptimalControl):
 		self.M[:] = 0
 
 		#Penalty matrix factor
-		energyPenalty = self.PenaltyMatrix[timeGridIndex] / self.TimeStep
+		energyPenalty = self.PenaltyMatrix[timeGridIndex] / self.TimeGridResolution
 
 		commutatorScaling = -self.TimeStep**2 / 6.0
 		

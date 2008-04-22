@@ -479,6 +479,7 @@ blitz::Array<double, 1> BSpline::EvaluateBSplineOnGrid(VectorType grid, int bSpl
 {
 	int gridSize = grid.extent(0);
 	VectorType bspline = VectorType(gridSize);
+	bspline = 0;
 	for (int i = 0; i < gridSize; i++)
 	{
 		double x = grid(i);
@@ -635,6 +636,7 @@ void BSpline::SolveForOverlapMatrix(VectorTypeCplx vector)
 blitz::Array<cplx, 1> 
 BSpline::ConstructFunctionFromBSplineExpansion(VectorTypeCplx c, VectorType grid)
 {
+
 	int gridSize = grid.extent(0);
 	int numberOfCoeffs = c.extent(0);
 	VectorTypeCplx f = VectorTypeCplx(gridSize);
