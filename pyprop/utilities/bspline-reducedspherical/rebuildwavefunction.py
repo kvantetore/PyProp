@@ -1,6 +1,9 @@
 from numpy import array
 from numpy import meshgrid
-import scipy.special
+try:
+	import scipy.special
+except:
+	print "Could not load scipy, rebuilder will not work!"
 
 class RankIndex:
 	min = 0
@@ -54,12 +57,13 @@ class WavefunctionRebuilderBRS:
 			
 			psi = zeros((xSize, zSize))
 
-			if self.Infolevel > 0:
+			if self.InfoLevel > 0:
 				pyprop.Redirect.redirect_stdout.stdout.write("l = ")
 
 			for l in range(self.LMax + 1):
-				pyprop.Redirect.redirect_stdout.stdout.write("%i, " % l)
-				pyprop.Redirect.redirect_stdout.stdout.flush()
+				if self.InfoLevel > 0:
+					pyprop.Redirect.redirect_stdout.stdout.write("%i, " % l)
+					pyprop.Redirect.redirect_stdout.stdout.flush()
 
 				legendre = scipy.special.legendre(l)
 				legendreGrid = legendre(cos(self.Theta))
