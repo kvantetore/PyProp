@@ -66,30 +66,6 @@ class Degani(OptimalControl):
 				self.H_0 = potential
 
 
-	def ComputeNewControlFunctions(self, timeGridIndex, t, direction):
-		"""
-		Updates the control function based on backward propagation solution:
-
-		    E(t) = - 1 / mu * imag(<etta|X1 + X2 + ...|psi>)
-
-		where E is the new control, mu is the energy penalty, |etta> is the
-		backward solution and X the control matrix.
-		"""
-		
-		#Should we skip update on backward propagation?
-		if direction == Direction.Backward and not self.UpdateBackward:
-			self.UpdateControls(self.ControlVectors[:,timeGridIndex])
-		
-		#Set up linear system of equations for the new controls
-		self.SetupVectorB(timeGridIndex, direction)
-		self.SetupMatrixM(timeGridIndex, direction)
-
-		#Solve lin. system to find new controls
-		newControls = linalg.solve(self.M, self.b)
-
-		#Update controls
-		self.UpdateControls(newControls, timeGridIndex)
-
 	def SetupVectorB(self, timeGridIndex, direction):
 		"""
 		Case 1: Controls are commuting
@@ -98,9 +74,9 @@ class Degani(OptimalControl):
 
 		#Calculate the constants to be multiplied on the two
 		#commutators that appear in the expression for b
+		commutatorScaling2 = -self.TimeStep**2 / 6.0
 		if direction == Direction.Forward:
 			commutatorScaling1 = 1j * self.TimeStep / 2.0
-			commutatorScaling2 = -self.TimeStep**2 / 6.0
 		else:
 			commutatorScaling1 = -1j * self.TimeStep / 2.0
 			commutatorScaling2 = -self.TimeStep**2 / 6.0
@@ -108,8 +84,10 @@ class Degani(OptimalControl):
 		#Loop over all controls
 		for a in range(self.NumberOfControls):
 			self.ControlFunctionList[a].ConfigSection.strength = 1.0
-
+			
+			#
 			#CASE 1: Controls are commuting
+			#
 			if self.ControlsAreCommuting:
 				#X * |psi>
 				self.TempPsi.Clear()
@@ -124,7 +102,9 @@ class Degani(OptimalControl):
 				self.MultiplyCommutatorAAB(self.H_0, self.ControlFunctionList[a], self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
 				self.TempPsi4.GetData()[:] += commutatorScaling2 * self.TempPsi3.GetData()[:]
 
+			#
 			#CASE 2: Controls are not commuting
+			#
 			else:
 				pass #for now
 
@@ -147,15 +127,18 @@ class Degani(OptimalControl):
 		Case 2: Controls are commuting
 		Case 3: Controls are not commuting
 		"""
-
+		
+		#Clear matrix M
 		self.M[:] = 0
 
 		#Penalty matrix factor
 		energyPenalty = self.PenaltyMatrix[timeGridIndex] / self.TimeGridResolution
 
 		commutatorScaling = -self.TimeStep**2 / 6.0
-		
+	
+		#
 		#CASE 1: One control
+		#
 		if self.NumberOfControls == 1:
 			#Commutator part h**2/6 [A,[B,A]]
 			self.MultiplyCommutatorABA(self.ControlFunctionList[0], self.H_0, self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
@@ -170,22 +153,25 @@ class Degani(OptimalControl):
 
 			self.M[0,0] = energyPenalty + matrixElementM
 
+		#
 		#CASE 2: Controls are commuting
+		#
 		elif self.ControlsAreCommuting:
 			for a in range(self.NumberOfControls):
 				for b in range(self.NumberOfControls):
 
 					#Diagonal commutator part h**2/6 [X,[H_0,Y]]
 					if a == b:
-						self.MultiplyCommutatorABA(self.ControlFunctionList[0], self.H_0, self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+						self.MultiplyCommutatorABA(self.ControlFunctionList[0], self.H_0, \
+							self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
 						
 						#Energy penalty
 						self.M[a,b] += energyPenalty
 					
 					#Off-diagonal commutator part h**2/6 [X,[H_0,X]]
 					else:
-						self.MultiplyCommutatorABC(self.ControlFunctionList[a], self.H_0, self.ControlFunctionList[b], self.Psi, \
-							self.TempPsi, self.TempPsi2, self.TempPsi3)
+						self.MultiplyCommutatorABC(self.ControlFunctionList[a], self.H_0, self.ControlFunctionList[b], \
+							self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
 				
 					#Project on forward or backward solution
 					if direction == Direction.Forward:
@@ -195,7 +181,9 @@ class Degani(OptimalControl):
 						self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
 						self.M[a,b] -= numpy.imag(commutatorScaling * self.TempPsi3.InnerProduct(self.TempPsi))
 
+		#
 		#CASE 3: Controls are not commuting
+		#
 		else:
 			pass #for now
 

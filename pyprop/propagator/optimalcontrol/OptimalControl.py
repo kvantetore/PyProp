@@ -111,18 +111,37 @@ class OptimalControl:
 
 			self.currIter += 1
 
-	
+
 	def ComputeNewControlFunctions(self, timeGridIndex, t, direction):
 		"""
-		Computes new control function based on current TDSE solution
-		"""
-		raise NotImplementedError
+		Updates the control function based on backward propagation solution:
 
+		    E(t) = - 1 / mu * imag(<etta|X1 + X2 + O(h) |psi>)
+
+		where E is the new control, mu is the energy penalty, |etta> is the
+		backward solution and X the control matrix. The number of higher order
+		terms depend on the algorithm at hand (Krotov, Zhu-Rabitz or Degani)
+		"""
+
+		#Check if we should skip backward update
+		if direction == Direction.Backward and not self.UpdateBackward:
+			for a in range(self.NumberOfControls):
+				self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
+
+		else:
+
+			self.SetupVectorB(timeGridIndex, direction)
+			self.SetupMatrixM(timeGridIndex, direction)
+
+			newControls = linalg.solve(self.M, self.b)
+
+			#Update controls
+			self.UpdateControls(newControls, timeGridIndex)
+	
 
 	def ComputeCostFunctional(self, currentYield):
 		penalty = 0
 		for a in range(self.NumberOfControls):
-			#penalty += numpy.dot(numpy.transpose(self.ControlVectors[a,:]), numpy.dot(self.PenaltyMatrix, self.ControlVectors[a,:]))
 			penalty += self.TimeGridResolution * numpy.dot(self.ControlVectors[a,:],  \
 				self.PenaltyMatrix[:] * self.ControlVectors[a,:])
 		return currentYield - penalty
@@ -134,6 +153,15 @@ class OptimalControl:
 		"""
 		#Note: Argument is complex conjugated
 		return self.BaseProblem.psi.InnerProduct(self.TargetState)
+
+
+	def UpdateControls(self, newControls, timeGridIndex):
+		"""
+		Update controls from list newControls
+		"""
+		for a in range(self.NumberOfControls):
+			self.ControlVectors[a, timeGridIndex] = newControls[a]
+			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
 
 
 	def ForwardPropagation(self):
@@ -149,22 +177,12 @@ class OptimalControl:
 		#Initial step
 		if self.currIter > 0:
 			self.ComputeNewControlFunctions(0, 0.0, Direction.Forward)
-		#self.ForwardSolution[:, 0] = self.BaseProblem.psi.GetData()[:]
 
 		for idx, t in enumerate(self.BaseProblem.Advance(self.TimeGridSize)):
 			self.ForwardSolution[:, idx] = self.BaseProblem.psi.GetData()[:]
 			if idx < self.TimeGridSize - 1 and self.currIter > 0:
 				self.ComputeNewControlFunctions(idx+1, t, Direction.Forward)
 	
-
-	def UpdateControls(self, newControls, timeGridIndex):
-		"""
-		Update controls from list newControls
-		"""
-		for a in range(self.NumberOfControls):
-			self.ControlVectors[a, timeGridIndex] = newControls[a]
-			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
-
 	
 	def BackwardPropagation(self, targetProjection):
 		"""
@@ -205,9 +223,8 @@ class OptimalControl:
 
 	
 	def SetupPenaltyMatrix(self):
-		self.PenaltyMatrix = numpy.ones(self.TimeGridSize)
+		self.PenaltyMatrix = numpy.ones(self.TimeGridSize) * self.EnergyPenalty
 		#self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
-		self.PenaltyMatrix[:] *= self.EnergyPenalty
 	
 
 	def SetupTargetState(self):
@@ -229,7 +246,8 @@ class OptimalControl:
 
 		else:
 			raise Exception("Unknown target specification")
-			
+		
+		#Normalize target state
 		self.TargetState.Normalize()
 
 	

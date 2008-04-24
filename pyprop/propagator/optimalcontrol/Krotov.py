@@ -57,34 +57,6 @@ class Krotov(OptimalControl):
 		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 
 	
-	def ComputeNewControlFunctions(self, timeGridIndex, t, direction):
-		"""
-		Updates the control function based on backward propagation solution:
-
-		    E(t) = - 1 / mu * imag(<etta|X1 + X2 + ...|psi>)
-
-		where E is the new control, mu is the energy penalty, |etta> is the
-		backward solution and X the control matrix.
-		"""
-
-		#Check if we should skip backward update
-		if direction == Direction.Backward and not self.UpdateBackward:
-			for a in range(self.NumberOfControls):
-				self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, timeGridIndex]
-			return
-
-		self.SetupVectorB(timeGridIndex, direction)
-		self.SetupMatrixM(timeGridIndex, direction)
-
-		newControls = linalg.solve(self.M, self.b)
-		#newControls = self.b[0] / self.M[0,:]
-
-		#Update controls
-		for a in range(self.NumberOfControls):
-			self.ControlVectors[a, timeGridIndex] = newControls[a]
-			self.ControlFunctionList[a].ConfigSection.strength = newControls[a]
-
-	
 	def SetupVectorB(self, timeGridIndex, direction):
 
 		for a in range(self.NumberOfControls):
