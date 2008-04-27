@@ -48,7 +48,7 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double r = std::fabs(pos(0));
+		double r = std::abs(pos(0));
 		if (r < 1e-5)
 		{
 			return 0.0;
