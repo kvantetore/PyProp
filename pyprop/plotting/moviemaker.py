@@ -2,6 +2,7 @@ import os
 import sys
 import pylab
 import tables
+import numpy
 
 """
 Example config sections:
@@ -45,7 +46,7 @@ class MovieMaker:
 
 	def PlotFrame(self, curIter, t):
 		X, Y, psi = self.Rebuilder.BuildWavefunction()
-		pylab.imshow(abs(psi)**2, extent=(self.Rebuilder.GridExtent))
+		pylab.imshow(numpy.abs(psi)**2, extent=(self.Rebuilder.GridExtent), interpolation="gaussian", vmin=0.0)
 
 
 	def CreateFrames(self, plotFunction = PlotFrame):
@@ -91,14 +92,15 @@ class MovieMaker:
 		wavefunctionFile = args["wavefunctionFile"]
 		wavefunctionDataset = args["wavefunctionDataset"]
 
-		print "Creating frames..."
+		sys.stdout.write("Creating frames ")
 
 		#Create tmp directory to hold movie and image frames
-		try:
-			os.mkdir(self.TmpDir, 0755)
-		except:
-			print "Could not make tmp directory (%s)" % self.TmpDir
-			raise Exception
+		if not os.path.isdir(self.TmpDir):
+			try:
+				os.mkdir(self.TmpDir, 0755)
+			except:
+				print "Could not make tmp directory (%s)" % self.TmpDir
+				raise Exception
 
 		#Plot non-interactively
 		interactive = pylab.rcParams['interactive']
@@ -108,7 +110,14 @@ class MovieMaker:
 	
 
 		psi = self.Rebuilder.Propagator.psi
+		sys.stdout.write("%04i/%04i" % (0, self.TotalFrames)) 
 		for i in range(self.TotalFrames):
+			
+			#Print progress info
+			infoString = "\b"*9 + "%04i/%04i" % (i, self.TotalFrames)
+			sys.stdout.write(infoString)
+			sys.stdout.flush()
+
 			#Load wavefunction
 			h5file = tables.openFile("%s%04i.h5" % (wavefunctionFile, i), "r")
 			psi.GetData()[:] = h5file.getNode(wavefunctionDataset)[:]

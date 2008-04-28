@@ -55,7 +55,7 @@ class WavefunctionRebuilderBRS:
 			xSize = self.x.size
 			zSize = self.z.size
 			
-			psi = zeros((xSize, zSize))
+			psi = zeros((xSize, zSize), dtype=complex)
 
 			if self.InfoLevel > 0:
 				pyprop.Redirect.redirect_stdout.stdout.write("l = ")

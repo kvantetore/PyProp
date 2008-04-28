@@ -34,6 +34,7 @@ class OptimalControl:
 		self.SetupCommon()
 		self.Setup()
 		self.SetupPenaltyMatrix()
+		self.SetupInitialControl()
 
 
 	def SetupCommon(self):
@@ -98,7 +99,7 @@ class OptimalControl:
 			curJ = self.ComputeCostFunctional(currentYield)
 			self.J.append(curJ)
 			norm = self.BaseProblem.psi.GetNorm()
-			print "Yield = %.8f, J = %.8f, norm = %.15f" % (currentYield, curJ, norm)
+			print "Yield = %.8f, J = %.8f, norm = %.15f" % (self.Yield[-1], self.J[-1], norm)
 
 			#Desired yield reached? -> Finished
 			if( currentYield > self.YieldRequirement ):
@@ -182,6 +183,9 @@ class OptimalControl:
 			self.ForwardSolution[:, idx] = self.BaseProblem.psi.GetData()[:]
 			if idx < self.TimeGridSize - 1 and self.currIter > 0:
 				self.ComputeNewControlFunctions(idx+1, t, Direction.Forward)
+			else:
+				for a in range(self.NumberOfControls):
+					self.ControlFunctionList[a].ConfigSection.strength = self.ControlVectors[a, idx]
 	
 	
 	def BackwardPropagation(self, targetProjection):
@@ -239,7 +243,7 @@ class OptimalControl:
 			self.TargetState.GetData()[self.BaseProblem.Config.FinalState.states] \
 				= self.BaseProblem.Config.FinalState.population[:]
 
-		elif self.BaseProblem.Config.FinalStates.type == "function":
+		elif self.BaseProblem.Config.FinalState.type == "function":
 			grid = self.Psi.GetRepresentation().GetLocalGrid(0)
 			func = self.BaseProblem.Config.FinalState.grid_function
 			self.TargetState.GetData()[:] = func(self.BaseProblem.Config.FinalState, grid)
@@ -249,6 +253,22 @@ class OptimalControl:
 		
 		#Normalize target state
 		self.TargetState.Normalize()
+
+	
+	def SetupInitialControl(self):
+		"""
+		"""
+		#f = None
+		#if self.:
+		#	f = self.
+		#else:
+		f = lambda omega, t, T : sin(pi * t / T)**2 * cos(omega * t)
+		
+		T = self.PropagationTime
+		omega = 0.1
+		for a in range(self.NumberOfControls):
+			self.ControlVectors[a, :] = [f(omega, t, T) for t in linspace(0, T, self.TimeGridSize)]
+			self.ControlVectors[a,:] *= self.ControlFunctionList[a].ConfigSection.strength
 
 	
 	def InitializeControls(self, direction):

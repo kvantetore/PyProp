@@ -63,7 +63,7 @@ class Config:
 			#print "Applying config to ", other.__class__.__name__
 			other.ApplyConfig(self)
 
-	def SetValue(self, section, optionName, value, ignoreSerializationError=False):
+	def SetValue(self, section, optionName, value, infoLevel=0, ignoreSerializationError=False):
 		"""
 		Update 'optionName' in 'section' with 'value'. Both the Config
 		object and the original ConfigParser object is updated.
@@ -78,6 +78,9 @@ class Config:
 
 		self.cfgObj.set(section, optionName, repr(value))
 		self.__dict__[section].Set(optionName, value)
+
+		if infoLevel > 0:
+			print "Changing %s.%s to %s" % (section, optionName, value)
 
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
