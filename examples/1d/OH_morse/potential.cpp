@@ -73,3 +73,33 @@ public:
 	}
 };
 
+
+template<int Rank>
+class ZhuRabitzOperator : public PotentialBase<Rank>
+{
+public:
+
+	//Potential parameters
+	double Gamma;
+	double XMark;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("gamma", Gamma);
+		config.Get("x_mark", XMark);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double x = pos(0);
+		return Gamma / std::sqrt(M_PI) * exp(-Gamma * Gamma * sqr(x - XMark));
+	}
+};

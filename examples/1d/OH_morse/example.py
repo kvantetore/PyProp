@@ -184,6 +184,52 @@ def GetDiagonalElements(psi, config, potential):
 		h5file.close()
 
 
+def ComputeTargetStateZhuRabitzExperiment(prop, numEigs=0, eigFile=None, \
+	eigDataSet = "/eigenvector", outFileName = "zhu_rabitz_final_state.h5"):
+	"""
+	Zhu and Rabitz use a gaussian projection operator to characterize their target space,
+
+	    P = gamma / sqrt(pi) * exp[-gamma**2 * (x - x')**2 ]
+
+	This function computes |ZR> = sum(<i|P|i>|i>, i), where |i> is the i'th eigenfunction 
+	of the Morse oscillator.
+	"""
+
+	#Setup Zhu-Rabtiz operator
+	ZhuRabitzOperator = eval(prop.Config.ZhuRabitzOperator.classname + "_1()")
+	ZhuRabitzOperator.ApplyConfigSection(prop.Config.ZhuRabitzOperator)
+
+	#Get tmpPsi
+	tmpPsi = prop.psi.Copy()
+
+	#Create vector to hold Zhu-Rabitz state
+	ZhuRabitzState = numpy.zeros(numEigs, dtype=complex)
+
+	h5file = tables.openFile(eigFile, "r")
+
+	for i in range(numEigs):
+		tmpPsi.Clear()
+		prop.psi.GetData()[:] = h5file.getNode("%s%03i" % (eigDataSet, i))
+		ZhuRabitzOperator.MultiplyPotential(prop.psi, tmpPsi, 0, 0)
+		ZhuRabitzState[i] = prop.psi.InnerProduct(tmpPsi)
+		
+	outFile = tables.openFile(outFileName, "w")
+	try:
+		outFile.createArray("/", "ZhuRabitzFinalState", ZhuRabitzState)
+	finally:
+		outFile.close()
+
+
+def GetZhuRabitzOperator(conf, grid):
+	h5file = tables.openFile(conf.filename, "r")
+	potential = 0
+	try:
+		potential = h5file.getNode(conf.dataset)[:]
+	finally:
+		h5file.close()
+
+	return potential
+
 def SetupKrotov(config, **args):
 	"""
 	Setup Krotov problem
