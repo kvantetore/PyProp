@@ -18,13 +18,13 @@ def GetMatrixQdot4(psi, conf):
 	Get couplings between the four states considered for
 	the optimal control PRL (Saelen et al 2008).
 	"""
-	omega = conf.omega
-	V12 = -1.0067/sqrt(omega)
+	scaling = conf.scaling
+	V12 = -1.0067555306 * scaling
 	V13 = 0.0
-	V14 = -0.0696/sqrt(omega)
-	V23 = 1.0494/sqrt(omega)
+	V14 = -0.069677839373 * scaling
+	V23 = -1.0501555811  * scaling 
 	V24 = 0.0
-	V34 = -3.0782/sqrt(omega)
+	V34 = -3.0758641281 * scaling
 	potential = array([ [0, V12, V13, V14], \
 	                    [V12, 0, V23, V24], \
 	                    [V13, V23, 0, V34], \
@@ -36,7 +36,8 @@ def GetMatrixQdot4(psi, conf):
 def GetDiagonalElementsQdot4(psi, config, potential):
 	"""
 	"""
-	potential[:] = [0.241995, 0.324479, 0.380237, 0.382176]
+	#potential[:] = [0.241995, 0.324479, 0.380237, 0.382176]
+	potential[:] = [-0.71337255649561E-01, 0.11146318930044E-01, 0.66904900928925E-01, 0.68844014109733E-01]
 
 def GetDiagonalElements(psi, config, potential):
 	"""
@@ -55,7 +56,11 @@ def Setup(**args):
 	"""
 	Setup Krotov problem
 	"""
-	conf = pyprop.Load('config.ini')
+	configFile = 'config.ini'
+	if "config" in args:
+		configFile = args["config"]
+
+	conf = pyprop.Load(configFile)
 
 	if "timestep" in args:
 		config.Propagation.timestep = args["timestep"]
@@ -152,3 +157,63 @@ def TextToHDFDense(fileName, vectorSize, scaling):
 
 	finally:
 		fileh5.close()
+
+
+def RunExperiment1():
+	"""
+
+	"""
+	
+	workDir = "experiments/number_1"
+
+	#Load config and setup problem
+	conf = pyprop.Load("%s/config.ini" % workDir)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+	
+	h5file = tables.openFile("%s/results.h5" % workDir, "w")
+	try:
+		#Run Krotov
+		krotov = pyprop.Krotov(prop)
+		krotov.Run()
+		h5file.createGroup("/","krotov")
+		h5file.createArray("/krotov", "J", krotov.J)
+		h5file.createArray("/krotov", "Yield", krotov.Yield)
+		h5file.createArray("/krotov", "Control", krotov.ControlVectors)
+	
+		#Run Krotov w/backward update
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+		prop.Config.Krotov.update_backwards = True
+		krotovb = pyprop.Krotov(prop)
+		krotovb.Run()
+		h5file.createArray("/krotov_b", "J", krotovb.J)
+		h5file.createArray("/krotov_b", "Yield", krotovb.Yield)
+		h5file.createArray("/krotov_b", "Control", krotovb.ControlVectors)
+
+		#Run Zhu-Rabitz
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+		zhurabitz = pyprop.ZhuRabitz(prop)
+		zhurabitz.Run()
+		h5file.createGroup("/","zhurabitz")
+		h5file.createArray("/zhurabitz", "J", zhurabitz.J)
+		h5file.createArray("/zhurabitz", "Yield", zhurabitz.Yield)
+		h5file.createArray("/zhurabitz", "Control", zhurabitz.ControlVectors)
+
+		#Run Degani
+		prop = pyprop.Problem(conf)
+		prop.SetupStep()
+		degani = pyprop.Degani(prop)
+		degani.Run()
+		h5file.createGroup("/","degani")
+		h5file.createArray("/degani", "J", degani.J)
+		h5file.createArray("/degani", "Yield", degani.Yield)
+		h5file.createArray("/degani", "Control", degani.ControlVectors)
+
+		#Store config file
+		h5file.createGround("/", "config")
+		h5file.setNodeAttr("/config", "configObject", conf.cfgObj)
+
+	finally:
+		h5file.close()
