@@ -19,40 +19,10 @@ class Krotov(OptimalControl):
 	where J =  <F|Psi> - mu \sum( \int_0^T |u_i(t)|**2 dt ).
 	"""
 
-	def ApplyConfigSection(self, config):
-		"""
-		"""
-		self.Config = config.Krotov
-
-		#Get the list of control function potentialss
-		self.ControlFunctionNamesList = self.Config.control_functions
-		self.NumberOfControls = len(self.ControlFunctionNamesList)
-
-		# Shortcuts to the salient control parameters
-		self.ControlCutoff = self.Config.control_cutoff
-		self.EnergyPenalty = self.Config.energy_penalty
-		self.MaxIterations = self.Config.max_iterations
-		self.YieldRequirement = self.Config.yield_requirement
-		if hasattr(self.Config, "time_grid_size"):
-			self.TimeGridSize = self.Config.time_grid_size
-			self.TimeGridResolution = self.PropagationTime / self.TimeGridSize
-
-		#Set control cutoff from time step
-		err = 1e-6
-		self.ControlCutoff = err / self.TimeStep**2
-
-		#Check for the debug option
-		self.Debug = False
-		if hasattr(self.Config, "debug"):
-			self.Debug = self.Config.debug
-
-		#Do backward updates?
-		self.UpdateBackward = hasattr(self.Config, "update_backwards") and self.Config.update_backwards or False
-
-		self.PenaltyMatrixIsDiagonal = True
-
+	BASE = OptimalControl
 
 	def Setup(self):
+		self.BASE.Setup(self)
 		self.M = numpy.zeros((self.NumberOfControls, self.NumberOfControls), dtype=double)
 		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 

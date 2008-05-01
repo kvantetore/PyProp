@@ -24,17 +24,55 @@ class OptimalControl:
 		if hasattr(self.BaseProblem.Propagator, "BasePropagator"):
 			self.PotentialList = self.BaseProblem.Propagator.BasePropagator.PotentialList
 	
-		#Get time step and propagation time from config
+		#Get time step and propagation time from baseproblem
 		self.TimeStep = prop.TimeStep.real
 		self.PropagationTime = prop.Duration
 		self.TimeGridSize = int(round(self.PropagationTime / self.TimeStep))
 		self.TimeGridResolution = self.TimeStep
+		self.PerturbControl = 0
 
-		self.ApplyConfigSection(prop.Config)
+
+	def ApplyConfigSection(self, config):
+		"""
+		"""
+	
+		self.Config = config.Config
+
+		#Get the list of control function potentials
+		self.ControlFunctionNamesList = config.control_functions
+		self.NumberOfControls = len(self.ControlFunctionNamesList)
+
+		# Shortcuts to the salient control parameters
+		self.ControlCutoff = config.control_cutoff
+		self.EnergyPenalty = config.energy_penalty
+		self.MaxIterations = config.max_iterations
+		self.YieldRequirement = config.yield_requirement
+		if hasattr(config, "time_grid_size"):
+			self.TimeGridSize = config.time_grid_size
+			self.TimeGridResolution = self.PropagationTime / self.TimeGridSize
+
+		#Set control cutoff from time step
+		err = 1e-6
+		self.ControlCutoff = err / self.TimeStep**2
+
+		#Check for the debug option
+		self.Debug = False
+		if hasattr(config, "debug"):
+			self.Debug = config.debug
+
+		#Do backward updates?
+		self.UpdateBackward = hasattr(config, "update_backwards") and config.update_backwards or False
+
+		self.PenaltyMatrixIsDiagonal = True
+
+		self.PerturbControl = config.__dict__.get("perturb_control", 0)
+		print self.PerturbControl
+
+
+	def Setup(self):
 		self.SetupCommon()
-		self.Setup()
 		self.SetupPenaltyMatrix()
-		self.SetupInitialControl()
+		#self.SetupInitialControl()
 
 
 	def SetupCommon(self):
@@ -70,10 +108,6 @@ class OptimalControl:
 			self.ControlVectors[a,:] *= self.ControlFunctionList[a].ConfigSection.strength
 
 	
-	def Setup(self):
-		pass
-
-
 	def Run(self):
 		"""
 		Run the Krotov algorithm, until desired yield or MaxIterations is reached.
@@ -99,7 +133,7 @@ class OptimalControl:
 			curJ = self.ComputeCostFunctional(currentYield)
 			self.J.append(curJ)
 			norm = self.BaseProblem.psi.GetNorm()
-			print "Yield = %.8f, J = %.8f, norm = %.15f" % (self.Yield[-1], self.J[-1], norm)
+			print "Yield = %.8f, J = %.8f, norm = %.15f" % (currentYield, curJ, norm)
 
 			#Desired yield reached? -> Finished
 			if( currentYield > self.YieldRequirement ):
@@ -133,8 +167,10 @@ class OptimalControl:
 
 			self.SetupVectorB(timeGridIndex, direction)
 			self.SetupMatrixM(timeGridIndex, direction)
-
 			newControls = linalg.solve(self.M, self.b)
+
+			if self.PerturbControl > 0:	
+				newControls[0] += [(rand() -0.5) * self.PerturbControl]
 
 			#Update controls
 			self.UpdateControls(newControls, timeGridIndex)
@@ -201,6 +237,7 @@ class OptimalControl:
 
 		# Set the initial state
 		self.BaseProblem.psi.GetData()[:] = targetProjection * self.TargetState.GetData()[:]
+		#self.BaseProblem.psi.GetData()[:] = self.ForwardSolution[:,-1]
 		
 		#Update controls
 		self.ComputeNewControlFunctions(self.TimeGridSize - 1, self.PropagationTime, Direction.Backward)

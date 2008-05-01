@@ -19,40 +19,11 @@ class ZhuRabitz(OptimalControl):
 	where J =  <Psi|P*Psi> - mu \sum( \int_0^T |u_i(t)|**2 dt ), and P is a projection operator
 	"""
 
-	def ApplyConfigSection(self, config):
-		"""
-		"""
-		self.Config = config.ZhuRabitz
-
-		#Get the list of control function potentials
-		self.ControlFunctionNamesList = self.Config.control_functions
-		self.NumberOfControls = len(self.ControlFunctionNamesList)
-
-		# Shortcuts to the salient control parameters
-		self.ControlCutoff = self.Config.control_cutoff
-		self.EnergyPenalty = self.Config.energy_penalty
-		self.MaxIterations = self.Config.max_iterations
-		self.YieldRequirement = self.Config.yield_requirement
-		if hasattr(self.Config, "time_grid_size"):
-			self.TimeGridSize = self.Config.time_grid_size
-			self.TimeGridResolution = self.PropagationTime / self.TimeGridSize
-
-		#Set control cutoff from time step
-		err = 1e-6
-		self.ControlCutoff = err / self.TimeStep**2
-
-		#Check for the debug option
-		self.Debug = False
-		if hasattr(self.Config, "debug"):
-			self.Debug = self.Config.debug
-
-		#Do backward updates?
-		self.UpdateBackward = hasattr(self.Config, "update_backwards") and self.Config.update_backwards or False
-
-		self.PenaltyMatrixIsDiagonal = True
-
-
+	BASE = OptimalControl
+	
 	def Setup(self):
+		self.BASE.Setup(self)
+
 		self.M = numpy.zeros((self.NumberOfControls, self.NumberOfControls), dtype=double)
 		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 
@@ -60,7 +31,7 @@ class ZhuRabitz(OptimalControl):
 
 		#Find h0 potential
 		for potential in self.PotentialList:
-			if potential.Name == self.Config.h0[0]:
+			if potential.Name == self.Config.ZhuRabitz.h0[0]:
 				self.H_0 = potential
 
 
@@ -68,7 +39,7 @@ class ZhuRabitz(OptimalControl):
 		"""
 		Compute b vector:
 		
-		     b =  <psi| (X_a +/- ih/2 * [H_0, X_a]) |etta>
+		     b =  -Im(<psi| (X_a +/- ih/2 * [H_0, X_a]) |etta>)
 		"""
 
 		if direction == Direction.Forward:

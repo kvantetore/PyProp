@@ -19,51 +19,29 @@ class Degani(OptimalControl):
 	where J =  <F|Psi> - mu \sum( \int_0^T |u_i(t)|**2 dt ).
 	"""
 
+	BASE = OptimalControl
+
 	def ApplyConfigSection(self, config):
-		"""
-		"""
-		self.Config = config.Degani
+		self.BASE.ApplyConfigSection(self, config)
 
-		#Get the list of control function potentials
-		self.ControlFunctionNamesList = self.Config.control_functions
-		self.NumberOfControls = len(self.ControlFunctionNamesList)
-
-		# Shortcuts to the salient control parameters
-		self.ControlCutoff = self.Config.control_cutoff
-		self.EnergyPenalty = self.Config.energy_penalty
-		self.MaxIterations = self.Config.max_iterations
-		self.YieldRequirement = self.Config.yield_requirement
-		if hasattr(self.Config, "time_grid_size"):
-			self.TimeGridSize = self.Config.time_grid_size
-			self.TimeGridResolution = self.PropagationTime / self.TimeGridSize
-
-		#Set control cutoff from time step
-		err = 1e-6
-		self.ControlCutoff = err / self.TimeStep**2
-
-		#Check for the debug option
-		self.Debug = False
-		if hasattr(self.Config, "debug"):
-			self.Debug = self.Config.debug
-
-		#Do backward updates?
-		self.UpdateBackward = hasattr(self.Config, "update_backwards") and self.Config.update_backwards or False
-
-		self.PenaltyMatrixIsDiagonal = True
-
+		#Are controls commuting?
 		self.ControlsAreCommuting = True
+		if hasattr(self.Config, "controls_are_commuting"):
+			self.ControlsAreCommuting = self.Control.controls_are_commuting
+
+		#Find h0 potential
+		for potential in self.PotentialList:
+			if potential.Name == config.h0[0]:
+				self.H_0 = potential
 
 	def Setup(self):
+		self.BASE.Setup(self)
+		
 		self.M = numpy.zeros((self.NumberOfControls, self.NumberOfControls), dtype=double)
 		self.b = numpy.zeros(self.NumberOfControls, dtype=double)
 
 		self.TempPsi3 = self.BaseProblem.psi.CopyDeep()
 		self.TempPsi4 = self.BaseProblem.psi.CopyDeep()
-
-		#Find h0 potential
-		for potential in self.PotentialList:
-			if potential.Name == self.Config.h0[0]:
-				self.H_0 = potential
 
 
 	def SetupVectorB(self, timeGridIndex, direction):
@@ -171,7 +149,7 @@ class Degani(OptimalControl):
 					#Off-diagonal commutator part h**2/6 [X,[H_0,X]]
 					else:
 						self.MultiplyCommutatorABC(self.ControlFunctionList[a], self.H_0, self.ControlFunctionList[b], \
-							self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+							self.Psi, self.TempPsi, self.TempPsi2)
 				
 					#Project on forward or backward solution
 					if direction == Direction.Forward:
@@ -185,7 +163,28 @@ class Degani(OptimalControl):
 		#CASE 3: Controls are not commuting
 		#
 		else:
-			pass #for now
+			for a in range(self.NumberOfControls):
+				for b in range(self.NumberOfControls):
+
+					#Diagonal commutator part h**2/6 [X,[H_0,Y]]
+					if a == b:
+						#Energy penalty
+						self.M[a,b] += energyPenalty
+					
+					#Off-diagonal commutator part h/2 [X_b,X_a]
+					else:
+						self.MultiplyCommutatorAB(self.ControlFunctionList[b], self.ControlFunctionList[a], \
+							self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
+				
+					#Project on forward or backward solution
+					if direction == Direction.Forward:
+						self.TempPsi.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
+						self.M[a,b] -= numpy.imag(commutatorScaling * self.TempPsi.InnerProduct(self.TempPsi3))
+					else:
+						self.TempPsi.GetData()[:] = self.ForwardSolution[:, timeGridIndex]
+						self.M[a,b] -= numpy.imag(commutatorScaling * self.TempPsi3.InnerProduct(self.TempPsi))
+
+
 
 
 
