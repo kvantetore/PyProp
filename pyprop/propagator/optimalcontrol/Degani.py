@@ -149,7 +149,7 @@ class Degani(OptimalControl):
 					#Off-diagonal commutator part h**2/6 [X,[H_0,X]]
 					else:
 						self.MultiplyCommutatorABC(self.ControlFunctionList[a], self.H_0, self.ControlFunctionList[b], \
-							self.Psi, self.TempPsi, self.TempPsi2)
+							self.Psi, self.TempPsi, self.TempPsi2, self.TempPsi3)
 				
 					#Project on forward or backward solution
 					if direction == Direction.Forward:

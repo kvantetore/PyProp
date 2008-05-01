@@ -65,6 +65,7 @@ class OptimalControl:
 
 		self.PenaltyMatrixIsDiagonal = True
 
+		#Apply perturbation to control update?
 		self.PerturbControl = config.__dict__.get("perturb_control", 0)
 		print self.PerturbControl
 
