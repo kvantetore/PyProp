@@ -54,7 +54,7 @@ def GetDiagonalElements(psi, config, potential):
 
 def Setup(**args):
 	"""
-	Setup Krotov problem
+	Setup optimal control problem
 	"""
 	configFile = 'config.ini'
 	if "config" in args:
@@ -62,13 +62,29 @@ def Setup(**args):
 
 	conf = pyprop.Load(configFile)
 
-	if "timestep" in args:
-		config.Propagation.timestep = args["timestep"]
+	if "dt" in args:
+		conf.Propagation.timestep = args["dt"]
+
+	controlAlgorithm = args.get("controlAlgorithm", "Krotov")
+	confSection = eval("conf.%s" % controlAlgorithm)
+
+	if args.get("perturbControl", False):
+		confSection.perturb_control = 1e-15
+	
+	if "bwdUpdate" in args:
+		confSection.update_backwards = args["bwdUpdate"]
+
+	confSection.max_iterations = args.get("maxIter", confSection.max_iterations)
 
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
-	krotov = pyprop.Krotov(prop)
-	return krotov
+
+	controlSolver = eval("pyprop.%s(prop)" % controlAlgorithm)
+	controlSolver.ApplyConfigSection(confSection)
+	controlSolver.Setup()
+
+	return controlSolver
+
 
 def SetupZhuRabitz(**args):
 	"""
@@ -92,6 +108,7 @@ def SetupDegani(**args):
 
 	if "timestep" in args:
 		config.Propagation.timestep = args["timestep"]
+
 
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
@@ -158,6 +175,21 @@ def TextToHDFDense(fileName, vectorSize, scaling):
 	finally:
 		fileh5.close()
 
+def RunStabilityExperiment(**args):
+	args["perturbControl"] = True
+		
+	controlProblem = Setup(**args)
+
+	controlProblem.Run()
+	v1 = controlProblem.ControlVectors[0,:].copy()
+
+	controlProblem = Setup(**args)
+	controlProblem.Run()
+	v2 = controlProblem.ControlVectors[0,:].copy()
+
+	semilogy(linspace(0, controlProblem.PropagationTime, controlProblem.TimeGridSize), abs(v1 - v2))
+
+	return v1, v2
 
 def RunExperiment1():
 	"""
