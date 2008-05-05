@@ -73,6 +73,7 @@ def Setup(**args):
 	
 	if "bwdUpdate" in args:
 		confSection.update_backwards = args["bwdUpdate"]
+		print "Backward update: %s" % args["bwdUpdate"]
 
 	confSection.max_iterations = args.get("maxIter", confSection.max_iterations)
 
