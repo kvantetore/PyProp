@@ -62,12 +62,16 @@ class OptimalControl:
 
 		#Do backward updates?
 		self.UpdateBackward = hasattr(config, "update_backwards") and config.update_backwards or False
+		print "    Update backwards: %s" % self.UpdateBackwards
 
 		self.PenaltyMatrixIsDiagonal = True
 
 		#Apply perturbation to control update?
 		self.PerturbControl = config.__dict__.get("perturb_control", 0)
 		print self.PerturbControl
+
+		#Apply pulse shaper?
+		self.PulseShaping = config.__dict__.get("pulse_shaping", False)
 
 
 	def Setup(self):
@@ -265,8 +269,16 @@ class OptimalControl:
 
 	
 	def SetupPenaltyMatrix(self):
-		self.PenaltyMatrix = numpy.ones(self.TimeGridSize) * self.EnergyPenalty
-		#self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
+		if self.PulseShaping:
+			timeGrid = numpy.linspace(0, self.PropagationTime, self.TimeGridSize)
+			t0 = self.TimeGridSize / 2 
+			self.PenaltyMatrix = (timeGrid-timeGrid[t0])**2
+			self.PenaltyMatrix[:] /= numpy.max(self.PenaltyMatrix)
+			self.PenaltyMatrix[:] *= self.EnergyPenalty
+			self.PenaltyMatrix[:] += self.EnergyPenalty
+		else:
+			self.PenaltyMatrix = numpy.ones(self.TimeGridSize) * self.EnergyPenalty
+			#self.PenaltyMatrix[:] *= self.EnergyPenalty * self.TimeGridResolution
 	
 
 	def SetupTargetState(self):
