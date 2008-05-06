@@ -62,7 +62,7 @@ class OptimalControl:
 
 		#Do backward updates?
 		self.UpdateBackward = hasattr(config, "update_backwards") and config.update_backwards or False
-		print "    Update backwards: %s" % self.UpdateBackwards
+		print "    Update backwards: %s" % self.UpdateBackward
 
 		self.PenaltyMatrixIsDiagonal = True
 
