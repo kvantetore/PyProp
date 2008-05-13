@@ -230,8 +230,8 @@ def GetFortranArrayDeclaration(paramName, rank, dataType, intent):
 	GetFortranArrayDeclaration("data", 2, "complex (kind=dbl)", "inout")
 	returns
 	'''
-	complex, (kind=dbl), dimension(0:dataExtent1-1, 0:dataExtent0,-1), intent(inout) :: data
 	integer, intent(in) :: dataExtent1, dataExtent0
+	complex, (kind=dbl), dimension(0:dataExtent1-1, 0:dataExtent0,-1), intent(inout) :: data
 	'''
 
 	Note that dataExtent0 is the extent of the rank with the LARGEST stride
@@ -244,8 +244,8 @@ def GetFortranArrayDeclaration(paramName, rank, dataType, intent):
 	extentString = ", ".join(extentList)
 
 	str = """
-		%(dataType)s, dimension(%(dimensionString)s), intent(%(intent)s) :: %(paramName)s
 		integer, intent(in) :: %(extentString)s
+		%(dataType)s, dimension(%(dimensionString)s), intent(%(intent)s) :: %(paramName)s
 	""" % locals()
 	return str
 
