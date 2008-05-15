@@ -19,4 +19,7 @@ execfile(__path__[0] + "/propagator/VectorPropagator.py")
 execfile(__path__[0] + "/propagator/subpropagator/init.py")
 
 #init optimal control solvers
-execfile(__path__[0] + "/propagator/optimalcontrol/init.py")
+try:
+	execfile(__path__[0] + "/propagator/optimalcontrol/init.py")
+except:
+	pass
