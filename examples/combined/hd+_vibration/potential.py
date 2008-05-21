@@ -127,10 +127,22 @@ def GetLaserField(config, t):
 	E0 = 2744 * volt_per_metre_to_au * sqrt(config.intensity) 
 	t0 = config.delay
 	scaling = 4 * log(2) 
-
+		
 	envelope = exp( - scaling * (t - t0)**2 / config.duration**2 )
 	field = E0 * cos(config.frequency*(t - t0) + config.phase) * envelope
+	return field
 
+def GetSquareField(config, t):
+	"""
+	Timedependent part for a square pulse
+	"""
+	E0 = 2744 * volt_per_metre_to_au * sqrt(abs(config.intensity)) * sign(config.intensity)
+	t0 = config.delay
+	w = config.duration
+	if t0 - w/2 <= t < t0 + w/2:
+		field = E0
+	else:
+		field = 0
 	return field
 	
 def GetLaserPeaks(w, phase, t0, halfwidth):

@@ -5,14 +5,8 @@
 #include <complex>
 #include <cmath>
 
-#ifdef _REENTRANT
-#undef _REENTRANT
 #include <blitz/array.h>
-#define _REENTRANT
-#else
-#include <blitz/array.h>
-#endif
-
+#include <blitz/tinyvec-et.h>
 
 #include <stdexcept>
 #include <boost/shared_ptr.hpp>

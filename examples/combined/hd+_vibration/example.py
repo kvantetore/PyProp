@@ -23,32 +23,14 @@ execfile("initialization.py")
 execfile("serialization.py")
 execfile("potential.py")
 execfile("load_cmap.py")
+execfile("figures.py")
 
 try:
 	import pyprop.plotting as myplot
 except:
 	print "pyprop.plotting not available"
 
-def PlotSingleStatePropagation(**args):
-	#initStates = [3,4,5,6]
-	initStates = [8]
-	pulseDelay = args["pulseDelay"]
-	args["duration"] = 350*femtosec_to_au
-	args["fastForward"] = 250*femtosec_to_au
-	args["outputCount"] = 1
-	args["relativePhase"] = "follow"
-	args["silent"] = True
-	args["configSilent"] = True
 	
-	for state in initStates:
-		figure()
-		args["initStates"] = [state]
-		t, c, X, Y, Z, W = Propagate(**args)
-		CorrelationBarPlotPhase(c[-1,:15], axisHeight=.6)
-		xlabel("Vibrational Level")
-		ylabel("Distribution Probability and Phase-Shift")
-		title("Final distribution for initial v=%i. Pulse @ %i" % (state, pulseDelay / femtosec_to_au))
-		
 
 def PlotTransitionMatrixElements(**args):
 	matrix = real(GetTransitionMatrixElements(**args))
@@ -60,7 +42,7 @@ def PlotTransitionMatrixElements(**args):
 	title("Matrix elements < i | c**2 | j > for |i-j| = 0, 1")
 	xlabel("Vibrational states. Red is coupling to higher vibrational levels, Green is coupling to lower vib levels")
 	ylabel("Coupling Strength")
-	axis((-0.5, 7.5, -.8, 2))
+	#axis((-0.5, 7.5, -.8, 2))
 
 def GetTransitionMatrixElements(**args):
 	args["silent"] = True
@@ -80,6 +62,33 @@ def GetTransitionMatrixElements(**args):
 
 	return matrix
 
+def MakePhaseDelayPlot(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	#args["pulseIntensity"] = 0.5e14
+	args["pulseIntensity"] = 5e15
+	args["pulseDelay"] = 300*femtosec_to_au
+	args["duration"] = 305*femtosec_to_au
+	args["outputCount"] = 1
+	args["fastForward"] = 295*femtosec_to_au
+	args["pulseShape"] = "square"
+
+	#durationList = r_[0:7:0.2]
+	#durationList = r_[0:1:0.05]
+	durationList = r_[0:0.2:0.01]
+	stateList = r_[0:7]
+	theta = zeros((len(durationList), len(stateList)), dtype=double)
+	for i, pulseDuration in enumerate(durationList):
+		for j, initState in enumerate(stateList):
+			args["pulseDuration"] = pulseDuration*femtosec_to_au
+			args["initStates"] = [initState]
+			theta[i,j] = GetPhaseDelay(**args)
+
+	return durationList, stateList, theta
+
+	
 def GetPhaseDelay(**args):
 	initStates=args["initStates"]
 	if len(initStates) != 1:
@@ -90,6 +99,46 @@ def GetPhaseDelay(**args):
 
 	phases = arctan2(c[-1,:].imag, c[-1,:].real)
 	return phases[initStates[0]]
+
+
+def MakeProbabilityDelayPlot(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseIntensity"] = 0.5e14
+	#args["pulseIntensity"] = 5e15
+	args["pulseShape"] = "square"
+	args["pulseDelay"] = 300*femtosec_to_au
+	args["duration"] = 305*femtosec_to_au
+	args["outputCount"] = 1
+	args["fastForward"] = 295*femtosec_to_au
+
+	#durationList = r_[0:7:0.5]
+	durationList = r_[0:1:0.05]
+	#durationList = r_[0:0.2:0.01]
+	stateList = [4] #r_[0:7]
+	probability = zeros((len(durationList), len(stateList)), dtype=double)
+	for i, pulseDuration in enumerate(durationList):
+		for j, initState in enumerate(stateList):
+			args["pulseDuration"] = pulseDuration*femtosec_to_au
+			args["initStates"] = [initState]
+			probability[i,j] = GetPhaseDelay(**args)
+
+	return durationList, stateList, probability
+
+
+
+def GetSingleStateProbability(**args):
+	initStates=args["initStates"]
+	if len(initStates) != 1:
+		raise Exception("Please specify one init state")
+
+	args["relativePhase"] = "follow"
+	t, c, X, Y, r, psi = Propagate(**args)	
+
+	probability = abs(c[-1,:])**2
+	return probability
 
 def RunCheckerboardTest(**args):
 	args["silent"] = True
@@ -115,14 +164,25 @@ def RunCheckerboardTest(**args):
 
 
 
-def CorrelationBarPlot(corr, ax=None):
+def CorrelationBarPlot(corr, ax=None, axisHeight=None, colors="b"):
 	if ax == None:
 		ax = gca()
-	
+
 	basisCount = len(corr)
 	left = r_[:basisCount] - 0.4
-	bar(left, corr)
-	
+	for i in range(basisCount):
+		bar(left[i], corr[i], color=colors[i%len(colors)])
+
+	if axisHeight == None:
+		axisHeight = ax.axis()[3]
+	axisWidth = len(corr) + 1
+
+	yStart = 0
+	yEnd = axisHeight
+	xStart = -1
+	xEnd = len(corr)
+	ax.axis([xStart, xEnd, yStart, yEnd])
+
 
 def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
 	if ax == None:
@@ -150,7 +210,7 @@ def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
 	ax.axis([xStart, xEnd, yStart, yEnd])
 
 	for i, curCorr in enumerate(corr[:-1]):
-		if abs(corr[i])**2 > 1e-4:
+		if abs(corr[i])**2 > 1e-2:
 			theta1 = arctan2(corr[i].imag, corr[i].real)
 			theta2 = arctan2(corr[i+1].imag, corr[i+1].real)
 			theta = theta1# - theta2
@@ -174,23 +234,22 @@ def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
 	return ax.axis()
 		
 
-	
-	
-
 
 def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
 	fig = gcf()
 	clf()
 
-	probePulse = GetLaserField(conf.ProbePulsePotential, t*femtosec_to_au)
-	controlPulse = GetLaserField(conf.ControlPulsePotential, t*femtosec_to_au)
+	probePulse = array([conf.ProbePulsePotential.time_function(conf.ProbePulsePotential, curT*femtosec_to_au) for curT in t])
+	controlPulse = array([conf.ControlPulsePotential.time_function(conf.ControlPulsePotential, curT*femtosec_to_au) for curT in t])
 	pulse = probePulse + controlPulse
 
 	ax = fig.gca()
 	ax.set_position([0.05,0.05,0.9,0.68])
-	ax.plot(r, potData)
-	ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 + potData[:,0], "k")
-	ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 + potData[:,1], "k")
+	#ax.plot(r, potData)
+	#ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 + potData[:,0], "k")
+	#ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 + potData[:,1], "k")
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 -0.6, "k")
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 -0.2, "k")
 	ax.axis([0,10,-0.65,-0.1])
 	yticks([])
 
@@ -455,16 +514,34 @@ def Propagate(**args):
 	dE = average(diff(contE2))
 	E = r_[-0.5:0:dE]
 
+	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	dr = diff(r)[0]
+
 	initProj = dot(boundV, prop.psi.GetData()[:,0])
 	initPhases = numpy.arctan2(initProj.imag, initProj.real)
 
 	if "initStates" in args:
 		initStates = args["initStates"]
 		initPsi.GetData()[:] = 0
-		for state in initStates:
-			initPsi.GetData()[:,0] += boundV[state,:]
-			print "Input Energy = ", boundE[state]
-		initPsi.Normalize()
+
+		initStatesWeight = args.get("initStatesWeight", "one")
+		if initStatesWeight == "one":
+			#use equal population in the selected states
+			for state in initStates:
+				initPsi.GetData()[:,0] += boundV[state,:]
+				print "Input Energy = ", boundE[state]
+	
+				initPsi.Normalize()
+		elif initStatesWeight == "fc":
+			#use franck-condon population for the selected staes
+			for state in initStates:
+				initPsi.GetData()[:,0] += abs(initProj[state]) * boundV[state,:] / dr
+				print "Input Energy = ", boundE[state]
+
+		else:
+			raise Exception("Invalid initStatesWeight '%s'" % initStatesWeight)
+	
+
 		prop.psi.GetData()[:] = initPsi.GetData()
 			
 
@@ -482,8 +559,6 @@ def Propagate(**args):
 		relativePhase = args["relativePhase"]
 		print "Using relative phase '%s'" % relativePhase
 
-	r = prop.psi.GetRepresentation().GetLocalGrid(0)
-	dr = diff(r)[0]
 	timeList = []
 	corrList = []
 	radialData = []
@@ -575,16 +650,16 @@ def Propagate(**args):
 	for t in prop.Advance(outputCount):
 		output()
 		if t-tPrev > 20*femtosec_to_au:
-			corr = abs(prop.psi.InnerProduct(initPsi))**2
 			norm = prop.psi.GetNorm()
-			print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
+			corr = sum(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
+			print "t = %f, N = %f, Corr = %f" % (t/femtosec_to_au, norm, corr) 
 			tPrev = t
 
 	t = prop.PropagatedTime
 	output()
 
 	norm = prop.psi.GetNorm()
-	corr = abs(prop.psi.InnerProduct(initPsi))**2
+	corr = sum(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
 	print "t = %f, N = %f, Corr = %.17f" % (t/femtosec_to_au, norm, corr) 
 
 	energyDistrib1, energyDistrib2 = CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)

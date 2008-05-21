@@ -162,5 +162,12 @@ template blitz::TinyVector<double, 7> ConfigSection::Get< blitz::TinyVector<doub
 template blitz::TinyVector<double, 8> ConfigSection::Get< blitz::TinyVector<double, 8> >(const std::string &name) const;
 template blitz::TinyVector<double, 9> ConfigSection::Get< blitz::TinyVector<double, 9> >(const std::string &name) const;
 
+template blitz::Array<double, 1> ConfigSection::Get< blitz::Array<double, 1> >(const std::string &name) const;
+template blitz::Array<double, 2> ConfigSection::Get< blitz::Array<double, 2> >(const std::string &name) const;
+template blitz::Array<double, 3> ConfigSection::Get< blitz::Array<double, 3> >(const std::string &name) const;
+
+template blitz::Array<cplx, 1> ConfigSection::Get< blitz::Array<cplx, 1> >(const std::string &name) const;
+template blitz::Array<cplx, 2> ConfigSection::Get< blitz::Array<cplx, 2> >(const std::string &name) const;
+template blitz::Array<cplx, 3> ConfigSection::Get< blitz::Array<cplx, 3> >(const std::string &name) const;
 
 template blitz::Array<int, 1> ConfigSection::Get< blitz::Array<int, 1> >(const std::string &name) const;

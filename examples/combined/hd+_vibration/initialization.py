@@ -91,6 +91,16 @@ def SetupConfig(**args):
 			pulseIntensity = args["pulseIntensity"]
 			print "Using pulse intensity %s W/cm^2" % pulseIntensity
 			conf.ProbePulsePotential.intensity = pulseIntensity
+
+		if "pulseShape" in args:
+			pulseShape = args["pulseShape"]
+			print "Using pulse shape %s" % pulseShape
+			if pulseShape == "square":
+				conf.ProbePulsePotential.time_function = GetSquareField
+			elif pulseShape == "laser":
+				conf.ProbePulsePotential.time_function = GetLaserField
+			else:
+				raise Exception("Invalid pulseShape '%s'" % pulseShape)
 		
 		#Control Pulse
 		if 'controlDelay' in args:
@@ -384,8 +394,27 @@ def LoadRotatedBoundEigenstates(**args):
 		V[i,:] *= exp(-1.0j * initPhases[i])
 	
 	return E, V
-	
 
+def GetFranckCondonPopulation(**args):
+	"""
+	Loads the eigenstates, and rotates them such that all
+	the franck condon coefficients are real and positive
+	"""
+	args["silent"] = True
+	args["configSilent"] = True
+
+	#Get eigenstates
+	E, V = LoadBoundEigenstates(**args)
+
+	#Get initial state
+	prop = SetupProblem(**args)
+	LoadInitialState(prop, **args)
+
+	#Expand initial state in eigenstaes
+	initProj = dot(V, prop.psi.GetData()[:,0])
+
+	return initProj
+	
 def LoadContinuumEigenstates(**args):
 	threshold = -0.5
 	upperThreshold = 0.0

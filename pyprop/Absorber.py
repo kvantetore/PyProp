@@ -27,6 +27,10 @@ class AbsorbingBoundary(core.AbsorberModel):
 		self.AbsorbLeft = config.absorb_left
 		self.AbsorbRight = config.absorb_right
 
+		self.AbsorbFactor = 1.0
+		if hasattr(config, "absorb_factor"):
+			self.AbsorbFactor = config.absorb_factor
+
 	def SetupStep(self, grid):
 		minPos = min(grid)
 		maxPos = max(grid)
@@ -35,10 +39,12 @@ class AbsorbingBoundary(core.AbsorberModel):
 		for i in range(len(grid)):	
 			pos = grid[i]
 			width = self.Width
+			scaling = 1
 			if pos < minPos + width and self.AbsorbLeft:
-				self.Scaling[i] *= cos(pi/2.0 * (pos - (minPos + width)) / width)**(1./8.);
+				scaling *= cos(pi/2.0 * (pos - (minPos + width)) / width)**(1./8.);
 			if pos > maxPos - width and self.AbsorbRight:
-				self.Scaling[i] *= cos(pi/2.0 * (- maxPos + pos + width) / width)**(1./8.);
+				scaling *= cos(pi/2.0 * (- maxPos + pos + width) / width)**(1./8.);
+			self.Scaling[i] *= (scaling * self.AbsorbFactor) + 1 - self.AbsorbFactor
 
 	def	GetScaling(self):
 		return self.Scaling
