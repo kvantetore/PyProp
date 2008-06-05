@@ -9,7 +9,7 @@ from numpy import fft
 import tables
 
 #Pyprop itself
-sys.path.append("../../..")
+sys.path.append(os.environ["PYPROPPATH"])
 import pyprop; 
 pyprop = reload(pyprop)
 
