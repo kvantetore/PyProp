@@ -2,6 +2,7 @@
 import sys
 import os
 from numpy import conj
+from numpy import where as nwhere
 import pylab
 from numpy import fft
 
@@ -67,11 +68,39 @@ def Run():
 
 	return krotov
 
+
 def GetPulseSpectrum(krotov, whichControl):
 	dw = 2 * pi * fft.fftshift(fft.fftfreq(len(krotov.ControlVectors[whichControl]), \
 		krotov.TimeGridResolution))
 	pulseSpectrum = fft.fftshift(fft.fft(krotov.ControlVectors[whichControl]))
 	return dw, pulseSpectrum
+
+
+def PlotResultSingleControl(solver, freqCutoff):
+	LaTeXFigureSettings(subFig=(1,3))
+
+	#Plot final control
+	subplot(311)
+	plot(krotov.TimeGrid, krotov.ControlVectors[0], label="Control function")
+	xlabel("Time (a.u.)")
+	legend(loc="best")
+
+	#Plot control spectrum
+	subplot(312)
+	freq, controlSpectrum = GetPulseSpectrum(solver, 0)
+	spectrumSize = size(controlSpectrum)
+	freq = freq[spectrumSize/2:]
+	absSpectrum = abs(controlSpectrum[spectrumSize/2:])
+	I = nwhere(freq > freqCutoff)[0][0]
+	plot(freq[:I], absSpectrum[:I], label="Control spectrum")
+	xlabel("Frequency (a.u.)")
+	legend(loc="best")
+
+	#Plot yield
+	subplot(313)
+	plot(solver.Yield, label="Yield")
+	xlabel("Iteration number")
+	legend(loc="best")
 
 
 def TextToHDFDense(fileName, vectorSize, scaling):
@@ -96,3 +125,67 @@ def TextToHDFDense(fileName, vectorSize, scaling):
 
 	finally:
 		fileh5.close()
+
+
+def SaveWavefunction(filename, dataset, prop):
+	if pyprop.ProcId == 0:
+		if os.path.exists(filename):
+			os.unlink(filename)
+	pyprop.serialization.SaveWavefunctionHDF(filename, dataset, prop.psi)
+
+	if pyprop.ProcId == 0:
+		h5file = tables.openFile(filename, "r+")
+		try:
+			h5file.setNodeAttr(dataset, "configObject", prop.Config.cfgObj)
+		finally:
+			h5file.close()
+
+
+def SaveOptimalControlProblem(filename, datasetPath, solver):
+	"""
+	Stores the following results from an OCT run:
+	    
+	    -J (all iterations)
+		-Yield (all iterations)
+		-Time grid
+		-Final control
+		-Final wavefunction
+		-Final forward solution
+		-Final backward solution
+	"""
+
+	#Save wavefunction
+	SaveWavefunction(filename, "%s/wavefunction" % datasetPath, solver.BaseProblem)
+
+	#Store optimal control run results
+	h5file = tables.openFile(filename, "r+")
+	try:
+		h5file.createArray(datasetPath, "J", solver.J)
+		h5file.createArray(datasetPath, "Yield", solver.Yield)
+		h5file.createArray(datasetPath, "FinalControl", solver.ControlVectors)
+		h5file.createArray(datasetPath, "TimeGrid", solver.TimeGrid)
+		h5file.createArray(datasetPath, "ForwardSolution", solver.ForwardSolution)
+		h5file.createArray(datasetPath, "BackwardSolution", solver.BackwardSolution)
+	finally:
+		h5file.close()
+
+
+def LaTeXFigureSettings(fig_width_pt = 345, subFig=1):
+	#fig_width_pt = 345.0  # Get this from LaTeX using \showthe\columnwidth
+	inches_per_pt = 1.0/72.27               # Convert pt to inch
+	golden_mean = (sqrt(5)-1.0)/2.0         # Aesthetic ratio
+	fig_width = fig_width_pt*inches_per_pt  # width in inches
+	fig_height = fig_width*golden_mean      # height in inches
+	fig_size =  [fig_width,fig_height]
+	if subFig.__class__ == tuple:
+		fig_size = [fig_width * subFig[0], fig_height * subFig[1]]
+	params = {'backend': 'ps',
+			  'axes.labelsize': 12,
+			  'text.fontsize': 12,
+			  'legend.fontsize': 12,
+			  'xtick.labelsize': 10,
+			  'ytick.labelsize': 10,
+			  'text.usetex': True,
+			  'figure.figsize': fig_size}
+	pylab.rcParams.update(params)
+
