@@ -92,7 +92,7 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			try:
 				goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
 			except tables.NoSuchNodeError:
-				pMethod = PenaltyMethod.Energy
+				pMethod = pyprop.PenaltyMethod.Energy
 		finally:
 			h5file.close()
 	else:
@@ -100,19 +100,19 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 		timeGridResolution = solver.TimeGridResolution
 		controlVector = solver.ControlVectors[controlNumber]
 		octYield = solver.Yield
-		pMethod = krotov.ProjectionMethod
-		if pMethod == PenaltyMethod.Projection:
+		pMethod = krotov.PenaltyMethod
+		if pMethod == pyprop.PenaltyMethod.Projection:
 			goodBadRatio = solver.GoodBadRatio[:]
 	
-	if pMethod == PenaltyMethod.Projection:
+	if pMethod == pyprop.PenaltyMethod.Projection:
 		subplots = [subplot(221), subplot(222), subplot(223), subplot(224)]
 	else:
 		subplots = [subplot(311), subplot(312), subplot(313)]
 
 	#Plot final control
 	subplots[0].plot(timeGrid, controlVector, label="Control function")
-	xsubplots[0].label("Time (a.u.)")
-	lsubplots[0].egend(loc="best")
+	subplots[0].set_xlabel("Time (a.u.)")
+	subplots[0].legend(loc="best")
 
 	#Plot control spectrum
 	freq, controlSpectrum = GetPulseSpectrum(controlVector, timeGridResolution)
@@ -121,19 +121,21 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 	absSpectrum = abs(controlSpectrum[spectrumSize/2:])
 	I = nwhere(freq > freqCutoff)[0][0]
 	subplots[1].plot(freq[:I], absSpectrum[:I], label="Control spectrum")
-	subplots[1].xlabel("Frequency (a.u.)")
+	subplots[1].set_xlabel("Frequency (a.u.)")
 	subplots[1].legend(loc="best")
 
 	#Plot yield
 	subplots[2].plot(octYield, label="Yield")
-	subplots[2].xlabel("Iteration number")
+	subplots[2].set_xlabel("Iteration number")
 	subplots[2].legend(loc="best")
 
 	#Plot bad/good ratio
-	if pMethod == PenaltyMethod.Projection:
-		subplots[3].plot(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
-		subplots[3].xlabel("Iteration number")
+	if pMethod == pyprop.PenaltyMethod.Projection:
+		subplots[3].semilogy(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
+		subplots[3].set_xlabel("Iteration number")
 		subplots[3].legend(loc="best")
+
+	draw()
 	
 	return subplots
 
@@ -186,6 +188,7 @@ def SaveOptimalControlProblem(filename, datasetPath, solver):
 		-Final wavefunction
 		-Final forward solution
 		-Final backward solution
+		-Good/bad ratio
 	"""
 
 	#Save wavefunction
@@ -200,6 +203,9 @@ def SaveOptimalControlProblem(filename, datasetPath, solver):
 		h5file.createArray(datasetPath, "TimeGrid", solver.TimeGrid)
 		h5file.createArray(datasetPath, "ForwardSolution", solver.ForwardSolution)
 		h5file.createArray(datasetPath, "BackwardSolution", solver.BackwardSolution)
+		if solver.PenaltyMethod == pyprop.PenaltyMethod.Projection:
+			h5file.createArray(datasetPath, "GoodBadRatio", solver.GoodBadRatio)
+			
 	finally:
 		h5file.close()
 
