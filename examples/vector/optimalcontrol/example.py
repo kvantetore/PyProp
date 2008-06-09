@@ -77,7 +77,6 @@ def GetPulseSpectrum(controlVector, timeGridResolution):
 
 def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
 	LaTeXFigureSettings(subFig=(2,2))
-	subplots = []
 
 	#Get results
 	if solver == None:
@@ -90,7 +89,10 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			timeGridResolution = timeGrid[1] - timeGrid[0]
 			controlVector = h5file.getNode(datasetPath, "FinalControl")[controlNumber]
 			octYield = h5file.getNode(datasetPath, "Yield")[:]
-			goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
+			try:
+				goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
+			except tables.NoSuchNodeError:
+				pMethod = PenaltyMethod.Energy
 		finally:
 			h5file.close()
 	else:
@@ -98,37 +100,41 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 		timeGridResolution = solver.TimeGridResolution
 		controlVector = solver.ControlVectors[controlNumber]
 		octYield = solver.Yield
-		goodBadRatio = solver.GoodBadRatio[:]
+		pMethod = krotov.ProjectionMethod
+		if pMethod == PenaltyMethod.Projection:
+			goodBadRatio = solver.GoodBadRatio[:]
+	
+	if pMethod == PenaltyMethod.Projection:
+		subplots = [subplot(221), subplot(222), subplot(223), subplot(224)]
+	else:
+		subplots = [subplot(311), subplot(312), subplot(313)]
 
 	#Plot final control
-	subplots += [subplot(221)]
-	plot(timeGrid, controlVector, label="Control function")
-	xlabel("Time (a.u.)")
-	legend(loc="best")
+	subplots[0].plot(timeGrid, controlVector, label="Control function")
+	xsubplots[0].label("Time (a.u.)")
+	lsubplots[0].egend(loc="best")
 
 	#Plot control spectrum
-	subplots += [subplot(222)]
 	freq, controlSpectrum = GetPulseSpectrum(controlVector, timeGridResolution)
 	spectrumSize = size(controlSpectrum)
 	freq = freq[spectrumSize/2:]
 	absSpectrum = abs(controlSpectrum[spectrumSize/2:])
 	I = nwhere(freq > freqCutoff)[0][0]
-	plot(freq[:I], absSpectrum[:I], label="Control spectrum")
-	xlabel("Frequency (a.u.)")
-	legend(loc="best")
+	subplots[1].plot(freq[:I], absSpectrum[:I], label="Control spectrum")
+	subplots[1].xlabel("Frequency (a.u.)")
+	subplots[1].legend(loc="best")
 
 	#Plot yield
-	subplots += [subplot(223)]
-	plot(octYield, label="Yield")
-	xlabel("Iteration number")
-	legend(loc="best")
+	subplots[2].plot(octYield, label="Yield")
+	subplots[2].xlabel("Iteration number")
+	subplots[2].legend(loc="best")
 
 	#Plot bad/good ratio
-	subplots += [subplot(224)]
-	plot(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
-	xlabel("Iteration number")
-	legend(loc="best")
-
+	if pMethod == PenaltyMethod.Projection:
+		subplots[3].plot(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
+		subplots[3].xlabel("Iteration number")
+		subplots[3].legend(loc="best")
+	
 	return subplots
 
 def TextToHDFDense(fileName, vectorSize, scaling):
