@@ -86,8 +86,6 @@ def RemoveExistingDataset(filename, datasetPath):
 	finally:
 		f.close()
 
-	
-
 def SaveLocalSlab(filename, datasetPath, psi):
 	#open file
 	f = tables.openFile(filename, "a")
@@ -231,12 +229,12 @@ def CreateDataset(f, datasetPath, fullShape):
 	Creates a chunked array dataset of shape fullShape at the given path. 
 	"""
 	groupName, datasetName = GetDatasetName(datasetPath)
-	group = f.getNode(groupName)
+	group = "/"
+	if len(groupName) > 1:
+		group = f.createGroup("/", groupName[1:], createparents=True)
 	atom = tables.ComplexAtom(itemsize=16)
 	filters = tables.Filters(complevel=0)
 	dataset = f.createCArray(group, datasetName, atom, fullShape, filters=filters)
 
 	return dataset
-	
-	
 	
