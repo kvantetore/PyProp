@@ -69,25 +69,43 @@ def Run():
 	return krotov
 
 
-def GetPulseSpectrum(krotov, whichControl):
-	dw = 2 * pi * fft.fftshift(fft.fftfreq(len(krotov.ControlVectors[whichControl]), \
-		krotov.TimeGridResolution))
-	pulseSpectrum = fft.fftshift(fft.fft(krotov.ControlVectors[whichControl]))
+def GetPulseSpectrum(controlVector, timeGridResolution):
+	dw = 2 * pi * fft.fftshift(fft.fftfreq(len(controlVector), timeGridResolution))
+	pulseSpectrum = fft.fftshift(fft.fft(controlVector))
 	return dw, pulseSpectrum
 
 
-def PlotResultSingleControl(solver, freqCutoff):
+def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
 	LaTeXFigureSettings(subFig=(1,3))
+
+	#Get results
+	if solver == None:
+		print "Please specify either oct object or HDF5 file."
+		return
+	elif solver.__class__ == str:
+		h5file = tables.openFile(solver, "r")
+		try:
+			timeGrid = h5file.get(datasetPath, "TimeGrid")
+			timeGridResolution = timeGrid[1] - timeGrid[0]
+			controlVector = h5file.get(datasetPath, "ControlVectors")[controlNumber]
+			octYield = h5file.get(datasetPath, "Yield")
+		finally:
+			h5file.close()
+	else:
+		timeGrid = solver.TimeGrid
+		timeGridResolution = solver.TimeGridResolution
+		controlVector = solver.ControlVectors[controlNumber]
+		octYield = solver.Yield
 
 	#Plot final control
 	subplot(311)
-	plot(krotov.TimeGrid, krotov.ControlVectors[0], label="Control function")
+	plot(timeGrid, controlVector, label="Control function")
 	xlabel("Time (a.u.)")
 	legend(loc="best")
 
 	#Plot control spectrum
 	subplot(312)
-	freq, controlSpectrum = GetPulseSpectrum(solver, 0)
+	freq, controlSpectrum = GetPulseSpectrum(controlVector, timeGridResolution)
 	spectrumSize = size(controlSpectrum)
 	freq = freq[spectrumSize/2:]
 	absSpectrum = abs(controlSpectrum[spectrumSize/2:])
@@ -98,7 +116,7 @@ def PlotResultSingleControl(solver, freqCutoff):
 
 	#Plot yield
 	subplot(313)
-	plot(solver.Yield, label="Yield")
+	plot(octYield, label="Yield")
 	xlabel("Iteration number")
 	legend(loc="best")
 
