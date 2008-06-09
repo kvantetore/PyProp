@@ -77,6 +77,7 @@ def GetPulseSpectrum(controlVector, timeGridResolution):
 
 def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
 	LaTeXFigureSettings(subFig=(1,3))
+	subplots = []
 
 	#Get results
 	if solver == None:
@@ -85,10 +86,10 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 	elif solver.__class__ == str:
 		h5file = tables.openFile(solver, "r")
 		try:
-			timeGrid = h5file.get(datasetPath, "TimeGrid")
+			timeGrid = h5file.getNode(datasetPath, "TimeGrid")[:]
 			timeGridResolution = timeGrid[1] - timeGrid[0]
-			controlVector = h5file.get(datasetPath, "ControlVectors")[controlNumber]
-			octYield = h5file.get(datasetPath, "Yield")
+			controlVector = h5file.getNode(datasetPath, "FinalControl")[controlNumber]
+			octYield = h5file.getNode(datasetPath, "Yield")[:]
 		finally:
 			h5file.close()
 	else:
@@ -98,13 +99,13 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 		octYield = solver.Yield
 
 	#Plot final control
-	subplot(311)
+	subplots += [subplot(311)]
 	plot(timeGrid, controlVector, label="Control function")
 	xlabel("Time (a.u.)")
 	legend(loc="best")
 
 	#Plot control spectrum
-	subplot(312)
+	subplots += [subplot(312)]
 	freq, controlSpectrum = GetPulseSpectrum(controlVector, timeGridResolution)
 	spectrumSize = size(controlSpectrum)
 	freq = freq[spectrumSize/2:]
@@ -115,11 +116,12 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 	legend(loc="best")
 
 	#Plot yield
-	subplot(313)
+	subplots += [subplot(313)]
 	plot(octYield, label="Yield")
 	xlabel("Iteration number")
 	legend(loc="best")
 
+	return subplots
 
 def TextToHDFDense(fileName, vectorSize, scaling):
 
