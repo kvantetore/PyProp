@@ -76,7 +76,7 @@ def GetPulseSpectrum(controlVector, timeGridResolution):
 
 
 def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
-	LaTeXFigureSettings(subFig=(1,3))
+	LaTeXFigureSettings(subFig=(2,2))
 	subplots = []
 
 	#Get results
@@ -90,6 +90,7 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			timeGridResolution = timeGrid[1] - timeGrid[0]
 			controlVector = h5file.getNode(datasetPath, "FinalControl")[controlNumber]
 			octYield = h5file.getNode(datasetPath, "Yield")[:]
+			goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
 		finally:
 			h5file.close()
 	else:
@@ -97,15 +98,16 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 		timeGridResolution = solver.TimeGridResolution
 		controlVector = solver.ControlVectors[controlNumber]
 		octYield = solver.Yield
+		goodBadRatio = solver.GoodBadRatio[:]
 
 	#Plot final control
-	subplots += [subplot(311)]
+	subplots += [subplot(221)]
 	plot(timeGrid, controlVector, label="Control function")
 	xlabel("Time (a.u.)")
 	legend(loc="best")
 
 	#Plot control spectrum
-	subplots += [subplot(312)]
+	subplots += [subplot(222)]
 	freq, controlSpectrum = GetPulseSpectrum(controlVector, timeGridResolution)
 	spectrumSize = size(controlSpectrum)
 	freq = freq[spectrumSize/2:]
@@ -116,8 +118,14 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 	legend(loc="best")
 
 	#Plot yield
-	subplots += [subplot(313)]
+	subplots += [subplot(223)]
 	plot(octYield, label="Yield")
+	xlabel("Iteration number")
+	legend(loc="best")
+
+	#Plot bad/good ratio
+	subplots += [subplot(224)]
+	plot(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
 	xlabel("Iteration number")
 	legend(loc="best")
 
