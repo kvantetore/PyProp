@@ -40,17 +40,20 @@ def Setup(**args):
 	conf = pyprop.Load(configFile)
 
 	if "dt" in args:
-		conf.Propagation.timestep = args["dt"]
+		dt = args["dt"]
+		conf.SetValue("Propagation", "timestep", dt)
 
 	controlAlgorithm = args.get("controlAlgorithm", "Krotov")
 	print "    Using control algorithm: %s" % controlAlgorithm
 	confSection = eval("conf.%s" % controlAlgorithm)
 
 	if "bwdUpdate" in args:
-		confSection.update_backwards = args["bwdUpdate"]
-		print "Backward update: %s" % args["bwdUpdate"]
+		bwdUpdate = args["bwdUpdate"]
+		conf.SetValue(controlAlgorithm, "update_backwards", bwdUpdate)
+		print "Backward update: %s" % bwdUpdate
 
-	confSection.max_iterations = args.get("maxIter", confSection.max_iterations)
+	maxIter = args.get("maxIter", confSection.max_iterations)
+	conf.SetValue(controlAlgorithm, "max_iterations", maxIter)
 
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
@@ -76,7 +79,6 @@ def GetPulseSpectrum(controlVector, timeGridResolution):
 
 
 def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
-	LaTeXFigureSettings(subFig=(2,2))
 
 	#Get results
 	if solver == None:
@@ -89,6 +91,7 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			timeGridResolution = timeGrid[1] - timeGrid[0]
 			controlVector = h5file.getNode(datasetPath, "FinalControl")[controlNumber]
 			octYield = h5file.getNode(datasetPath, "Yield")[:]
+			pMethod = pyprop.PenaltyMethod.Projection
 			try:
 				goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
 			except tables.NoSuchNodeError:
@@ -105,8 +108,12 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			goodBadRatio = solver.GoodBadRatio[:]
 	
 	if pMethod == pyprop.PenaltyMethod.Projection:
+		LaTeXFigureSettings(subFig=(2,2))
+		figure()
 		subplots = [subplot(221), subplot(222), subplot(223), subplot(224)]
 	else:
+		LaTeXFigureSettings(subFig=(1,3))
+		figure()
 		subplots = [subplot(311), subplot(312), subplot(313)]
 
 	#Plot final control
