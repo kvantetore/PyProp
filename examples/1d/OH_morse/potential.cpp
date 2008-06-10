@@ -100,6 +100,6 @@ public:
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double x = pos(0);
-		return Gamma / std::sqrt(M_PI) * exp(-Gamma * Gamma * sqr(x - XMark));
+		return std::sqrt(Gamma / std::sqrt(M_PI)) * exp(-0.5 * Gamma * Gamma * sqr(x - XMark));
 	}
 };

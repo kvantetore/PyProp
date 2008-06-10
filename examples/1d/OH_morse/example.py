@@ -107,7 +107,8 @@ def CalculateEigenBasisMatrixElements(prop, potential, eigFileName, **args):
 	outFile = args.has_key("outFile") and args["outFile"] or "out/morse_matrix.h5"
 
 	#Set up buffer
-	tmpPsi = prop.psi.CopyDeep()
+	tmpPsi = prop.psi.Copy()
+	tmpPsi2 = prop.psi.Copy()
 
 	eigFile = tables.openFile(eigFileName)
 	
@@ -122,10 +123,11 @@ def CalculateEigenBasisMatrixElements(prop, potential, eigFileName, **args):
 			tmpPsi.GetData()[:] = eigFile.getNode("/eigenvector%03i" % j)
 
 			#Multiply potential:  X|j>
-			potential.MultiplyPotential(prop.psi, tmpPsi, 0, 0)
+			tmpPsi2.Clear()
+			potential.MultiplyPotential(tmpPsi, tmpPsi2, 0, 0)
 			
 			#Calculate <i|X|j>
-			M[i,j] = prop.psi.InnerProduct(tmpPsi)
+			M[i,j] = prop.psi.InnerProduct(tmpPsi2)
 			if i != j:
 				M[j,i] = numpy.conj(M[i,j])
 
@@ -243,6 +245,9 @@ def SetupKrotov(config, **args):
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	krotov = pyprop.Krotov(prop)
+	krotov.ApplyConfigSection(conf.Krotov)
+	krotov.Setup()
+
 	return krotov
 
 
@@ -259,6 +264,9 @@ def SetupZhuRabitz(config, **args):
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	zhurabitz = pyprop.ZhuRabitz(prop)
+	zhurabitz.ApplyConfigSection(conf.ZhuRabitz)
+	zhurabitz.Setup()
+
 	return zhurabitz
 
 
@@ -272,4 +280,7 @@ def SetupDegani(config, **args):
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	degani = pyprop.Degani(prop)
+	degani.ApplyConfigSection(conf.Degani)
+	degani.Setup()
+
 	return degani
