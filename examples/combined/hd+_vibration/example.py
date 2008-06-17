@@ -24,26 +24,67 @@ execfile("serialization.py")
 execfile("potential.py")
 execfile("load_cmap.py")
 execfile("figures.py")
+execfile("talkfigures.py")
+execfile("poster-figures.py")
 
 try:
 	import pyprop.plotting as myplot
 except:
 	print "pyprop.plotting not available"
 
+
+def GetModelPhaseDelay(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseIntensity"] = 0.5e14
+	args["pulseDelay"] = 0
+	args["pulseShape"] = "square"
+	conf = SetupConfig(**args)
+
+	closureEnergy = args["closureEnergy"] 
+
+	d = GetTransitionMatrixElements(**args)
+	F0 = GetSquareField(conf.ProbePulsePotential, 0)
+	E, V = LoadRotatedBoundEigenstates(**args)
+	T = r_[0:7:0.5]
+	#T = r_[0:1:0.1]
+	stateList = r_[0:6]
+
+	dur, state = meshgrid(T, stateList)
+	temp, energy = meshgrid(ones(len(T)), E[stateList])
+	temp, transition = meshgrid(ones(len(T)), diagonal(d)[stateList])
+	theta = -F0**2 * dur * femtosec_to_au * transition / (energy - closureEnergy)
+
+	return T, stateList, theta
 	
 
-def PlotTransitionMatrixElements(**args):
-	matrix = real(GetTransitionMatrixElements(**args))
-	figure()
-	left = r_[0:matrix.shape[0]]
-	bar(left-0.1125, diagonal(matrix), width=0.25)
-	bar(left[:-1]+0.1125, diagonal(matrix,1), width=0.25, color="r")
-	bar(left[1:]-0.25-0.1125, diagonal(matrix,-1), width=0.25, color="g")
-	title("Matrix elements < i | c**2 | j > for |i-j| = 0, 1")
-	xlabel("Vibrational states. Red is coupling to higher vibrational levels, Green is coupling to lower vib levels")
-	ylabel("Coupling Strength")
-	#axis((-0.5, 7.5, -.8, 2))
+def GetModelPhaseDelayIntensity(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseIntensity"] = 0.5e14
+	args["pulseDelay"] = 0
+	args["pulseShape"] = "square"
+	conf = SetupConfig(**args)
 
+	closureEnergy = args["closureEnergy"] 
+
+	d = GetTransitionMatrixElements(**args)
+	F0 = 2744*volt_per_metre_to_au*sqrt(r_[1e12:1e14:1e12])
+	E, V = LoadRotatedBoundEigenstates(**args)
+	T = 1
+	stateList = r_[0:2]
+
+	field, state = meshgrid(F0, stateList)
+	temp, energy = meshgrid(ones(len(F0)), E[stateList])
+	temp, transition = meshgrid(ones(len(F0)), diagonal(d)[stateList])
+	theta = -field**2 * T * sqrt(2.5) * femtosec_to_au * transition / (energy - closureEnergy)
+
+	return F0, stateList, theta
+	
 def GetTransitionMatrixElements(**args):
 	args["silent"] = True
 	args["configSilent"] = True
@@ -62,23 +103,23 @@ def GetTransitionMatrixElements(**args):
 
 	return matrix
 
-def MakePhaseDelayPlot(**args):
+def MakePhaseDelayPlotDuration(**args):
 	args["silent"] = True
 	args["configSilent"] = True
 	args["molecule"] = "d2+"
 	args["radialScaling"] = 2
-	#args["pulseIntensity"] = 0.5e14
-	args["pulseIntensity"] = 5e15
+	args["pulseIntensity"] = 0.5e14
+	#args["pulseIntensity"] = 5e15
 	args["pulseDelay"] = 300*femtosec_to_au
 	args["duration"] = 305*femtosec_to_au
 	args["outputCount"] = 1
 	args["fastForward"] = 295*femtosec_to_au
 	args["pulseShape"] = "square"
 
-	#durationList = r_[0:7:0.2]
-	#durationList = r_[0:1:0.05]
-	durationList = r_[0:0.2:0.01]
-	stateList = r_[0:7]
+	durationList = r_[0:7:0.5]
+	#durationList = r_[0:1:0.1]
+	#durationList = r_[0:0.2:0.01]
+	stateList = r_[0:6]
 	theta = zeros((len(durationList), len(stateList)), dtype=double)
 	for i, pulseDuration in enumerate(durationList):
 		for j, initState in enumerate(stateList):
@@ -87,6 +128,31 @@ def MakePhaseDelayPlot(**args):
 			theta[i,j] = GetPhaseDelay(**args)
 
 	return durationList, stateList, theta
+
+def MakePhaseDelayPlotIntensity(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseDuration"] = 1*femtosec_to_au
+	#args["pulseIntensity"] = 5e15
+	args["pulseDelay"] = 300*femtosec_to_au
+	args["duration"] = 302*femtosec_to_au
+	args["outputCount"] = 1
+	args["fastForward"] = 299*femtosec_to_au
+	args["pulseShape"] = "square"
+
+	intensityList = r_[1e12:1e14:2.5e12]
+	stateList = r_[0:2]
+	theta = zeros((len(intensityList), len(stateList)), dtype=double)
+	for i, pulseIntensity in enumerate(intensityList):
+		for j, initState in enumerate(stateList):
+			args["pulseIntensity"] = pulseIntensity
+			args["initStates"] = [initState]
+			theta[i,j] = GetPhaseDelay(**args)
+
+	return intensityList, stateList, theta
+
 
 	
 def GetPhaseDelay(**args):
