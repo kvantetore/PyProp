@@ -16,6 +16,7 @@ LD_STATIC         = -static
 LD_EXT			  = so
 PIC               = -fPIC
 AR				  = ar
+PYSTE_BIN         := pyste.py 
 
 
 #libraries
@@ -24,7 +25,7 @@ BOOST_LIBS  = -lboost_python
 LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS) $(FORTRAN_LIBS)
 
 #propgrams
-PYSTE = pyste $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
+PYSTE = $(PYSTE_BIN) $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
 CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB $(PIC) 
 LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) $(PIC) 
 

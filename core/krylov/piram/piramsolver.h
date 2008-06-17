@@ -6,12 +6,13 @@
 #include <core/utility/boostpythonhack.h>
 
 #include "piram/piram.h"
+#include "../pypropfunctor.h"
 
 namespace krylov
 {
 
 template<int Rank>
-class PiramSolver 
+class PiramSolver : public PypropKrylovWrapper
 {
 public:
 	typedef blitz::TinyVector<int, Rank> DataVector;
@@ -33,8 +34,8 @@ public:
 	void Setup(const typename Wavefunction<Rank>::Ptr psi);
 	void Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi);
 
-	void SetupResidual(blitz::Array<cplx, 1> &residual);
-	void ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);
+	void virtual SetupResidual(blitz::Array<cplx, 1> &residual);
+	void virtual ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);
 
 	/*
 	 * Returns the converged eigenvalues

@@ -75,6 +75,7 @@ private:
 		if (DisableMPI)
 		{
 			out = in;
+			return;
 		}
 
 		MPITraits<T> traits;
