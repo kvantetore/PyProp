@@ -76,7 +76,36 @@ class CombinedPropagator(PropagatorBase):
 			if prop.TransformRank == self.Rank-1:
 				self.Transpose(2, self.psi)
 				self.Transpose(2, destPsi)
-		
+	
+	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
+		#first halfstep
+		for prop in self.SubPropagators:
+			#parallelization
+			if prop.TransformRank == self.Rank-1:
+				self.Transpose(1, self.psi)
+				self.Transpose(1, tmpPsi)
+
+			#transform step
+			prop.InverseTransform(self.psi)
+			prop.InverseTransform(tmpPsi)
+
+		#multiply potential
+		tmpPsi.Clear()
+		potential.MultiplyPotential(self.psi, tmpPsi, t, dt)
+
+		#second halfstep
+		for prop in reversed(self.SubPropagators):
+			#transform step
+			prop.ForwardTransform(self.psi)
+			prop.ForwardTransform(tmpPsi)
+
+			#parallelization
+			if prop.TransformRank == self.Rank-1:
+				self.Transpose(2, self.psi)
+				self.Transpose(2, tmpPsi)
+
+		#inner product yields 
+		return prop.psi.InnerProduct(tmpPsi)
 
 	def AdvanceStep(self, t, dt):
 		#Advance one step using strang splitting
