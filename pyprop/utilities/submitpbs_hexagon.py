@@ -42,7 +42,7 @@ class SubmitScript:
 		script.append("#PBS -l walltime=" + str(hours) + ":" + str(minutes) + ":" + str(seconds))
 		script.append("#PBS -l mppwidth=" + str(self.nodes*self.ppn))
 		if self.proc_memory != None:
-			script.append("#PBS -l pmem=" + str(self.proc_memory))
+			script.append("#PBS -l mppmem=" + str(self.proc_memory))
 
 		#Administrative
 		if self.jobname != None:
