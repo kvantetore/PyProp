@@ -4,7 +4,7 @@ import time
 
 DEBUG = False
 
-def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
+def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	"""
 	Saves the wavefunction data to a dataset in a HDF file.
 
@@ -26,7 +26,9 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 
 	- psi is the wavefunction
 
-	- other arguments: none yet.
+	- other arguments: conf, a pyprop.Config object, which contains a cofig-
+	                   parser object. The configparser object is stored as
+	                   an attribute on the wavefunction-array.
 	
 	Example:
 	SaveWavefunctionHDF("myfile.h5", "/mygroup/wavefunction", prop.psi):
@@ -70,6 +72,10 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi):
 
 			distr.GlobalBarrier();
 		if procId==0 and DEBUG: print "Done."
+
+	#proc 0 save config object
+	if procId == 0:
+		SaveConfigObject(filename, datasetPath, conf)
 
 def RemoveExistingDataset(filename, datasetPath):
 	if not os.path.exists(filename):
@@ -237,4 +243,32 @@ def CreateDataset(f, datasetPath, fullShape):
 	dataset = f.createCArray(group, datasetName, atom, fullShape, filters=filters)
 
 	return dataset
+
+def SaveConfigObject(filename, datasetPath, conf):
+	h5file = tables.openFile(filename, "r+")
+	try:
+		h5file.setNodeAttr(datasetPath, "configObject", conf.cfgObj)
+	finally:
+		h5file.close()
+
+def GetConfigFromHDF5(file, datasetPath = None, confObjName = "configObject"):
+	"""
+	Load a configparser object stored as an attribute on a wavefunction in a 
+	HDF5 file. This can be used to recreate a pyprop.Config object, or the
+	original config file.
+	"""
+	h5file = tables.openFile(file, "r")
+	try:
+		if datasetPath == None:
+			for node in h5file.walkNodes():
+				name = node._v_name
+				if name == "wavefunction":
+					cfgObj = node.getAttr(confObjName)
+		else:
+			cfgObj = datasetPath.getAttr(confObjName)
+
+	finally:
+		h5file.close()
 	
+	return cfgObj
+
