@@ -416,7 +416,7 @@ class Problem:
 		serialization.LoadWavefunctionHDF(filename, datasetPath, self.psi)
 
 	def SaveWavefunctionHDF(self, filename, datasetPath):
-		serialization.SaveWavefunctionHDF(filename, datasetPath, self.psi)
+		serialization.SaveWavefunctionHDF(filename, datasetPath, self.psi, conf=self.Config)
 
 	def SaveWavefunctionAscii(self, filename):
 		psiData = self.psi.GetData()
