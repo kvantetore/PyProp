@@ -66,9 +66,6 @@ public:
 		MaxOrthogonalizationCount = 3;
 		CommBase = MPI_COMM_WORLD;
 		DisableMPI = false;
-
-		//Use blas for InnerProducts for now
-		Integration = typename IntegrationFunctor<T, NormType>::Ptr(new BLASIntegrationFunctor<T, NormType>(DisableMPI, CommBase));
 	}
 
 private:
@@ -197,6 +194,13 @@ void pAMP<T>::Setup()
 	{
 		ProcId = 0;
 		ProcCount = 1;
+	}
+
+	//Use blas for InnerProducts unless another
+	//integration functor has ben specified
+	if (Integration == 0)
+	{
+		Integration = typename IntegrationFunctor<T, NormType>::Ptr(new BLASIntegrationFunctor<T, NormType>(DisableMPI, CommBase));
 	}
 
 	//Allocate workspace-memory

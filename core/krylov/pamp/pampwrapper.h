@@ -6,12 +6,13 @@
 #include <core/utility/boostpythonhack.h>
 
 #include "pamp/pamp.h"
+#include "../pypropfunctor.h"
 
 namespace krylov
 {
 
 template<int Rank>
-class PampWrapper 
+class PampWrapper : public PypropKrylovWrapper
 {
 public:
 	typedef blitz::TinyVector<int, Rank> DataVector;

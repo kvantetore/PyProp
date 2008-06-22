@@ -53,7 +53,13 @@ void CartesianRepresentation<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 template<int Rank>
 void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
 {
-	CopyVector(Range(rank).Dx, srcPsi.GetData(), 0.0, dstPsi.GetData());
+	int activeRank = rank - this->GetBaseRank();
+	if (activeRank < 0 || activeRank >= Rank)
+	{
+		cout << "Rank " << rank << " invalid for CartesianRepresntation" << endl;
+		throw std::runtime_error("Invalid Rank");
+	}
+	CopyVector(Range(activeRank).Dx, srcPsi.GetData(), 0.0, dstPsi.GetData());
 }
 
 template<int Rank>
@@ -83,7 +89,13 @@ void CartesianRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunctio
 template<int Rank>
 OverlapMatrix::Ptr CartesianRepresentation<Rank>::GetGlobalOverlapMatrix(int rank)
 {
-	return Range(rank).GetOverlapMatrix();
+	int activeRank = rank - this->GetBaseRank();
+	if (activeRank < 0 || activeRank >= Rank)
+	{
+		cout << "Rank " << rank << " invalid for CartesianRepresntation" << endl;
+		throw std::runtime_error("Invalid Rank");
+	}
+	return Range(activeRank).GetOverlapMatrix();
 }
 
 template class CartesianRepresentation<1>;

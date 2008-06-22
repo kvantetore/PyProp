@@ -51,7 +51,8 @@ void PiramSolver<Rank>::ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array
 
 	//Restore the former buffers
 	Psi->SetData(oldData);
-	TempPsi->SetData(oldTempData);}
+	TempPsi->SetData(oldTempData);
+}
 
 
 template<int Rank>
@@ -87,8 +88,8 @@ void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr 
 	this->Callback = callback;
 
 	//Use our custom integration
-	//typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
-	//Solver.Integration = integration;
+	typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
+	Solver.Integration = integration;
 	
 	Solver.Solve();
 	Solver.Postprocess();

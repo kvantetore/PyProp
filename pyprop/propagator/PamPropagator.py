@@ -54,8 +54,14 @@ class PamPropagator(PropagatorBase):
 		self.psi.GetRepresentation().SetDistributedModel(self.PsiDistrib)
 		tempPsi.GetRepresentation().SetDistributedModel(self.TempDistrib)
 
-		self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
-		#self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+		#This should be implemented on propagators but its not.
+		#self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
+
+		#This only works on orthogonal representations (Not BSplines)
+		self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+		repr = tempPsi.GetRepresentation()
+		repr.SolveOverlap(tempPsi)
+
 
 		#outN = self.TempPsi.GetNorm()
 		#if outN < 0.001:

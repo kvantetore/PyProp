@@ -9,6 +9,9 @@ class PiramSolver:
 	As a bonus, it is much easier to read than ARPACK, which due to the 
 	reverse communication interface, is rather hard to read.
 
+	On the down side, it does not converge as fast as ARPACK. There are some
+	details regarding inflation I havent yet fully grasped.
+
 	see core/krylov/piram for more details
 
 	It works by using the matrix-vector product functionality of the Problem-object
@@ -61,6 +64,7 @@ class PiramSolver:
 		self.Solver.Solve(self.__MatVecCallback, psi, tempPsi)
 
 	def __MatVecCallback(self, psi, tempPsi):
+		#self.BaseProblem.Propagator.MultiplyHamiltonianBalancedOverlap(tempPsi, 0, 0)
 		self.BaseProblem.Propagator.MultiplyHamiltonian(tempPsi, 0, 0)
 
 		self.Count += 1
@@ -80,8 +84,13 @@ class PiramSolver:
 				sys.stdout.flush()
 		
 			if (self.Count * 100) % self.TotalMaxIterations == 0:
-				backStr = "\b" * 15
-				infoStr =  "Progress: %3i %s" % ((self.Count * 100)/ self.TotalMaxIterations, "%")
+				backStr = "\b" * 30
+				
+				convergenceCriteria = self.Solver.GetConvergenceEstimates()
+				total = len(convergenceCriteria)
+				converged = len(where(convergenceCriteria<0)[0])
+
+				infoStr =  "Progress: %3i %s (%i/%i)" % ((self.Count * 100)/ self.TotalMaxIterations, "%", converged, total)
 				sys.stdout.write(backStr + infoStr)
 				sys.stdout.flush()
 

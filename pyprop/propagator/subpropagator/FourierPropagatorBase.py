@@ -21,8 +21,12 @@ class FourierPropagatorBase:
 		else:
 			self.FourierPotentials = []
 
-		#Create default fourier potential
-		self.FourierPotentials.append(self.CreateDefaultFourierPotential())
+		#Create default fourier potential unless it is disabled
+		disableDefaultPotential = False
+		if hasattr(configSection, "disable_default_potential"):
+			disableDefaultPotential = configSection.Get("disable_default_potential")
+		if not disableDefaultPotential:
+			self.FourierPotentials.append(self.CreateDefaultFourierPotential())
 
 		#Default is to not set origin to zero when imageinary time is used
 		self.ForceOriginZero = False

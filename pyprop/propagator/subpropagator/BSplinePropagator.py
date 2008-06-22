@@ -17,7 +17,7 @@ class BSplinePropagator:
 			if configSection.propagation_algorithm == 1:
 				rank1repr = self.psi.GetRepresentation().GetRepresentation(1)
 				if not isinstance(rank1repr, core.ReducedSphericalHarmonicRepresentation):
-					raise Exception("Specified projection algorithm only works with ReducedSphericalRepresentation!")
+					raise Exception("Specified propagation_algorithm only works with ReducedSphericalRepresentation!")
 
 		if hasattr(configSection, "centrifugal_potential"):
 			if not hasattr(configSection, "angular_rank"):

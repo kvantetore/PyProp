@@ -75,11 +75,12 @@ private:
 		if (DisableMPI)
 		{
 			out = in;
-			return;
 		}
-
-		MPITraits<T> traits;
-		MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, CommBase);
+		else
+		{
+			MPITraits<T> traits;
+			MPI_Allreduce(in.data(), out.data(), in.extent(0)*traits.Length(), traits.Type(), MPI_SUM, CommBase);
+		}
 	}
 
 public:
@@ -98,12 +99,14 @@ public:
 		{
 			return localValue;
 		}
+		else
+		{
+			T globalValue;
+			MPITraits<T> traits;
+			MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, CommBase);
 
-		T globalValue;
-		MPITraits<T> traits;
-		MPI_Allreduce(&localValue, &globalValue, 1*traits.Length(), traits.Type(), MPI_SUM, CommBase);
-
-		return globalValue;
+			return globalValue;
+		}
 	}
 
 	virtual void InnerProduct(MatrixType &left, VectorType &right, VectorType &out, VectorType &temp)

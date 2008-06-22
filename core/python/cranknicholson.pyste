@@ -1,6 +1,11 @@
 
 CNFiniteDifferenceEvaluator = Template("CrankNicholsonEvaluator", "finitediff/cranknicholson.h")
 exclude(CNFiniteDifferenceEvaluator.GetRepresentation)
-
 CNFiniteDifferenceEvaluator("HarmonicOscillatorPotential<1> 1")
 
+
+CNPropagator = Template("CrankNicholsonPropagator", "finitediff/cranknicholsonpropagator.h")
+CNPropagator("1", "CrankNicholsonPropagator_1")
+CNPropagator("2", "CrankNicholsonPropagator_2")
+CNPropagator("3", "CrankNicholsonPropagator_3")
+CNPropagator("4", "CrankNicholsonPropagator_4")

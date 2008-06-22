@@ -1,20 +1,35 @@
+#ifndef PYPROPFUNCTOR_H
+#define PYPROPFUNCTOR_H
+
 #include <core/common.h>
 #include <core/wavefunction.h>
 #include <core/mpi/distributedmodel.h>
 #include <core/utility/blitztricks.h>
 
+/*
+ * Abstract class of to support a common set of functors for pyprop-wrappers to arnoldi-based
+ * solvers such as pamp and piram
+ */
 class PypropKrylovWrapper
 {
 public:
 	virtual ~PypropKrylovWrapper() {}
 
-	void virtual SetupResidual(blitz::Array<cplx, 1> &residual);
-	void virtual ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);
+	/*
+	 * Sets up the initial residual for piram
+	 */
+	void virtual SetupResidual(blitz::Array<cplx, 1> &residual) {}
+
+	/*
+	 * Perform Hamilton-wavefunction multiplicationwhere the input and output arrays
+	 */
+	void virtual ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output) = 0;
 };
 
-using namespace boost::python;
-
-/* Functors for pIRAM */
+/* 
+ * Functor Implementation for MatrixVector multiplication. 
+ * The actual action is forwarded to the wrapper object
+ */
 template<int Rank>
 class PypropOperatorFunctor : public piram::OperatorFunctor<cplx>
 {
@@ -32,6 +47,10 @@ private:
 	PypropKrylovWrapper* Solver;
 };
 
+/* 
+ * Functor Implementation for Setup Residual 
+ * The actual action is forwarded to the wrapper object
+ */
 template<int Rank>
 class PypropSetupResidualFunctor : public piram::SetupResidualFunctor<cplx>
 {
@@ -49,6 +68,10 @@ private:
 	PypropKrylovWrapper* Solver;
 };
 
+/*
+ * Functor implementation for Integration. Performs integration of inner
+ * products to ensure that the correct weights/overlap matrices are used 
+ */
 template<int Rank>
 class PypropIntegrationFunctor : public piram::IntegrationFunctor<cplx, double>
 {
@@ -74,6 +97,9 @@ public:
 
 	virtual ~PypropIntegrationFunctor() {}
 
+	/*
+	 * Calculates the grid-norm of vector represented as a Rank-dimensional wavefunction
+	 */
 	virtual double Norm(VectorType &vector)
 	{
 		//Map the 1d vector to a a blitz array of correct shape
@@ -91,6 +117,10 @@ public:
 		return norm;
 	}
 
+	/*
+	 * Calculates the grid-norm inner product left and right 
+	 * represented as a Rank-dimensional wavefunctions
+	 */
 	virtual cplx InnerProduct(VectorType &left, VectorType &right) 
 	{
 		//Map the 1d vector to a a blitz array of correct shape
@@ -112,6 +142,10 @@ public:
 		return value;
 	}
 
+	/*
+	 * Calculates the grid-norm inner product of right on multiple left 
+	 * hand sides (each row in left is a wavefunction)
+	 */
 	virtual void InnerProduct(MatrixType &left, VectorType &right, VectorType &out, VectorType &temp)
 	{
 		DataArray oldArray1(Psi1->GetData());
@@ -141,4 +175,5 @@ public:
 };
 
 
+#endif
 

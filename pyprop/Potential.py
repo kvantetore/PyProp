@@ -216,7 +216,10 @@ class StaticPotentialWrapper(PotentialWrapper):
 		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)
 
 	def GetPotential(self, dt):
-		return real(log(self.Potential.GetPotentialData()) / (- 1.0j * dt))
+		if self.Storage == StaticStorageModel.StorageExpValue:
+			return real(log(self.Potential.GetPotentialData()) / (- 1.0j * dt))
+		else:
+			return real(self.Potential.GetPotentialData()).copy()
 		
 
 class DynamicPotentialWrapper(PotentialWrapper):

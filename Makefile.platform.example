@@ -2,10 +2,12 @@
 #To suit your platform specific needs.
 #Compiler options set here will be included by makefiles in all subdirs
 
+PYPROP_ROOT    := /home/tore/prog/pyprop
+
 #Use these flags for speed
 CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g -O3 -funroll-loops
 #CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG 
-CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_THREADSAFE
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_DISABLE_THREADS
 #CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
 LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 
@@ -15,8 +17,9 @@ LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 
 MPICXX         := mpicxx
 BOOST_LIBS     := -lboost_python-mt
-#PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
-PYSTE_INCLUDE  := -I/opt/openmpi/include
+PYSTE_BIN	   := $(PYPROP_ROOT)/extern/pyste/pyste.py
+PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
+PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
 #LAPACK_LIBS = -lmkl_core 
 LAPACK_LIBS = -lmkl -lguide -lmkl_core -lmkl_lapack
 
@@ -34,26 +37,7 @@ ARPACK_LIB        = /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -
 
 FC             := mpif90
 FORTRAN_FLAGS  := -ffree-form -implicit-none -ffree-line-length-none -fPIC -O3 -g -Wall
-FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
+#FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
 FORTRAN_LIBS   := -lmpi_f90 -lmpi_f77 -lg2c -lgfortran
 
 
-#pyprop CPPFLAGS:
-# -DSINGLEPROC  
-#    compile for single processor only. No MPI calls are made when this flag
-#    is set.
-#
-# -DLONGSIZE_32BIT
-#    compile for 32bit processor. currently this only affects the timer
-#    hltimer.h
-#
-# -DPYPROP_USE_BLAS
-#  	 use blas routines for matrix-vector, matrix-matrix, and 
-#  	 vector-vector operations.
-#  	 see core/utility/blitzblas.cpp for details
-#
-#
-# PYPROP_USE_ARPACK
-#    set to 1 to compile ARPACK wrapper for pyprop
-#    ARPACK_LIB must then also be set to point to libarpack.a compiled with -fPIC options on platforms that require
-#    position independent code for shared libraries

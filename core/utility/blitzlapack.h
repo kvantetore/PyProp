@@ -103,7 +103,7 @@ public:
 	{
 		TinyVector<int, 2> shape(1, rightHandSide.extent(0));
 		TinyVector<int, 2> stride(rightHandSide.extent(0)*rightHandSide.stride(0), rightHandSide.stride(0));
-		MatrixType rhsMatrix(rightHandSide.data, shape, stride, neverDeleteData);
+		MatrixType rhsMatrix(rightHandSide.data(), shape, stride, neverDeleteData);
 		return SolveGeneralFactored(transpose, factoredMatrix, pivot, rhsMatrix);
 	}
 
