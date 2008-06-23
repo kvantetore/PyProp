@@ -197,7 +197,7 @@ void MatrixVectorMultiplyHermitianBanded(const Array<cplx, 2> &A, const Array<cp
  * is banded and complex.
  */
 void MatrixVectorMultiplyBanded(const Array<cplx, 2> &A, const Array<cplx, 1> &x, 
-	Array<cplx, 1> &y, cplx alpha, cplx beta, int M)
+	Array<cplx, 1> &y, cplx alpha, cplx beta)
 {
 	int MM = y.extent(0);
 	int N = A.extent(0);

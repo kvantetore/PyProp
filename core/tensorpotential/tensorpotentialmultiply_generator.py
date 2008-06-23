@@ -183,12 +183,12 @@ def PrettyPrintFortran(str):
 	
 	indent = 0
 	for line in lines:
-		if line.startswith("enddo") or line.startswith("endif") or line.startswith("end subroutine"):
+		if line.startswith("enddo") or line.startswith("endif") or line.startswith("end subroutine") or line.startswith("end function"):
 			indent -= 1
 
 		outStr += "    " * indent + line + "\n"
 
-		if line.startswith("if ") or line.startswith("do ") or line.startswith("subroutine"):
+		if line.startswith("if ") or line.startswith("do ") or line.startswith("subroutine") or line.startswith("function"):
 			indent += 1
 
 	return outStr
@@ -479,10 +479,13 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 		str = ""
 		str += """
 			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
-			integer :: hermRow%(rank)i, hermCol%(rank)i 
 			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
 			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
 		""" % { "rank": self.CurRank }
+		if self.InnerGenerator != None:
+			str += """
+				integer :: hermRow%(rank)i, hermCol%(rank)i 
+			""" % { "rank": self.CurRank }
 		return str
 
 	def GetInitializationCode(self):
@@ -614,6 +617,150 @@ class SnippetGeneratorBandedBlas(SnippetGeneratorBase):
 				}
 		return str
 	
+#-----------------------------------------------------------------------------------
+
+class SnippetGeneratorBandedNonHermitianBlas(SnippetGeneratorBase):
+	"""
+	"""
+
+	def __init__(self, systemRank, curRank, innerGenerator):
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetParameterList(self):
+		parameterList = []
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+		str = ""
+		str += """
+			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
+			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
+			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
+		""" % { "rank": self.CurRank }
+		return str
+
+	def GetInitializationCode(self):
+		str = """
+			N%(rank)i = potentialExtent%(rank)i
+			bsplineCount%(rank)i = sourceExtent%(rank)i
+			bandCount%(rank)i = N%(rank)i / bsplineCount%(rank)i
+
+			subDiagonals%(rank)i = (bandCount%(rank)i - 1)/2
+			sourceStride%(rank)i = 1
+			destStride%(rank)i = 1
+			alpha%(rank)i = scaling
+			beta%(rank)i = 1.0d0
+			col%(rank)i = 0
+			row%(rank)i = 0
+			i%(rank)i = 0
+
+		""" % { "rank":self.CurRank }
+		return str
+
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		str = ""
+		#If this is the innermost loop, we can optimize it by calling blas
+		if self.InnerGenerator != None or True:
+			#First loop is for the upper bandCount-by-bandCount submatrix
+			str += """
+				!First loop is for the upper subDiagonals-by-subDiagonals submatrix
+				i%(rank)i = 0
+				do col%(rank)i = 0, subDiagonals%(rank)i - 1
+					i%(rank)i = i%(rank)i + ( subDiagonals%(rank)i - col%(rank)i )
+
+					do row%(rank)i = 0, col%(rank)i + subDiagonals%(rank)i
+						%(innerLoop)s
+						i%(rank)i = i%(rank)i + 1
+					enddo
+				enddo
+			
+			    !Second loop is for the middle (N-subDiagonals)-by-(N-subDiagonals) submatrix
+				do col%(rank)i = subDiagonals%(rank)i, bsplineCount%(rank)i - subDiagonals%(rank)i - 1
+					do row%(rank)i = col%(rank)i - subDiagonals%(rank)i, col%(rank)i + subDiagonals%(rank)i
+						%(innerLoop)s
+						i%(rank)i = i%(rank)i + 1
+					enddo
+				enddo
+		
+				!Last loop is for the last subDiagonals-by-subDiagonals submatrix
+				do col%(rank)i = bsplineCount%(rank)i - subDiagonals%(rank)i, bsplineCount%(rank)i - 1
+					do row%(rank)i = col%(rank)i - subDiagonals%(rank)i, bsplineCount%(rank)i - 1
+						%(innerLoop)s	
+						i%(rank)i = i%(rank)i + 1
+					enddo
+					
+					i%(rank)i = i%(rank)i + (- bsplineCount%(rank)i + col%(rank)i + subDiagonals%(rank)i + 1)
+				enddo
+			""" % \
+			    { \
+					"rank":self.CurRank, \
+			        "innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex), \
+				}
+
+		else:
+			subDestIndex = destIndex + ["0"]
+			subSourceIndex = sourceIndex + ["0"]
+			subPotentialIndex = potentialIndex + ["0"]
+
+			str += """
+				i%(rank)i = 0
+				call zgbmv( &
+					"N", &
+					bsplineCount%(rank)i, &
+					bsplineCount%(rank)i, &
+					subDiagonals%(rank)i, &
+					subDiagonals%(rank)i, &
+					alpha%(rank)i, &
+					%(potential)s(%(potentialIndex)s), &
+					bandCount%(rank)i, &
+					%(source)s(%(colIndex)s), &
+					sourceStride%(rank)i, &
+					beta%(rank)i, &
+					%(dest)s(%(rowIndex)s), &
+					destStride%(rank)i &
+				)
+			""" % \
+				{ \
+					"rank": self.CurRank, \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjugate, \
+				}
+		return str
+
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		subDestIndex = destIndex + ["row%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
+		str = ""
+		if self.InnerGenerator != None:
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
+		else:
+			#We're at the innermost loop
+			conjg = ""
+			if conjugate:
+				conjg = "conjg"
+			str += """
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
+			""" % \
+				{ \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjg, \
+				}
+		return str
+	
+
+#-----------------------------------------------------------------------------------
 
 class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 	"""
@@ -948,6 +1095,7 @@ snippetGeneratorMap = { \
 	"Diag": SnippetGeneratorDiagonal, \
 	"Ident": SnippetGeneratorIdentity, \
 	"Band": SnippetGeneratorBandedBlas, \
+	"BandNH": SnippetGeneratorBandedNonHermitianBlas, \
 #	"Dense": SnippetGeneratorDenseBlas, \
     "Distr": SnippetGeneratorBandedDistributed, \
 }
@@ -1132,7 +1280,7 @@ def GetAllPermutations(systemRank, curRank):
 	else:
 		for key in snippetGeneratorMap.keys():
 			if key != "Distr" or curRank == 0:
-				if (key == "Ident" or key == "Band") or systemRank < 4:
+				if (key == "Ident" or key == "Band" or key == "BandNH") or systemRank < 4:
 					for subperm in GetAllPermutations(systemRank, curRank+1):
 						yield (key,) +  subperm
 
@@ -1144,7 +1292,7 @@ for systemRank in range(1,4+1):
 
 
 def PrintFortranCode():
-	print """
+	str = """
 		module IndexTricks
 			contains
 			subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
@@ -1225,6 +1373,7 @@ def PrintFortranCode():
 		 
 	end module
 	"""
+	print PrettyPrintFortran(str)
 	for generator in generatorPermutationList:
 		print generator.GetFortranCode()
 

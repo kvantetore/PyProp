@@ -35,13 +35,13 @@ void MatrixVectorMultiplyHermitianBanded_cplx(blitz::Array<cplx, 2> A, blitz::Ar
 {
 	MatrixVectorMultiplyHermitianBanded(A, x, y, alpha, beta);
 }
-#endif
 
 void MatrixVectorMultiplyBanded_cplx(blitz::Array<cplx, 2> A, blitz::Array<cplx, 1> x, blitz::Array<cplx, 1> y,
-	cplx alpha, cplx beta, int M)
+	cplx alpha, cplx beta)
 {
-	MatrixVectorMultiplyBanded(A, x, y, alpha, beta, M);
+	MatrixVectorMultiplyBanded(A, x, y, alpha, beta);
 }
+#endif
 
 /*
 template<int Rank>

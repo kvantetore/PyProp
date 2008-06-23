@@ -22,7 +22,7 @@ public:
 
 	virtual std::complex<double> InnerProduct(const Wavefunction<1>& w1, const Wavefunction<1>& w2)
 	{
-		throw std::runtime_error("AngularRepresentation::InnerProduct is not implemented");
+		throw std::runtime_error("OrthogonalRepresentation::InnerProduct is not implemented");
 	}
 
 	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank)

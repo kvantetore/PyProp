@@ -13,16 +13,27 @@
  * Propagates the 1-rank kinetic energy and an optional time-independent potential 
  * using the crank nicholson scheme.
  *
- * Currently only an equidistant grid such as provided by CartesianRepresentation is supported
+ * Any grid may be used, as long as it is ordered, that is x_i < x_i+1 for all i
  *
  * Finite differences are used to approximate the 1-rank kinetic energy operator 1/(2 m) d2/dx2
  *
  */
 
+/* 
+ * These are defined in combinedrepresentation_generated.cpp
+ */
+//Rank1 Hermitian Banded
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest);
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest);
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest);
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest);
+
+//Rank1 Non-Hermitian Banded
+void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest);
+void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest);
+void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest);
+void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest);
+
 
 template<int Rank>
 class CrankNicholsonPropagator
@@ -39,18 +50,20 @@ public:
 	{
 		//Reshape the kinetic energy matrix into a N-d array suitable for TensorPotentialMultiply
 		blitz::TinyVector<int, Rank> shape = 1;
-		shape(TransformRank) = LaplacianHermitianLower.size();
+		shape(TransformRank) = LaplacianBlasBanded.size();
 		blitz::TinyVector<int, Rank> stride = 1;
 		for (int j=0; j<TransformRank; j++)
 		{
-			stride(j) = LaplacianHermitianLower.size();
+			stride(j) = LaplacianBlasBanded.size();
 		}
-		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianHermitianLower.data(), shape, stride, blitz::neverDeleteData);
+		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
 
 		//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
 		blitz::Array<cplx, Rank> src = sourcePsi.GetData();
 		blitz::Array<cplx, Rank> dst = destPsi.GetData();
-		TensorPotentialMultiply_Rank1_Band(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		//TODO: TensorMultiply for general banded matrices
+		TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
 		
 	}
 	
@@ -83,7 +96,8 @@ public:
 				 *
 				 * temp := (1 - i dt / 2 H) psi
 				 */
-				MatrixVectorMultiplyHermitianBanded(LaplacianHermitianLower, v, temp, scaling, 1.0);
+				//TODO:MatrixVectorMultiply for GeneralBanded
+				MatrixVectorMultiplyBanded(LaplacianBlasBanded, v, temp, scaling, 1.0);
 		
 				/*
 				 * Then call LAPACK to solve banded system of equations, obtaining 
@@ -100,12 +114,14 @@ public:
 
 	void SetupStep(Wavefunction<Rank> &psi, cplx dt)
 	{
-		CartesianRepresentation<1>::Ptr repr = this->GetRepresentation(psi);
-		GridSpacing = repr->Range(0).Dx;
-		GridSize = repr->Range(0).Count;
+		GlobalGrid.reference( psi.GetRepresentation()->GetGlobalGrid(TransformRank).copy() );
+
+		//GlobalGrid = blitz::pow(GlobalGrid+10, 2);
+
+		GlobalGridSize = GlobalGrid.size();
 		TimeStep = dt;
 
-		TempData.resize(GridSize);
+		TempData.resize(GlobalGridSize);
 		SetupKineticEnergyMatrix();
 		SetupPropagationMatrix();
 	}
@@ -117,14 +133,9 @@ public:
 		config.Get("mass", Mass);
 	}
 
-	blitz::Array<cplx, 2> GetLaplacianHermitianLower()
+	blitz::Array<cplx, 2> GetLaplacianBlasBanded()
 	{
-		return LaplacianHermitianLower;
-	}
-
-	blitz::Array<cplx, 1> GetDifferenceCoefficients()
-	{
-		return DifferenceCoefficients;
+		return LaplacianBlasBanded;
 	}
 
 	blitz::Array<cplx, 2> GetBackwardPropagationLapackBanded()
@@ -136,15 +147,14 @@ private:
 	typedef blitz::linalg::LAPACK<cplx> LAPACK;
 	LAPACK lapack;
 
-	int GridSize;
-	double GridSpacing;
+	int GlobalGridSize;
+	blitz::Array<double, 1> GlobalGrid;
 	int DifferenceOrder;
 	int TransformRank;
 	cplx TimeStep;
 
 	double Mass;
-	blitz::Array<cplx, 1> DifferenceCoefficients;       //coefficients of relative grid indices for d^2/dx^2
-	blitz::Array<cplx, 2> LaplacianHermitianLower;  //kinetic energy matrix in the General Banded matrix format
+	blitz::Array<cplx, 2> LaplacianBlasBanded;  //kinetic energy matrix in the General Banded matrix format
 
 	blitz::Array<cplx, 2> BackwardPropagationLapackBanded; //Matrix containing (I + i dt H)
 	blitz::Array<cplx, 2> BackwardPropagationFactored;     //Matrix containing the LU factorization to the matrix above
@@ -167,42 +177,102 @@ private:
 	 * order must be odd, and > 2.
 	 *
 	 * reads
-	 *	  GridSize, GridSpacing, DifferenceOrder
+	 *	  GlobalGrid, GlobalGridSize, DifferenceOrder
 	 * allocates and updates
 	 * 	  DiffernceCoefficients, LaplacianHermitianLower
 	 *
 	 * if order == 5
-	 *     / c2  c3  c4   0   0   0   0 \
-	 *     | c1  c2  c3  c4   0   0   0 |
-	 *     | c0  c1  c2  c3  c4   0   0 |
-	 * A = |  0  c0  c1  c2  c3  c4   0 |
-	 *     |  0   0  c0  c1  c2  c3  c4 |
-	 *     |  0   0   0  c0  c1  c2  c3 |
-	 *     \  0   0   0   0  c0  c1  c2 /
+	 *     / c02  c03  c04   0    0     0   0 \
+	 *     | c11  c12  c13  c14   0     0   0 |
+	 *     | c20  c21  c22  c23  c24    0   0 |
+	 * A = |  0   c30  c31  c32  c33  c34   0 |
+	 *     |  0    0   c40  c41  c42  c43  c44 |
+	 *     |  0    0    0   c50  c51  c52  c53 |
+	 *     \  0    0    0    0   c60  c61  c62 /
 	 *
 	 * The difference coefficients c are found solving 
-	 *         / 0 \  function value
-	 *         | 0 |  1st derivative
-	 * B^T c = | 1 |  2nd derivative
-	 *         | 0 |  ...
-	 *         |...|  
-	 *         \ 0 /
+	 *           / 0 \  function value
+	 *           | 0 |  1st derivative
+	 * Bi^T ci = | 1 |  2nd derivative
+	 *           | 0 |  ...
+	 *           |...|  
+	 *           \ 0 /
 	 *
-	 * Where 
-	 *     /  1  (-3 h)^1/1! (-3 h)^2/2! (-3 h)^3/3! (-3 h)^4/4! (-3 h)^5/5! \
-	 *     |  1  (-2 h)^1/1! (-2 h)^2/2! (-2 h)^3/3! (-2 h)^4/4! (-2 h)^5/5! |
-	 *     |  1  (-1 h)^1/1! (-1 h)^2/2! (-1 h)^3/3! (-1 h)^4/4! (-1 h)^5/5! |
-	 * B = |  1    0           0           0           0           0         |
-	 *     |  1  ( 1 h)^1/1! ( 1 h)^2/2! ( 1 h)^3/3! ( 1 h)^4/4! ( 1 h)^5/5! |
-	 *     |  1  ( 2 h)^1/1! ( 2 h)^2/2! ( 2 h)^3/3! ( 2 h)^4/4! ( 2 h)^5/5! |
-	 *     \  1  ( 3 h)^1/1! ( 3 h)^2/2! ( 3 h)^3/3! ( 3 h)^4/4! ( 3 h)^5/5! /
+	 * Where ci is a row vector i n the above matrix, and
+	 *
+	 *      /  1  (-3 h_i-3)^1/1! (-3 h_i-3)^2/2! (-3 h_i-3)^3/3! (-3 h_i-3)^4/4! (-3 h_i-3)^5/5! \
+	 *      |  1  (-2 h_i-2)^1/1! (-2 h_i-2)^2/2! (-2 h_i-2)^3/3! (-2 h_i-2)^4/4! (-2 h_i-2)^5/5! |
+	 *      |  1  (-1 h_i-1)^1/1! (-1 h_i-1)^2/2! (-1 h_i-1)^3/3! (-1 h_i-1)^4/4! (-1 h_i-1)^5/5! |
+	 * Bi = |  1         0               0               0               0               0        |
+	 *      |  1  ( 1 h_i+1)^1/1! ( 1 h_i+1)^2/2! ( 1 h_i+1)^3/3! ( 1 h_i+1)^4/4! ( 1 h_i+1)^5/5! |
+	 *      |  1  ( 2 h_i+2)^1/1! ( 2 h_i+2)^2/2! ( 2 h_i+2)^3/3! ( 2 h_i+2)^4/4! ( 2 h_i+2)^5/5! |
+	 *      \  1  ( 3 h_i+3)^1/1! ( 3 h_i+3)^2/2! ( 3 h_i+3)^3/3! ( 3 h_i+3)^4/4! ( 3 h_i+3)^5/5! /
 	 *
 	 * i.e
-	 * B_{i,j} = ((i - (k+1)/2) * h)^j / j!
+	 * B_{i,j} = ((i - (k+1)/2) * h_{i-(k+1)/2} )^j / j!
 	 *
 	 * where k is the order of the method
+	 * and h_{i-l} = x_{i-l} - x_i
+	 *
+	 * For the simplifying case where the grid is equidistant
 	 *
 	 */
+
+	/*
+	 * Find the difference coefficients c_curIndex, that is, set up a row of the difference matrix
+	 */
+	blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
+	{
+		int k = (DifferenceOrder-1)/2;
+
+		blitz::Array<double, 1> gridDifference(DifferenceOrder);
+		gridDifference = 0;
+
+		for (int i=curIndex-k; i<=curIndex+k; i++)
+		{
+			if (i < 0)
+			{
+				double endDifference = GlobalGrid(1) - GlobalGrid(0);
+				gridDifference(i-curIndex+k) = (endDifference*i + GlobalGrid(0) - GlobalGrid(curIndex));
+			}
+			else if (i >= GlobalGridSize)
+			{
+				double endDifference = GlobalGrid(GlobalGridSize-1) - GlobalGrid(GlobalGridSize-2);
+				gridDifference(i-curIndex+k) = (endDifference*(i-GlobalGridSize+1) + GlobalGrid(GlobalGridSize-1) - GlobalGrid(curIndex));
+			}
+			else
+			{
+				gridDifference(i-curIndex+k) = (GlobalGrid(i) - GlobalGrid(curIndex));
+			}
+		}
+
+		blitz::Array<cplx, 2>  B(DifferenceOrder, DifferenceOrder);
+		for (int i=0; i<DifferenceOrder; i++)
+		{
+			for (int j=0; j<DifferenceOrder; j++)
+			{
+				B(i, j) = (double)std::pow(gridDifference(i), j) / Factorial(j);
+			}
+		}
+
+		//Set up input right hand side
+		blitz::Array<cplx, 1> differenceCoefficients(DifferenceOrder);
+		differenceCoefficients = 0;
+		differenceCoefficients(2) = 1;
+
+		blitz::Array<int, 1> pivot(DifferenceOrder);
+		lapack.CalculateLUFactorization(B, pivot);
+		//LAPACK uses opposite storage model => B is transposed
+		lapack.SolveGeneralFactored(LAPACK::TransposeNone, B, pivot, differenceCoefficients);
+
+		//cout << "h = " << ToString(gridDifference) << endl;
+		//cout << "c = " << ToString(differenceCoefficients) << endl;
+		//cout << endl;
+
+		return differenceCoefficients;
+	}
+
+
 	void SetupKineticEnergyMatrix()
 	{
 		if (DifferenceOrder <= 2)
@@ -214,37 +284,26 @@ private:
 			throw std::runtime_error("Can not have 2. derivative of even order accuracy");
 		}
 
-		//shift of c-indices compared to relative grid point index
-		int indexShift = (DifferenceOrder - 1) / 2;
+		int k = (DifferenceOrder-1)/2;
 
-		//Set up coefficient matrix B
-		blitz::Array<cplx, 2>  B(DifferenceOrder, DifferenceOrder);
-		for (int i=0; i<DifferenceOrder; i++)
-		{
-			for (int j=0; j<DifferenceOrder; j++)
-			{
-				B(i, j) = (double)std::pow((i-indexShift)*GridSpacing, j) / Factorial(j);
-			}
-		}
-
-		//Set up input right hand side
-		DifferenceCoefficients.resize(DifferenceOrder);
-		DifferenceCoefficients = 0;
-		DifferenceCoefficients(2) = 1;
-
-		blitz::Array<int, 1> pivot(DifferenceOrder);
-		lapack.CalculateLUFactorization(B, pivot);
-		//LAPACK uses opposite storage model => B is transposed
-		lapack.SolveGeneralFactored(LAPACK::TransposeNone, B, pivot, DifferenceCoefficients);
-		
 		//Set up the difference matrix A
 		
-		//Hermitian Lower Banded Storage
-		LaplacianHermitianLower.resize(GridSize, (DifferenceOrder+1)/2);
-		LaplacianHermitianLower = 0;
-		for (int i=0; i<=indexShift; i++)
+		//General Banded BLAS Storage
+		LaplacianBlasBanded.resize(GlobalGridSize, DifferenceOrder);
+		LaplacianBlasBanded = 0;
+		for (int i=0; i<GlobalGridSize; i++)
 		{
-			LaplacianHermitianLower(blitz::Range::all(), i) = DifferenceCoefficients(indexShift + i);
+			blitz::Array<cplx, 1> differenceCoefficients = FindDifferenceCoefficients(i);
+
+			int startIndex = std::max(0, i-k);
+			int endIndex = std::min(GlobalGridSize, i+k+1);
+			for (int j=startIndex; j<endIndex; j++)
+			{
+				int J = j;
+				int I = k + i - j;
+
+				LaplacianBlasBanded(J, I) = differenceCoefficients(k + j - i);
+			}
 		}
 	}
 
@@ -260,48 +319,34 @@ private:
 	void SetupPropagationMatrix()
 	{
 		//Number of upper diagonal bands including the main diagonal
-		int k = (DifferenceOrder + 1) / 2;
+		int k = (DifferenceOrder - 1) / 2;
 
-		BackwardPropagationLapackBanded.resize(GridSize, 3*k - 1);
-		BackwardPropagationPivots.resize(GridSize);
+		BackwardPropagationLapackBanded.resize(GlobalGridSize, 3*k + 2);
+		BackwardPropagationPivots.resize(GlobalGridSize);
 		BackwardPropagationLapackBanded = 0;
 		BackwardPropagationPivots = 0;
 
 		//Setup 1 + i dt/2 H
-		for (int i = 0; i < GridSize; i++)
+		for (int i = 0; i < GlobalGridSize; i++)
 		{
-			int jMax = std::min(i + k, GridSize);
-			for (int j = i; j < jMax; j++)
+			int startIndex = std::max(0, i-k);
+			int endIndex = std::min(GlobalGridSize, i+k+1);
+			for (int j=startIndex; j<endIndex; j++)			
 			{
 				//Upper lapack indices
-				int Ju = j;
-				int Iu = 2 * k - 2 + i - j;
+				int lapackJ = j;
+				int lapackI = 2 * k + i - j;
 
-				//Lower lapack indices
-				int Jl = i;
-				int Il = 2 * k - 2 + j - i;
+				int blasJ = j; 
+				int blasI = k + i - j;
 
-				//lower hermitian indices
-				int Jh = i;
-				int Ih = j - i;
-
-				cplx ham = -1.0 / (2.0 * Mass) * LaplacianHermitianLower(Jh, Ih);
+				cplx ham = -1.0 / (2.0 * Mass) * LaplacianBlasBanded(blasJ, blasI);
 				
-				//Compute potential matrix element if present
-				/*
-				if (HasPotential)
-				{
-					GetPotentialSlice(potentialSlice, i, PotentialVector);
-					ham += BSplineObject->BSplineOverlapIntegral(potentialSlice, i, j);
-				}
-				*/
-
 				// 1 + i dt/2 H
-				BackwardPropagationLapackBanded(Ju, Iu) = cplx(0.,1.) * TimeStep / 2.0 * ham;
-				BackwardPropagationLapackBanded(Jl, Il) = cplx(0.,1.) * TimeStep / 2.0 * ham;
+				BackwardPropagationLapackBanded(lapackJ, lapackI) = cplx(0.,1.) * TimeStep / 2.0 * ham;
 				if (i == j)
 				{
-					BackwardPropagationLapackBanded(Jl, Il) += 1;
+					BackwardPropagationLapackBanded(lapackJ, lapackI) += 1;
 				}
 			}
 		}

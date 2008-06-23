@@ -43,6 +43,7 @@ PYSTEFILES = \
 	python/blitzblas.pyste \
 	python/combinedabsorber.pyste \
 	python/tensorpotential.pyste \
+	python/customgridrepresentation.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
@@ -82,6 +83,7 @@ SOURCES= \
 	finitediff/exponentialfinitedifference.cpp \
 	utility/timer.cpp \
 	tensorpotential/tensorpotentialmultiply_wrapper.cpp \
+	representation/customgridrepresentation.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 

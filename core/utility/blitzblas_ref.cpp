@@ -86,7 +86,7 @@ void MatrixVectorMultiplyHermitianBanded(const blitz::Array<cplx, 2> &A, const b
 }
 
 void MatrixVectorMultiplyBanded(const blitz::Array<cplx, 2> &A, const blitz::Array<cplx, 1> &x, 
-	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta, int M)
+	blitz::Array<cplx, 1> &y, cplx alpha, cplx beta)
 {
 	throw std::runtime_error("MatrixVectorMultiplyBanded not implemented, please use cblas");
 }

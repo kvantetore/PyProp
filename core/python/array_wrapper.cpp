@@ -117,16 +117,26 @@ public:
 			shape[i] = arr_obj->dimensions[i];
 			strides[i] = arr_obj->strides[i] / sizeof(T);
 		}
+
+		long refCount = obj->ob_refcnt;
 	
 		//Find type descriptor for C++ type
 		PyArray_Descr* type_descr = Traits::GetTypeDescr();
 
-		if (arr_obj->descr->type_num == type_descr->type_num || arr_obj->descr->elsize == type_descr->elsize) {
-			new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, neverDeleteData);
+		if (arr_obj->descr->type_num == type_descr->type_num || arr_obj->descr->elsize == type_descr->elsize) 
+		{
+			if (refCount == 1)
+			{
+				//Array is about to get destroyed, make a copy instead of reference
+				new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, duplicateData);
+			}
+			else
+			{
+				new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, neverDeleteData);
+			}
 		}
 		else
 		{
-			
 			std::cout << "Warning converting from NuPy array to blitz array of different type: creating copy." << std::endl;
 			new (storage) Array<T,N>(shape);
 			

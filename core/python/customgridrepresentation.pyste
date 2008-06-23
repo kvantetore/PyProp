@@ -1,0 +1,6 @@
+#representation
+CustomGridRepresentation = Class("CustomGridRepresentation", "representation/customgridrepresentation.h")
+no_virtual(CustomGridRepresentation)
+use_shared_ptr(CustomGridRepresentation)
+
+
