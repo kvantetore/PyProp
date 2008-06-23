@@ -101,6 +101,8 @@ private:
 	IntVectorType EigenvalueOrdering;
 	NormVectorType ConvergenceEstimates;
 	NormVectorType ErrorEstimates;
+	VectorType ErrorBounds;
+	IntVectorType ErrorSorting;
 	//Scalars
 	int CurrentArnoldiStep;
 	bool IsConverged;
@@ -270,6 +272,8 @@ void pIRAM<T>::Setup()
 	Reflectors.resize(BasisSize);
 	ConvergenceEstimates.resize(EigenvalueCount);
 	ErrorEstimates.resize(EigenvalueCount);
+	ErrorBounds.resize(BasisSize);
+	ErrorSorting.resize(BasisSize);
 
 	//Reset statistcs
 	OperatorCount = 0;
@@ -336,10 +340,12 @@ void pIRAM<T>::PerformArnoldiStep()
 	VectorType currentOverlap2(Overlap2(blitz::Range(0, j+1)));
 
 	//Update the Arnoldi Factorization with the previous Residual
+	Timers["ResidualNorm"].Start();
 	T beta = CalculateGlobalNorm(Residual);
 	blas.ScaleVector(Residual, 1.0/beta);
 	blas.CopyVector(Residual, currentArnoldiVector);
 	HessenbergMatrix(j, j+1) = beta;
+	Timers["ResidualNorm"].Stop();
 
 	//Expand the krylov supspace with 1 dimension
 	Timers["Arnoldi Step"].Stop();
@@ -470,6 +476,26 @@ void pIRAM<T>::UpdateEigenvalues()
 	NormType eps = std::numeric_limits<NormType>::epsilon();
 	NormType eps23 = std::pow(eps, 2.0/3.0);
 
+	//Update Error Bounds
+	for (int i=0; i<BasisSize; i++)
+	{
+		int sortedIndex = EigenvalueOrdering(i);
+		NormType ritzError = std::abs(HessenbergEigenvectors(sortedIndex, BasisSize-1));
+		ErrorBounds(sortedIndex) = ritzError * normResidual;
+	}
+
+	//Sort unwanted eigenvalues by Error Bounds
+	VectorType errorSlice = ErrorBounds(blitz::Range(EigenvalueCount, BasisSize-1));
+	IntVectorType errorIndexSlice = ErrorSorting(blitz::Range(EigenvalueCount, BasisSize-1));
+	SortVector(errorSlice, errorIndexSlice);
+	errorSlice = Eigenvalues(blitz::Range(EigenvalueCount, BasisSize-1));
+	for (int i=0; i<errorSlice.size(); i++)
+	{
+		//errorSlice now contains a copy of the eigenvalues
+		Eigenvalues(EigenvalueCount+i) = errorSlice(errorIndexSlice(i));
+	}
+
+
 	IsConverged = true;
 	for (int i=0; i<EigenvalueCount; i++)
 	{
@@ -478,7 +504,7 @@ void pIRAM<T>::UpdateEigenvalues()
 		NormType ritzValue = std::abs(Eigenvalues(i));
 		NormType errorBounds = ritzError * normResidual;
 		ErrorEstimates(i) = errorBounds;
-		NormType accuracy = tol * std::max(eps23, tol * ritzValue);
+		NormType accuracy = tol * std::max(eps23, ritzValue);
 		ConvergenceEstimates(i) = errorBounds - accuracy;
 		IsConverged = IsConverged && (ConvergenceEstimates(i) <= 0.0);
 	}
