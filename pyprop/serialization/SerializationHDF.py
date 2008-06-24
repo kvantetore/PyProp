@@ -51,6 +51,7 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 		SaveLocalSlab(filename, datasetPath, psi)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
+		SaveConfigObject(filename, datasetPath, conf)
 
 	else:
 		#let the processors save their part one by one
@@ -73,9 +74,9 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 			distr.GlobalBarrier();
 		if procId==0 and DEBUG: print "Done."
 
-	#proc 0 save config object
-	if procId == 0:
-		SaveConfigObject(filename, datasetPath, conf)
+		#proc 0 save config object
+		if procId == 0:
+			SaveConfigObject(filename, datasetPath, conf)
 
 def RemoveExistingDataset(filename, datasetPath):
 	if not os.path.exists(filename):
