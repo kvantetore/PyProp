@@ -9,6 +9,10 @@ PotentialEvaluator("KineticEnergyPotential<3> 3","KineticEnergyPotential_3")
 PotentialEvaluator("DipoleLaserPotential<1> 1","DipoleLaserPotential_1")
 PotentialEvaluator("DipoleLaserPotential<2> 2","DipoleLaserPotential_2")
 
+PotentialEvaluator("DipoleLaserPotentialVelocityRadialDerivative<2> 2","DipoleLaserPotentialVelocityRadialDerivative_2")
+PotentialEvaluator("DipoleLaserPotentialVelocityAngularDerivative<2> 2","DipoleLaserPotentialVelocityAngularDerivative_2")
+PotentialEvaluator("DipoleLaserPotentialVelocity<2> 2","DipoleLaserPotentialVelocity_2")
+
 PotentialEvaluator("AngularKineticEnergyPotential<2> 2","AngularKineticEnergyPotential_2")
 
 PotentialEvaluator("RadialHarmonicPotential<1> 1","RadialHarmonicPotential_1")

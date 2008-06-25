@@ -69,7 +69,21 @@ void RepresentPotentialInBasisReducedSphericalHarmonic( ReducedSphericalToolsPtr
 	int postCount = source3d.extent(2);
 	int pairCount = indexPair.extent(0);
 
-	Array<double, 2> assocLegendre = obj->GetAssociatedLegendrePolynomial();
+	
+	Array<double, 2> leftAssocLegendre = obj->GetAssociatedLegendrePolynomial();
+	Array<double, 2> rightAssocLegendre;
+	if (differentiation == 0)
+	{
+		rightAssocLegendre.reference(obj->GetAssociatedLegendrePolynomial());
+	}
+	else if (differentiation == 1)
+	{
+		rightAssocLegendre.reference(obj->GetAssociatedLegendrePolynomialDerivative());
+	}
+	else 
+	{
+		throw std::runtime_error("Reduced spherical harmonics does not support higher derivatives than 1");
+	}
 	Array<double, 1> weights = obj->GetWeights();
 	
 	dest3d = 0;
@@ -93,8 +107,8 @@ void RepresentPotentialInBasisReducedSphericalHarmonic( ReducedSphericalToolsPtr
 
 			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
 			{
-				double leftLegendre = assocLegendre(thetaIndex, rowIndex);
-				double rightLegendre = assocLegendre(thetaIndex, colIndex);
+				double leftLegendre = leftAssocLegendre(thetaIndex, rowIndex);
+				double rightLegendre = rightAssocLegendre(thetaIndex, colIndex);
 				double weight = weights(thetaIndex);
 		
 				for (int postIndex=0; postIndex<postCount; postIndex++)
@@ -334,6 +348,106 @@ public:
 	}
 };
 
+template<int Rank>
+class DipoleLaserPotentialVelocityRadialDerivative : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	int angularRank;
+	int radialRank;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("angular_rank", angularRank);
+		config.Get("radial_rank", radialRank);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double theta = pos(angularRank);
+		return cplx(0.,1.)*cos(theta);
+	}
+};
+
+template<int Rank>
+class DipoleLaserPotentialVelocityAngularDerivative : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	int angularRank;
+	int radialRank;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("angular_rank", angularRank);
+		config.Get("radial_rank", radialRank);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = pos(radialRank);
+		double theta = pos(angularRank);
+		return -cplx(0.,1.)*sin(theta) / r;
+	}
+};
+
+template<int Rank>
+class DipoleLaserPotentialVelocity: public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	int angularRank;
+	int radialRank;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("angular_rank", angularRank);
+		config.Get("radial_rank", radialRank);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = pos(radialRank);
+		double theta = pos(angularRank);
+		return - cplx(0.,1.) * cos(theta) / r;
+	}
+};
 
 template<int Rank>
 class AngularKineticEnergyPotential : public PotentialBase<Rank>

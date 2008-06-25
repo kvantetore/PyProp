@@ -183,7 +183,7 @@ def TestStability():
 import pypar
 
 def Propagate(algo=1):
-	conf = pyprop.Load("config_radial.ini")
+	conf = pyprop.Load("config_argon_velocity.ini")
 	conf.Propagation.silent = pyprop.ProcId != 0
 	prop = pyprop.Problem(conf)
 	prop.psi.GetRepresentation().Algorithm = algo
@@ -205,10 +205,13 @@ def Propagate(algo=1):
 
 	initPsi = prop.psi
 
-	conf = pyprop.Load("config_radial.ini")
+	conf = pyprop.Load("config_argon_velocity.ini")
 	conf.Propagation.timestep = abs(conf.Propagation.timestep)
 	conf.Propagation.renormalization = False
-	conf.Propagation.grid_potential_list.append("LaserPotential")
+	#conf.Propagation.grid_potential_list.append("LaserPotentialLength")
+	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity1")
+	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity2")
+	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity3")
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
 	prop.psi.GetRepresentation().Algorithm = algo
@@ -245,9 +248,9 @@ def Propagate(algo=1):
 		corrList.append(c)
 		if pyprop.ProcId == 0:
 			print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
-		#hold(False)
-		#pcolormesh(abs(prop.psi.GetData())**2)
-		#draw()
+		hold(False)
+		pcolormesh(abs(prop.psi.GetData())**2)
+		draw()
 	
 	#prop.Propagator.PampWrapper.PrintStatistics()
 
@@ -257,14 +260,25 @@ def Propagate(algo=1):
 
 	return prop
 
-def LaserFunction(conf, t):
-	if t < conf.pulse_duration:
+def LaserFunctionVelocity(conf, t):
+	if 0 <= t < conf.pulse_duration:
 		curField = conf.amplitude;
 		curField *= sin(t * pi / conf.pulse_duration)**2;
-		curField *= cos(t * conf.frequency);
+		curField *= - cos(t * conf.frequency);
 	else:
 		curField = 0
 	return curField
+
+def LaserFunctionLength(conf, t):
+	if 0 <= t < conf.pulse_duration:
+		curField = conf.amplitude;
+		T = conf.pulse_duration
+		w = conf.frequency
+		curField *= sin(pi*t/T)*(-2*pi/T * cos(pi*t/T) * cos(w*t) + w*sin(pi*t/T)*sin(w*t))
+	else:
+		curField = 0
+	return curField
+
 
 import time
 def TestInnerProduct():
