@@ -77,6 +77,39 @@ double BSpline::EvaluateBSpline(double x, int splineOrder, int leftKnotPoint)
 
 
 /*
+ * Evaluate first derivate of B-spline using recursive formula 
+ */
+double BSpline::EvaluateBSplineDerivative1(double x, int splineOrder, int leftKnotPoint)
+{
+	
+	// Return value
+	double bspline = 0.0;
+
+	// Shorthands
+	int i = leftKnotPoint;
+	int k = splineOrder;
+
+	double B1 = EvaluateBSpline(x, splineOrder - 1, i);
+	double B2 = EvaluateBSpline(x, splineOrder - 1, i + 1);
+
+	if (B1 > eps)
+	{
+		double b_ = (k - 1.0) / ( KnotSequence(i + k - 1) - KnotSequence(i) );
+		bspline += b_ * B1;
+	}
+	
+	if (B2 > eps)
+	{
+		double c_ = (k - 1.0) / ( KnotSequence(i + k) - KnotSequence(i +  1));
+		bspline -= c_ * B2;
+	}
+
+	return bspline;
+
+} // End function EvaluateBSplineDerivative
+
+
+/*
  * Evaluate second derivate of B-spline using recursive formula 
  */
 double BSpline::EvaluateBSplineDerivative2(double x, int splineOrder, int leftKnotPoint)
@@ -187,20 +220,29 @@ blitz::Array<double, 1> BSpline::GetBSplineDerivative2(int bsplineIndex)
 	return D2B;
 }
 
+blitz::Array<double, 1> BSpline::GetBSplineDerivative1(int bsplineIndex)
+{
+	using namespace blitz;
+	VectorType D2B = BSplineDerivative1Table( bsplineIndex, Range::all() );
+	return D2B;
+}
+
 
 /*
- * Tabulate b-spline second derivative values at quadrature points. 
- * This is done to speed up later computations, where we avoid 
- * repeated calls to the generating recursion function.
+ * Tabulate b-spline first and second derivative values at quadrature points. 
+ * This is done to speed up later computations, where we avoid repeated calls 
+ * to the generating recursion function.
  */
-void BSpline::CreateBSplineDerivative2Table()
+void BSpline::CreateBSplineDerivativeTable()
 {
 	int numberOfQuadPoints = Nodes.extent(0);
 	int xSize = numberOfQuadPoints * MaxSplineOrder;
 	
 	// Rescale arrays
+	BSplineDerivative1Table.resize(NumberOfBSplines, xSize);
 	BSplineDerivative2Table.resize(NumberOfBSplines, xSize);
 
+	BSplineDerivative1Table = 0.0;
 	BSplineDerivative2Table = 0.0;
 
 	for (int i = 0; i < NumberOfBSplines; i++)
@@ -216,6 +258,8 @@ void BSpline::CreateBSplineDerivative2Table()
 			for (int k = 0; k < numberOfQuadPoints; k++)
 			{
 				double x = ScaleAndTranslate(Nodes(k), a, b);
+				BSplineDerivative1Table(i, xIndex) = 
+					EvaluateBSplineDerivative1(x, MaxSplineOrder, i);
 				BSplineDerivative2Table(i, xIndex) = 
 					EvaluateBSplineDerivative2(x, MaxSplineOrder, i);
 				xIndex += 1;
@@ -351,6 +395,10 @@ TBase BSpline::BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int der
 		if (derivative == 0)
 		{
 			RightTable.reference(BSplineTable);
+		}
+		else if (derivative == 1)
+		{
+			RightTable.reference(BSplineDerivative1Table);
 		}
 		else if (derivative == 2)
 		{

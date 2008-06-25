@@ -308,9 +308,12 @@ void ReducedSphericalTools::SetupExpansion()
 	blitz::Array<double, 2> legendre = SphericalTransformTensorGrid::EvaluateAssociatedLegendrePolynomials(LMax, ThetaGrid);
 	AssocLegendrePoly.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
 	AssocLegendrePolyTransposed.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
+	AssocLegendrePolyDerivative.resize(thetaCount, thetaCount);
 
 	InverseMatrix.resize(thetaCount, thetaCount);
 	ForwardMatrix.resize(thetaCount, thetaCount);
+
+	blitz::Range all = blitz::Range::all();
 
 	//Normalize associated legendre such that the int(legendre_lm * legendre_lm', omega) = delta_lm_lm'
 	for (int l=0; l<=LMax; l++)
@@ -325,6 +328,15 @@ void ReducedSphericalTools::SetupExpansion()
 		//Scale assoc legendre
 		AssocLegendrePoly(blitz::Range::all(), l) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
 		AssocLegendrePolyTransposed(l, blitz::Range::all()) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
+
+
+		AssocLegendrePolyDerivative(blitz::Range::all(), l) = 0;
+		if (l > 0)
+		{
+			AssocLegendrePolyDerivative(all, l) = l * cos(ThetaGrid) * AssocLegendrePoly(all, l) - (l+m) * AssocLegendrePoly(all,l-1);
+			AssocLegendrePolyDerivative(all, l) /= sin(ThetaGrid);
+		}
+
 
 		for (int j=0; j<thetaCount; j++)
 		{

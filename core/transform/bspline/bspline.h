@@ -36,6 +36,7 @@ private:
 
 	MatrixType BSplineTable;
 	MatrixTypeCplx BSplineTableBlas;
+	MatrixType BSplineDerivative1Table;
 	MatrixType BSplineDerivative2Table;
 	MatrixType QuadratureGrid;
 	MatrixType ScaledWeights;
@@ -88,9 +89,11 @@ public:
 
 	// B-spline evaluation functions
 	double EvaluateBSpline(double, int, int);
+	double EvaluateBSplineDerivative1(double, int, int);
 	double EvaluateBSplineDerivative2(double, int, int);
 	VectorType EvaluateBSplineOnGrid(VectorType, int);
 	VectorType GetBSpline(int);
+	VectorType GetBSplineDerivative1(int);
 	VectorType GetBSplineDerivative2(int);
 	double BSplineOverlapIntegral(int i, int j) { return BSplineOverlapIntegral(Ones, i, j); }
 	double BSplineOverlapIntegral(VectorType, int, int);
@@ -114,7 +117,8 @@ public:
 
 	void CreateBSplineTable();
 	//void CreateBSplineTableBlas();
-	void CreateBSplineDerivative2Table();
+	//void CreateBSplineDerivative2Table();
+	void CreateBSplineDerivativeTable();
 	void SetupOverlap();
 
 	// B-spline-expansion related functions

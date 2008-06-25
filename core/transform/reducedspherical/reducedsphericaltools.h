@@ -20,6 +20,7 @@ private:
 	blitz::Array<double, 1> ThetaGrid;		//Theta points. Note that this is only the unique theta points
 	blitz::Array<double, 1> Weights;		//The weights used for integrating over omega
 	
+	blitz::Array<double, 2> AssocLegendrePolyDerivative;
 	blitz::Array<double, 2> AssocLegendrePoly; //The assosciated legendre functions evaluated in (theta) 
 	   										   //This array is of the same length as weights
 											   //The first rank is theta-index
@@ -50,6 +51,7 @@ public:
 	blitz::Array<double, 1> GetThetaGrid() { return ThetaGrid; }
 	blitz::Array<double, 1> GetWeights() { return Weights; } 
 	blitz::Array<double, 2> GetAssociatedLegendrePolynomial() { return AssocLegendrePoly; }
+	blitz::Array<double, 2> GetAssociatedLegendrePolynomialDerivative() { return AssocLegendrePolyDerivative; }
 
 	void Initialize(int lmax);				//Initializes the transformation to a given lmax. If the transformation
 											//has already been initalized, all allocated memory are freed and the 
