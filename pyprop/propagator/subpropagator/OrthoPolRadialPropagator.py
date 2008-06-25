@@ -1,10 +1,11 @@
 #Author: Mads Lundeland Apr 2007
 #Merged into pyprop main branch May 2. 2007 by torebi
 
-class OrthoPolRadialPropagator:
+class OrthoPolRadialPropagator(SubPropagatorBase):
+	__BASE = SubPropagatorBase
+
 	def __init__(self, psi, transformRank):
-		self.psi = psi
-		self.TransformRank = transformRank
+		self.__BASE.__init__(self, psi, transformRank)
 
 		rank = psi.GetRank()
 		self.Propagator = CreateInstanceRank("core.OrthoPolPropagator", rank)

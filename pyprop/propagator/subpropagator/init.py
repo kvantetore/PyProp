@@ -1,4 +1,6 @@
 
+execfile(__path__[0] + "/propagator/subpropagator/SubPropagatorBase.py")
+
 execfile(__path__[0] + "/propagator/subpropagator/FourierPropagatorBase.py")
 execfile(__path__[0] + "/propagator/subpropagator/CartesianRadialPropagator.py")
 execfile(__path__[0] + "/propagator/subpropagator/PolarPropagator.py")

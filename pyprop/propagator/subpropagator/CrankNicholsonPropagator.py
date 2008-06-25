@@ -1,7 +1,9 @@
-class CrankNicholsonPropagator:
+class CrankNicholsonPropagator(SubPropagatorBase):
+	__BASE = SubPropagatorBase
+
 	def __init__(self, psi, transformRank):
-		self.psi = psi
-		self.TransformRank = transformRank
+		self.__BASE.__init__(self, psi, transformRank)
+
 		self.Propagator = CreateInstanceRank("core.CrankNicholsonPropagator", psi.GetRank())
 
 	def ApplyConfigSection(self, configSection):

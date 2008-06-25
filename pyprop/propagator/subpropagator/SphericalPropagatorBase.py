@@ -1,9 +1,9 @@
 
-class SphericalPropagatorBase:
+class SphericalPropagatorBase(SubPropagatorBase):
+	__BASE = SubPropagatorBase
 
 	def __init__(self, psi, transformRank):
-		self.psi = psi
-		self.TransformRank = transformRank
+		self.__BASE.__init__(self, psi, transformRank)
 
 		if transformRank != psi.GetRank() - 1:
 			raise "SphericalTransform can only be used on the last rank"
