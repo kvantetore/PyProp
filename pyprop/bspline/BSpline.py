@@ -6,7 +6,7 @@ def InitBSpline(conf):
 	bspline = BSPLINE()
 	bspline.ApplyConfigSection(conf)
 	bspline.CreateBSplineTable()
-	bspline.CreateBSplineDerivative2Table()
+	bspline.CreateBSplineDerivativeTable()
 	bspline.SetupOverlap()
 	return bspline
 
