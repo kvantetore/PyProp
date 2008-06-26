@@ -333,7 +333,8 @@ void ReducedSphericalTools::SetupExpansion()
 		AssocLegendrePolyDerivative(blitz::Range::all(), l) = 0;
 		if (l > 0)
 		{
-			AssocLegendrePolyDerivative(all, l) = l * cos(ThetaGrid) * AssocLegendrePoly(all, l) - (l+m) * AssocLegendrePoly(all,l-1);
+			double normalization = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(m)) / (double)(l+std::abs(m)));
+			AssocLegendrePolyDerivative(all, l) = l * cos(ThetaGrid) * AssocLegendrePoly(all, l) - (l+m) * normalization * AssocLegendrePoly(all,l-1);
 			AssocLegendrePolyDerivative(all, l) /= sin(ThetaGrid);
 		}
 
