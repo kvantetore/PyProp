@@ -251,6 +251,7 @@ def Propagate(algo=1):
 		hold(False)
 		pcolormesh(abs(prop.psi.GetData())**2)
 		draw()
+		sys.stdout.flush()
 	
 	#prop.Propagator.PampWrapper.PrintStatistics()
 
