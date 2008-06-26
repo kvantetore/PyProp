@@ -335,7 +335,7 @@ void ReducedSphericalTools::SetupExpansion()
 		{
 			double normalization = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(m)) / (double)(l+std::abs(m)));
 			AssocLegendrePolyDerivative(all, l) = l * cos(ThetaGrid) * AssocLegendrePoly(all, l) - (l+m) * normalization * AssocLegendrePoly(all,l-1);
-			AssocLegendrePolyDerivative(all, l) /= sin(ThetaGrid);
+			//AssocLegendrePolyDerivative(all, l) /= sin(ThetaGrid);
 		}
 
 

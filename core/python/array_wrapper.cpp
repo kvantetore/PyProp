@@ -125,7 +125,7 @@ public:
 
 		if (arr_obj->descr->type_num == type_descr->type_num || arr_obj->descr->elsize == type_descr->elsize) 
 		{
-			if (refCount == 1)
+			if (refCount == 1 && (arr_obj->flags & NPY_OWNDATA) != 0 )
 			{
 				//Array is about to get destroyed, make a copy instead of reference
 				new (storage) Array<T,N>((T*)arr_obj->data, shape, strides, duplicateData);
