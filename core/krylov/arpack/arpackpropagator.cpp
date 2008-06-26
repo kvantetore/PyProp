@@ -25,6 +25,7 @@ void ArpackPropagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	config.Get("krylov_eigenvalue_count", EigenvalueCount);
 	config.Get("krylov_max_iteration_count", MaxIterationCount);
 	config.Get("krylov_use_random_start", RandomStart);
+	config.Get("krylov_statistics", PrintStatistics);
 
 	UseParpack = false;
 	if (config.HasValue("krylov_use_parpack"))
@@ -39,13 +40,21 @@ void ArpackPropagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 
 
 template<int Rank>
+double ArpackPropagator<Rank>::GetMemoryEstimate(const Wavefunction<Rank> &psi)
+{
+	int matrixSize = psi.GetData().size();
+	double size = sizeof(cplx) * matrixSize * (4 + BasisSize);
+	return size/(1024*1024);
+}
+
+
+
+template<int Rank>
 void ArpackPropagator<Rank>::Setup(const Wavefunction<Rank> &psi)
 {
 	int matrixSize = psi.GetData().size();
 
 	//Allocate workspace
-	double size = sizeof(cplx) * matrixSize * (4 + BasisSize);
-	cout << "Allocating ARPACK workspace ~ " << size/(1024*1024) << " MB" << endl;
 	WorkSelect.resize(BasisSize+1);
 	WorkVectors.resize(3 * matrixSize);
 	WorkVectors2.resize(2 * BasisSize);
@@ -89,13 +98,17 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	//Set debug info
 	int digit = -3;
 	int getv0 = 0;
-	int aupd = 1;
+	int aupd = 0;
 	int aup2 = 0;
 	int aitr = 0;
 	int eigt = 0;
 	int apps = 0;
 	int gets = 0;
 	int eupd = 0;
+	if (PrintStatistics)
+	{
+		aupd = 1;
+	}
 	cTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd);
 
 

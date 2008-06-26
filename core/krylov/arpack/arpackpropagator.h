@@ -38,10 +38,16 @@ public:
 	int EigenvalueCount;
 	bool RandomStart;
 	bool UseParpack;
+	bool PrintStatistics;
 
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Wavefunction<Rank> &psi);
 	void Solve(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi);
+
+	/*
+	 * Returns the estimated memory usage in megabytes
+	 */
+	double GetMemoryEstimate(const Wavefunction<Rank> &psi);
 
 	/*
 	 * Returns the converged eigenvalues
