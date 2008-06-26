@@ -377,11 +377,20 @@ TBase BSpline::BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int der
 	using namespace blitz;
 
 	//Reorder to make i < j
+	double factor = 1.0;
 	if (i > j)
 	{
 		int temp = i;
 		i = j;
 		j = temp;
+
+		/*
+		 * We of course remember that * the differentiation matrix is 
+		 * symmetric (hermittian) or skew * symmetric (skew hermittian) 
+		 * depending on the order n. Therefore * (-1)**n is added when 
+		 * transposing.
+		 */
+		factor = std::pow(-1.0, derivative);
 	}
 
 	// Overlap only nonzero if |i - j| < splineOrder
@@ -452,7 +461,7 @@ TBase BSpline::BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int der
 		}
 		//double I = sum(ScaledWeightsSlice * fSlice * B_left * B_right);
 
-		return I;
+		return factor * I;
 	}
 
 	return 0.0;	
