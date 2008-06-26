@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("./pyprop")
 import pyprop
+pyprop = reload(pyprop)
 
 from numpy import array
 from numpy import complex
@@ -208,11 +209,15 @@ def Propagate(algo=1):
 	conf = pyprop.Load("config_argon_velocity.ini")
 	conf.Propagation.timestep = abs(conf.Propagation.timestep)
 	conf.Propagation.renormalization = False
-	#conf.Propagation.grid_potential_list.append("LaserPotentialLength")
-	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity1")
-	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity2")
-	conf.Propagation.grid_potential_list.append("LaserPotentialVelocity3")
+	conf.Propagation.grid_potential_list.append("LaserPotentialLength")
+	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity1")
+	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity2")
+	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity3")
+
 	prop = pyprop.Problem(conf)
+
+	#SetPotential2(prop.Propagator.BasePropagator.PotentialList[2].PotentialData)
+
 	prop.SetupStep()
 	prop.psi.GetRepresentation().Algorithm = algo
 
@@ -260,6 +265,19 @@ def Propagate(algo=1):
 	prop.TimeList = array(timeList)
 
 	return prop
+
+
+def SetPotential2(potentialData):
+	N = sqrt(potentialData.shape[0])
+	radialN = potentialData.shape[1]
+	pot = potentialData.reshape(N, N, radialN)
+
+	for radialIndex in range(radialN):
+		for i in range(1,N):
+			j = i - 1
+			pot[i,j, radialIndex] = - 1.0j * i * pot[i,j, radialIndex]
+			pot[j,i, radialIndex] =   1.0j * i * pot[j,i, radialIndex]
+				
 
 def LaserFunctionVelocity(conf, t):
 	if 0 <= t < conf.pulse_duration:

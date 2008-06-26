@@ -411,7 +411,9 @@ public:
 	{
 		double r = pos(radialRank);
 		double theta = pos(angularRank);
-		return -cplx(0.,1.)*sin(theta) / r;
+		//return -cplx(0.,1.)*sin(theta) / r;
+		return -cplx(0.,1.) / r;
+		//return cos(theta) / r;
 	}
 };
 

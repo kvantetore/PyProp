@@ -650,7 +650,7 @@ class TensorPotentialGenerator(object):
 		configSection.Apply(potentialEvaluator)
 
 		#4) Evaluate the potential on the grid
-		data = potentialEvaluator.UpdatePotentialData(psi.GetData(), psi, 0, 0)
+		potentialEvaluator.UpdatePotentialData(psi.GetData(), psi, 0, 0)
 
 		#for parallelization
 		#We only support the first rank initially distributed
@@ -925,6 +925,7 @@ class BasisPropagator(PropagatorBase):
 				#Add potential to potential list
 				self.PotentialList.append(potential)
 
+
 	def ConsolidatePotentials(self):
 		"""
 		Try to consolidate potentials having the same geometry into
@@ -1007,7 +1008,7 @@ class BasisPropagator(PropagatorBase):
 
 		#Restore input psi back to its original state
 		self.psi.GetData()[:] = self.TempPsi2.GetData()
-	
+
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")
 
