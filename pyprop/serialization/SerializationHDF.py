@@ -266,7 +266,7 @@ def GetConfigFromHDF5(file, datasetPath = None, confObjName = "configObject"):
 				if name == "wavefunction":
 					cfgObj = node.getAttr(confObjName)
 		else:
-			cfgObj = datasetPath.getAttr(confObjName)
+			cfgObj = h5file.getNodeAttr(datasetPath, confObjName)
 
 	finally:
 		h5file.close()
