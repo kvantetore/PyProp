@@ -16,6 +16,7 @@ class SubmitScript:
 	nodes = 1
 	ppn = 1
 	proc_memory = None
+	procs_per_node = None
 	
 	account = None
 	jobname = "myjob"
@@ -43,6 +44,8 @@ class SubmitScript:
 		script.append("#PBS -l mppwidth=" + str(self.nodes*self.ppn))
 		if self.proc_memory != None:
 			script.append("#PBS -l mppmem=" + str(self.proc_memory))
+		if self.mppnppn != None:
+			script.append("#PBS -l mppnppn=" + str(self.procs_per_node))
 
 		#Administrative
 		if self.jobname != None:
