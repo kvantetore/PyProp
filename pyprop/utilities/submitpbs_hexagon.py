@@ -16,7 +16,6 @@ class SubmitScript:
 	nodes = 1
 	ppn = 1
 	proc_memory = None
-	procs_per_node = None
 	
 	account = None
 	jobname = "myjob"
@@ -42,10 +41,9 @@ class SubmitScript:
 		seconds = self.walltime.seconds % 60
 		script.append("#PBS -l walltime=" + str(hours) + ":" + str(minutes) + ":" + str(seconds))
 		script.append("#PBS -l mppwidth=" + str(self.nodes*self.ppn))
+		script.append("#PBS -l mppnppn=" + str(self.ppn))
 		if self.proc_memory != None:
 			script.append("#PBS -l mppmem=" + str(self.proc_memory))
-		if self.procs_per_node != None:
-			script.append("#PBS -l mppnppn=" + str(self.procs_per_node))
 
 		#Administrative
 		if self.jobname != None:
