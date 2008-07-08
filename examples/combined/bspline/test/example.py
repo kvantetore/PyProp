@@ -16,6 +16,8 @@ from libcommonpotentials import *
 #Load the project module
 from libpotential import *
 
+#Load constants
+execfile("constants.py")
 
 def SetupConfig(**args):
 	#Decide which config file to use
@@ -33,6 +35,7 @@ def SetupConfig(**args):
 		dt = abs(propSection.timestep)
 		renormalize = False
 		if imtime:
+			print "yes"
 			dt = -1.0j * dt
 			renormalize = True
 
@@ -88,7 +91,7 @@ def FindGroundstate(**args):
 	E = prop.GetEnergy()
 	print "Ground State Energy = %f" % E
 
-	SaveWavefunction("groundstate.h5", "/wavefunction", prop.psi)
+	prop.SaveWavefunctionHDF("groundstate.h5", "/wavefunction")
 
 	return prop
 
@@ -348,3 +351,93 @@ def TestPhaseAccuracySingleState(**args):
 
 	return prop
 
+def FindIonizationProbability(prop, **args):
+
+	initialPsi = prop.psi.Copy()
+	sampleTimes = []
+	initialCorr = []
+	step = 0
+	for t in prop.Advance(300):
+		sampleTimes.append(t)
+		norm = prop.psi.GetNorm()
+		corr = abs(prop.psi.InnerProduct(initialPsi))**2
+		initialCorr.append(corr)
+		if mod(step,10) == 0:
+			print "t = %f, Norm = %f, Corr = %f" % (t, norm, corr)
+		step += 1
+
+	norm = prop.psi.GetNorm()
+	corr = abs(prop.psi.InnerProduct(initialPsi))**2
+	print "Ionization Probability = %f" % norm
+	print "Initial state correlation = %f" % corr
+
+	return sampleTimes,initialCorr
+
+
+def DifferentiateExpandedFunction(prop, c, n):
+	"""
+	Compute n'th derivative of a function f expanded in the B-spline
+	basis with coefficient c. Requires solving a matrix equation,
+
+	    Sd = Dc
+
+	where S is the overlap matrix, D is the differentiation matrix
+	D_ij = < B_j | D2 | B_i > and d are the new expansion coefficients.
+	"""
+
+	bspline = prop.Propagator.SubPropagators[0].BSplineObject
+	grid = bspline.GetQuadratureGridGlobal()
+	func = ones(len(grid))
+	numberOfBSplines = bspline.NumberOfBSplines
+	
+	#Differentiation and overlap matrix		
+	D = zeros((numberOfBSplines, numberOfBSplines))
+	S = zeros((numberOfBSplines, numberOfBSplines))
+
+	for i in range(numberOfBSplines):
+		for j in range(numberOfBSplines):
+
+			#Calculate diff. matrix element < B_j | Dn | B_i >
+			D[i, j] = bspline.BSplineGlobalOverlapIntegral(func,n,i,j)
+			S[i, j] = bspline.BSplineGlobalOverlapIntegral(func,0,i,j)
+
+	#Solve matrix equation
+	SD = dot(linalg.inv(S), D)
+	d = dot(SD, c)
+
+	return d
+
+
+def TestDifferentiation():
+	"""
+	Test 
+	"""
+	
+	prop = SetupProblem()
+	prop.Propagator.SubPropagators[0].InverseTransform(prop.psi)
+	grid = prop.psi.GetRepresentation().GetLocalGrid(0).copy()
+
+	testFunc =  exp(-grid**2)
+	testFuncD1 = -2 * grid * exp(-grid**2)
+	testFuncD2 = -2 * exp(-grid**2) + 4 * grid**2 * exp(-grid**2)
+	prop.psi.GetData()[:] = testFunc
+	prop.Propagator.SubPropagators[0].ForwardTransform(prop.psi)
+
+	tmpPsi = prop.psi.Copy()
+
+	#Test first and second order differentiation
+	d1 = DifferentiateExpandedFunction(prop, tmpPsi.GetData(), 1)
+	d2 = DifferentiateExpandedFunction(prop, tmpPsi.GetData(), 2)
+
+	figure()
+
+	prop.psi.GetData()[:] = d1
+	prop.Propagator.SubPropagators[0].InverseTransform(prop.psi)
+	plot(grid, prop.psi.GetData().copy(), "b-")
+	plot(grid, testFuncD1, "r.")
+	prop.Propagator.SubPropagators[0].ForwardTransform(prop.psi)
+
+	prop.psi.GetData()[:] = d2
+	prop.Propagator.SubPropagators[0].InverseTransform(prop.psi)
+	plot(grid, prop.psi.GetData().copy(), "g-")
+	plot(grid, testFuncD2, "k.")

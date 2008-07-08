@@ -55,10 +55,9 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double z1 = std::fabs(pos(0));
-		double z2 = pos(1);
+		double r = std::abs(pos(0));
 
-		return currentAmplitude * (z1 + z2);
+		return currentAmplitude * r;
 	}
 };
 
@@ -88,10 +87,43 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double z1 = std::fabs(pos(0));
-		double z2 = std::fabs(pos(1));
+		double r = std::abs(pos(0));
 
-		return FieldStrength * (z1 + z2);
+		return FieldStrength * r;
+	}
+};
+
+
+template<int Rank>
+class CoulombPotential : public PotentialBase<Rank>
+{
+public:
+	//Potential parameters
+	double Charge;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("charge", Charge);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = std::abs(pos(0));
+		
+		if (r < 1e-5)
+		{
+			return 0.0;
+		}
+
+		return -Charge / r;
 	}
 };
 
