@@ -410,8 +410,6 @@ class BasisfunctionBSpline(BasisfunctionBase):
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
-		#TODO: Implement for general rank
-
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 		if storageId == "Ident":
@@ -551,10 +549,6 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
-		#TODO: Implement for general rank
-
-		assert(differentiation==0, "Differentiation is not supported on Spherical Harmonics yet")
-
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 		RepresentPotentialInBasisReducedSphericalHarmonic(self.SphericalHarmonicObject, source, dest, pairs, storageId, rank, differentiation)
@@ -678,6 +672,7 @@ class TensorPotentialGenerator(object):
 				differentiation = 0
 				if hasattr(configSection, "differentiation%i" % rank):
 					differentiation = configSection.Get("differentiation%i" % rank)
+				print "Rank %i (%s), using differentiation: %s" % (rank, classname, differentiation)
 
 				#Check if this rank is distributed. If it is, we must redistribute
 				if rank in distribution:
@@ -826,6 +821,7 @@ class TensorPotential(PotentialWrapper):
 		if hasattr(configSection, "time_function"):
 			self.IsTimeDependent = True
 			self.TimeFunction = lambda t: configSection.time_function(configSection, t)
+			self.OriginalTimeFunction = configSection.time_function
 
 	def SetupStep(self, timestep):
 		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]
@@ -939,7 +935,7 @@ class BasisPropagator(PropagatorBase):
 			print "    %s" % pot.Name
 
 		#only non timedependent potentials are considered
-		potentials = [pot for pot in self.PotentialList if not pot.IsTimeDependent]
+		potentials = list(self.PotentialList) #[pot for pot in self.PotentialList if not pot.IsTimeDependent]
 		removePotentials = []
 
 		#Consolidate til we're at the last potential
@@ -949,14 +945,27 @@ class BasisPropagator(PropagatorBase):
 
 			#Loop over all potentials after curPot
 			for otherPot in list(potentials[i+1:]):
-				#We can consolidate curPot and otherPot if all the index pairs are the same
+				#We can consolidate curPot and otherPot if all the index pairs are the same,
+				#And curPot and otherPot has the same time dependency
 				canConsolidate = True
-				for rank in range(self.Rank):
-					if curPot.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
-						canConsolidate = False
-						break
 
-				#Add oterPot to curPot
+				#If one of the potentials is time dependent the other must also be
+				if canConsolidate and curPot.IsTimeDependent != otherPot.IsTimeDependent:
+					canConsolidate = False
+
+				#If they are both time dependent, they must have the same time function
+				if canConsolidate and curPot.IsTimeDependent and otherPot.IsTimeDependent:
+					if otherPot.OriginalTimeFunction != curPot.OriginalTimeFunction:
+						canConsolidate = False
+			
+				#Both potentials must have the same storage 
+				if canConsolidate:
+					for rank in range(self.Rank):
+						if curPot.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
+							canConsolidate = False
+							break
+
+				#Add otherPot to curPot
 				if canConsolidate:
 					curPot.PotentialData[:] += otherPot.PotentialData
 					curPot.Name += "+" + otherPot.Name

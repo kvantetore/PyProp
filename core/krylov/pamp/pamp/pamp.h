@@ -235,10 +235,9 @@ void pAMP<T>::PerformInitialArnoldiStep()
 	CurrentArnoldiStep = 0;
 
 	//Normalize Residual
-	T norm = CalculateGlobalNorm(Residual);
+	//T norm = CalculateGlobalNorm(Residual);
 	//cout << "Initial norm = " << norm << endl;
-
-	blas.ScaleVector(Residual, 1.0/norm);
+	//blas.ScaleVector(Residual, 1.0/norm);
 
 	//First Arnoldi Vector is the init residual
 	VectorType v0(ArnoldiVectors(0, blitz::Range::all()));
@@ -401,6 +400,7 @@ void pAMP<T>::ScalingPadeExponential(MatrixType A, MatrixType output, int padeOr
 		double maxValue = blitz::max(abs(A));
 		scalingOrder = (int) std::ceil( log2( maxValue ) );
 	}
+	scalingOrder = std::max(0, scalingOrder);
 	//cout << "Using scaling order " << scalingOrder << endl;
 
 	//Scale

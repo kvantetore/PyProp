@@ -13,12 +13,34 @@ class ArpackSolver:
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
 
+		configSection = prop.Config.Arpack
+		silent = False
+		if hasattr(prop.Config.Propagation, "silent"):
+			silent = prop.Config.Propagation.silent 
+		configSection.krylov_statistics = not silent
+
 		#Create a copy of the wavefunction to calculate H|psi>
+		if silent:
+			Redirect.Enable(True)
+
 		self.TempPsi = prop.psi.CopyDeep()
+
+		if silent:
+			Redirect.Disable()
 
 		#Set up Arpack Solver
 		self.Solver = CreateInstanceRank("core.krylov_ArpackPropagator", self.Rank)
+		if not hasattr(configSection, "krylov_statistics"):
+			silent = False
+			if hasattr(prop.Config.Propagation, "silent"):
+				silent = prop.Config.Propagation.silent 
+			configSection.krylov_statistics = not silent
+				
 		prop.Config.Arpack.Apply(self.Solver)
+
+		if not silent:
+			memoryEstimate = self.Solver.GetMemoryEstimate(prop.psi)
+
 		self.Solver.Setup(prop.psi)
 
 	def Solve(self):

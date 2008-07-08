@@ -246,11 +246,12 @@ def CreateDataset(f, datasetPath, fullShape):
 	return dataset
 
 def SaveConfigObject(filename, datasetPath, conf):
-	h5file = tables.openFile(filename, "r+")
-	try:
-		h5file.setNodeAttr(datasetPath, "configObject", conf.cfgObj)
-	finally:
-		h5file.close()
+	if conf != None:
+		h5file = tables.openFile(filename, "r+")
+		try:
+			h5file.setNodeAttr(datasetPath, "configObject", conf.cfgObj)
+		finally:
+			h5file.close()
 
 def GetConfigFromHDF5(file, datasetPath = None, confObjName = "configObject"):
 	"""

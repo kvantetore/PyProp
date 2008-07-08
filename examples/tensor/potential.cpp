@@ -113,7 +113,7 @@ void RepresentPotentialInBasisReducedSphericalHarmonic( ReducedSphericalToolsPtr
 		
 				for (int postIndex=0; postIndex<postCount; postIndex++)
 				{
-					dest3d(preIndex, pairIndex, postIndex) += leftLegendre * source3d(preIndex, thetaIndex, postIndex) * rightLegendre * weight;
+					dest3d(preIndex, pairIndex, postIndex) += conj(leftLegendre) * source3d(preIndex, thetaIndex, postIndex) * rightLegendre * weight;
 				}
 			}
 		}
@@ -413,7 +413,6 @@ public:
 		double theta = pos(angularRank);
 		//return -cplx(0.,1.)*sin(theta) / r;
 		return -cplx(0.,1.) / r;
-		//return cos(theta) / r;
 	}
 };
 
@@ -553,5 +552,40 @@ public:
 	}
 };
 
+template<int Rank>
+class H2pPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
 
+	//Potential parameters
+	double Charge;
+	double NuclearSeparation;
+	double Softing;
+
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("charge", Charge);
+		config.Get("nuclear_separation", NuclearSeparation);
+		config.Get("softing", Softing);
+	}
+
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		//Coordinates
+		double r = std::abs(pos(1));
+		double theta = pos(0);
+
+		double r2 = sqr(r) + sqr(NuclearSeparation) / 4 + sqr(Softing);
+		double z = r * cos(theta);
+	
+		double angDep = NuclearSeparation * z; 
+		double V1 = 1 / sqrt(r2 + angDep); 
+		double V2 = 1 / sqrt(r2 - angDep); 
+
+		return Charge * (V1 + V2);
+	}
+};
 

@@ -65,6 +65,20 @@ def FindGroundstate(**args):
 
 	return prop
 
+
+def FindEigenvalues(**args):
+	prop = SetupProblem(**args)
+	solver = pyprop.PiramSolver(prop)
+	solver.Solve()
+	print solver.GetEigenvalues()
+
+	solver.SetEigenvector(prop.psi, 0)
+	prop.SaveWavefunctionHDF("groundstate.h5", "/wavefunction")
+
+	return solver
+
+
+
 #def SaveWavefunction(filename, dataset, psi):
 #	if pyprop.ProcId == 0:
 #		if os.path.exists(filename):

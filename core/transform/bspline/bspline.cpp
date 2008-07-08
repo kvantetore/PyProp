@@ -258,10 +258,8 @@ void BSpline::CreateBSplineDerivativeTable()
 			for (int k = 0; k < numberOfQuadPoints; k++)
 			{
 				double x = ScaleAndTranslate(Nodes(k), a, b);
-				BSplineDerivative1Table(i, xIndex) = 
-					EvaluateBSplineDerivative1(x, MaxSplineOrder, i);
-				BSplineDerivative2Table(i, xIndex) = 
-					EvaluateBSplineDerivative2(x, MaxSplineOrder, i);
+				BSplineDerivative1Table(i, xIndex) = EvaluateBSplineDerivative1(x, MaxSplineOrder, i);
+				BSplineDerivative2Table(i, xIndex) = EvaluateBSplineDerivative2(x, MaxSplineOrder, i);
 				xIndex += 1;
 			}
 		}

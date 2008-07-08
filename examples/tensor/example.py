@@ -12,12 +12,149 @@ from numpy import zeros
 
 execfile("TensorGenerator.py")
 
-#------------------------------------------------------------------------------------
-#                       Test functions
-#------------------------------------------------------------------------------------
-
-
 from libpotential import *
+
+#------------------------------------------------------------------------------------
+#                       Setup Functions
+#------------------------------------------------------------------------------------
+
+
+def SetupConfig(**args):
+	configFile = args.get("configFile", "config_radial.ini")
+	conf = pyprop.Load(configFile)
+	
+	if "silent" in args:
+		silent = args["silent"]
+		conf.Propagation.silent = silent
+
+	if "imtime" in args:
+		imtime = args["imtime"]
+		if imtime:
+			conf.Propagation.timestep = -1.0j * abs(conf.Propagation.timestep)
+			conf.Propagation.renormalization = True
+		else:
+			conf.Propagation.timestep = abs(conf.Propagation.timestep)
+			conf.Propagation.renormalization = False
+
+	if "duration" in args:
+		duration = args["duration"]
+		conf.Propagation.duration = duration
+
+	if "eigenvalueCount" in args:
+		conf.Arpack.krylov_eigenvalue_count = args["eigenvalueCount"]
+
+	additionalPotentials = args.get("additionalPotentials", [])
+	conf.Propagation.grid_potential_list += additionalPotentials
+
+	return conf
+
+
+def SetupProblem(**args):
+	conf = SetupConfig(**args)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	return prop
+
+
+def FindGroundstate(**args):
+	prop = SetupProblem(imtime=True, **args)
+	for t in prop.Advance(10):
+		E = prop.GetEnergy()
+		print "t = %02.2f, E = %2.8f" % (t, E)
+
+	E = prop.GetEnergyExpectationValue()
+	print "t = %02.2f, E = %2.8f" % (t, E)
+
+	return prop
+
+
+def FindEigenvalues(**args):
+	prop = SetupProblem(**args)
+	solver = pyprop.PiramSolver(prop)
+	solver.Solve()
+	print solver.GetEigenvalues()
+	return solver
+
+#------------------------------------------------------------------------------------
+#                       New test-functions
+#------------------------------------------------------------------------------------
+
+def GetAutocorrelation1(**args):
+	solver = FindEigenvalues(silent=True, **args)
+	initPsi = solver.BaseProblem.psi
+	solver.SetEigenvector(initPsi, 0)
+
+	prop = SetupProblem(imtime=False, silent=True, **args)
+	prop.psi.GetData()[:] = initPsi.GetData()
+
+	def GetAutoCorr(prop):
+		return initPsi.InnerProduct(prop.psi)
+
+	t = []
+	corr = []
+	#c = array([[t, GetAutoCorr(prop)] for t in prop.Advance(True)])
+	#t, corr = c[:,0].real, c[:,1]
+	for curT in prop.Advance(True):
+		t.append(curT)
+		corr.append(GetAutoCorr(prop))
+
+	return array(t), array(corr), prop
+
+def GetAutocorrelation2(**args):
+	solver = FindEigenvalues(silent=True, **args)
+	initPsi = solver.BaseProblem.psi
+
+	prop = SetupProblem(imtime=False, silent=True, **args)
+	
+	prop.psi.GetData()[:] = 0
+	solver.SetEigenvector(initPsi, 0)
+	prop.psi.GetData()[:] += initPsi.GetData() / sqrt(2.)
+	solver.SetEigenvector(initPsi, 1)
+	prop.psi.GetData()[:] += initPsi.GetData() / sqrt(2.)
+	prop.psi.Normalize()
+
+	initPsi.GetData()[:] = prop.psi.GetData()
+
+	def GetAutoCorr(prop):
+		return initPsi.InnerProduct(prop.psi)
+
+	t = []
+	corr = []
+	#c = array([[t, GetAutoCorr(prop)] for t in prop.Advance(True)])
+	#t, corr = c[:,0].real, c[:,1]
+	for curT in prop.Advance(True):
+		t.append(curT)
+		corr.append(GetAutoCorr(prop))
+
+	return array(t), array(corr), prop
+
+
+def FindIonizationProbability(**args):
+	solver = FindEigenvalues(silent=True, **args)
+	initPsi = solver.BaseProblem.psi
+
+	prop = SetupProblem(imtime=False, silent=True, additionalPotentials=["LaserPotentialLength"], **args)
+	
+	solver.SetEigenvector(initPsi, 0)
+	prop.psi.GetData()[:] = initPsi.GetData() 
+
+	def GetAutoCorr(prop):
+		return initPsi.InnerProduct(prop.psi)
+
+	for t in prop.Advance(10):
+		corr = abs(GetAutoCorr(prop))**2
+		print "t = %2.2f, c(t) = %f" % (t, corr)
+
+	corr = abs(GetAutoCorr(prop))**2
+	print "t = %2.2f, c(t) = %f" % (t, corr)
+
+
+
+
+#------------------------------------------------------------------------------------
+#                       Old test-functions
+#------------------------------------------------------------------------------------
 
 def test():
 	conf = pyprop.Load("test.ini")
@@ -41,6 +178,9 @@ def test2():
 	return prop
 
 import numpy.linalg
+
+
+
 
 def MultiplyInverseOverlapMatrix(A, OverlapMatrix, bsplineRank):
 	rank = len(A.shape)
@@ -184,45 +324,13 @@ def TestStability():
 import pypar
 
 def Propagate(algo=1):
-	conf = pyprop.Load("config_argon_velocity.ini")
-	conf.Propagation.silent = pyprop.ProcId != 0
-	prop = pyprop.Problem(conf)
-	prop.psi.GetRepresentation().Algorithm = algo
-	prop.SetupStep()
-
-	#tempPsi = prop.GetTempPsi()
-	#prop.MultiplyHamiltonian(tempPsi)
-	#for i in range(pyprop.ProcCount):
-	#	if i == pyprop.ProcId:
-	#		print "proc 0"
-	#		print tempPsi.GetData()
-	#	pypar.barrier()
-	#return
-
-
-	for t in prop.Advance(10):
-		print "t = %.4f, E(t) = %.6f" % (t, prop.GetEnergyExpectationValue())
-	#prop.Propagator.PampWrapper.PrintStatistics()
-
+	prop = FindGroundstate(duration=20, silent=True)
 	initPsi = prop.psi
 
-	conf = pyprop.Load("config_argon_velocity.ini")
-	conf.Propagation.timestep = abs(conf.Propagation.timestep)
-	conf.Propagation.renormalization = False
-	conf.Propagation.grid_potential_list.append("LaserPotentialLength")
-	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity1")
-	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity2")
-	#conf.Propagation.grid_potential_list.append("LaserPotentialVelocity3")
+	#prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialLength"])
+	prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"])
 
-	prop = pyprop.Problem(conf)
-
-	#SetPotential2(prop.Propagator.BasePropagator.PotentialList[2].PotentialData)
-
-	prop.SetupStep()
-	prop.psi.GetRepresentation().Algorithm = algo
-
-	for i in range(prop.psi.GetData().shape[0]):
-		prop.psi.GetData()[i, :] = initPsi.GetData()[i, :]
+	prop.psi.GetData()[:] = initPsi.GetData()
 	prop.psi.Normalize()
 
 	initPsi = prop.psi.Copy()
@@ -231,19 +339,7 @@ def Propagate(algo=1):
 	corrList = []
 	normList = []
 
-	prop.AdvanceStep()
-	print "hei %i" % pyprop.ProcId
-
-	#for i in range(pyprop.ProcCount):
-	#	if i == pyprop.ProcId:
-	#		print "proc %i" % i
-	#		print prop.Propagator.BasePropagator.PotentialList[-1].PotentialData.shape
-	#	pypar.barrier()
-	#return
-
-	prop.AdvanceStep()
-
-	for t in prop.Advance(20):
+	for t in prop.Advance(10):
 		n = prop.psi.GetNorm()
 		if n != n:
 			return prop
@@ -253,12 +349,16 @@ def Propagate(algo=1):
 		corrList.append(c)
 		if pyprop.ProcId == 0:
 			print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
-		hold(False)
-		pcolormesh(abs(prop.psi.GetData())**2)
-		draw()
-		sys.stdout.flush()
+		#hold(False)
+		#pcolormesh(abs(prop.psi.GetData())**2)
+		#draw()
+		#sys.stdout.flush()
+		
 	
 	#prop.Propagator.PampWrapper.PrintStatistics()
+		
+	c = abs(prop.psi.InnerProduct(initPsi))**2
+	print "Final Correlation = %f" % c
 
 	prop.CorrelationList = array(corrList)
 	prop.NormList = array(normList)
@@ -287,6 +387,18 @@ def LaserFunctionVelocity(conf, t):
 	else:
 		curField = 0
 	return curField
+
+
+def LaserFunctionSimpleLength(conf, t):
+	if 0 <= t < conf.pulse_duration:
+		curField = conf.amplitude;
+		curField *= sin(t * pi / conf.pulse_duration)**2;
+		curField *= cos(t * conf.frequency);
+	else:
+		curField = 0
+	return curField
+
+
 
 def LaserFunctionLength(conf, t):
 	if 0 <= t < conf.pulse_duration:
