@@ -16,19 +16,45 @@ class GeometryInfoBase(object):
 	"""
 
 	def UseGridRepresentation(self):
+		"""
+		Whether the grid representation or the basis representation should
+		be used to evaluate the potential
+		"""
 		raise NotImplementedException()
 
 	def GetBasisPairCount(self):
+		"""
+		Returns the number of stored matrix elements
+		"""
 		raise NotImplementedException()
 
 	def GetBasisPairs(self):
+		"""
+		Returns the row-col index pairs for the matrix elements as a 
+		two dimensional array. Each row is an index pair, with 
+		the first column being the row index, and the second being
+		the col-index
+		"""
 		raise NotImplementedException()
 
 	def GetStorageId(self):
+		"""
+		Returns the string defining how the index pairs are ordered
+		"""
 		raise NotImplementedException()	
 
 	def GetMultiplyArguments(self):
+		"""
+		Returns the arguments needed for TensorMultiply
+		"""
 		raise NotImplementedException()
+
+	def HasParallelMultiply(self):
+		"""
+		Whether this storage supports TensorMultiply when the rank 
+		is distributed
+		"""
+		return False
 
 
 class BasisfunctionBase(object):
@@ -177,9 +203,14 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	def GetMultiplyArguments(self):
 		return []
 
+	def HasParallelMultiply(self):
+		return True
+
 
 class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 	"""
+	Geometry for a banded matrix with support for parallel
+	TensorMultiply
 	"""
 	def __init__(self, rankCount, bandCount, useGrid):
 		#Set member variables 
@@ -213,6 +244,9 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 
 	def GetMultiplyArguments(self):
 		return [self.RankCount, self.BandCount]
+
+	def HasParallelMultiply(self):
+		return True
 
 class GeometryInfoCommonIdentity(GeometryInfoBase):
 	"""
@@ -659,6 +693,11 @@ class TensorPotentialGenerator(object):
 			distribution = list(repr.GetDistributedModel().GetDistribution())
 		transpose = repr.GetDistributedModel().GetTranspose() 
 
+		for distribRank in distribution:
+			geomInfo = geometryList[distribRank]
+			if not geometryList[distribRank].HasParallelMultiply():
+				raise Exception("Distributed Rank %i (%s), has no support for parallel multiplication" % (distribRank, geomInfo.GetStorageId()))
+
 		#5) Represent the potential in the bases
 		source = psi.GetData()
 		for rank in reversed(range(self.Rank)):
@@ -1001,22 +1040,33 @@ class BasisPropagator(PropagatorBase):
 
 	def MultiplyHamiltonianBalancedOverlap(self, destPsi, t, dt):
 		#Store input psi
-		self.TempPsi2.GetData()[:] = self.psi.GetData()
+		def StorePsi():
+			self.TempPsi2.GetData()[:] = self.psi.GetData()
 
 		#Solve for all overlap matrices
-		repr = self.psi.GetRepresentation()
-		repr.SolveSqrtOverlap(False, self.psi)
+		def SolveOverlap1():
+			repr = self.psi.GetRepresentation()
+			repr.SolveSqrtOverlap(False, self.psi)
 		
 		#Multiply potentials
-		destPsi.GetData()[:] = 0
-		self.MultiplyPotential(self.psi, destPsi, t, dt)
+		def MultiplyPotential():
+			destPsi.GetData()[:] = 0
+			self.MultiplyPotential(self.psi, destPsi, t, dt)
 
 		#Solve for all overlap matrices
-		repr = destPsi.GetRepresentation()
-		repr.SolveSqrtOverlap(True, destPsi)
+		def SolveOverlap2():
+			repr = destPsi.GetRepresentation()
+			repr.SolveSqrtOverlap(True, destPsi)
 
 		#Restore input psi back to its original state
-		self.psi.GetData()[:] = self.TempPsi2.GetData()
+		def RestorePsi():
+			self.psi.GetData()[:] = self.TempPsi2.GetData()
+
+		StorePsi()
+		SolveOverlap1()
+		MultiplyPotential()
+		SolveOverlap2()
+		RestorePsi()
 
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")

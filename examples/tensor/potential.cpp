@@ -113,7 +113,7 @@ void RepresentPotentialInBasisReducedSphericalHarmonic( ReducedSphericalToolsPtr
 		
 				for (int postIndex=0; postIndex<postCount; postIndex++)
 				{
-					dest3d(preIndex, pairIndex, postIndex) += conj(leftLegendre) * source3d(preIndex, thetaIndex, postIndex) * rightLegendre * weight;
+					dest3d(preIndex, pairIndex, postIndex) += leftLegendre * source3d(preIndex, thetaIndex, postIndex) * rightLegendre * weight;
 				}
 			}
 		}

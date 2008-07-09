@@ -5,10 +5,9 @@
 PYPROP_ROOT    := /home/tore/prog/pyprop
 
 #Use these flags for speed
-CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
-#-O3 -funroll-loops
-CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG 
-CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_DISABLE_THREADS
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g -O3 -funroll-loops
+#CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG 
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_THREADSAFE
 #CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
 LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 

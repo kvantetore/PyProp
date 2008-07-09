@@ -61,7 +61,8 @@ def FindGroundstate(**args):
 	prop = SetupProblem(imtime=True, **args)
 	for t in prop.Advance(10):
 		E = prop.GetEnergy()
-		print "t = %02.2f, E = %2.8f" % (t, E)
+		if pyprop.ProcId == 0:
+			print "t = %02.2f, E = %2.8f" % (t, E)
 
 	E = prop.GetEnergyExpectationValue()
 	print "t = %02.2f, E = %2.8f" % (t, E)
@@ -328,17 +329,16 @@ def Propagate(algo=1):
 	initPsi = prop.psi
 
 	#prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialLength"])
-	prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"])
+	prop = SetupProblem(silent=True, imtime=False, additionalPotentials=["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"])
 
 	prop.psi.GetData()[:] = initPsi.GetData()
 	prop.psi.Normalize()
 
 	initPsi = prop.psi.Copy()
-	
+
 	timeList = []
 	corrList = []
 	normList = []
-
 	for t in prop.Advance(10):
 		n = prop.psi.GetNorm()
 		if n != n:
@@ -355,7 +355,7 @@ def Propagate(algo=1):
 		#sys.stdout.flush()
 		
 	
-	#prop.Propagator.PampWrapper.PrintStatistics()
+	prop.Propagator.PampWrapper.PrintStatistics()
 		
 	c = abs(prop.psi.InnerProduct(initPsi))**2
 	print "Final Correlation = %f" % c
