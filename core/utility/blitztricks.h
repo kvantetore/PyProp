@@ -1,6 +1,8 @@
 #ifndef BLITZTRICKS_H
 #define BLITZTRICKS_H
 
+#include "../common.h"
+
 /* 
  * Maps a blitz array down to a new array of rank 2. The
  * two resulting arrays will have the same size, and share
@@ -87,8 +89,8 @@ blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, 
 	int thirdRankSize = (array.size() == 0) ? 0 : (array.size() / (secondRankSize * firstRankSize));
 	
 	//Set up shape and stride vectors
-	TinyVector<int, 3> shape(firstRankSize, secondRankSize, thirdRankSize);
-	TinyVector<int, 3> stride(secondRankSize*thirdRankSize, thirdRankSize, 1);
+	blitz::TinyVector<int, 3> shape(firstRankSize, secondRankSize, thirdRankSize);
+	blitz::TinyVector<int, 3> stride(secondRankSize*thirdRankSize, thirdRankSize, 1);
 
 	//Create an array
 	//TODO: fix this so it doesn't reference the underlying vector, but rather
@@ -96,7 +98,7 @@ blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, 
 	//as expected
 	//The current implementation requires that the lifetime of the input array
 	//exceeds the lifetime of the output array
-	Array<cplx, 3> ret(array.data(), shape, stride, neverDeleteData);
+	blitz::Array<cplx, 3> ret(array.data(), shape, stride, blitz::neverDeleteData);
 
 	return ret;
 }
@@ -107,10 +109,10 @@ blitz::Array<T, 1> MapToRank1(blitz::Array<T, Rank> array)
 {
 	using namespace blitz;
 
-	TinyVector<int, 1> shape( array.size() );
-	TinyVector<int, 1> stride( 1 );
+	blitz::TinyVector<int, 1> shape( array.size() );
+	blitz::TinyVector<int, 1> stride( 1 );
 
-	Array<T, 1> ret(array.data(), shape, stride, neverDeleteData);
+	blitz::Array<T, 1> ret(array.data(), shape, stride, blitz::neverDeleteData);
 
 	return ret;
 }
