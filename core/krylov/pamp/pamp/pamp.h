@@ -66,6 +66,8 @@ public:
 		MaxOrthogonalizationCount = 3;
 		CommBase = MPI_COMM_WORLD;
 		DisableMPI = false;
+
+		Tolerance = sqrt(std::numeric_limits<NormType>::epsilon());
 	}
 
 private:
@@ -101,6 +103,8 @@ private:
 	//Scalars
 	int CurrentArnoldiStep;
 	bool IsConverged;
+	bool HappyBreakdown;
+	double Tolerance;
 	//...
 	
 	//Statistics
@@ -230,6 +234,8 @@ void pAMP<T>::Setup()
 template <class T>
 void pAMP<T>::PerformInitialArnoldiStep()
 {
+	HappyBreakdown = false;
+
 	ArnoldiVectors = 0; //This shouldn't be necessary
 	HessenbergMatrix = 0;
 	CurrentArnoldiStep = 0;
@@ -265,12 +271,16 @@ void pAMP<T>::PerformArnoldiStep()
 	VectorType currentOverlap2(Overlap2(blitz::Range(0, j+1)));
 
 	//Update the Arnoldi Factorization with the previous Residual
-	Timers["Arnold Step (start)"].Start();
 	T beta = CalculateGlobalNorm(Residual);
+	if (std::abs(beta) < Tolerance)
+	{
+		HappyBreakdown = true;
+		Timers["Arnoldi Step"].Stop();
+		return;
+	}
 	blas.ScaleVector(Residual, 1.0/beta);
 	blas.CopyVector(Residual, currentArnoldiVector);
 	HessenbergMatrix(j, j+1) = beta;
-	Timers["Arnold Step (start)"].Stop();
 
 	//Expand the krylov supspace with 1 dimension
 	Timers["Arnoldi Step"].Stop();
@@ -283,22 +293,14 @@ void pAMP<T>::PerformArnoldiStep()
 	//- Calculate the projection of Residual into the range of currentArnoldiMatrix (B)
 	//  i.e. TempVector =  B* B Residual
 	// Put the result in currentOverlap, use currentOverlap2 as temp buffer
-	Timers["Arnoldi Step (InnerProduct)"].Start();
-	Integration->InnerProduct(currentArnoldiMatrix, Residual, currentOverlap, currentOverlap2);
-	Timers["Arnoldi Step (InnerProduct)"].Stop();
 	Timers["Arnoldi Step (Orthogonalization)"].Start();
+	Integration->InnerProduct(currentArnoldiMatrix, Residual, currentOverlap, currentOverlap2);
 	blas.MultiplyMatrixVector(currentArnoldiMatrix, currentOverlap, TempVector);
-	Timers["Arnoldi Step (Orthogonalization)"].Stop();
 	//- Remove the projection from the residual
 	blas.AddVector(TempVector, -1.0, Residual);
 	//T residualNorm = CalculateGlobalNorm(Residual);
+	Timers["Arnoldi Step (Orthogonalization)"].Stop();
 
-	//If necessary, perform any reorthogonalization steps to ensure that all 
-	//arnoldi vectors are orthogonal
-	Timers["Arnoldi Step"].Stop();
-	//PerformOrthogonalization(origNorm, residualNorm);
-	Timers["Arnoldi Step"].Start();
-	
 	//Update the Hessenberg Matrix
 	HessenbergMatrix(j+1, blitz::Range(0, j+1)) = currentOverlap;
 
@@ -377,7 +379,7 @@ template<class T>
 void pAMP<T>::RecreateArnoldiFactorization()
 {
 	//Make sure we have a BasisSize-step arnoldi iteration
-	while (CurrentArnoldiStep < BasisSize-1)
+	while (CurrentArnoldiStep < BasisSize-1 && !HappyBreakdown)
 	{
 		PerformArnoldiStep();
 	}
