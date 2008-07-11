@@ -84,7 +84,7 @@ blitz::Array<T, 3> MapToRank3(blitz::Array<T, Rank> &array, int firstRankCount, 
 		secondRankSize *= array.extent(curRank);
 	}
 
-	int thirdRankSize = array.size() / (secondRankSize * firstRankSize);
+	int thirdRankSize = (array.size() == 0) ? 0 : (array.size() / (secondRankSize * firstRankSize));
 	
 	//Set up shape and stride vectors
 	TinyVector<int, 3> shape(firstRankSize, secondRankSize, thirdRankSize);

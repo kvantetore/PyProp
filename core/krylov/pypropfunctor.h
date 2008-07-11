@@ -40,7 +40,9 @@ public:
 
 	virtual void operator()(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out) 
 	{
+		//MPI_Barrier(MPI_COMM_WORLD);
 		Solver->ApplyOperator(in, out);
+		//MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 private:
@@ -61,6 +63,8 @@ public:
 
 	virtual void operator()(blitz::Array<cplx, 1> &residual) 
 	{
+		//MPI_Barrier(MPI_COMM_WORLD);
+
 		Solver->SetupResidual(residual);
 	}
 
@@ -123,6 +127,8 @@ public:
 	 */
 	virtual cplx InnerProduct(VectorType &left, VectorType &right) 
 	{
+		//MPI_Barrier(MPI_COMM_WORLD);
+
 		//Map the 1d vector to a a blitz array of correct shape
 		DataArray leftArray(left.data(), Shape, Stride, blitz::neverDeleteData);
 		DataArray rightArray(right.data(), Shape, Stride, blitz::neverDeleteData);
@@ -148,6 +154,8 @@ public:
 	 */
 	virtual void InnerProduct(MatrixType &left, VectorType &right, VectorType &out, VectorType &temp)
 	{
+		//MPI_Barrier(MPI_COMM_WORLD);
+
 		DataArray oldArray1(Psi1->GetData());
 		DataArray oldArray2(Psi2->GetData());
 		

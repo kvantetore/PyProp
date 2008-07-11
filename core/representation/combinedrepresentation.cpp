@@ -6,7 +6,7 @@
 template<int Rank>
 CombinedRepresentation<Rank>::CombinedRepresentation() 
 {
-	Algorithm = 1;
+	Algorithm = 3;
 }
 
 template<int Rank>
@@ -95,8 +95,17 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
 		{
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
+
 		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		this->GetGlobalOverlapMatrix(i)->MultiplyOverlapTensor(data);
+		if (this->IsOrthogonalBasis(i))
+		{
+			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+			data *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(i)->MultiplyOverlapTensor(data);
+		}
 	}
 }
 
@@ -110,7 +119,15 @@ void CombinedRepresentation<Rank>::SolveOverlap(Wavefunction<Rank> &psi)
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
 		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		this->GetGlobalOverlapMatrix(i)->SolveOverlapTensor(data);
+		if (this->IsOrthogonalBasis(i))
+		{
+			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+			data /= weights(blitz::tensor::j) + 0*blitz::tensor::k;
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(i)->SolveOverlapTensor(data);
+		}
 	}
 }
 
@@ -124,7 +141,16 @@ void CombinedRepresentation<Rank>::MultiplySqrtOverlap(bool conjugate, Wavefunct
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
 		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		this->GetGlobalOverlapMatrix(i)->MultiplySqrtOverlapTensor(conjugate, data);
+		if (this->IsOrthogonalBasis(i))
+		{
+			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+			//TODO: This can't be good. too many sqrt evals
+			data *= sqrt(weights(blitz::tensor::j)) + 0*blitz::tensor::k;
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(i)->MultiplySqrtOverlapTensor(conjugate, data);
+		}
 	}
 }
 
@@ -138,7 +164,16 @@ void CombinedRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunction
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
 		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		this->GetGlobalOverlapMatrix(i)->SolveSqrtOverlapTensor(conjugate, data);
+		if (this->IsOrthogonalBasis(i))
+		{
+			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+			//TODO: This can't be good. too many sqrt evals
+			data /= sqrt(weights(blitz::tensor::j)) + 0*blitz::tensor::k;
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(i)->SolveSqrtOverlapTensor(conjugate, data);
+		}
 	}
 }
 
@@ -152,9 +187,13 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	/*
 	 * Algorithm1 is faster for orthogonal basises
 	 * Algorithm2 is faster for nonorthogonal basies
+	 * Algorithm3 is the only one working for parallel problems, but require
+	 *    more memory
 	 *
 	 * For a combination of orthogonal and non-orthogonal
-	 * basises, they are most likely almost equally fast 
+	 * basises, 1 and 2 are most likely almost equally fast 
+	 *
+	 * Conclusion: Algo 3 is default
 	 */
 
 	if (Algorithm == 1)
@@ -222,9 +261,9 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 		
 		for (int i=0; i<Rank; i++)
 		{
-			if (i != 0 && this->GetDistributedModel()->IsDistributedRank(i))
+			if (this->GetDistributedModel()->IsDistributedRank(i) && !this->IsOrthogonalBasis(i))
 			{
-				throw std::runtime_error("This inner product only supports distribution in rank0");
+				throw std::runtime_error("This inner product only supports parallelization for orthogonal ranks");
 			}
 
 			if (this->IsOrthogonalBasis(i))
@@ -233,31 +272,38 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 				{
 					temp1 = d2;
 				}
-				continue;
-				//TODO: Add support for weights
-			}
-
-			blitz::Array<cplx, 2> overlapMatrix = this->GetGlobalOverlapMatrix(i)->GetOverlapHermitianLower();
-			//Reshape the overlap matrix into a N-d array suitable for TensorPotentialMultiply
-			blitz::TinyVector<int, Rank> overlapShape = 1;
-			overlapShape(i) = overlapMatrix.size();
-			blitz::TinyVector<int, Rank> overlapStride = 1;
-			for (int j=0; j<i; j++)
-			{
-				overlapStride(j) = overlapMatrix.size();
-			}
-			blitz::Array<cplx, Rank> overlapTensor(overlapMatrix.data(), overlapShape, overlapStride, blitz::neverDeleteData);
-
-			if (i==0)
-			{
-				temp1 = 0;
-				TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, d2, temp1);
+				else
+				{
+					//TODO: Make this faster by moving it to TensorMultiply
+					blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+					blitz::Array<cplx, 3> temp3d = MapToRank3(temp1, i, 1);
+					temp3d *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
+				}
 			}
 			else
 			{
-				temp2 = 0;
-				TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, temp1, temp2);
-				blitz::swap(temp1, temp2);
+				blitz::Array<cplx, 2> overlapMatrix = this->GetGlobalOverlapMatrix(i)->GetOverlapHermitianLower();
+				//Reshape the overlap matrix into a N-d array suitable for TensorPotentialMultiply
+				blitz::TinyVector<int, Rank> overlapShape = 1;
+				overlapShape(i) = overlapMatrix.size();
+				blitz::TinyVector<int, Rank> overlapStride = 1;
+				for (int j=0; j<i; j++)
+				{
+					overlapStride(j) = overlapMatrix.size();
+				}
+				blitz::Array<cplx, Rank> overlapTensor(overlapMatrix.data(), overlapShape, overlapStride, blitz::neverDeleteData);
+		
+				if (i==0)
+				{
+					temp1 = 0;
+					TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, d2, temp1);
+				}
+				else
+				{
+					temp2 = 0;
+					TensorPotentialMultiply_Rank1_Band(i, overlapTensor, 1.0, temp1, temp2);
+					blitz::swap(temp1, temp2);
+				}
 			}
 		}
 
