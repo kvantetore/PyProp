@@ -4,24 +4,22 @@
 
 PYPROP_ROOT    := /home/tore/prog/pyprop
 
-#Use these flags for speed
-CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g -O3 -funroll-loops
-#CXXFLAGS       := $(CXXFLAGS) -DBZ_DEBUG 
-CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_MKL -I/opt/intel/mkl/10.0.1.014/include -DBZ_THREADSAFE
-#CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
-LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
+CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
+CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
 
-#Use these flags for debugging
-#CXXFLAGS       := $(CXXFLAGS) -Wall -O0 -g
-#CPPFLAGS       := $(CPPFLAGS) -DLONGSIZE_32BIT -DBZ_DEBUG -DPYPROP_USE_BLAS 
+#CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_CBLAS 
+CPPFLAGS       := $(CPPFLAGS) -I/opt/intel/mkl/10.0.1.014/include 
+CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
+
+LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
 
 MPICXX         := mpicxx
 BOOST_LIBS     := -lboost_python-mt
 PYSTE_BIN	   := $(PYPROP_ROOT)/extern/pyste/pyste.py
 PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
 PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
-#LAPACK_LIBS = -lmkl_core 
-LAPACK_LIBS = -lmkl -lguide -lmkl_core -lmkl_lapack
+LAPACK_LIBS = -lmkl -lguide -lmkl_core -lmkl_lapack -lpthread
 
 PYPROP_USE_ARPACK  := 1
 PYPROP_USE_PIRAM   := 1

@@ -96,21 +96,23 @@ def Propagate(**args):
 	corr = abs(prop.psi.InnerProduct(initPsi))**2
 	print "t = %f, N(t) = %f, C(t) = %f" % (t, norm, corr)
 
-
+	"""
 	figure()
 	if prop.psi.GetRank() == 2:
 		pyprop.Plot2DRank(prop, 0)
 	else:
 		pyprop.Plot1D(prop)
-
+	"""
 	for t in prop.Advance(10):
 		norm = prop.psi.GetNorm()
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		print "t = %f, N(t) = %f, C(t) = %f" % (t, norm, corr)
+		"""
 		if prop.psi.GetRank() == 2:
 			pyprop.Plot2DRank(prop, 0)
 		else:
 			pyprop.Plot1D(prop)
+		"""
 
 def FindEigenvaluesImtime(**args):
 	eigenvalueCount = args['eigenvalueCount']

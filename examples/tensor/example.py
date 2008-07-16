@@ -325,7 +325,7 @@ def TestStability():
 import pypar
 
 def Propagate(algo=1):
-	prop = FindGroundstate(duration=20, silent=True)
+	prop = FindGroundstate(silent=True)
 	initPsi = prop.psi
 
 	#prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialLength"])
