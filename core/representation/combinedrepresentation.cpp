@@ -272,13 +272,10 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 				{
 					temp1 = d2;
 				}
-				else
-				{
-					//TODO: Make this faster by moving it to TensorMultiply
-					blitz::Array<double, 1> weights = this->GetLocalWeights(i);
-					blitz::Array<cplx, 3> temp3d = MapToRank3(temp1, i, 1);
-					temp3d *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
-				}
+				//TODO: Make this faster by moving it to TensorMultiply
+				blitz::Array<double, 1> weights = this->GetLocalWeights(i);
+				blitz::Array<cplx, 3> temp3d = MapToRank3(temp1, i, 1);
+				temp3d *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
 			}
 			else
 			{
