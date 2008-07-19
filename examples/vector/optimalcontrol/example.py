@@ -92,6 +92,7 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			controlVector = h5file.getNode(datasetPath, "FinalControl")[controlNumber]
 			octYield = h5file.getNode(datasetPath, "Yield")[:]
 			pMethod = pyprop.PenaltyMethod.Projection
+			forwardSolution = h5file.getNode(datasetPath, "ForwardSolution")[:]
 			try:
 				goodBadRatio = h5file.getNode(datasetPath, "GoodBadRatio")[:]
 			except tables.NoSuchNodeError:
@@ -108,13 +109,14 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 			goodBadRatio = solver.GoodBadRatio[:]
 	
 	if pMethod == pyprop.PenaltyMethod.Projection:
+		LaTeXFigureSettings(subFig=(2,3))
+		figure()
+		subplots = [subplot(321), subplot(322), subplot(323), subplot(324)]
+		subplots += [axes([.125, .1, .78, .22])]
+	else:
 		LaTeXFigureSettings(subFig=(2,2))
 		figure()
 		subplots = [subplot(221), subplot(222), subplot(223), subplot(224)]
-	else:
-		LaTeXFigureSettings(subFig=(1,3))
-		figure()
-		subplots = [subplot(311), subplot(312), subplot(313)]
 
 	#Plot final control
 	subplots[0].plot(timeGrid, controlVector, label="Control function")
@@ -133,14 +135,25 @@ def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", contro
 
 	#Plot yield
 	subplots[2].plot(octYield, label="Yield")
+	subplots[2].axis([0, len(octYield), 0, 1.1])
 	subplots[2].set_xlabel("Iteration number")
 	subplots[2].legend(loc="best")
 
 	#Plot bad/good ratio
 	if pMethod == pyprop.PenaltyMethod.Projection:
-		subplots[3].semilogy(goodBadRatio, label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
+		subplots[3].plot(r_[3:len(goodBadRatio)], goodBadRatio[3:], \
+			label=r"$\sqrt{\frac{u^T\Phi_{bad}u}{u^T\Phi_{good}u}}$")
 		subplots[3].set_xlabel("Iteration number")
 		subplots[3].legend(loc="best")
+	
+	#Plot state populations
+	ax = subplots[-1]
+	ax.plot(timeGrid, abs(forwardSolution[0,:])**2, label=r"$|0\rangle$")
+	ax.plot(timeGrid, abs(forwardSolution[1,:])**2, label=r"$|1\rangle$")
+	ax.axis([timeGrid[0], timeGrid[-1], 0, 1.1])
+	xlabel("Time (a.u.)")
+	ylabel("Population")
+	legend(loc="best")
 
 	draw()
 	
@@ -196,6 +209,8 @@ def SaveOptimalControlProblem(filename, datasetPath, solver):
 		-Final forward solution
 		-Final backward solution
 		-Good/bad ratio
+		-Control at max yield
+		-Forward solution at max yield
 	"""
 
 	#Save wavefunction
@@ -210,8 +225,10 @@ def SaveOptimalControlProblem(filename, datasetPath, solver):
 		h5file.createArray(datasetPath, "TimeGrid", solver.TimeGrid)
 		h5file.createArray(datasetPath, "ForwardSolution", solver.ForwardSolution)
 		h5file.createArray(datasetPath, "BackwardSolution", solver.BackwardSolution)
-		if solver.PenaltyMethod == pyprop.PenaltyMethod.Projection:
+		if solver.PenaltyMethod == pyprop.PenaltyMethod.Projection and size(solver.GoodBadRatio) > 1:
 			h5file.createArray(datasetPath, "GoodBadRatio", solver.GoodBadRatio)
+		h5file.createArray(datasetPath, "ControlAtMaxYield", solver.ControlVectorsMax)
+		h5file.createArray(datasetPath, "ForwardSolutionAtMaxYield", solver.ForwardSolutionMax)
 			
 	finally:
 		h5file.close()
