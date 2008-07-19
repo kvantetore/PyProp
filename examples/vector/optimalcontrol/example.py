@@ -1,7 +1,7 @@
 #import system modules
 import sys
 import os
-from numpy import conj
+from numpy import conj, size
 from numpy import where as nwhere
 import pylab
 from numpy import fft
