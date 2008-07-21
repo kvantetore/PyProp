@@ -423,6 +423,14 @@ class Problem:
 		assert(len(psiData.shape) <= 1, "SaveWavefunctionAscii only supports 1D wavefunction data")
 		pylab.save(filename, transpose((psiData.real ,psiData.imag)), delimiter=' ')	
 
+	def SaveWavefunctionFortran(self, filename):
+		psiData = self.psi.GetData()
+		assert(len(psiData.shape) <= 1, "SaveWavefunctionFortran only supports 1D wavefunction data")
+		fh = open(filename, "w")
+		for i in range(psiData.size):
+			fh.write("(%s, %s) " % (psiData[i].real, psiData[i].imag) )
+		fh.close()
+
 	def LoadWavefunctionAscii(self, filename):
 		r, c = pylab.load(filename, unpack=True)
 		arr = r + 1.0j*c
