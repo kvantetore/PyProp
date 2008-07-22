@@ -452,6 +452,19 @@ def LoadInitialState(prop, **args):
 		print "Using FranckCondon initial condition"
 		LoadInitialStateFranckCondon(prop, GetInputFile(**args))
 
+	elif initType == "scaledfc":
+		initScale = args["initScale"]
+		LoadInitialStateScaledFranckCondon(prop, GetInputFile(**args), initScale)
+
+	elif initType == "unit":
+		args["initType"] = "fc"
+		boundE, boundV = LoadRotatedBoundEigenstates(**args)
+		r = prop.psi.GetRepresentation().GetLocalGrid(0)
+		dr = diff(r)[0]
+		prop.psi.GetData()[:] = 0
+		for i in range(10):
+			prop.psi.GetData()[:,0] += conj(boundV[i,:]) / dr
+
 	elif initType == "adk":
 		print "Using ADI initial condition"
 		LoadInitialStateNiederhausen(prop, **args)
@@ -476,6 +489,20 @@ def LoadInitialStateFranckCondon(prop, inputfile):
 	finally:
 		f.close()
 	del f
+
+def LoadInitialStateScaledFranckCondon(prop, inputfile, scaleFactor):
+	"""
+	Loads a FranckCondon initial condition from a file
+	(as created from SetupInitialCondition, and puts it
+	into the wavefunction of prop, and scales it with exp(scaleFactor*R)
+	"""
+
+	LoadInitialStateFranckCondon(prop, inputfile)
+
+	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	endIndex = numpy.max(where(r <= 10)[0])
+	prop.psi.GetData()[:endIndex,0] *= exp(scaleFactor * r[:endIndex])
+	prop.psi.Normalize()
 
 
 def LoadInitialStateNiederhausen(prop, **args):

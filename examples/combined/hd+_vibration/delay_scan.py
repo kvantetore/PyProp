@@ -686,6 +686,15 @@ def SubmitAll2():
 
 	print "Count= ", count
 
+
+def SubmitNonFranckCondonChessboard():
+	duration5fs = 5 * sqrt(2) * femtosec_to_au
+	#SubmitNonFranckCondonExperiment(radialScaling=2, delayList=r_[0:800:1], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, initType="fc")
+	SubmitNonFranckCondonExperiment(radialScaling=2, delayList=r_[0:800:1], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, initType="scaledfc", initScale=-2 )
+	SubmitNonFranckCondonExperiment(radialScaling=2, delayList=r_[0:800:1], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, initType="scaledfc", initScale=2 )
+	#SubmitNonFranckCondonExperiment(radialScaling=2, delayList=r_[0:800:1], molecule="d2+", pulseDuration=duration5fs, pulseIntensity=5e13, initType="unit" )
+
+
 def SubmitAllFinal():
 	duration5fs = 5 * sqrt(2) * femtosec_to_au
 	duration12fs = 12 * sqrt(2) * femtosec_to_au
@@ -801,6 +810,50 @@ def SubmitFinalControlExperiment(**args):
 	#pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
 	#pylab.close("all")
 
+def SubmitNonFranckCondonExperiment(**args):
+	initType = args["initType"]
+	if initType == "scaledfc":
+		initType = "%s_%.2f" % (initType, args["initScale"])
+
+	args["outputfile"] = "outputfiles/%s/output_%s_probe_%ifs_%ie13_scaling_%i_%s.h5" % \
+		( \
+		args["molecule"], \
+		"%i", \
+		args["pulseDuration"]/(femtosec_to_au*sqrt(2)), 
+		args["pulseIntensity"]/1e13, \
+		args["radialScaling"], 
+		initType\
+		)
+
+	print args["outputfile"]
+	
+	partitionCount = args["partitionCount"] = args.get("partitionCount", 16)
+	outputfile = args["outputfile"]
+
+	#action = "submit"
+	#action = "gather"
+	action = "plot"
+
+	#Submit:
+	if action == "submit":
+		SubmitDelayScan(**args)
+
+	#Gathering all outputfiles into one
+	if action == "gather":
+		filenames = [outputfile % i for i in range(partitionCount)]
+		combinedFile = outputfile.replace("%i", "all")
+		ConcatenateHDF5(filenames, combinedFile)
+		for curfile in filenames: os.unlink(curfile)
+
+	#Make Plots
+	if action == "plot":
+		datafile = args["outputfile"].replace("%i", "all")
+		MakeDelayScanPlot(args["molecule"], datafile, radialScaling=args["radialScaling"], batchMode=True)
+		path, name = os.path.split(datafile)
+		root, ext = os.path.splitext(name)
+		pylab.savefig("figures/%s_%s.png" % (args["molecule"], root))
+		#pylab.close("all")
+
 
 
 def SubmitFinalExperiment(**args):
@@ -817,7 +870,7 @@ def SubmitFinalExperiment(**args):
 	print args["outputfile"]
 
 	#Submit:
-	args["partitionCount"] = args.get("partitionCount", 64)
+	args["partitionCount"] = args.get("partitionCount", 16)
 	SubmitDelayScan(**args)
 
 	##Make Plots
@@ -933,9 +986,6 @@ def SubmitDelayScan(**args):
 		args["delayList"] = delaySlice
 		args["outputfile"] = outputfile % i
 
-		if i != 0:
-			continue
-
 		script = submitpbs.SubmitScript()
 		script.interconnect = None
 		script.executable = './run_delay_scan.py'
@@ -944,7 +994,7 @@ def SubmitDelayScan(**args):
 		script.nodes = 1
 		script.walltime = submitpbs.timedelta(hours=6)
 		print "\n".join(script.CreateScript())
-		#script.Submit()
+		script.Submit()
 
 
 
@@ -997,10 +1047,12 @@ def PropagateDelayScan(**args):
 	LoadInitialState(prop, **args)
 	initPsi = prop.psi.Copy()
 
-	boundE, boundV = LoadBoundEigenstates(**args)
+	boundE, boundV = LoadRotatedBoundEigenstates(**args)
 	contE1, contV1, contE2, contV2 = LoadContinuumEigenstates(**args)
 
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
+	dr = diff(r)[0]
+
 	timeList = []
 	initCorrList = []
 	corrList = []
@@ -1034,7 +1086,7 @@ def PropagateDelayScan(**args):
 				energyDistribution.append(array(CalculateEnergyDistribution(prop.psi.GetData(), E, contE1, contV1, contE2, contV2)))
 			corrList.append(abs(dot(boundV, prop.psi.GetData()[:,0]))**2)
 		
-		#-1) Pump in the initial wavepacket
+		#0) Pump in the initial wavepacket
 		prop.psi.GetData()[:] = 0
 		for i in range(len(pumpTimes)):
 			#Add a franck-condon with the correct phase wavepacket to our wavefunction.
@@ -1043,27 +1095,30 @@ def PropagateDelayScan(**args):
 				#propagate until the next pump time
 				prop.Duration = pumpTimes[i+1]
 				for t in prop.Advance(False): pass
+
 		#Normalize after the pumping is complete
 		prop.psi.Normalize()
 
-		#0) Store the initial packet
-		#checkpoint()
-
-		#1) Propagate until the pulse starts
+		#1) Fast forward until the pulse starts
 		prop.Duration = pulseStart - 2*pulseDuration
-		for t in prop.Advance(minimum(20, prop.Duration)): 
-			#checkpoint()
-			pass
-		
-		#1a) Save the wavepacket before the pulse to see how much has flowed out
-		#checkpoint()	
-		
+		fastForward = pulseStart - 2*pulseDuration 
+		if fastForward > 0:
+			#project initial state on the eigenstates
+			proj = dot(boundV, prop.psi.GetData()[:,0])
+			#propagate in the eigenbasis
+			proj *= exp(-1.0j*fastForward*boundE)
+			#expand back to the grid basis
+			prop.psi.GetData()[:] = 0
+			prop.psi.GetData()[:,0] = dot(conj(boundV.transpose()), proj) / dr
+			#We've not propagated to t=fastForward
+			prop.PropagatedTime = fastForward
+
+		print "Norm = ", prop.psi.GetNorm()	
+
 		#2) Propagate until the end of the pulse
 		prop.Duration = pulseStart + 2*pulseDuration
 		index = 0
-		for t in prop.Advance(True):
-			#checkpoint()
-			pass
+		for t in prop.Advance(False): pass
 		
 		#2a) Save the wavepacket at the end 
 		checkpoint()

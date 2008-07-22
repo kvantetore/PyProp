@@ -586,11 +586,12 @@ def Propagate(**args):
 	initProj = dot(boundV, prop.psi.GetData()[:,0])
 	initPhases = numpy.arctan2(initProj.imag, initProj.real)
 
-	if "initStates" in args:
-		initStates = args["initStates"]
+	if "initStates" in args or "initStatesWeight" in args:
 		initPsi.GetData()[:] = 0
 
+		initStates = args.get("initStates", r_[0:initPsi.GetData().shape[1]])
 		initStatesWeight = args.get("initStatesWeight", "one")
+
 		if initStatesWeight == "one":
 			#use equal population in the selected states
 			for state in initStates:
@@ -603,6 +604,12 @@ def Propagate(**args):
 			for state in initStates:
 				initPsi.GetData()[:,0] += abs(initProj[state]) * boundV[state,:] / dr
 				print "Input Energy = ", boundE[state]
+
+		elif initStatesWeight == "gaussian":
+			center = args["initCenter"]
+			width = args["initWidth"]
+			initPsi.GetData()[:,0] = exp(-(r-center)**2/width**2)
+			initPsi.Normalize()
 
 		else:
 			raise Exception("Invalid initStatesWeight '%s'" % initStatesWeight)
