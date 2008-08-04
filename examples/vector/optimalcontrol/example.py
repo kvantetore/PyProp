@@ -78,6 +78,21 @@ def GetPulseSpectrum(controlVector, timeGridResolution):
 	return dw, pulseSpectrum
 
 
+def ApplyFourierFilter(pulse, timeGridResolution, filterWidth = 1.0):
+	"""
+	Applies a low-pass filter to an optimized pulse. First, the fast 
+	fourier transform of the pulse is computed, then a Gaussian filter
+	centered at the zero frequency is applied. The width of the gaussian
+	may be passed with the 'filterWidth' keyword.
+	"""
+
+	dw, pulseSpectrum = GetPulseSpectrum(pulse, timeGridResolution)
+	pulseSpectrum *= exp(-dw**2 / filterWidth**2)
+	filteredPulse = fft.ifft(fft.fftshift(pulseSpectrum)).real
+
+	return filteredPulse
+
+
 def MakeResultPlotCFY(solver = None, freqCutoff = 2.0, datasetPath = "/", controlNumber = 0):
 
 	#Get results
@@ -183,18 +198,34 @@ def TextToHDFDense(fileName, vectorSize, scaling):
 		fileh5.close()
 
 
-def SaveWavefunction(filename, dataset, prop):
-	if pyprop.ProcId == 0:
-		if os.path.exists(filename):
-			os.unlink(filename)
-	pyprop.serialization.SaveWavefunctionHDF(filename, dataset, prop.psi)
+def ReadFortranComplexData(fileName, dataSize):
+	"""
+	Read complex data from an ASCII file, as stored by Fortran.
+	Reads only the first line of the file.
+	"""
+	#Allocate data array
+	data = numpy.zeros(dataSize, dtype=complex)
 
-	if pyprop.ProcId == 0:
-		h5file = tables.openFile(filename, "r+")
-		try:
-			h5file.setNodeAttr(dataset, "configObject", prop.Config.cfgObj)
-		finally:
-			h5file.close()
+	#Open file
+	fileHandle = open(fileName, 'r')
+
+	#Read data line
+	rawline = fileHandle.readline()
+	line = rawline.split(') (')
+	fileHandle.close()
+
+	#Parse complex data
+	for k in range(0, dataSize):
+		line[k] = line[k].strip()
+		line[k] = line[k].strip('(')
+		line[k] = line[k].strip(')')
+		line[k] = line[k].strip()
+		num = line[k].split(',')
+		num[0].strip()
+		num[1].strip()
+		data[k] = numpy.complex(float(num[0]),float(num[1]))
+
+	return data
 
 
 def SaveOptimalControlProblem(filename, datasetPath, solver):
