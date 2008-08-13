@@ -1,0 +1,7 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potential for 1D and 2D
+PotentialEvaluator("H2Potential<3> 3","H2Potential_3")
+PotentialEvaluator("LaserPotential<3> 3","LaserPotential_3")
+
