@@ -892,9 +892,14 @@ class TensorPotential(PotentialWrapper):
 
 		#Perform multiplication
 		self.MultiplyFunction(*argList)
+
+	def GetExpectationValue(self, tmpPsi, t, timeStep):
+		self.GetExpectationValue(self.psi, tmpPsi, t, timeStep)
 	
-	def GetExpectationValue(self, t, timestep):
-		raise NotImplementedException("GetExpectationValue is not implemented for class %s" % (self.__class__))
+	def GetExpectationValue(self, psi, tmpPsi, t, timeStep):
+		tmpPsi.Clear()
+		self.MultiplyPotential(psi, tmpPsi, t, timeStep)
+		return abs(psi.InnerProduct(tmpPsi))**2
 
 
 from pyprop import PropagatorBase
