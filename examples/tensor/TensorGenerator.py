@@ -893,13 +893,13 @@ class TensorPotential(PotentialWrapper):
 		#Perform multiplication
 		self.MultiplyFunction(*argList)
 
-	def GetExpectationValue(self, tmpPsi, t, timeStep):
-		self.GetExpectationValue(self.psi, tmpPsi, t, timeStep)
+	#def GetExpectationValue(self, tmpPsi, t, timeStep):
+	#	self.GetExpectationValue(self.psi, tmpPsi, t, timeStep)
 	
-	def GetExpectationValue(self, psi, tmpPsi, t, timeStep):
+	def GetExpectationValue(self, tmpPsi, t, timeStep):
 		tmpPsi.Clear()
-		self.MultiplyPotential(psi, tmpPsi, t, timeStep)
-		return abs(psi.InnerProduct(tmpPsi))**2
+		self.MultiplyPotential(self.psi, tmpPsi, t, timeStep)
+		return abs(self.psi.InnerProduct(tmpPsi))**2
 
 
 from pyprop import PropagatorBase
