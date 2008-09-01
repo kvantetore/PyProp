@@ -15,8 +15,9 @@ void CustomGridRepresentation::ApplyConfigSection(const ConfigSection &config)
 	{
 		GlobalWeights(i) = 0.5 * (GlobalGrid(i+1) - GlobalGrid(i-1));
 	}
-	GlobalWeights(0) = 0.5 * (GlobalGrid(1) - GlobalGrid(0));
-	GlobalWeights(N-1) = 0.5 * (GlobalGrid(N-1) - GlobalGrid(N-2));
+	//Assume that the 0-valued boundary point is equidistant with the two previous points
+	GlobalWeights(0) =  (GlobalGrid(1) - GlobalGrid(0));
+	GlobalWeights(N-1) =  (GlobalGrid(N-1) - GlobalGrid(N-2));
 }
 
 
