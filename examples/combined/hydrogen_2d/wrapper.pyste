@@ -2,6 +2,8 @@
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Compile potential for 1D and 2D
+PotentialEvaluator("HydrogenPotential2D<1> 1","HydrogenPotential2D_1")
 PotentialEvaluator("HydrogenPotential2D<2> 2","HydrogenPotential2D_2")
+PotentialEvaluator("LaserPotential<1> 1","LaserPotential_1")
 PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
 

@@ -27,10 +27,19 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double x = pos(0);
-		double y = pos(1);
+		if (Rank == 1)
+		{
+			double x = pos(0);
 
-		return -1.0 / std::sqrt(x*x + y*y + Softing*Softing);
+			return -1.0 / std::sqrt(x*x + Softing*Softing);
+		}
+		if (Rank == 2)
+		{
+			double x = pos(0);
+			double y = pos(1);
+
+			return -1.0 / std::sqrt(x*x + y*y + Softing*Softing);
+		}
 	}
 };
 

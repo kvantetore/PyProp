@@ -1,3 +1,4 @@
+representation0 = "LinearGrid"
 import sys
 import os
 import time
@@ -43,7 +44,7 @@ def Propagate(initPsi = None, **args):
 		initPsi = prop.psi.Copy()
 
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
-	phi = prop.psi.GetRepresentation().GetLocalGrid(1)
+	#phi = prop.psi.GetRepresentation().GetLocalGrid(1)
 
 	for t in prop.Advance(20):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
