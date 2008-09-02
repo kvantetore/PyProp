@@ -48,13 +48,17 @@ class PamPropagator(PropagatorBase):
 		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
 
 	def AdvanceStep(self, t, dt):
-		if self.UseBalancedOverlap or self.IsOrthogonalBasis:
+		if self.UseBalancedOverlap:
 			repr = self.psi.GetRepresentation()
 			repr.MultiplySqrtOverlap(False, self.psi)
 			self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, False)
 			repr.SolveSqrtOverlap(False, self.psi)
 
+		elif self.IsOrthogonalBasis:
+			self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, False)
+		
 		else:
+			#this is slow
 			self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, True)
 
 	def MatVecCallback(self, psi, tempPsi, dt, t):
@@ -63,16 +67,14 @@ class PamPropagator(PropagatorBase):
 	
 		if self.UseBalancedOverlap:
 			#This should be implemented on propagators but its not.
+			#TODO: Do not solve for overap matrices on orthogonal ranks that is wrong!
 			self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
 
 		elif self.IsOrthogonalBasis:
 			#This only works on orthogonal representations (Not BSplines)
 			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
-			repr = tempPsi.GetRepresentation()
-			repr.SolveOverlap(tempPsi)
 
 		else:
-			#this is slow
 			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
 		
 
