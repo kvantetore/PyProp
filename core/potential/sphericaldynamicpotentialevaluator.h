@@ -4,28 +4,10 @@
 #include "../common.h"
 #include "../wavefunction.h"
 #include "../representation/combinedrepresentation.h"
-#include "../representation/compressedrepresentation.h"
+#include "../representation/angularrepresentation.h"
 #include "staticpotential.h"
 #include "potentialbase.h"
 #include "potentialaction.h"
-
-template<class DestType, class SourceType>
-shared_ptr<DestType> pyprop_cast(shared_ptr<SourceType> sourcePtr)
-{
-#ifdef BZ_DEBUG
-	shared_ptr<DestType> destPtr = dynamic_pointer_cast<DestType>(sourcePtr);
-	if (destPtr == 0)
-	{
-		cout 
-			<< "WARNING: Could not cast " << typeid(*sourcePtr).name() 
-			<< " to " << typeid(DestType).name() << " safely" << endl;
-		destPtr = boost::static_pointer_cast<DestType>(sourcePtr);
-	}
-	return destPtr;
-#else
-	return boost::static_pointer_cast<DestType>(sourcePtr);
-#endif
-}
 
 // The class inherits from DynamicPotentialClass and ActionClass
 // DynamicPotentialClass defines the potential
@@ -46,10 +28,8 @@ public:
 		potential.CurTimeUpdated();
 
 		//Get representations
-		typename CombRepr::Ptr repr = pyprop_cast< CombRepr >(psi.GetRepresentation());
-		BZPRECONDITION(repr != 0);
-		typename CompressedRepresentation::Ptr angularRepr = pyprop_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
-		BZPRECONDITION(angularRepr != 0);
+		typename CombRepr::Ptr repr = dynamic_pointer_cast< CombRepr >(psi.GetRepresentation());
+		typename AngularRepresentation::Ptr angularRepr = dynamic_pointer_cast< AngularRepresentation >(repr->GetRepresentation(Rank-1));
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
 		for (int i=0; i<Rank-1; i++)
@@ -58,10 +38,7 @@ public:
 		}
 		
 		blitz::Array<double, 2> omegaGrid;
-		omegaGrid.reference(angularRepr->GetLocalExpandedGrid());
-
-		//Check that omegaGrid refers to 2-d expanded grid
-		BZPRECONDITION(omegaGrid.extent(1) == 2);
+		omegaGrid.reference(angularRepr->GetLocalOmegaGrid());
 		
 		//postition is size rank+1 since <r,(l,m)> --> <r,l,m> = pos
 		blitz::TinyVector<double, Rank+1> pos;
@@ -73,11 +50,11 @@ public:
 				pos(i) = grid(i)(it.position()(i));
 			}
 			
-			// second last rank - theta or l
+			// second last rank - theta
 			int omegaIndex = it.position()(Rank-1);
 			pos(Rank-1) = omegaGrid(omegaIndex, 0);
 							
-			// last rank - phi or m
+			// last rank - phi
 			pos(Rank) = omegaGrid(omegaIndex, 1);
 
 			// Uses the function from the inherited classes
@@ -161,16 +138,14 @@ public:
 
 		//Get representations
 		typename CombRepr::Ptr repr = dynamic_pointer_cast< CombRepr >(psi.GetRepresentation());
-		typename CompressedRepresentation::Ptr angularRepr = dynamic_pointer_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
-		BZPRECONDITION(angularRepr != 0);
+		typename AngularRepresentation::Ptr angularRepr = dynamic_pointer_cast< AngularRepresentation >(repr->GetRepresentation(Rank-1));
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
 		for (int i=0; i<Rank; i++)
 		{
 			grid(i).reference(repr->GetLocalGrid(i));
 		}
-		blitz::Array<double, 2> omegaGrid(angularRepr->GetLocalExpandedGrid());
-		BZPRECONDITION(omegaGrid.extent(1) == 2);
+		blitz::Array<double, 2> omegaGrid(angularRepr->GetLocalOmegaGrid());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > weights;
 		for (int i=0; i<Rank; i++)
