@@ -113,8 +113,6 @@ public:
 		MatrixColRank = colRank;
 
 		DiagonalizeMatrix();
-
-		cout << matrixElement(0,5) << endl;
 	}
 
 	void DiagonalizeMatrix()
