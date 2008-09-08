@@ -899,7 +899,7 @@ class TensorPotential(PotentialWrapper):
 	def GetExpectationValue(self, tmpPsi, t, timeStep):
 		tmpPsi.Clear()
 		self.MultiplyPotential(self.psi, tmpPsi, t, timeStep)
-		return abs(self.psi.InnerProduct(tmpPsi))**2
+		return self.psi.InnerProduct(tmpPsi)
 
 
 from pyprop import PropagatorBase
