@@ -899,6 +899,11 @@ class TensorPotential(PotentialWrapper):
 	def GetExpectationValue(self, tmpPsi, t, timeStep):
 		tmpPsi.Clear()
 		self.MultiplyPotential(self.psi, tmpPsi, t, timeStep)
+
+		#Solve for all overlap matrices
+		repr = self.psi.GetRepresentation()
+		repr.SolveOverlap(tmpPsi)
+		
 		return self.psi.InnerProduct(tmpPsi)
 
 
