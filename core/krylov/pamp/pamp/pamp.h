@@ -113,6 +113,9 @@ private:
 	int InnerProductCount;
 	TimerMap Timers;
 
+	//Error estimates
+	T PropagationErrorEstimate;
+
 	//Private methods
 	void MultiplyOperator(VectorType &in, VectorType &out);
 	void PerformInitialArnoldiStep();
@@ -178,6 +181,22 @@ public:
 	{
 		return real(CalculateGlobalNorm(Residual));
 	}
+
+	MatrixType GetHessenbergMatrix()
+	{
+		return HessenbergMatrix;
+	}
+
+	MatrixType GetHessenbergMatrixExp()
+	{
+		return HessenbergExp;
+	}
+
+	double GetPropagationErrorEstimate() 
+	{
+		return sqr(std::abs(PropagationErrorEstimate));
+	}
+
 		
 };
 
@@ -555,6 +574,8 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 	q(0) = 1;
 
 	blas.MultiplyMatrixVector(HessenbergExp, q, v);
+
+	PropagationErrorEstimate = v(v.extent(0)-1);
 	
 	blas.MultiplyMatrixVector(ArnoldiVectors, v, input);
 

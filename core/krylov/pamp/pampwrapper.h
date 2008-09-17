@@ -102,6 +102,21 @@ public:
 		return Propagator.GetResidualNorm();
 	}
 
+	blitz::Array<cplx, 2> GetHessenbergMatrix()
+	{
+		return Propagator.GetHessenbergMatrix();
+	}
+
+	blitz::Array<cplx, 2> GetHessenbergMatrixExp()
+	{
+		return Propagator.GetHessenbergMatrixExp();
+	}
+
+	double GetPropagationErrorEstimate() 
+	{
+		return Propagator.GetPropagationErrorEstimate();
+	}
+
 };
 
 } // Namespace
