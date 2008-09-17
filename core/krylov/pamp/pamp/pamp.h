@@ -173,6 +173,11 @@ public:
 
 		Timers = TimerMap();
 	}
+
+	double GetResidualNorm()
+	{
+		return CalculateGlobalNorm(Residual);
+	}
 		
 };
 
