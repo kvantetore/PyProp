@@ -97,6 +97,11 @@ public:
 		cout << "exp(iA) = " << exp << endl;
 	}
 
+	double GetResidualNorm()
+	{
+		return Propagator.GetResidualNorm();
+	}
+
 };
 
 } // Namespace

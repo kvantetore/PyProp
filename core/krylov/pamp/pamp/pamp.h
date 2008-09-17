@@ -176,7 +176,7 @@ public:
 
 	double GetResidualNorm()
 	{
-		return CalculateGlobalNorm(Residual);
+		return real(CalculateGlobalNorm(Residual));
 	}
 		
 };
