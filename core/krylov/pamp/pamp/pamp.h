@@ -146,6 +146,7 @@ private:
 public:
 	void PadeExponential(MatrixType A, MatrixType output, int order);
 	void ScalingPadeExponential(MatrixType A, MatrixType output, int scalingOrder, int padeOrder);
+	void EigenvectorExponential(MatrixType A, MatrixType output);
 
 	double EstimateMemoryUsage(int matrixSize, int basisSize);
 	void Setup();
@@ -547,6 +548,51 @@ void pAMP<T>::PadeExponential(MatrixType A, MatrixType output, int order)
 	Timers["PadeExponential"].Stop();
 }
 
+template<class T>
+void pAMP<T>::EigenvectorExponential(MatrixType A, MatrixType output)
+{
+	Timers["EigenvectorExponential"].Start();
+	MatrixType emtpyMatrix(1,1);
+
+	//Reference some temp arrays to avoid allocation every call
+	MatrixType eigenvectors(PadeTemp);
+	MatrixType eigenvectorsTrans(PadeP);
+	MatrixType input(PadeTemp2);
+
+	VectorType eigenvalues(PadeTemp2.extent(0));
+
+	//CalculateEigenvectorFactorization destroys the input matrix, so we make a copy
+	input = A;
+
+	lapack.CalculateEigenvectorFactorization(false, true, input, eigenvalues, emtpyMatrix, eigenvectors);
+
+	//Make a transpose-conjugated copy of the eigenvectors
+	eigenvectorsTrans = conj(eigenvectors(blitz::tensor::j, blitz::tensor::i)) * exp(eigenvalues(blitz::tensor::j));
+
+	//Multiply eigenvectors and the scaled conjugated eigenvectors together to form one propagation matrix
+	blas.MultiplyMatrixMatrix(eigenvectors, eigenvectorsTrans, output);
+
+	/* V  E  V*
+	 * E = exp(ev)
+	 * 
+	 *  / v00 v01 v02 v03 \    / E0  0   0   0  \   /  v00*  v10* v20* v30* \
+	 *  | v10 v11 v12 v12 |    | 0  E1   0   0  |   |  v01*  v11* v21* v31* |
+	 *  | v20 v21 v22 v23 |    | 0   0  E2   0  |   |  v02*  v12* v22* v32* |
+	 *  \ v30 v31 v32 v33 /    \ 0   0   0  E3  /   \  v03*  v13* v23* v33* /
+	 *
+	 *  / v00 v01 v02 v03 \ /  E0*v00*  E0*v10* E0*v20* E0*v30* \  
+	 *  | v10 v11 v12 v12 | |  E1*v01*  E1*v11* E1*v21* E1*v31* |
+     *  | v20 v21 v22 v23 | |  E2*v02*  E2*v12* E2*v22* E2*v32* |
+     *  \ v30 v31 v32 v33 / \  E3*v03*  E3*v13* E3*v23* E3*v33* /
+	 *
+	 *      egenvectors                eigenvectorsTrans
+	 */
+
+	Timers["EigenvectorExponential"].Stop();
+}
+	
+	
+
 
 template<class T>
 void pAMP<T>::PropagateVector(VectorType input, T dt)
@@ -564,20 +610,32 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 	 *            = Q exp(H)[0, :]
 	 */
 
-	//cout << "H = " << HessenbergMatrix << endl;
+	//Calculate the exponential of the hessenberg matrix
 	HessenbergMatrix *= - dt * cplx(0., 1.);
-	ScalingPadeExponential(HessenbergMatrix, HessenbergExp, -1, -1);
+	//ScalingPadeExponential(HessenbergMatrix, HessenbergExp, -1, -1);
+	EigenvectorExponential(HessenbergMatrix, HessenbergExp);
 
+	//Propagate the system in the krylov basis. Our initial vector in the 
+	//krylov basis is [1, 0, 0, ...]
+	/*
 	VectorType q(BasisSize);
 	VectorType v(BasisSize);
 	q = 0;
 	q(0) = 1;
-
 	blas.MultiplyMatrixVector(HessenbergExp, q, v);
 
-	PropagationErrorEstimate = v(v.extent(0)-1);
-	
+	The product of a matrix H by a vector (1,0,0,0.....) is simply the first
+	column of the matrix. In our case, HessenbergExp is stored in blas style, 
+	(row-major)
+	*/
+	VectorType v = HessenbergExp(0, blitz::Range::all());
+
+	//Transform the solution vector back from Krylov space to the original space
 	blas.MultiplyMatrixVector(ArnoldiVectors, v, input);
+
+	//We use the magnutude of the population of the last krylov vector as an estimate
+	//of whether our krylov space was too small, or the timestep too large
+	PropagationErrorEstimate = v(v.extent(0)-1);
 
 	Timers["Total"].Stop();
 }
