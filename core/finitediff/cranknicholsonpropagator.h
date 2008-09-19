@@ -70,8 +70,8 @@ public:
 		//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
 		blitz::Array<cplx, Rank> src = sourcePsi.GetData();
 		blitz::Array<cplx, Rank> dst = destPsi.GetData();
-		//TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
-		TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		//TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
 		//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
 		
 	}
