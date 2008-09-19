@@ -2,6 +2,7 @@
 #include <boost/python/module.hpp>
 
 // Exports =====================================================================
+void Export_python_papi();
 void Export_python_cranknicholson();
 void Export_python_representation();
 void Export_python_combinedrepresentation();
@@ -39,6 +40,7 @@ void Export_python_customgridrepresentation();
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libcore)
 {
+    Export_python_papi();
     Export_python_cranknicholson();
     Export_python_representation();
     Export_python_combinedrepresentation();
