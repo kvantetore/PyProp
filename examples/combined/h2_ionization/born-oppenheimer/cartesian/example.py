@@ -157,9 +157,11 @@ def DetectPossibleCrossings(nuclearSeparationList, energyList, maximumDistance):
 
 	return possibleCrossings
 
-
-import ctypesGsl
-import ctypesGsl.minim as minim
+try:
+	import ctypesGsl
+	import ctypesGsl.minim as minim
+except:
+	print "Warning: could not load ctypesGsl"
 
 def ResolveCrossing(nuclearSeparationList, energyList, possibleCrossing, accuracy, maximumDistance, **args):
 	"""

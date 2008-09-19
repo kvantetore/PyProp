@@ -1,0 +1,5 @@
+Note: This is mostly a bad idea, due to the fact that we need high resolution
+in the region where one of the electron is still in the molecule, and this 
+method gives no preference to that case. Instead we will use a cartesian
+non-equidistant grid, where we can have high resolution in the region
+of single ionization

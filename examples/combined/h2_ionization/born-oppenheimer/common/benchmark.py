@@ -72,3 +72,18 @@ def RunBenchmarkDifferenceOrder(**args):
 	return orderList, time, error
 
 
+def RunBenchmarkInnerGridCount(**args):
+	countList = r_[10:200:20]
+	bench = array([BenchmarkEigenstate(innerGridCount=count, **args) for count in countList])
+
+	exactValue = bench[-1,1]
+	error = abs((bench[:,1] - exactValue) / exactValue)
+	time = bench[:,0]
+
+	print bench[:,1]
+
+	#semilogy(countList, error)
+
+	return countList, time, error
+
+

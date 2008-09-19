@@ -45,6 +45,9 @@ def CommonSetupConfig(**args):
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
 
+	if "innerGridCount" in args:
+		conf.ElectronRepresentation.inner_count = args["innerGridCount"]
+
 	return conf
 
 
