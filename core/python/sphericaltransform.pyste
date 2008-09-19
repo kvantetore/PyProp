@@ -1,7 +1,7 @@
 
-SphericalTransformTensorGrid = Class("SphericalTransformTensorGrid", "transform/shtools.h")
+SphericalTransformTensorGrid = Class("SphericalTransformTensorGrid", "transform/spherical/shtools.h")
 
-SphericalTransform = Template("SphericalTransform", "transform/sphericaltransform.h")
+SphericalTransform = Template("SphericalTransform", "transform/spherical/sphericaltransform.h")
 SphericalTransform("2")
 SphericalTransform("3")
 

@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include "shtools.h"
-#include "fouriertransform.h"
-#include "../utility/blitztricks.h"
+#include "../fouriertransform.h"
+#include "../../utility/blitztricks.h"
 
 template<int Rank> void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int omegaRank)
 {
@@ -221,6 +221,15 @@ void SphericalTransformTensorGrid::SetupExpansion()
 
 	blitz::Array<double, 2> legendre = EvaluateAssociatedLegendrePolynomials(LMax, ThetaGrid);
 	AssocLegendrePoly.reference(legendre);
+	SphericalHarmonic.resize(OmegaGrid.extent(0), legendre.extent(1));
+	SphericalHarmonicDerivativeTheta.resize(SphericalHarmonic.shape());
+	SphericalHarmonicDerivativePhi.resize(SphericalHarmonic.shape());
+	SphericalHarmonicDerivativeTheta = 0;
+
+   	blitz::Range all = blitz::Range::all();
+
+	int thetaCount = ThetaGrid.extent(0);
+	int phiCount = PhiGrid.extent(0);
 
 	//Normalize associated legendre such that the int(legendre_lm * legendre_lm', omega) = delta_lm_lm'
 	int lmIndex = 0;
@@ -229,13 +238,54 @@ void SphericalTransformTensorGrid::SetupExpansion()
 		for (int m=-l; m<=l; m++)
 		{
 			//Calculate norm(l, m)
-		    double norm;
 			double sign = 1 ;// (m > 0) ? pow(-1., m) : 1;
-			norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
-			norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
+			double norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
+			
+			//Scale derivative
+			double derivScaling = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(m)) / (double)(l+std::abs(m)));
 
 			//Scale assoc legendre
-			AssocLegendrePoly(blitz::Range::all(), lmIndex) *= norm;
+			AssocLegendrePoly(all, lmIndex) *= norm;
+
+			int omegaIndex = 0;
+			for (int thetaIndex=0; thetaIndex<thetaCount; thetaIndex++)
+			{
+				double cosTheta = cos(ThetaGrid(thetaIndex));
+				//double sinTheta = sin(ThetaGrid(thetaIndex));
+
+				for (int phiIndex=0; phiIndex<phiCount; phiIndex++)
+				{
+					double phi = PhiGrid(phiIndex);
+					cplx expPhi = exp(cplx(0.0,1.0) * (double)m * phi);
+
+					//Setup SphericalHarmonic function
+					SphericalHarmonic(omegaIndex, lmIndex) = AssocLegendrePoly(thetaIndex, lmIndex) * expPhi;
+
+					//Calculate d/dtheta derivative of spherical harmonic
+					SphericalHarmonicDerivativeTheta(omegaIndex, lmIndex) = 0;
+					if (l > 0)
+					{
+						//norm
+						cplx firstTerm  = l * cosTheta * SphericalHarmonic(omegaIndex, MapLmIndex(l,m));
+						cplx secondTerm = 0;
+						if (l > std::abs(m)) 
+						{
+							secondTerm = - (l+m) * derivScaling * SphericalHarmonic(omegaIndex, MapLmIndex(l-1,m));
+						}
+						SphericalHarmonicDerivativeTheta(omegaIndex, lmIndex) = firstTerm + secondTerm;
+						/* Don't divide by sin(ThetaGrid). We can do that in the potentials instead
+						 * yes, this is a hack, but it avoids cancellation errors, as the potentials
+						 * I have found yet all have a sin(Theta) term.
+						 */
+						//SphericalHarmonicDerivativeTheta(omegaIndex, lmIndex) /= sinTheta;
+					}
+
+					omegaIndex++;
+				}
+			}
+
+			//Calculate d/dphi derivative of spherical harmonic.
+			SphericalHarmonicDerivativePhi(all, lmIndex) = cplx(0., (double)m) * SphericalHarmonic(all, lmIndex);
 
 			//we are iterating (l,m) in principal order.
 			lmIndex++;	

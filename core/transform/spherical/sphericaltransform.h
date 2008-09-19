@@ -1,11 +1,11 @@
 #ifndef SPHERICALTRANSFORM_H
 #define SPHERICALTRANSFORM_H
 
-#include "../common.h"
-#include "../wavefunction.h"
-#include "../representation/angularrepresentation.h"
-#include "../representation/combinedrepresentation.h"
-#include "../representation/sphericalharmonicrepresentation.h"
+#include "../../common.h"
+#include "../../wavefunction.h"
+#include "../../representation/combinedrepresentation.h"
+#include "../../representation/spherical/angularrepresentation.h"
+#include "../../representation/spherical/sphericalharmonicrepresentation.h"
 #include "shtools.h"
 
 
@@ -22,22 +22,21 @@ public:
 
 	// get the legendre polinomials evaluated at cos(theta) in shtools object
 	// alternative: use the constructor with the Wavefunction argument
-	void SetupStep(const Wavefunction<Rank> &psi)
+	void SetupStep(const Wavefunction<Rank> &psi, int transformRank)
 	{
-		throw std::runtime_error("SphericalTransform temporarily out of service...");
-		/*
+		TransformRank = transformRank;
+
 		// uses the representation of the wavefunction to get MaxL
 		typedef CombinedRepresentation<Rank> CombRepr;
 		typedef SphericalHarmonicRepresentation SphHarmRepr;
 		typename CombRepr::Ptr reprSphere = dynamic_pointer_cast<CombRepr>(psi.GetRepresentation());
-		SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast<SphHarmRepr>(reprSphere->GetAngularRepresentation());
+		SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast<SphHarmRepr>(reprSphere->GetRepresentation(TransformRank));
 		if (reprAngular == 0) 
 		{
 			std::cout << "Invalid wavefunction representation, must be SphericalHarmonicRepresentation" << std::endl;
 			throw std::runtime_error("Invalid wavefunction representation");
 		}
 		transform.Initialize(reprAngular->Range.MaxL);
-		*/
 	}
 	
 	/* 
@@ -51,7 +50,7 @@ public:
 		//Get shape of dest array
 		blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
 		int lmSize = transform.GetAssociatedLegendrePolynomial().extent(1);
-		shape(Rank-1) = lmSize;
+		shape(TransformRank) = lmSize;
 
 		//Get destination buffer
 		int lmDataName = psi.GetAvailableDataBufferName(shape);
@@ -65,7 +64,7 @@ public:
 		blitz::Array<cplx, Rank> dstData(psi.GetData(lmDataName));
 
 		//The last rank is the spherical rank
-		transform.ForwardTransform(srcData, dstData, Rank-1);
+		transform.ForwardTransform(srcData, dstData, TransformRank);
 		psi.SetActiveBuffer(lmDataName);
 	}
 
@@ -74,7 +73,7 @@ public:
 		//Get shape of dest array
 		blitz::TinyVector<int, Rank> shape = psi.GetData().shape();
 		int omegaSize = transform.GetOmegaGrid().extent(0);
-		shape(Rank-1) = omegaSize;
+		shape(TransformRank) = omegaSize;
 
 		//Get destination buffer
 		int angularDataName = psi.GetAvailableDataBufferName(shape);
@@ -88,7 +87,7 @@ public:
 		blitz::Array<cplx, Rank> dstData(psi.GetData(angularDataName));
 	
 		//The last rank is the spherical rank
-		transform.InverseTransform(srcData, dstData, Rank-1);
+		transform.InverseTransform(srcData, dstData, TransformRank);
 		psi.SetActiveBuffer(angularDataName);
 	}
 
@@ -97,7 +96,7 @@ public:
 	{
 		SphericalHarmonicRepresentation::Ptr repr(new SphericalHarmonicRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
-		repr->SetBaseRank( Rank - 1 );
+		repr->SetBaseRank(TransformRank);
 		return repr;
 	}
 
@@ -105,10 +104,12 @@ public:
 	{
 		AngularRepresentation::Ptr repr(new AngularRepresentation());
 		repr->SetupRepresentation( transform.GetLMax() );
-		repr->SetBaseRank( Rank - 1 );
+		repr->SetBaseRank(TransformRank);
 		return repr;
 	}
 
+private:
+	int TransformRank;
 };
 
 #endif

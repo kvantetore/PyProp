@@ -1,8 +1,9 @@
 #ifndef LMREPRESENTATION_H
 #define LMREPRESENTATION_H
 
-#include "../common.h"
-#include "orthogonalrepresentation.h"
+#include "../../common.h"
+#include "../orthogonalrepresentation.h"
+#include "../compressedrepresentation.h"
 #include "lmrange.h"
 
 /** Represents the wavefunction in a spherical harmonic (l,m) basis.
@@ -10,7 +11,7 @@
   * Ylm with l == Range.MaxL, which leaves Range.Count() == (1 + MaxL)**2
   * functions 
   */
-class SphericalHarmonicRepresentation : public OrthogonalRepresentation
+class SphericalHarmonicRepresentation : public CompressedRepresentation
 {
 public:
 	typedef shared_ptr<SphericalHarmonicRepresentation> Ptr;
@@ -59,9 +60,9 @@ public:
 		return sum(conj(w1.Data) * w2.Data); 
 	}
 
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
+	/*
+	 * Returns Integration weights for the global grid
+	 */
 	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
@@ -70,10 +71,13 @@ public:
 		}
 		return Range.GetWeights();
 	}
-	
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
+
+	/*
+	 * Returns grid points for the global grid. Note that these grid
+	 * points are just to satisfy the Representation interface. and
+	 * return only the double value of the index number. The actual
+	 * l,m values are returned by Get....ExpandedGrid()
+	 */
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		if (rank != GetBaseRank())
@@ -83,16 +87,13 @@ public:
 		return Range.GetIndexGrid();
 	}
 
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
-	virtual blitz::Array<double, 2> GetLocalLmGrid()
+	/*
+	 * Returns the l,m indices for the global grid. See 
+	 * CompressedRepresentation for more information
+	 */
+	virtual blitz::Array<double, 2> GetGlobalExpandedGrid()
 	{
-		blitz::Array<double, 2> lmGrid( Range.GetLmGrid() );
-		int size = lmGrid.extent(0);
-
-		blitz::Range indexRange = this->GetDistributedModel()->GetLocalIndexRange(size, GetBaseRank());
-		return lmGrid(indexRange, blitz::Range::all());
+		return Range.GetLmGrid();
 	}
 	
 	/** Apply config, and set up Range

@@ -2,7 +2,7 @@
 #include <core/potential/sphericaldynamicpotentialevaluator.h>
 
 template<int Rank>
-class H2pPotential
+class H2pPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator
@@ -28,6 +28,11 @@ public:
 		sinOrient = sin(orientation);
 
 		cout << "Orient " << cosOrient << " " << sinOrient << endl;
+	}
+
+	bool IsTimeDependent()
+	{
+		return false;
 	}
 
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
@@ -69,7 +74,7 @@ public:
 
 
 template<int Rank>
-class CoulombPotential
+class CoulombPotential : public PotentialBase<Rank>
 {
 public:
 	//Required by DynamicPotentialEvaluator
@@ -82,6 +87,11 @@ public:
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("charge", charge);
+	}
+
+	bool IsTimeDependent()
+	{
+		return false;
 	}
 
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)

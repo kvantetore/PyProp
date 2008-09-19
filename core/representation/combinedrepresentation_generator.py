@@ -291,7 +291,7 @@ def GenerateAlgorithm3(rank):
 		return methodBody
 
 	str = ""
-	for storageId in ["Band", "BandNH"]:
+	for storageId in ["Band", "BandNH", "Dense"]:
 		str += """
 		void TensorPotentialMultiply_Rank1_%(storageId)s(int rank, blitz::Array<cplx, %(rank)i> potential, double scaling, blitz::Array<cplx, %(rank)i> &source, blitz::Array<cplx, %(rank)i> &dest)
 		{

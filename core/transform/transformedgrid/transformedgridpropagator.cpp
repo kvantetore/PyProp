@@ -1,7 +1,7 @@
 #include "transformedgridpropagator.h"
-#include "../utility/blitzblas.h"
-#include "../utility/blitztricks.h"
-#include "../representation/representation.h"
+#include "../../utility/blitzblas.h"
+#include "../../utility/blitztricks.h"
+#include "../../representation/representation.h"
 
 namespace TransformedGrid
 {

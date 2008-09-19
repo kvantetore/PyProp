@@ -1,7 +1,7 @@
 #ifndef LMRANGE_H
 #define LMRANGE_H
 
-#include "../common.h"
+#include "../../common.h"
 
 class LmRange
 {

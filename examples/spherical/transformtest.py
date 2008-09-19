@@ -20,7 +20,13 @@ from pylab import *
 
 
 def MapLmIndex(l, m):
+	assert(abs(m) <= l)
 	return (l + 1) * l + m
+
+def MapIndexLm(index):
+	l = int(sqrt(index))
+	m = index - (l + 1) * l
+	return l,m
 
 class Transform:
 	def __init__(self, lmax):
@@ -141,4 +147,174 @@ def TestAllLm2(lmax):
 	print "Max Error at ", maxErrLm, ". Error: ", maxErr
 	return maxYlm
 
+
+def TestOrthogonalityAssocLegendre(lmax=4):
+	trans = pyprop.core.SphericalTransformTensorGrid()
+	trans.Initialize(lmax)
+
+	legendre = trans.GetAssociatedLegendrePolynomial()
+	weights = trans.GetWeights()
+
+	thetaCount = legendre.shape[0]
+	lmCount = legendre.shape[1]
+
+	assert(thetaCount == len(weights))
+		
+	for i in range(lmCount):
+		for j in range(lmCount):
+			c = dot( conj(legendre[:,i]), weights * legendre[:,j] )
+			print "%i, %i, %f" % (i,j,c)
+
+
+def TestOrthogonalitySphericalHarmonic(lmax=4, tolerance=1e13):
+	trans = pyprop.core.SphericalTransformTensorGrid()
+	trans.Initialize(lmax)
+
+	theta = trans.GetThetaGrid()
+	phi = trans.GetPhiGrid()
+
+	sph = trans.GetSphericalHarmonic()
+	w = trans.GetWeights()
+	weights = array([ [w[i]]*len(phi) for i in range(len(theta)) ], dtype=double).flatten()
+
+	omegaCount = sph.shape[0]
+	lmCount = sph.shape[1]
+
+	assert(omegaCount == len(weights))
+	
+	maxError = 0
+
+	for i in range(lmCount):
+		for j in range(lmCount):
+			c = dot( conj(sph[:,i]), weights * sph[:,j] )
+			if (i == j):
+				error =  abs(c - 1) 
+			else:
+				error =  abs(c) 
+			
+			if error > maxError:
+				maxError = error
+			if error > tolerance:
+				print "%i, %i, %g" % (i,j,error)
+
+	print "Max Error = %g" % (maxError)
+	return maxError < tolerance
+
+def TestDifferentiationSphericalHarmonic(lmax=4, tolerance=1e-13):
+	trans = pyprop.core.SphericalTransformTensorGrid()
+	trans.Initialize(lmax)
+
+	theta = trans.GetThetaGrid()
+	phi = trans.GetPhiGrid()
+
+	sph = trans.GetSphericalHarmonic()
+	sphDiff = trans.GetSphericalHarmonicDerivativeTheta()
+	w = trans.GetWeights()
+	weights = array([ [w[i]]*len(phi) for i in range(len(theta)) ], dtype=double).flatten()
+	th = array([ [theta[i]]*len(phi) for i in range(len(theta)) ], dtype=double).flatten()
+
+	omegaCount = sph.shape[0]
+	lmCount = sph.shape[1]
+
+	assert(omegaCount == len(weights))
+
+	#return weights, sph, sphDiff
+	
+	maxError = 0
+
+	for i in range(lmCount):
+		l,m = MapIndexLm(i)
+		for j in range(lmCount):
+			l2,m2  = MapIndexLm(j)
+			c = dot( conj(sph[:,i]), weights * sphDiff[:,j] )
+			if abs(c) < tolerance:
+				c = 0
+			if c != 0:
+				print "(%i,%i), (%i,%i), %g" % (l,m,l2,m2,c)
+			"""
+			if (i == j):
+				error =  abs(c - 1) 
+			else:
+				error =  abs(c) 
+			
+			if error > maxError:
+				maxError = error
+			if error > tolerance:
+				print "%i, %i, %g" % (i,j,error)
+			"""
+
+
+def TestDifferentiationSphericalHarmonicPhi(lmax=4, tolerance=1e-13):
+	trans = pyprop.core.SphericalTransformTensorGrid()
+	trans.Initialize(lmax)
+
+	theta = trans.GetThetaGrid()
+	phi = trans.GetPhiGrid()
+
+	sph = trans.GetSphericalHarmonic()
+	sphDiff = trans.GetSphericalHarmonicDerivativePhi()
+	w = trans.GetWeights()
+	weights = array([ [w[i]]*len(phi) for i in range(len(theta)) ], dtype=double).flatten()
+	th = array([ [theta[i]]*len(phi) for i in range(len(theta)) ], dtype=double).flatten()
+
+	omegaCount = sph.shape[0]
+	lmCount = sph.shape[1]
+
+	assert(omegaCount == len(weights))
+
+	#return weights, sph, sphDiff
+	
+	maxError = 0
+
+	for i in range(lmCount):
+		l,m = MapIndexLm(i)
+		for j in range(lmCount):
+			l2,m2  = MapIndexLm(j)
+			c = dot( conj(sph[:,i]), weights * sphDiff[:,j] )
+			print "(%i,%i), (%i,%i), %s" % (l,m,l2,m2,c)
+			if abs(c) < tolerance:
+				c = 0
+			if abs(c) > tolerance:
+				pass #print "(%i,%i), (%i,%i), %g" % (l,m,l2,m2,c)
+			"""
+			if (i == j):
+				error =  abs(c - 1) 
+			else:
+				error =  abs(c) 
+			
+			if error > maxError:
+				maxError = error
+			if error > tolerance:
+				print "%i, %i, %g" % (i,j,error)
+			"""
+
+
+
+
+def TestDifferentiationReducedSphericalHarmonic(lmax=4, tolerance=1e-13):
+	trans = pyprop.core.ReducedSphericalTools()
+	trans.Initialize(lmax)
+
+	theta = trans.GetThetaGrid()
+
+	sph = trans.GetAssociatedLegendrePolynomial()
+	sphDiff = trans.GetAssociatedLegendrePolynomialDerivative()
+	weights = trans.GetWeights()
+
+	omegaCount = sph.shape[0]
+	lmCount = sph.shape[1]
+
+	assert(omegaCount == len(weights))
+
+	#return weights, sph, sphDiff
+	
+	maxError = 0
+
+	for i in range(lmCount):
+		for j in range(lmCount):
+			c = dot( conj(sph[:,i]), weights * sphDiff[:,j] )
+			if abs(c) < tolerance:
+				c = 0
+			if c != 0:
+				print "(%i), (%i), %g" % (i,j,c)
 

@@ -35,6 +35,14 @@ void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 3> potent
 void TensorPotentialMultiply_Rank1_BandNH(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest);
 
 
+//Rank1 Non-Hermitian Banded
+void TensorPotentialMultiply_Rank1_Dense(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest);
+void TensorPotentialMultiply_Rank1_Dense(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest);
+void TensorPotentialMultiply_Rank1_Dense(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest);
+void TensorPotentialMultiply_Rank1_Dense(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest);
+
+
+
 template<int Rank>
 class CrankNicholsonPropagator
 {
@@ -56,13 +64,14 @@ public:
 		{
 			stride(j) = LaplacianBlasBanded.size();
 		}
-		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
+		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianFull.data(), shape, stride, blitz::neverDeleteData);
+		//blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
 
 		//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
 		blitz::Array<cplx, Rank> src = sourcePsi.GetData();
 		blitz::Array<cplx, Rank> dst = destPsi.GetData();
-		//TODO: TensorMultiply for general banded matrices
-		TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		//TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
 		//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
 		
 	}
@@ -138,6 +147,11 @@ public:
 		return LaplacianBlasBanded;
 	}
 
+	blitz::Array<cplx, 2> GetLaplacianFull()
+	{
+		return LaplacianFull;
+	}
+
 	blitz::Array<cplx, 2> GetBackwardPropagationLapackBanded()
 	{
 		return BackwardPropagationLapackBanded;
@@ -155,6 +169,7 @@ private:
 
 	double Mass;
 	blitz::Array<cplx, 2> LaplacianBlasBanded;  //kinetic energy matrix in the General Banded matrix format
+	blitz::Array<cplx, 2> LaplacianFull;  //kinetic energy matrix in full matrix
 
 	blitz::Array<cplx, 2> BackwardPropagationLapackBanded; //Matrix containing (I + i dt H)
 	blitz::Array<cplx, 2> BackwardPropagationFactored;     //Matrix containing the LU factorization to the matrix above
@@ -246,6 +261,8 @@ private:
 			}
 		}
 
+		cout << "curindex = " << curIndex << ", gridDifference = " << ToString(gridDifference) << endl;
+
 		blitz::Array<cplx, 2>  B(DifferenceOrder, DifferenceOrder);
 		for (int i=0; i<DifferenceOrder; i++)
 		{
@@ -290,6 +307,7 @@ private:
 		
 		//General Banded BLAS Storage
 		LaplacianBlasBanded.resize(GlobalGridSize, DifferenceOrder);
+		LaplacianFull.resize(GlobalGridSize, GlobalGridSize);
 		LaplacianBlasBanded = 0;
 		for (int i=0; i<GlobalGridSize; i++)
 		{
@@ -303,6 +321,7 @@ private:
 				int I = k + i - j;
 
 				LaplacianBlasBanded(J, I) = differenceCoefficients(k + j - i);
+				LaplacianFull(i, j) = differenceCoefficients(k + j - i);
 			}
 		}
 	}

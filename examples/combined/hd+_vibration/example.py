@@ -40,7 +40,7 @@ def GetModelPhaseDelay(**args):
 	args["radialScaling"] = 2
 	args["pulseIntensity"] = 0.5e14
 	args["pulseDelay"] = 0
-	args["pulseShape"] = "square"
+	#args["pulseShape"] = "square"
 	conf = SetupConfig(**args)
 
 	closureEnergy = args["closureEnergy"] 
@@ -58,7 +58,32 @@ def GetModelPhaseDelay(**args):
 	theta = -F0**2 * dur * femtosec_to_au * transition / (energy - closureEnergy)
 
 	return T, stateList, theta
-	
+
+def GetModelPhaseDelayClosureEnergy(**args):
+	args["silent"] = True
+	args["configSilent"] = True
+	args["molecule"] = "d2+"
+	args["radialScaling"] = 2
+	args["pulseIntensity"] = 0.5e14
+	args["pulseDelay"] = 0
+	args["pulseShape"] = "square"
+	conf = SetupConfig(**args)
+
+
+	d = GetTransitionMatrixElements(**args)
+	F0 = GetSquareField(conf.ProbePulsePotential, 0)
+	E, V = LoadRotatedBoundEigenstates(**args)
+	T = 7
+	#T = r_[0:1:0.1]
+	stateList = r_[0:6]
+	closureEnergyList = r_[-0.5:1:0.05]
+
+	theta = zeros((len(closureEnergyList), len(stateList)), dtype=double)
+	for i, closureEnergy in enumerate(closureEnergyList):
+		for j, state in enumerate(stateList):
+			theta[i, j] = -F0**2 * T * femtosec_to_au * d[state,state] / (E[state] - closureEnergy)
+		
+	return closureEnergyList, stateList, theta
 
 def GetModelPhaseDelayIntensity(**args):
 	args["silent"] = True
@@ -111,12 +136,13 @@ def MakePhaseDelayPlotDuration(**args):
 	args["pulseIntensity"] = 0.5e14
 	#args["pulseIntensity"] = 5e15
 	args["pulseDelay"] = 300*femtosec_to_au
-	args["duration"] = 305*femtosec_to_au
+	args["duration"] = 320*femtosec_to_au
 	args["outputCount"] = 1
-	args["fastForward"] = 295*femtosec_to_au
+	args["fastForward"] = 280*femtosec_to_au
 	args["pulseShape"] = "square"
 
-	durationList = r_[0:7:0.5]
+	durationList = r_[7]
+	#durationList = r_[0:7:0.5]
 	#durationList = r_[0:1:0.1]
 	#durationList = r_[0:0.2:0.01]
 	stateList = r_[0:6]

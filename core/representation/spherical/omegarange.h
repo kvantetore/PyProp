@@ -1,8 +1,8 @@
 #ifndef OMEGARANGE_H
 #define OMEGARANGE_H
 
-#include "../common.h"
-#include "../transform/shtools.h"
+#include "../../common.h"
+#include "../../transform/spherical/shtools.h"
 #include <iostream>
 
 class OmegaRange

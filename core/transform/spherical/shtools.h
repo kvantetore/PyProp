@@ -5,7 +5,7 @@
 #ifndef SHTOOLS_H
 #define SHTOOLS_H
 
-#include "../common.h"
+#include "../../common.h"
 
 inline int MapLmIndex(int l, int m)
 {
@@ -27,8 +27,14 @@ private:
 											//you need the complete tensor product grid, use OmegaGrid instead.
 	
 	blitz::Array<double, 2> OmegaGrid;		//The grid points (theta, phi)
-	blitz::Array<double, 1> Weights;		//The weights used for integrating over omega
+	blitz::Array<double, 1> Weights;		//The weights used for integrating over theta
 	
+	blitz::Array<cplx, 2> SphericalHarmonic;
+	blitz::Array<cplx, 2> SphericalHarmonicDerivativeTheta;
+	blitz::Array<cplx, 2> SphericalHarmonicDerivativePhi;
+											//Spherical harmonic functions and its derivatives 
+											//evaluated in (theta, phi), (l,m)
+
 	blitz::Array<double, 2> AssocLegendrePoly; //The assosciated legendre functions evaluated in (theta) 
 											//This array is of the same length as weights
 											//The first rank is theta-index
@@ -58,6 +64,9 @@ public:
 	blitz::Array<double, 2> GetOmegaGrid() { return OmegaGrid; }
 	blitz::Array<double, 1> GetWeights() { return Weights; } 
 	blitz::Array<double, 2> GetAssociatedLegendrePolynomial() { return AssocLegendrePoly; }
+	blitz::Array<cplx, 2> GetSphericalHarmonic() { return SphericalHarmonic; }
+	blitz::Array<cplx, 2> GetSphericalHarmonicDerivativeTheta() { return SphericalHarmonicDerivativeTheta; }
+	blitz::Array<cplx, 2> GetSphericalHarmonicDerivativePhi() { return SphericalHarmonicDerivativePhi; }
 
 	void Initialize(int lmax);				//Initializes the transformation to a given lmax. If the transformation
 											//has already been initalized, all allocated memory are freed and the 

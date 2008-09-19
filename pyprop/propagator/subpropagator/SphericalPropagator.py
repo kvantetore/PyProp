@@ -19,15 +19,13 @@ class SphericalPropagator(SphericalPropagatorBase):
 
 		#Create transform
 		self.Transform = CreateInstanceRank("core.SphericalTransform", self.psi.GetRank())
-		self.Transform.SetupStep(self.psi)
+		self.Transform.SetupStep(self.psi, self.TransformRank)
 		self.RepresentationSphericalHarmonic = self.psi.GetRepresentation().GetRepresentation(self.TransformRank)
 		self.RepresentationTheta = self.Transform.CreateAngularRepresentation()
 		self.RepresentationTheta.SetDistributedModel(self.RepresentationSphericalHarmonic.GetDistributedModel())
 
 		#Transform from Spherical Harmonics to Grid
-		self.Transform.InverseTransform(self.psi)
-		self.psi.GetRepresentation().SetRepresentation(self.TransformRank, self.RepresentationTheta)
-
+		self.InverseTransform(self.psi)
 
 
 

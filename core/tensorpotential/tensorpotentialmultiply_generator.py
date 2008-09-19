@@ -993,98 +993,111 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 		return str
 
 
-#class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
-#	"""
-#	"""
-#
-#	def __init__(self, systemRank, curRank, innerGenerator):
-#		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
-#
-#	def GetParameterList(self):
-#		parameterList = [("pair%i" % self.CurRank, "array", 2, "integer")]
-#		return parameterList
-#
-#	def GetParameterDeclarationCode(self):
-#		str = GetFortranArrayDeclaration("pair%i" % self.CurRank, 2, "integer", "in")
-#		str += """
-#			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i, bsplineCount%(rank)i, bandCount%(rank)i
-#			integer :: hermRow%(rank)i, hermCol%(rank)i 
-#			integer :: subDiagonals%(rank)i, sourceStride%(rank)i, destStride%(rank)i
-#			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
-#		""" % { "rank": self.CurRank }
-#		return str
-#
-#	def GetInitializationCode(self):
-#		str = """
-#			N%(rank)i = sourceExtent%(rank)i
-#
-#			sourceStride%(rank)i = 1
-#			destStride%(rank)i = 1
-#			alpha%(rank)i = scaling
-#			beta%(rank)i = 1.0d0
-#			col%(rank)i = 0
-#			row%(rank)i = 0
-#			i%(rank)i = 0
-#
-#		""" % { "rank":self.CurRank }
-#		return str
-#
-#	def GetLoopingCodeRecursive(self, conjugate):
-#		str = ""
-#		#If this is the innermost loop, we can optimize it by calling blas
-#		if True or self.InnerGenerator != None:
-#			str += """
-#				i%(rank)i = 0
-#				do row%(rank)i = 0, N%(rank)i - 1
-#					do col%(rank)i = 0, N%(rank)i - 1
-#						%(innerLoop)s	
-#						i%(rank)i = i%(rank)i + 1
-#					enddo
-#				enddo
-#				""" % { "rank":self.CurRank, "innerLoop": self.GetInnerLoop(conjugate) }
-#
-#		else:
-#			str += """
-#				i%(rank)i = 0
-#				call zgemv( &
-#					"L", & TODO: FIX THIS
-#					N%(rank)i, &
-#					N%(rank)i, &
-#					alpha%(rank)i, &
-#					potential(%(potentialIndex)s), &
-#					N%(rank)i, &
-#					source(%(colIndex)s), &
-#					sourceStride%(rank)i, &
-#					beta%(rank)i, &
-#					dest(%(rowIndex)s), &
-#					destStride%(rank)i &
-#				)
-#
-#			""" % \
-#			{ \
-#				"rank":self.CurRank, \
-#				"rowIndex": self.GetIndexString("row"), \
-#				"potentialIndex": self.GetIndexString("i"), \
-#				"colIndex": self.GetIndexString("col"),  \
-#			}
-#		return str
-#
-#	def GetInnerLoop(self, conjugate):
-#		str = ""
-#		if self.InnerGenerator != None:
-#			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate)
-#		else:
-#			#We're at the innermost loop
-#			str += """
-#				dest(%(rowIndex)s) = dest(%(rowIndex)s) + potential(%(potentialIndex)s) * scaling * source(%(colIndex)s)
-#			""" % \
-#				{ \
-#					"rowIndex": self.GetIndexString("row"), \
-#					"potentialIndex": self.GetIndexString("i"), \
-#					"colIndex": self.GetIndexString("col"),  \
-#				}
-#		return str
+class SnippetGeneratorDenseBlas(SnippetGeneratorBase):
+	"""
+	"""
 
+	def __init__(self, systemRank, curRank, innerGenerator):
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetParameterList(self):
+		parameterList = []
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+		str = ""
+		str += """
+			integer :: N%(rank)i, i%(rank)i, row%(rank)i, col%(rank)i 
+			integer :: sourceStride%(rank)i, destStride%(rank)i
+			complex (kind=dbl) :: alpha%(rank)i, beta%(rank)i
+		""" % { "rank": self.CurRank }
+		return str
+
+	def GetInitializationCode(self):
+		str = """
+			N%(rank)i = sourceExtent%(rank)i
+
+			sourceStride%(rank)i = 1
+			destStride%(rank)i = 1
+			alpha%(rank)i = scaling
+			beta%(rank)i = 1.0d0
+			col%(rank)i = 0
+			row%(rank)i = 0
+			i%(rank)i = 0
+
+		""" % { "rank":self.CurRank }
+		return str
+
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		str = ""
+		#If this is the innermost loop, we can optimize it by calling blas
+		if True or self.InnerGenerator != None:
+			str += """
+				i%(rank)i = 0
+				do row%(rank)i = 0, N%(rank)i - 1
+					do col%(rank)i = 0, N%(rank)i - 1
+						%(innerLoop)s	
+						i%(rank)i = i%(rank)i + 1
+					enddo
+				enddo
+				""" % { 
+					"rank":self.CurRank, 
+					"innerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex) 
+				}
+
+		else:
+			str += """
+				i%(rank)i = 0
+				call zgemv( &
+					"L", & TODO: FIX THIS
+					N%(rank)i, &
+					N%(rank)i, &
+					alpha%(rank)i, &
+					potential(%(potentialIndex)s), &
+					N%(rank)i, &
+					source(%(colIndex)s), &
+					sourceStride%(rank)i, &
+					beta%(rank)i, &
+					dest(%(rowIndex)s), &
+					destStride%(rank)i &
+				)
+
+			""" % \
+			{ \
+				"rank":self.CurRank, \
+				"rowIndex": self.GetIndexString("row"), \
+				"potentialIndex": self.GetIndexString("i"), \
+				"colIndex": self.GetIndexString("col"),  \
+			}
+		return str
+
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		subDestIndex = destIndex + ["row%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
+		str = ""
+		if self.InnerGenerator != None:
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
+		else:
+			#We're at the innermost loop
+			conjg = ""
+			if conjugate:
+				conjg = "conjg"
+			str += """
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
+			""" % \
+				{ \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjg, \
+				}
+		return str
+	
 
 
 #-----------------------------------------------------------------------------------
@@ -1096,7 +1109,7 @@ snippetGeneratorMap = { \
 	"Ident": SnippetGeneratorIdentity, \
 	"Band": SnippetGeneratorBandedBlas, \
 	"BandNH": SnippetGeneratorBandedNonHermitianBlas, \
-#	"Dense": SnippetGeneratorDenseBlas, \
+	"Dense": SnippetGeneratorDenseBlas, \
     "Distr": SnippetGeneratorBandedDistributed, \
 }
 
@@ -1280,7 +1293,7 @@ def GetAllPermutations(systemRank, curRank):
 	else:
 		for key in snippetGeneratorMap.keys():
 			if key != "Distr" or curRank == 0:
-				if (key == "Ident" or key == "Band" or key == "BandNH") or systemRank < 4:
+				if (key == "Ident" or key == "Band" or key == "BandNH" or key == "Dense") or systemRank < 4:
 					for subperm in GetAllPermutations(systemRank, curRank+1):
 						yield (key,) +  subperm
 

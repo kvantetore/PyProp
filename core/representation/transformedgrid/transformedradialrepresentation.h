@@ -1,9 +1,9 @@
 #ifndef TRANSFORMEDRADIALREPRESENTATION_H
 #define TRANSFORMEDRADIALREPRESENTATION_H
 
-#include "../common.h"
+#include "../../common.h"
 #include "transformedrange.h"
-#include "orthogonalrepresentation.h"
+#include "../orthogonalrepresentation.h"
 
 /** Represents the wavefunction in a spherical harmonic (l,m) basis.
   * The spherical harmonic of highest order which is represented is 

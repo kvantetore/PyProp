@@ -54,7 +54,7 @@ def Propagate(initPsi = None, **args):
 		#imshow(abs(prop.psi.GetData())**2, vmax=0.05)
 		
 		if pyprop.ProcId == 0:
-			print "t = %03.2f, corr(t) = %1.8f, N = %01.8f" % (t, corr, norm)
+			print "t = %03.2f, corr(t) = %1.8f, N = %01.15f" % (t, corr, norm)
 
 	return prop
 

@@ -1,5 +1,5 @@
 #include "reducedsphericaltools.h"
-#include "../shtools.h"
+#include "../spherical/shtools.h"
 #include "../../utility/blitztricks.h"
 #include "../../utility/blitzblas.h"
 #include "../../utility/orthogonalpolynomial.h"

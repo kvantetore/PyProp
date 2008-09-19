@@ -57,7 +57,7 @@ def TestAntisymmetric(psi, tempPsi=None):
 	return isAntiSymmetric
 	
 
-def FindElectronicEnergyCurves(**args):
+def FindGroundStateEnergyCurve(**args):
 	args["silent"] = True
 
 	nuclearSeparationList = \

@@ -1,9 +1,9 @@
 #ifndef TRANSFORMEDGRIDPROPAGATOR_H
 #define TRANSFORMEDGRIDPROPAGATOR_H
 
-#include "../common.h"
-#include "../wavefunction.h"
-#include "transformedgrid/tools.h"
+#include "../../common.h"
+#include "../../wavefunction.h"
+#include "tools.h"
 
 namespace TransformedGrid
 {

@@ -64,7 +64,7 @@ SOURCES= \
 	utility/blitzblas.cpp \
 	utility/orthogonalpolynomial.cpp \
 	utility/gamma.cpp \
-	transform/transformedgridpropagator.cpp \
+	transform/transformedgrid/transformedgridpropagator.cpp \
 	transform/transformedgrid/tgridweights.cpp \
 	transform/transformedgrid/tgridcheb.cpp \
 	transform/transformedgrid/tgridsetup.cpp \
@@ -75,9 +75,9 @@ SOURCES= \
 	transform/radialtransform.cpp \
 	transform/fouriertransform.cpp \
 	transform/cartesianfouriertransform.cpp \
-	transform/shtools.cpp \
+	transform/spherical/shtools.cpp \
 	representation/cartesianrepresentation.cpp \
-	representation/angularrepresentation.cpp \
+	representation/spherical/angularrepresentation.cpp \
 	mpi/distributedmodel.cpp \
 	python/pysteoutput/_main.cpp \
 	finitediff/exponentialfinitedifference.cpp \

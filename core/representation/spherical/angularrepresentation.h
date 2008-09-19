@@ -2,8 +2,9 @@
 #define ANGULARREPRESENTATION_H
 
 #include <iostream>
-#include "../common.h"
-#include "orthogonalrepresentation.h"
+#include "../../common.h"
+#include "../orthogonalrepresentation.h"
+#include "../compressedrepresentation.h"
 #include "omegarange.h"
 
 
@@ -12,7 +13,7 @@
   * omega range.
   */
 
-class AngularRepresentation : public OrthogonalRepresentation
+class AngularRepresentation : public CompressedRepresentation
 {
 public:
 	typedef shared_ptr<AngularRepresentation> Ptr;
@@ -46,9 +47,12 @@ public:
 		throw std::runtime_error("AngularRepresentation::InnerProduct is not implemented");
 	}
 
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
+	/*
+	 * Returns grid points for the global grid. Note that these grid
+	 * points are just to satisfy the Representation interface. and
+	 * return only the double value of the index number. The actual
+	 * l,m values are returned by Get....ExpandedGrid()
+	 */
 	virtual blitz::Array<double, 1> GetGlobalGrid(int rank)
 	{
 		if (rank != GetBaseRank())
@@ -61,7 +65,7 @@ public:
 	/** 
 	Returns the portion of the weights local to the current processor.
 	**/
-	virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
+virtual blitz::Array<double, 1> GetGlobalWeights(int rank)
 	{
 		if (rank != GetBaseRank())
 		{
@@ -70,16 +74,13 @@ public:
 		return Range.GetWeights();
 	}
 
-	/** 
-	Returns the portion of the grid local to the current processor.
-	**/
-	virtual blitz::Array<double, 2> GetLocalOmegaGrid()
+	/*
+	 * Returns the theta, phi values for the global grid. See 
+	 * CompressedRepresentation for more information
+	 */
+	virtual blitz::Array<double, 2> GetGlobalExpandedGrid()
 	{
-		blitz::Array<double, 2> omegaGrid( Range.GetOmegaGrid() );
-		int size = omegaGrid.extent(0);
-
-		blitz::Range indexRange = this->GetDistributedModel()->GetLocalIndexRange(size, GetBaseRank());
-		return omegaGrid(indexRange, blitz::Range::all());
+		return Range.GetOmegaGrid();
 	}
 	
 	/** Apply config, and set up Range

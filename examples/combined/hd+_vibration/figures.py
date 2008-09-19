@@ -11,6 +11,8 @@ def MakeFigure2Top():
 	fig = figure(figsize=(8,3))
 
 	cmap = LoadColormap("gradient.txt", True)
+	#cmap = cm.bone_r
+
 	color = "#0045a2" #"#ff8e16" 
 	maxState = 10
 
@@ -20,19 +22,27 @@ def MakeFigure2Top():
 	states = arange(maxState+1) - stateShift
 
 	pcolormesh(t, states, c.transpose(), cmap=cmap, shading="flat", vmin=0.02, vmax=0.35)
+	
+	plot([293,293], [-10,15], "#800000")
+	plot([306,306], [-10,15], "#008000")
+
 	axis((0,650,-stateShift,maxState-stateShift))
 	yticks([0,1,2,3,4,5,6,7,8,9])
-	title("Vibrational Distribution")
+	#title("Vibrational Distribution")
 	ylabel("Vibrational State")
 	xlabel("Delay time (fs)")
 	a = axis()
 	cb = colorbar(ticks=[0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35])
 	cb.ax.set_position([0.91, 0.16, 0.014, 0.73]);
 	fig.subplots_adjust(left=0.08, bottom=0.16, right=0.89, top=0.89)
-	text(30,1.5,"(a)", color="w")
+	
+	#text(30,1.5,"(a)", color="w")
+	#text(30,1.5,"(a)", color="k")
+
 	draw()
 
-	fig.savefig("figure2/figure2-top.png", dpi=400)
+	fig.savefig("figure2/figure2-top.png", dpi=800)
+	#fig.savefig("figure2/figure2-top.png", dpi=400)
 	
 	fig = figure(figsize=(8,3))
 	axis(a)
@@ -45,7 +55,9 @@ def MakeFigure2Top():
 	cb = colorbar(ticks=[0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35])
 	cb.ax.set_position([0.91, 0.16, 0.014, 0.73]);
 	fig.subplots_adjust(left=0.1, bottom=0.18, right=0.89, top=0.89)
-	text(30,1.5,"(a)", color="w")
+	
+	#text(30,1.5,"(a)", color="w")
+	text(30,1.5,"(a)", color="k")
 	
 	draw()
 	fig.savefig("figure2/figure2-top.svg")
@@ -58,7 +70,9 @@ def MakeFigure2Bottom():
 
 	fig = figure(figsize=(8,2.5))
 	cmap = LoadColormap("gradient.txt", True)
-	color = "#0045a2" #"#ff8e16" 
+	color = "#ff8e16" 
+	#cmap = cm.bone_r
+	#color = "#0045a2" 
 	maxState = 12
 
 	fcPop = (abs(GetFranckCondonPopulation(molecule="d2+", radialScaling=2))**2)[:maxState+1]
@@ -255,7 +269,7 @@ def DrawBigClock(theta, drawLines=True, drawTicks=True):
 
 	
 
-def CorrelationBarPlotPhaseClockFig(corr, corr2, ax=None, axisHeight=None):
+def CorrelationBarPlotPhaseClockFig(corr, corr2, ax=None, axisHeight=None, colors="b"):
 	if ax == None:
 		ax = gca()
 	
@@ -264,7 +278,10 @@ def CorrelationBarPlotPhaseClockFig(corr, corr2, ax=None, axisHeight=None):
 
 	#barHeight = abs(corr)**2)
 	barHeight = abs(corr)**2
-	ax.bar(left, barHeight)
+
+	for i in range(basisCount):
+		bar(left[i], barHeight[i], color=colors[i%len(colors)])
+	#ax.bar(left, barHeight)
 	ax.bar(left[4], barHeight[4], color="red")
 
 	if axisHeight == None:
@@ -345,6 +362,7 @@ def MakeClockFig():
 	rcParams["text.usetex"] = True
 	
 	initStates = [3,4,5]
+	#initStates = [3]
 	pulseDelay1 = 293*femtosec_to_au
 	pulseDelay2 = 306*femtosec_to_au
 	args = {}
@@ -361,7 +379,10 @@ def MakeClockFig():
 	args["initStatesWeight"] = "one"
 	
 	#args["dt"] = 30
-	
+
+	cmap = LoadColormap("gradient.txt", True)
+
+
 	fig = figure(figsize=(6,5))
 	fig.subplots_adjust(left=0.10, right=0.96, wspace=0.20, hspace=0.30)
 	subplots = [2,3,4]
@@ -383,7 +404,8 @@ def MakeClockFig():
 		t, c, X, Y, Z, W = Propagate(**args)
 		args["pulseDelay"] = pulseDelay2
 		t, c2, X, Y, Z, W = Propagate(**args)
-		CorrelationBarPlotPhaseClockFig(c[-1,:9], c2[-1,:9], ax=ax, axisHeight=1.)
+		col = [cmap(abs(corr)**2)[:3] for corr in c[-1,:9]]
+		CorrelationBarPlotPhaseClockFig(c[-1,:9], c2[-1,:9], ax=ax, axisHeight=1.,colors=col)
 		corr1.append(c[-1,:])
 		corr2.append(c2[-1,:])
 		#ax.set_xlabel("Vibrational Level")
@@ -401,8 +423,8 @@ def MakeClockFig():
 	subplot(2,2,4)
 	xlabel("Vibrational State")
 
-	savefig("clockfig/figure3.eps")
 	savefig("clockfig/figure3.pdf")
+	savefig("clockfig/figure3.eps")
 	draw()
 
 

@@ -1,8 +1,8 @@
 #ifndef TRANSFORMEDRANGE_H
 #define TRANSFORMEDRANGE_H
 
-#include "../common.h"
-#include "../transform/transformedgrid/tools.h"
+#include "../../common.h"
+#include "../../transform/transformedgrid/tools.h"
 
 class TransformedRange
 {
