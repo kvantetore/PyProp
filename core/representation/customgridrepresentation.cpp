@@ -8,7 +8,11 @@ void CustomGridRepresentation::ApplyConfigSection(const ConfigSection &config)
 	blitz::Array<double, 1> grid = extract< blitz::Array<double, 1> >(gridFunction(pythonConf));
 	GlobalGrid.reference(grid.copy());
 
-	std::string quadrature = config.Get<std::string>("quadrature");
+	std::string quadrature = "trapez";
+	if (config.HasValue("qudrature"))
+	{
+		std::string quadrature = config.Get<std::string>("quadrature");
+	}
 	if (quadrature == "trapez")
 	{
 		//Set up trapezoidal integration rule with zero boundary conditions
@@ -26,7 +30,7 @@ void CustomGridRepresentation::ApplyConfigSection(const ConfigSection &config)
 	{
 		int N = GlobalGrid.size();
 		GlobalWeights.resize(N);
-		cout << "N%2 = " << (N%2) << endl;
+		//cout << "N%2 = " << (N%2) << endl;
 		if (N % 2 != 1)
 		{
 			throw std::runtime_error("simpson requires odd number of gridpoints");
@@ -41,7 +45,7 @@ void CustomGridRepresentation::ApplyConfigSection(const ConfigSection &config)
 			GlobalWeights(2*i + 2) = 2. * h / 3.;
 		}
 
-		cout << "GlobalWeights = " << GlobalWeights << endl;
+		//cout << "GlobalWeights = " << GlobalWeights << endl;
 	}
 }
 
