@@ -64,14 +64,17 @@ public:
 		{
 			stride(j) = LaplacianBlasBanded.size();
 		}
-		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianFull.data(), shape, stride, blitz::neverDeleteData);
-		//blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
 
 		//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
 		blitz::Array<cplx, Rank> src = sourcePsi.GetData();
 		blitz::Array<cplx, Rank> dst = destPsi.GetData();
+		
+		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
 		TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		
+		//blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianFull.data(), shape, stride, blitz::neverDeleteData);
 		//TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+		
 		//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
 		
 	}
