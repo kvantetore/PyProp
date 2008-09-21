@@ -51,6 +51,13 @@ template<int Rank>
 void PampWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
 	config.Get("krylov_basis_size", Propagator.BasisSize);
+
+	if (config.HasValue("krylov_exponentiation_method"))
+	{
+		int exponentiation;
+		config.Get("krylov_exponentiation_method", exponentiation);
+		Propagator.Exponentiation = (pamp::pAMP<cplx>::ExponentiationMethod) exponentiation;
+	}
 }
 
 

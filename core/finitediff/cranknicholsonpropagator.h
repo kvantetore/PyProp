@@ -23,6 +23,13 @@
  * These are defined in combinedrepresentation_generated.cpp
  */
 //Rank1 Hermitian Banded
+void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest, int globalSize, int bands);
+void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest, int globalSize, int bands);
+void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest, int globalSize, int bands);
+void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest, int globalSize, int bands);
+
+
+//Rank1 Hermitian Banded
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest);
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest);
 void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest);
@@ -56,31 +63,69 @@ public:
 	 */
 	void MultiplyKineticEnergyOperator(Wavefunction<Rank> &sourcePsi, Wavefunction<Rank> &destPsi)
 	{
-		//Reshape the kinetic energy matrix into a N-d array suitable for TensorPotentialMultiply
-		blitz::TinyVector<int, Rank> shape = 1;
-		shape(TransformRank) = LaplacianBlasBanded.size();
-		blitz::TinyVector<int, Rank> stride = 1;
-		for (int j=0; j<TransformRank; j++)
+		//Check that we're distributed the same way as when SetupStep was called.
+		blitz::Array<int, 1> curDistribSrc = sourcePsi.GetRepresentation()->GetDistributedModel()->GetDistribution();
+		blitz::Array<int, 1> curDistribDst = destPsi.GetRepresentation()->GetDistributedModel()->GetDistribution();
+		bool isDistributed = sourcePsi.GetRepresentation()->GetDistributedModel()->IsDistributedRank(TransformRank);
+		if (!blitz::all(Distribution == curDistribSrc && curDistribSrc == curDistribDst))
 		{
-			stride(j) = LaplacianBlasBanded.size();
+			cout << "Got distribution " << ToString(curDistribSrc)
+			     << ", Expected " << ToString(Distribution) << endl;
+			throw std::runtime_error("Invalid distribution encountered in MultiplyKineticEnergyOperator.");
 		}
 
-		//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
-		blitz::Array<cplx, Rank> src = sourcePsi.GetData();
-		blitz::Array<cplx, Rank> dst = destPsi.GetData();
+		if (!isDistributed)
+		{
+			//Reshape the kinetic energy matrix into a N-d array suitable for TensorPotentialMultiply
+			blitz::TinyVector<int, Rank> shape = 1;
+			shape(TransformRank) = LaplacianBlasBanded.size();
+			blitz::TinyVector<int, Rank> stride = 1;
+			for (int j=0; j<TransformRank; j++)
+			{
+				stride(j) = LaplacianBlasBanded.size();
+			}
 		
-		blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
-		TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+			//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
+			blitz::Array<cplx, Rank> src = sourcePsi.GetData();
+			blitz::Array<cplx, Rank> dst = destPsi.GetData();
+			
+			blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianBlasBanded.data(), shape, stride, blitz::neverDeleteData);
+			TensorPotentialMultiply_Rank1_BandNH(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+			
+			//blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianFull.data(), shape, stride, blitz::neverDeleteData);
+			//TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+			
+			//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
+		}
+		else
+		{
+			//Reshape the kinetic energy matrix into a N-d array suitable for TensorPotentialMultiply
+			blitz::TinyVector<int, Rank> shape = 1;
+			shape(TransformRank) = LaplacianBlasBanded.size();
+			blitz::TinyVector<int, Rank> stride = 1;
+			for (int j=0; j<TransformRank; j++)
+			{
+				stride(j) = LaplacianDistributedBanded.size();
+			}
 		
-		//blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianFull.data(), shape, stride, blitz::neverDeleteData);
-		//TensorPotentialMultiply_Rank1_Dense(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst);
+			//Use TensorPotential mechanism to perform multiple matrix-vector multiplications
+			blitz::Array<cplx, Rank> src = sourcePsi.GetData();
+			blitz::Array<cplx, Rank> dst = destPsi.GetData();
 		
-		//MatrixVectorMultiplyBanded(LaplacianBlasBanded, src, dst, -1.0 / (2 * Mass), 0.0);
+			int k = (DifferenceOrder-1)/2;
+			
+			blitz::Array<cplx, Rank> kineticEnergyTensor(LaplacianDistributedBanded.data(), shape, stride, blitz::neverDeleteData);
+			TensorPotentialMultiply_Rank1_Distr(TransformRank, kineticEnergyTensor, -1.0 / (2 * Mass), src, dst, GlobalGridSize, k);
+		}
 		
 	}
 	
 	void AdvanceStep(Wavefunction<Rank> &psi, cplx dt)
 	{
+		if (psi.GetRepresentation()->GetDistributedModel()->IsDistributedRank(TransformRank))
+		{
+			throw std::runtime_error("Cannot propagate crank nicholson forward with distributed rank");
+		}
 
 		blitz::Array<cplx, 1> temp = TempData;
 	
@@ -126,12 +171,16 @@ public:
 
 	void SetupStep(Wavefunction<Rank> &psi, cplx dt)
 	{
+		//Global Grid
 		GlobalGrid.reference( psi.GetRepresentation()->GetGlobalGrid(TransformRank).copy() );
-
-		//GlobalGrid = blitz::pow(GlobalGrid+10, 2);
-
 		GlobalGridSize = GlobalGrid.size();
 		TimeStep = dt;
+		
+		//Setup variables for Parallelization
+		LocalGrid.reference( psi.GetRepresentation()->GetLocalGrid(TransformRank).copy() );
+		LocalGridStart = psi.GetRepresentation()->GetDistributedModel()->GetLocalStartIndex(GlobalGridSize, TransformRank);
+		LocalGridSize = LocalGrid.size();
+		Distribution.reference(psi.GetRepresentation()->GetDistributedModel()->GetDistribution().copy());
 
 		TempData.resize(GlobalGridSize);
 		SetupKineticEnergyMatrix();
@@ -148,6 +197,11 @@ public:
 	blitz::Array<cplx, 2> GetLaplacianBlasBanded()
 	{
 		return LaplacianBlasBanded;
+	}
+
+	blitz::Array<cplx, 2> GetLaplacianDistributedBanded()
+	{
+		return LaplacianDistributedBanded;
 	}
 
 	blitz::Array<cplx, 2> GetLaplacianFull()
@@ -170,8 +224,16 @@ private:
 	int TransformRank;
 	cplx TimeStep;
 
+	//Parallelization
+	blitz::Array<double, 1> LocalGrid;
+	int LocalGridSize;
+	int LocalGridStart;
+	blitz::Array<int, 1> Distribution;
+
+
 	double Mass;
 	blitz::Array<cplx, 2> LaplacianBlasBanded;  //kinetic energy matrix in the General Banded matrix format
+	blitz::Array<cplx, 2> LaplacianDistributedBanded;  //kinetic energy matrix in the distributed banded matrix format
 	blitz::Array<cplx, 2> LaplacianFull;  //kinetic energy matrix in full matrix
 
 	blitz::Array<cplx, 2> BackwardPropagationLapackBanded; //Matrix containing (I + i dt H)
@@ -264,7 +326,7 @@ private:
 			}
 		}
 
-		cout << "curindex = " << curIndex << ", gridDifference = " << ToString(gridDifference) << endl;
+		//cout << "curindex = " << curIndex << ", gridDifference = " << ToString(gridDifference) << endl;
 
 		blitz::Array<cplx, 2>  B(DifferenceOrder, DifferenceOrder);
 		for (int i=0; i<DifferenceOrder; i++)
@@ -307,7 +369,8 @@ private:
 		int k = (DifferenceOrder-1)/2;
 
 		//Set up the difference matrix A
-		
+	
+		//Single Processor
 		//General Banded BLAS Storage
 		LaplacianBlasBanded.resize(GlobalGridSize, DifferenceOrder);
 		LaplacianFull.resize(GlobalGridSize, GlobalGridSize);
@@ -327,6 +390,40 @@ private:
 				LaplacianFull(i, j) = differenceCoefficients(k + j - i);
 			}
 		}
+
+		//Parallel
+		LaplacianDistributedBanded.resize(LocalGridSize, DifferenceOrder);
+		LaplacianDistributedBanded = 0;
+		int globalRowStart = std::max(LocalGridStart-k, 0);
+		int globalRowEnd = std::min(LocalGridStart+LocalGridSize+k+1, GlobalGridSize);
+		/*
+		 *  /  a a   |       \
+		 *  |  a a a |       |
+		 *  |    a a | a     |
+		 *  |      a | a a   |
+		 *  |        | a a a | 
+		 *  \        |   a a /
+		 *
+		 */
+
+		for (int globalRow=globalRowStart; globalRow<globalRowEnd; globalRow++)
+		{
+			int localRow = globalRow - LocalGridStart;
+
+			blitz::Array<cplx, 1> differenceCoefficients = FindDifferenceCoefficients(globalRow);
+
+			int globalStartCol = std::max(LocalGridStart, globalRow-k);
+			int globalEndCol = std::min(LocalGridStart+LocalGridSize, globalRow+k+1);
+			for (int globalCol=globalStartCol; globalCol<globalEndCol; globalCol++)
+			{
+				int J = globalCol - LocalGridStart;
+				int I = k + globalRow - globalCol;
+
+				cplx diffCoeff = differenceCoefficients(k + globalCol - globalRow);
+				LaplacianDistributedBanded(J, I) = diffCoeff;
+			}
+		}
+
 	}
 
 	double Factorial(int x)

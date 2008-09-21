@@ -89,7 +89,11 @@ SOURCES= \
 SOURCEFILES=$(notdir $(SOURCES))
 
 FORTRAN_SOURCES = \
-	tensorpotential/tensorpotentialmultiply.f90 
+	tensorpotential/tensorpotentialmultiply_0.f90 \
+	tensorpotential/tensorpotentialmultiply_1.f90 \
+	tensorpotential/tensorpotentialmultiply_2.f90 \
+	tensorpotential/tensorpotentialmultiply_3.f90 \
+	tensorpotential/tensorpotentialmultiply_4.f90 
 
 #C++ object files
 OBJECTS=$(SOURCES:.cpp=.o) $(FORTRAN_SOURCES:.f90=.o)
@@ -155,8 +159,20 @@ tensorpotential/tensorpotentialmultiply_wrapper.cpp: tensorpotential/tensorpoten
 	python -c "execfile('$<'); PrintWrapperHeader()" > $*.h
 
 #Generate tensorpotential code
-tensorpotential/tensorpotentialmultiply.f90: tensorpotential/tensorpotentialmultiply_generator.py
-	python -c "execfile('$<'); PrintFortranCode()" > tensorpotential/tensorpotentialmultiply.f90
+tensorpotential/tensorpotentialmultiply_0.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode(0, 5)" > tensorpotential/tensorpotentialmultiply_0.f90
+
+tensorpotential/tensorpotentialmultiply_1.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode(1, 5)" > tensorpotential/tensorpotentialmultiply_1.f90
+
+tensorpotential/tensorpotentialmultiply_2.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode(2, 5)" > tensorpotential/tensorpotentialmultiply_2.f90
+
+tensorpotential/tensorpotentialmultiply_3.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode(3, 5)" > tensorpotential/tensorpotentialmultiply_3.f90
+
+tensorpotential/tensorpotentialmultiply_4.f90: tensorpotential/tensorpotentialmultiply_generator.py
+	python -c "execfile('$<'); PrintFortranCode(4, 5)" > tensorpotential/tensorpotentialmultiply_4.f90
 
 
 

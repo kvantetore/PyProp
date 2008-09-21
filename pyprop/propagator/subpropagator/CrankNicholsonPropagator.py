@@ -29,3 +29,6 @@ class CrankNicholsonPropagator(SubPropagatorBase):
 	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
 		pass
 
+	def SupportsParallelPropagation(self):
+		return True
+

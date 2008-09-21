@@ -5,9 +5,9 @@
 PYPROP_ROOT    := /home/tore/prog/pyprop
 
 CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
-CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
+#CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
 
-#CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
+CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
 CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_CBLAS 
 CPPFLAGS       := $(CPPFLAGS) -I/opt/intel/mkl/10.0.1.014/include 
 CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS

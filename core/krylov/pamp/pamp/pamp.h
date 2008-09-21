@@ -40,6 +40,12 @@ public:
 
 	typedef std::map< std::string, Timer > TimerMap;
 
+	enum ExponentiationMethod
+	{
+		ExponentiationPade = 0,
+		ExponentiationEigenvector = 1
+	};
+
 	//Parameters
 	int MaxOrthogonalizationCount;
 	int MatrixSize;
@@ -47,6 +53,8 @@ public:
 
 	int PadeOrder;
 	int ScalingOrder;
+	ExponentiationMethod Exponentiation;
+	
 
 	//Options
 	MPI_Comm CommBase;
@@ -68,6 +76,7 @@ public:
 		DisableMPI = false;
 
 		Tolerance = sqrt(std::numeric_limits<NormType>::epsilon());
+		Exponentiation = ExponentiationPade;
 	}
 
 private:
@@ -612,8 +621,14 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 
 	//Calculate the exponential of the hessenberg matrix
 	HessenbergMatrix *= - dt * cplx(0., 1.);
-	//ScalingPadeExponential(HessenbergMatrix, HessenbergExp, -1, -1);
-	EigenvectorExponential(HessenbergMatrix, HessenbergExp);
+	if (Exponentiation == ExponentiationPade)
+	{
+		ScalingPadeExponential(HessenbergMatrix, HessenbergExp, -1, -1);
+	}
+	else if (Exponentiation == ExponentiationEigenvector)
+	{
+		EigenvectorExponential(HessenbergMatrix, HessenbergExp);
+	}
 
 	//Propagate the system in the krylov basis. Our initial vector in the 
 	//krylov basis is [1, 0, 0, ...]

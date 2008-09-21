@@ -99,7 +99,7 @@ class PiramSolver:
 		"""
 		Returns the real part of all the converged eigenvalues from pIRAM
 	    """
-		return self.Solver.GetEigenvalues().real
+		return self.Solver.GetEigenvalues().real.copy()
 
 	def GetEigenvector(self, index):
 		"""

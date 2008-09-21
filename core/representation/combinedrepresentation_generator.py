@@ -303,6 +303,25 @@ def GenerateAlgorithm3(rank):
 			"body": GenerateRankOneBody(storageId), \
 		}
 
+	#Rank-1 wrapper for Distributed tensors. This by itself because it requires two extra parameters, globalSize and bands
+	str += """
+	void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, %(rank)i> potential, double scaling, blitz::Array<cplx, %(rank)i> &source, blitz::Array<cplx, %(rank)i> &dest, int globalSize, int bands)
+	{
+	""" % { "rank": rank }
+	for i in range(rank):
+		str += """
+			if (rank == %(curRank)s)
+			{
+				TensorPotential::TensorPotentialMultiply_%(storageIdString)s_Wrapper(potential, scaling, source, dest, globalSize, bands);
+			}
+		""" % { \
+			"rank": rank, \
+			"curRank": i, \
+			"storageIdString": "_".join(["Ident"]*i + ["Distr"] + ["Ident"]*(rank-i-1)), \
+		}
+	str += "}\n"
+
+
 	return str
 		
 

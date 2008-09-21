@@ -58,7 +58,7 @@ class ArpackSolver:
 		"""
 		Returns the real part of all the converged eigenvalues from arpack
 	    """
-		return self.Solver.GetEigenvalues().real
+		return self.Solver.GetEigenvalues().real.copy()
 
 	def GetEigenvectors(self):
 		"""

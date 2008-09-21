@@ -1292,102 +1292,98 @@ def GetAllPermutations(systemRank, curRank):
 		yield ()
 	else:
 		for key in snippetGeneratorMap.keys():
-			if key != "Distr" or curRank == 0:
-				if (key == "Ident" or key == "Band" or key == "BandNH" or key == "Dense") or systemRank < 4:
-					for subperm in GetAllPermutations(systemRank, curRank+1):
-						yield (key,) +  subperm
+			if (key == "Ident" or key == "Band" or key == "BandNH" or key == "Dense" or key == "Distr") or systemRank < 4:
+				for subperm in GetAllPermutations(systemRank, curRank+1):
+					yield (key,) +  subperm
 
-
-generatorPermutationList = []
-for systemRank in range(1,4+1):
-	for perm in GetAllPermutations(systemRank, 0):
-		generatorPermutationList.append(TensorPotentialMultiplyGenerator(list(perm)))
-
-
-def PrintFortranCode():
-	str = """
-		module IndexTricks
-			contains
-			subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
-				implicit none
-				integer, intent(in) :: row, col, fullSize, bands
-				integer, intent(out) :: packedRow, packedCol
-
-				packedRow = col
-				packedCol = bands - col + row
-			end subroutine
-
-			function GetGlobalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
-				implicit none
-				integer, intent(in) :: fullSize, procCount, procId
-				integer :: rest, paddedSize, globalStartIndex
-
-				paddedSize	= fullSize
-				rest = mod(fullSize, procCount)
-				if (rest .ne. 0) then
-					paddedSize = paddedSize + procCount - rest
-				endif
-				globalStartIndex = (paddedSize / procCount) * procId
-
+def PrintFortranCode(curPart, partCount):
+	#Print the indextricks part only once
+	if curPart == 0:
+		str = """
+			module IndexTricks
+				contains
+				subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
+					implicit none
+					integer, intent(in) :: row, col, fullSize, bands
+					integer, intent(out) :: packedRow, packedCol
+	
+					packedRow = col
+					packedCol = bands - col + row
+				end subroutine
+	
+				function GetGlobalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
+					implicit none
+					integer, intent(in) :: fullSize, procCount, procId
+					integer :: rest, paddedSize, globalStartIndex
+	
+					paddedSize	= fullSize
+					rest = mod(fullSize, procCount)
+					if (rest .ne. 0) then
+						paddedSize = paddedSize + procCount - rest
+					endif
+					globalStartIndex = (paddedSize / procCount) * procId
+	
+						return
+				end function	
+	
+				function GetDistributedSize(fullSize, procCount, procId) result(distributedSize)
+					implicit none
+					integer, intent(in) :: fullSize, procCount, procId
+					integer :: rest, distributedSize, paddedDistribSize
+	
+					rest = mod(fullSize, procCount)
+					if (rest.eq.0) then
+							distributedSize = fullSize / procCount;
+					else
+						paddedDistribSize = (fullSize + procCount - rest) / procCount 
+						distributedSize = fullSize - paddedDistribSize * procId
+						distributedSize = max(distributedSize, 0)
+						distributedSize = min(distributedSize, paddedDistribSize)
+					endif
+	
 					return
-			end function	
+				end function 
+	
+				function GetPaddedLocalSize(fullSize, procCount) result(localSize)
+					implicit none
+					integer, intent(in) :: fullSize, procCount
+					integer :: rest, paddedSize, localSize
+	
+					paddedSize = fullSize
+					rest = mod(fullSize, procCount)
+					if (rest .ne. 0) then
+						paddedSize = paddedSize + procCount - rest
+					endif
+					localSize = paddedSize / procCount
+	
+					return
+				end function 
+	
+				function GetOwnerProcId(fullSize, procCount, globalIndex) result(procId)
+					implicit none
+					integer, intent(in) :: fullSize, procCount, globalIndex
+					integer :: rest, paddedSize, procId, localSize
+	
+					include "parameters.f"
+						
+					paddedSize = fullSize
+					rest = mod(fullSize, procCount)
+					if (rest .ne. 0) then
+						paddedSize = paddedSize + procCount - rest
+					endif
+					localSize = paddedSize / procCount
+					!Fortran does not 
+					procId = floor( real(globalIndex, kind=dbl) / real(localSize, kind=dbl) )
+	
+					return
+				end function	
+			 
+		end module
+		"""
+		print PrettyPrintFortran(str)
 
-			function GetDistributedSize(fullSize, procCount, procId) result(distributedSize)
-				implicit none
-				integer, intent(in) :: fullSize, procCount, procId
-				integer :: rest, distributedSize, paddedDistribSize
-
-				rest = mod(fullSize, procCount)
-				if (rest.eq.0) then
-						distributedSize = fullSize / procCount;
-				else
-					paddedDistribSize = (fullSize + procCount - rest) / procCount 
-					distributedSize = fullSize - paddedDistribSize * procId
-					distributedSize = max(distributedSize, 0)
-					distributedSize = min(distributedSize, paddedDistribSize)
-				endif
-
-				return
-			end function 
-
-			function GetPaddedLocalSize(fullSize, procCount) result(localSize)
-				implicit none
-				integer, intent(in) :: fullSize, procCount
-				integer :: rest, paddedSize, localSize
-
-				paddedSize = fullSize
-				rest = mod(fullSize, procCount)
-				if (rest .ne. 0) then
-					paddedSize = paddedSize + procCount - rest
-				endif
-				localSize = paddedSize / procCount
-
-				return
-			end function 
-
-			function GetOwnerProcId(fullSize, procCount, globalIndex) result(procId)
-				implicit none
-				integer, intent(in) :: fullSize, procCount, globalIndex
-				integer :: rest, paddedSize, procId, localSize
-
-				include "parameters.f"
-					
-				paddedSize = fullSize
-				rest = mod(fullSize, procCount)
-				if (rest .ne. 0) then
-					paddedSize = paddedSize + procCount - rest
-				endif
-				localSize = paddedSize / procCount
-				!Fortran does not 
-				procId = floor( real(globalIndex, kind=dbl) / real(localSize, kind=dbl) )
-
-				return
-			end function	
-		 
-	end module
-	"""
-	print PrettyPrintFortran(str)
-	for generator in generatorPermutationList:
+	#try to split the permutation list into partCount even lists
+	for generator in generatorPermutationList[curPart::partCount]:
 		print generator.GetFortranCode()
 
 def PrintWrapperCode():
@@ -1439,3 +1435,11 @@ def PrintWrapperHeader():
 	""" 
 
 	print PrettyPrintC(str)
+
+generatorPermutationList = []
+for systemRank in range(1,4+1):
+	for perm in GetAllPermutations(systemRank, 0):
+		generatorPermutationList.append(TensorPotentialMultiplyGenerator(list(perm)))
+
+
+
