@@ -52,11 +52,20 @@ void PampWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
 	config.Get("krylov_basis_size", Propagator.BasisSize);
 
+	//Which method do we use to exponentiate H? (Pade or eig. decomp.)
 	if (config.HasValue("krylov_exponentiation_method"))
 	{
 		int exponentiation;
 		config.Get("krylov_exponentiation_method", exponentiation);
 		Propagator.Exponentiation = (pamp::pAMP<cplx>::ExponentiationMethod) exponentiation;
+	}
+
+	//Perform double orthogonalization step?
+	if (config.HasValue("krylov_double_orthogonalization"))
+	{
+		bool performDoubleOrthogonalization;
+		config.Get("krylov_double_orthogonalization", performDoubleOrthogonalization);
+		Propagator.PerformDoubleOrthogonalization = performDoubleOrthogonalization;
 	}
 }
 

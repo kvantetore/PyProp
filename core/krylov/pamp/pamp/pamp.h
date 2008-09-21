@@ -54,6 +54,7 @@ public:
 	int PadeOrder;
 	int ScalingOrder;
 	ExponentiationMethod Exponentiation;
+	bool PerformDoubleOrthogonalization;
 	
 
 	//Options
@@ -77,6 +78,7 @@ public:
 
 		Tolerance = sqrt(std::numeric_limits<NormType>::epsilon());
 		Exponentiation = ExponentiationPade;
+		PerformDoubleOrthogonalization = false;
 	}
 
 private:
@@ -308,6 +310,7 @@ void pAMP<T>::PerformArnoldiStep()
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
+		cout << "Happy breakdown!" << endl;
 		HappyBreakdown = true;
 		Timers["Arnoldi Step"].Stop();
 		return;
@@ -332,8 +335,16 @@ void pAMP<T>::PerformArnoldiStep()
 	blas.MultiplyMatrixVector(currentArnoldiMatrix, currentOverlap, TempVector);
 	//- Remove the projection from the residual
 	blas.AddVector(TempVector, -1.0, Residual);
-	//T residualNorm = CalculateGlobalNorm(Residual);
+	T residualNorm = CalculateGlobalNorm(Residual);
 	Timers["Arnoldi Step (Orthogonalization)"].Stop();
+
+	//Perform additional orthogonalization (double orthogonalization)
+	if (PerformDoubleOrthogonalization)
+	{
+		Timers["Arnoldi Step"].Stop();
+		PerformOrthogonalization(origNorm, residualNorm);
+		Timers["Arnoldi Step"].Start();
+	}
 
 	//Update the Hessenberg Matrix
 	HessenbergMatrix(j+1, blitz::Range(0, j+1)) = currentOverlap;
