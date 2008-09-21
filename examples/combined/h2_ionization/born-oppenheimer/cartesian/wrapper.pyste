@@ -3,5 +3,8 @@ PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Compile potential for 1D and 2D
 PotentialEvaluator("H2BornOppenheimerPotential<2> 2","H2BornOppenheimerPotential_2")
+PotentialEvaluator("H2pBornOppenheimerPotential<1> 1","H2pBornOppenheimerPotential_1")
 PotentialEvaluator("BornOppenheimerLaserPotential<2> 2","BornOppenheimerLaserPotential_2")
+
+PotentialEvaluator("H2MaskPotential<2> 2","H2MaskPotential_2")
 

@@ -59,6 +59,9 @@ public:
 
 
 
+/*
+ * Class for the 1D+1D H2 potential
+ */
 template<int Rank>
 class H2BornOppenheimerPotential : public PotentialBase<Rank>
 {
@@ -106,6 +109,102 @@ public:
 		          + - 1.0 / sqrt( sqr(z2 - R2) + sqr(NuclearSofting) );
 
 		return V1 + V2 + V12;
+	}
+};
+
+
+/*
+ * Class for the 1D H2+ potential
+ */
+template<int Rank>
+class H2pBornOppenheimerPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double NuclearSeparation;
+	double NuclearSofting;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("nuclear_separation", NuclearSeparation);
+		config.Get("nuclear_softing", NuclearSofting);
+	}
+
+	/*
+	 * Called for every grid point.
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double R2 = NuclearSeparation / 2;
+
+		double z = pos(0);
+
+		//Electron-Nucleus interaction
+		double V1 = - 1.0 / sqrt( sqr(z + R2) + sqr(NuclearSofting) )
+		          + - 1.0 / sqrt( sqr(z - R2) + sqr(NuclearSofting) );
+
+		return V1;
+	}
+};
+
+
+
+/*
+ * Potential to mask the wavefunction such that we are only left with the
+ * H2+ part of the ionized H2 wavefunction.
+ *
+ * Everything where |z2| > CutoffDistance is multiplied by 1,
+ * the rest is multiplied by zero
+ */
+template<int Rank>
+class H2MaskPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double CutoffDistance;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("cutoff_distance", CutoffDistance);
+	}
+
+	/*
+	 * Called for every grid point.
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double z1 = pos(0);
+		double z2 = pos(1);
+
+		double V1;
+		if (std::abs(z2) < CutoffDistance)
+		{
+			V1 = 0;
+		}
+		else
+		{
+			V1 = 1;
+		}
+
+		return V1;
 	}
 };
 

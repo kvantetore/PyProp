@@ -19,6 +19,9 @@ def CommonSetupConfig(**args):
 	if "initialResidual" in args:
 		conf.SetValue("Arpack", "krylov_use_random_start", False)
 
+	if "eigenvalueCount" in args:
+		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
+
 	if "dt" in args:
 		dt = args["dt"]
 		conf.SetValue("Propagation", "timestep", dt)
@@ -45,8 +48,16 @@ def CommonSetupConfig(**args):
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
 
-	if "innerGridCount" in args:
-		conf.ElectronRepresentation.inner_count = args["innerGridCount"]
+	#Grid Parameters
+	if "innerCount" in args:
+		conf.SetValue("ElectronRepresentation", "inner_count", args["innerCount"])
+
+	if "innerBoundary" in args:
+		conf.SetValue("ElectronRepresentation", "inner_boundary", args["innerBoundary"])
+
+	if "outerBoundary" in args:
+		conf.SetValue("ElectronRepresentation", "outer_boundary", args["outerBoundary"])
+
 
 	return conf
 
