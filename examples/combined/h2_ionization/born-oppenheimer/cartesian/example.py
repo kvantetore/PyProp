@@ -12,6 +12,8 @@ pyprop = reload(pyprop)
 
 from libpotential import *
 
+import time
+
 execfile("../common/benchmark.py")
 execfile("../common/initialization.py")
 execfile("../common/basic-propagation.py")
@@ -31,6 +33,7 @@ def SetupConfig(**args):
 
 	return conf
 
+
 def Propagate(**args):
 	initPsi = args.get("initPsi", None)
 	
@@ -48,7 +51,8 @@ def Propagate(**args):
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	#phi = prop.psi.GetRepresentation().GetLocalGrid(1)
 
-	for t in prop.Advance(100):
+	curtime = - time.time()
+	for t in prop.Advance(20):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		norm = prop.psi.GetNorm()
 		
@@ -64,7 +68,8 @@ def Propagate(**args):
 		if pyprop.ProcId == 0:
 			print "t = %03.2f, corr(t) = %1.8f, N = %01.8f, Err = %s" % (t, corr, norm, errorEstimate)
 
-	
+	curtime += time.time()	
+	if pyprop.ProcId == 0: print "Duration = %s" % (curtime)
 
 	return prop
 
