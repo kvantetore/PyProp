@@ -33,7 +33,7 @@ def SetupConfig(**args):
 def Propagate(initPsi = None, **args):
 	args["imtime"] = False
 	#args["potentialList"] = ["LaserPotential"]
-	args["duration"] = 40
+	#args["duration"] = 120
 
 	prop = SetupProblem(**args)
 
@@ -46,15 +46,18 @@ def Propagate(initPsi = None, **args):
 	r = prop.psi.GetRepresentation().GetLocalGrid(0)
 	#phi = prop.psi.GetRepresentation().GetLocalGrid(1)
 
-	for t in prop.Advance(20):
+	prop.corr = [1]
+	for step, t in enumerate(prop.Advance(200)):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		norm = prop.psi.GetNorm()
+
+		prop.corr.append(corr)
 		
 		#pcolormesh(phi/pi, r, abs(prop.psi.GetData())**2)
 		#imshow(abs(prop.psi.GetData())**2, vmax=0.05)
 		
-		if pyprop.ProcId == 0:
+		if pyprop.ProcId == 0 and step % 10 == 0:
 			print "t = %03.2f, corr(t) = %1.8f, N = %01.15f" % (t, corr, norm)
-
+	
 	return prop
 

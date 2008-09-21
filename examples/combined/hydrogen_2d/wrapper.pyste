@@ -6,4 +6,5 @@ PotentialEvaluator("HydrogenPotential2D<1> 1","HydrogenPotential2D_1")
 PotentialEvaluator("HydrogenPotential2D<2> 2","HydrogenPotential2D_2")
 PotentialEvaluator("LaserPotential<1> 1","LaserPotential_1")
 PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
+PotentialEvaluator("NonDipolePotential<2> 2","NonDipolePotential_2")
 
