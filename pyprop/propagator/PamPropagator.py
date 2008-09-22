@@ -40,8 +40,7 @@ class PamPropagator(PropagatorBase):
 		self.UseBalancedOverlap = hasattr(self.BasePropagator, "MultiplyHamiltonianBalancedOverlap")
 		repr = self.psi.GetRepresentation()
 		if all([repr.IsOrthogonalBasis(i) for i in range(self.Rank)]):
-			#self.IsOrthogonalBasis = True
-			self.IsOrthogonalBasis = False
+			self.IsOrthogonalBasis = True
 		else:
 			self.IsOrthogonalBasis = False
 
