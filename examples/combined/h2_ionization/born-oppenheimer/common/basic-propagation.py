@@ -28,7 +28,8 @@ def FindEigenstates(**args):
 		prop.psi.GetData()[:] = initialResidual.GetData()
 
 	#find eigenstates
-	solver = pyprop.ArpackSolver(prop)
+	#solver = pyprop.ArpackSolver(prop)
+	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 	return solver
 

@@ -56,7 +56,10 @@ class PamPropagator(PropagatorBase):
 			repr.SolveSqrtOverlap(False, self.psi)
 
 		elif self.IsOrthogonalBasis:
+			repr = self.psi.GetRepresentation()
+			repr.MultiplySqrtOverlap(False, self.psi)
 			self.PampWrapper.AdvanceStep(self.MatVecCallback, self.psi, self.TempPsi, dt, t, False)
+			repr.SolveSqrtOverlap(False, self.psi)
 		
 		else:
 			#this is slow
@@ -73,7 +76,11 @@ class PamPropagator(PropagatorBase):
 
 		elif self.IsOrthogonalBasis:
 			#This only works on orthogonal representations (Not BSplines)
+			repr = psi.GetRepresentation()
+			repr.SolveSqrtOverlap(False, psi)
 			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+			repr.MultiplySqrtOverlap(False, psi)
+			repr.MultiplySqrtOverlap(False, tempPsi)
 
 		else:
 			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)

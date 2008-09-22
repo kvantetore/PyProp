@@ -90,14 +90,15 @@ def GetH2Groundstate(**args):
 
 
 def SetupH2MaskPotential(psi, cutoffDistance):
-	class cutoffSection(object):
+	class cutoffSection(pyprop.Section):
 		def __init__(self, cutoffDistance):
-			self.type = PotentialType.Static
+			self.type = pyprop.PotentialType.Static
 			self.classname = "H2MaskPotential"
 			self.cutoff_distance = cutoffDistance
 
 	section = cutoffSection(cutoffDistance)		
 	potential = pyprop.CreatePotentialFromSection(section, "H2MaskPotential", psi)
+	potential.SetupStep(0)
 
 	return potential
 

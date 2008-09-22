@@ -32,7 +32,7 @@ private:
 public:
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const typename Wavefunction<Rank>::Ptr psi);
-	void Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi);
+	void Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, bool usePypropIntegration);
 
 	void virtual SetupResidual(blitz::Array<cplx, 1> &residual);
 	void virtual ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Array<cplx, 1> &output);

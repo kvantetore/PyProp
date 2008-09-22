@@ -80,7 +80,7 @@ void PiramSolver<Rank>::Setup(const typename Wavefunction<Rank>::Ptr psi)
 
 
 template<int Rank>
-void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi)
+void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, bool usePypropIntegration)
 {
 	//The callback-functions uses these variables
 	this->Psi = psi;
@@ -88,8 +88,11 @@ void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr 
 	this->Callback = callback;
 
 	//Use our custom integration
-	typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
-	Solver.Integration = integration;
+	if (usePypropIntegration)
+	{
+		typename piram::IntegrationFunctor<cplx, double>::Ptr integration(new PypropIntegrationFunctor<Rank>(Psi, TempPsi));
+		Solver.Integration = integration;
+	}
 	
 	Solver.Solve();
 	Solver.Postprocess();

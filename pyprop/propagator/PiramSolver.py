@@ -61,7 +61,7 @@ class PiramSolver:
 		self.Count = 0
 
 		#Run the Arnoldi iterations
-		self.Solver.Solve(self.__MatVecCallback, psi, tempPsi)
+		self.Solver.Solve(self.__MatVecCallback, psi, tempPsi, True)
 
 	def __MatVecCallback(self, psi, tempPsi):
 		#self.BaseProblem.Propagator.MultiplyHamiltonianBalancedOverlap(tempPsi, 0, 0)
