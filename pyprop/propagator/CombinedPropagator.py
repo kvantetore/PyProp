@@ -38,9 +38,11 @@ class CombinedPropagator(PropagatorBase):
 		self.DistributionList.append( (distrModel.GetDistribution().copy(), array(self.psi.GetData().shape)) )
 		if len(self.DistributionList[0][0]) > 1: 
 			raise "Does not support more than 1D proc grid"
-		self.RankDistributionMap = zeros(len(self.SubPropagators), dtype=int)
+		self.RankDistributionMap = zeros(len(self.SubPropagators)+1, dtype=int)
 
-		for curRank, prop in enumerate(self.SubPropagators):
+		for prop in self.SubPropagators:
+			curRank = prop.TransformRank
+
 			#parallelization
 			if not IsSingleProc():
 				if distrModel.IsDistributedRank(curRank) and not prop.SupportsParallelPropagation():
@@ -63,15 +65,20 @@ class CombinedPropagator(PropagatorBase):
 					#Transform into the finalDistrib
 					self.Transpose(curRank, self.TransposeForward, self.psi)
 
+			#print "(fwd) currank = %i, distr = %s" % (curRank, self.psi.GetRepresentation().GetDistributedModel().GetDistribution())
 			prop.SetupStep(dt/2.)
+
+		#print "DistributionList =", self.DistributionList
+		#print "RankDistributionMap =", self.RankDistributionMap
 
 		self.SetupPotential(dt)
 
 		for prop in reversed(self.SubPropagators):
+			curRank = prop.TransformRank
+			#print "(bwd) currank = %i, distr = %s" % (curRank, self.psi.GetRepresentation().GetDistributedModel().GetDistribution())
 			prop.SetupStepConjugate(dt/2.)
 
 			#parallelization:
-			curRank = prop.TransformRank
 			if not IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
 
@@ -187,8 +194,9 @@ class CombinedPropagator(PropagatorBase):
 	def Transpose(self, curRank, direction, psi):
 		distrModel = psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
-			if curRank < self.Rank-1: nextRank = curRank + 1
-			else: nextRank = curRank - 1
+			nextRank = curRank + 1
+			#if curRank < self.Rank-1: nextRank = curRank + 1
+			#else: nextRank = curRank - 1
 			
 			"""
                   0     1    2 
@@ -227,8 +235,12 @@ class CombinedPropagator(PropagatorBase):
 
 			#Look up the next distribution
 			curDistribIndex = self.RankDistributionMap[curRank]
+			curDistrib, curShape = self.DistributionList[curDistribIndex]
 			nextDistribIndex = self.RankDistributionMap[nextRank]
 			nextDistrib, nextShape = self.DistributionList[nextDistribIndex]
+			fullShape = self.psi.GetRepresentation().GetFullShape()
+			nextShape = distrModel.GetTranspose().CreateDistributedShape(fullShape, nextDistrib)
+			#print "rank %i -> %i, distrib %s -> %s, shape %s -> %s" % (curRank, nextRank, curDistrib, nextDistrib, curShape, nextShape)
 
 			#If only transpose if the distribution has changed
 			if curDistribIndex != nextDistribIndex:
