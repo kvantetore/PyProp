@@ -122,6 +122,7 @@ public:
 	//Potential parameters
 	double FieldStrength;
 	double Frequency;
+	double PulseStartTime;
 	double Duration;
 	double PeakTime;
 	double Phase;
@@ -146,6 +147,7 @@ public:
 		config.Get("polarization_rank", PolarizationRank);
 		config.Get("nondipole_rank", NonDipoleRank);
 		config.Get("light_speed", LightSpeed);
+		config.Get("pulse_start_time", PulseStartTime);
 	}
 
 	/*
@@ -169,14 +171,16 @@ public:
 		double x = pos(NonDipoleRank);
 
 		double pot = 0;
+		double u = CurTime - x/LightSpeed;
 
 		//Space-time condition
-		if ((CurTime - x/LightSpeed) < Duration)
+		if ( (u < Duration) || (u >= PulseStartTime) )
 		{	
-			double envelope = sin(M_PI / Duration * (CurTime - x / LightSpeed));	
+			double envelope = sin(M_PI / Duration * u);	
 			envelope *= envelope;
+			envelope *= FieldStrength;
 			
-			pot = envelope * cos(Frequency * (CurTime - x / LightSpeed) + Phase);
+			pot = envelope * sin(Frequency * u + Phase);
 
 			pot *= k_z;
 		}
