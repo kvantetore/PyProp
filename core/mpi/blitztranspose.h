@@ -117,7 +117,28 @@ public:
 			int paddedShape = CreatePaddedShape(fullShape, procRank);
 			int paddedDistrShape = paddedShape / CartesianShape(procRank);
 			int shape = fullShape - paddedDistrShape * groupRank;
-			shape = std::max(shape, 0);
+
+			/* Here we handle the cases where some procs end up with zero data. 
+			 * The last proc to have non-zero data size substracts one data point
+			 * for each remaining proc from its shape. These are then claimed by
+			 * the remaining procs by the std::min statement below (1 per proc).
+			 */
+			if ( (shape < paddedDistrShape) && (shape > 0) )
+			{
+				shape -= CartesianShape(procRank) - groupRank - 1;
+
+				//Case where shape on this proc is less than or equal to number of
+				//remaining procs will fail.
+				//FIX: Should handle the error here, but Exceptions might not be
+				//a good idea.
+				if (shape <= 0)
+				{
+					cout << "Something went awry in CreateDistributedShape! Could not redistribute"
+						<<	"grid end-data to remaining procs!" << endl;
+				}
+			}
+
+			shape = std::max(shape, 1);
 			shape = std::min(shape, paddedDistrShape);
 			distrShape = shape;	
 		}
@@ -130,7 +151,20 @@ public:
 	{
 		int paddedShape = CreatePaddedShape(globalSize, procRank);
 		int paddedDistribShape = CreateDistributedShape(paddedShape, procRank);
-		return CartesianCoord(procRank) * paddedDistribShape;
+
+		int groupRank = CartesianCoord(procRank);
+		int groupSize = CartesianShape(procRank);
+
+		int firstSmallRank = globalSize/paddedDistribShape;
+		if (groupRank <= firstSmallRank)
+		{
+			return CartesianCoord(procRank) * paddedDistribShape;
+		}
+		else
+		{
+			return globalSize - (groupSize - groupRank);
+		}
+
 	}
 
 	blitz::Range GetLocalRange(int globalSize, int procRank)

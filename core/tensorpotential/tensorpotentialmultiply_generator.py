@@ -824,7 +824,7 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 			communicator%(rank)i = MPI_COMM_WORLD
 
 			localSize%(rank)i = sourceExtent%(rank)i
-			globalStartIndex%(rank)i = GetGlobalStartIndex(globalSize%(rank)i, procCount%(rank)i, procId%(rank)i)
+			globalStartIndex%(rank)i = GetLocalStartIndex(globalSize%(rank)i, procCount%(rank)i, procId%(rank)i)
 			paddedLocalSize%(rank)i = GetPaddedLocalSize(globalSize%(rank)i, procCount%(rank)i)
 			
 			sourceRow%(rank)i = -1
@@ -909,7 +909,7 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 				
 				!Check if we're to recieve some data this interation
 				waitRecieve%(rank)i = %(rank)i
-				sourceGlobalStartIndex%(rank)i = GetGlobalStartIndex(globalSize%(rank)i, procCount%(rank)i, sourceProc%(rank)i)
+				sourceGlobalStartIndex%(rank)i = GetLocalStartIndex(globalSize%(rank)i, procCount%(rank)i, sourceProc%(rank)i)
 				sourceGlobalRow%(rank)i = row%(rank)i + sourceGlobalStartIndex%(rank)i
 				if (0.le.sourceGlobalRow%(rank)i.and.sourceGlobalRow%(rank)i.lt.globalSize%(rank)i.and.0.le.sourceProc%(rank)i.and.sourceProc%(rank)i.lt.procCount%(rank)i.and.deltaProc%(rank)i.ne.0) then
 					!write(*,*) "Recieving ", procId%(rank)i, " <- ", sourceProc%(rank)i
@@ -1311,34 +1311,45 @@ def PrintFortranCode(curPart, partCount):
 					packedCol = bands - col + row
 				end subroutine
 	
-				function GetGlobalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
+				function GetLocalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, procId
-					integer :: rest, paddedSize, globalStartIndex
+					integer :: rest, paddedSize, globalStartIndex, distribSize, firstSmallRank
 	
 					paddedSize	= fullSize
 					rest = mod(fullSize, procCount)
 					if (rest .ne. 0) then
 						paddedSize = paddedSize + procCount - rest
 					endif
-					globalStartIndex = (paddedSize / procCount) * procId
+
+					firstSmallRank = fullSize / paddedSize
+					if (procId .le. firstSmallRank) then
+						globalStartIndex = (paddedSize / procCount) * procId
+					else
+						globalStartIndex = fullSize - (procCount - procId)
+					endif
 	
-						return
+					return
 				end function	
 	
-				function GetDistributedSize(fullSize, procCount, procId) result(distributedSize)
+				function GetDistributedSize(fullSize, procCount, procId) result(distribSize)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, procId
-					integer :: rest, distributedSize, paddedDistribSize
+					integer :: rest, distribSize, paddedDistribSize
 	
 					rest = mod(fullSize, procCount)
 					if (rest.eq.0) then
-							distributedSize = fullSize / procCount;
+							distribSize = fullSize / procCount;
 					else
 						paddedDistribSize = (fullSize + procCount - rest) / procCount 
-						distributedSize = fullSize - paddedDistribSize * procId
-						distributedSize = max(distributedSize, 0)
-						distributedSize = min(distributedSize, paddedDistribSize)
+						distribSize = fullSize - paddedDistribSize * procId
+
+						if ( (distribSize .le. paddedDistribSize) .or. (distribSize .ge. 0) ) then
+							distribSize = distribSize - (procCount - procId - 1)
+						endif
+
+						distribSize = max(distribSize, 1)
+						distribSize = min(distribSize, paddedDistribSize)
 					endif
 	
 					return
@@ -1362,7 +1373,7 @@ def PrintFortranCode(curPart, partCount):
 				function GetOwnerProcId(fullSize, procCount, globalIndex) result(procId)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, globalIndex
-					integer :: rest, paddedSize, procId, localSize
+					integer :: rest, paddedSize, procId, localSize, firstSmallRank, distribPaddedSize
 	
 					include "parameters.f"
 						
@@ -1371,10 +1382,19 @@ def PrintFortranCode(curPart, partCount):
 					if (rest .ne. 0) then
 						paddedSize = paddedSize + procCount - rest
 					endif
-					localSize = paddedSize / procCount
-					!Fortran does not 
-					procId = floor( real(globalIndex, kind=dbl) / real(localSize, kind=dbl) )
-	
+					distribPaddedSize = paddedSize / procCount
+
+					!round towards zero
+					firstSmallRank = fullSize / paddedSize
+
+					!round towards zero
+					procId = globalIndex / distribPaddedSize
+
+					!The procs after firstSmallRank have one datapoint each
+					if (procId .gt. firstSmallRank) then
+						procId = procCount - (fullSize - globalIndex)
+					endif
+				
 					return
 				end function	
 			 

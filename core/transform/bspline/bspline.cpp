@@ -383,9 +383,9 @@ TBase BSpline::BSplineGlobalOverlapIntegral(blitz::Array<TBase, 1> func, int der
 		j = temp;
 
 		/*
-		 * We of course remember that * the differentiation matrix is 
-		 * symmetric (hermittian) or skew * symmetric (skew hermittian) 
-		 * depending on the order n. Therefore * (-1)**n is added when 
+		 * We of course remember that the differentiation matrix is 
+		 * symmetric (hermittian) or skew symmetric (skew hermittian) 
+		 * depending on the order n. Therefore (-1)**n is added when 
 		 * transposing.
 		 */
 		factor = std::pow(-1.0, derivative);

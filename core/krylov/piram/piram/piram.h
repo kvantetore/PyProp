@@ -504,7 +504,7 @@ void pIRAM<T>::UpdateEigenvalues()
 		NormType ritzValue = std::abs(Eigenvalues(i));
 		NormType errorBounds = ritzError * normResidual;
 		ErrorEstimates(i) = errorBounds;
-		NormType accuracy = tol * std::max(eps23, ritzValue);
+		NormType accuracy = tol * std::max(eps23, tol * ritzValue);
 		ConvergenceEstimates(i) = errorBounds - accuracy;
 		IsConverged = IsConverged && (ConvergenceEstimates(i) <= 0.0);
 	}
@@ -703,6 +703,7 @@ void pIRAM<T>::Solve()
 		if (IsConverged)
 		{
 			cout << "All eigenvalues are converged!" << endl;
+			cout << "    Error Estimates (< 0.0) = " << ConvergenceEstimates << endl;
 		}
 		else
 		{

@@ -326,11 +326,11 @@ void ReducedSphericalTools::SetupExpansion()
 		norm = norm * sqrt(2*M_PI);
 
 		//Scale assoc legendre
-		AssocLegendrePoly(blitz::Range::all(), l) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
-		AssocLegendrePolyTransposed(l, blitz::Range::all()) = legendre(blitz::Range::all(), MapLmIndex(l, m)) *  norm;
+		AssocLegendrePoly(all, l) = legendre(all, MapLmIndex(l, m)) *  norm;
+		AssocLegendrePolyTransposed(l, all) = legendre(all, MapLmIndex(l, m)) *  norm;
 
 
-		AssocLegendrePolyDerivative(blitz::Range::all(), l) = 0;
+		AssocLegendrePolyDerivative(all, l) = 0;
 		if (l > 0)
 		{
 			double normalization = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(m)) / (double)(l+std::abs(m)));

@@ -198,6 +198,8 @@ clean:
 	rm -f tensorpotential/tensorpotentialmultiply_wrapper.h
 	rm -f indextricks.mod
 	rm -f $(OBJECTS)
+	rm -f $(OUTPUT)
+	rm -f $(OUTPUT_STATIC)
 	
 pyclean:
 	rm -rf $(PYSTEOUTPUTDIR)
