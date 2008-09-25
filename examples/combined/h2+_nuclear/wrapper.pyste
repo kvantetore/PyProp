@@ -1,0 +1,7 @@
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+PotentialEvaluator("H2pPotential<2> 2","H2pPotential_2")
+PotentialEvaluator("H2pPotential<3> 3","H2pPotential_3")
+PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
+PotentialEvaluator("LaserPotential<3> 3","LaserPotential_3")
+
