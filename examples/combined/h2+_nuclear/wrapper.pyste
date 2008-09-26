@@ -5,3 +5,6 @@ PotentialEvaluator("H2pPotential<3> 3","H2pPotential_3")
 PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
 PotentialEvaluator("LaserPotential<3> 3","LaserPotential_3")
 
+PotentialEvaluator("StepPotential<2> 2","StepPotential_2")
+PotentialEvaluator("StepPotential<3> 3","StepPotential_3")
+

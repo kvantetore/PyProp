@@ -59,6 +59,23 @@ def FindGroundstate(**args):
 
 	#Create the propagator
 	prop = SetupProblem(**args)
+	prop.AdvanceStep()
+
+	#Estimate runtime by running a few timesteps
+	stepCount = 50
+	timestepDuration = - time.time()
+	for i in range(stepCount):
+		prop.AdvanceStep()
+	timestepDuration += time.time()
+	timestepDuration /= stepCount
+
+	prop.psi.GetRepresentation().GetDistributedModel().GlobalBarrier()
+	
+	estimatedRuntime = abs(prop.Duration / prop.TimeStep) * timestepDuration
+	fmt = time.gmtime(estimatedRuntime)
+	PrintOut("Estimated Runtime = %i days, %i hours, %i minutes (%f secs), timestep = %f" % (fmt[2]-1, fmt[3], fmt[4], estimatedRuntime, timestepDuration))
+
+	return 
 
 	#propagate
 	for t in prop.Advance(10):
@@ -70,40 +87,93 @@ def PrintOut(output):
 	if pyprop.ProcId == 0:
 		print output
 
+import time
+
 def Propagate(**args):
+	#Setup Problem
 	args['imTime'] = False
 	args["silent"] = pyprop.ProcId != 0
 	args["additionalPotentials"] = ["LaserPotential", "AbsorbingBoundary"]
-	#args["additionalPotentials"] = ["AbsorbingBoundary"]
 	prop = SetupProblem(**args)
 
-	initPsi = args['initPsi']
+	electronicRadialRank = 0
+	electronicAngularRank = 1
 
+	radialBoxSize = 80
+	angularBoxSize = 16
+
+	#Setup box potentials
+	radialBox = SetupStepPotential(prop.psi, -radialBoxSize, radialBoxSize, electronicRadialRank)
+	angularBox = SetupStepPotential(prop.psi, -1, angularBoxSize, electronicAngularRank)
+
+	#Initial Wavefunction
+	initPsi = args.get('initPsi', None)
+	if initPsi == None:
+		initPsi = prop.psi.Copy()
 	initPsi.Normalize()
 	prop.psi.GetData()[:] = initPsi.GetData()
 
-	t = 0
-	norm = prop.psi.GetNorm()
-	corr = abs(prop.psi.InnerProduct(initPsi))**2
-	PrintOut( "t = %f, N(t) = %f, C(t) = %f" % (t, norm, corr) )
+	#Estimate runtime by running a few timesteps
+	stepCount = 10
+	timestepDuration = - time.time()
+	for i in range(stepCount):
+		prop.AdvanceStep()
+	timestepDuration += time.time()
+	timestepDuration /= stepCount
 
-	#figure()
-	#if prop.psi.GetRank() == 2:
-	#	pyprop.Plot2DRank(prop, 0)
-	#else:
-	#	pyprop.Plot1D(prop)
-	
-	for t in prop.Advance(100):
+	estimatedRuntime = abs(prop.Duration / prop.TimeStep) * timestepDuration
+	fmt = time.gmtime(estimatedRuntime)
+	PrintOut("Estimated Runtime = %i days, %i hours, %i minutes" % (fmt[2]-1, fmt[3], fmt[4]))
+
+	def output():
 		norm = prop.psi.GetNorm()
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
-		PrintOut( "t = %4.3f, N(t) = %.18f, C(t) = %.18f" % (t, norm, corr) )
+		angularBoxPop = angularBox.GetExpectationValue(prop.psi, 0, 0)
+		radialBoxPop = radialBox.GetExpectationValue(prop.psi, 0, 0)
+		PrintOut( "t = %4.3f, N(t) = %.5f, C(t) = %.10f, radBox(t) = %.10f, angBox(t) = %.10f" % (prop.PropagatedTime, norm, corr, angularBoxPop, radialBoxPop) )
 
-		#if prop.psi.GetRank() == 2:
-		#	pyprop.Plot2DRank(prop, 0)
-		#else:
-		#	pyprop.Plot1D(prop)
+	#Output once before the propagation
+	output()
 
+	#Propagated to end with 100 printouts
+	for t in prop.Advance(100):
+		output()
+
+	#Output once after the propagation
+	output()
+	
 	return prop
+
+
+def SetupStepPotential(psi, zeroBefore, zeroAfter, stepRank):
+	"""
+	Setup a step potential which is zero outside (zeroBefore -> zeroAfter)
+	in rank stepRank, and one otherwise. 
+
+	i.e. to find the amount of psi outside r=80, (and r is rank 0)
+
+	tempPsi = prop.GetTempPsi()
+	pot = SetupStepPotential(prop.psi, -80, 80, 0)
+
+	tempPsi.Clear()
+	normInside = pot.GetExpectationValue(prop.psi, 0, 0)
+
+	"""
+	class stepSection(pyprop.Section):
+		def __init__(self):
+			self.type = pyprop.PotentialType.Dynamic
+			self.classname = "StepPotential"
+			self.zero_before = zeroBefore
+			self.zero_after = zeroAfter
+			self.step_rank = stepRank
+
+	section = stepSection()		
+	potential = pyprop.CreatePotentialFromSection(section, "H2MaskPotential", psi)
+	potential.SetupStep(0)
+
+	return potential
+
+
 
 
 #---------------------------------------------------------------------------------

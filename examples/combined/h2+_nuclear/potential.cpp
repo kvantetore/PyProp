@@ -120,5 +120,56 @@ public:
 	}
 };
 
+/*
+ * Step potential to mask to simplify calculation of certain quantities
+ */
+template<int Rank>
+class StepPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double ZeroAfter;
+	double ZeroBefore;
+	double StepRank;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("zero_before", ZeroBefore);
+		config.Get("zero_after", ZeroAfter);
+		config.Get("step_rank", StepRank);
+
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		//Coordinates
+		double r = pos(StepRank);
+		double V = 0;
+
+		/*
+		 * Step function one between ZeroBefore and ZeroAfter
+		 * and zero otherwise
+		 */
+		if (ZeroBefore < r && r < ZeroAfter)
+		{
+			V = 1;
+		}
+			
+		return V;
+	}
+};
+
 
 
