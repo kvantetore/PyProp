@@ -5,6 +5,24 @@ def GetAnotherDistribution(distrib, rank):
 	ranks = [j for j in r_[0:rank] if j not in distrib]
 	return array([min(ranks)], dtype=int)
 
+def GetAnotherDistribution2(distrib, curRank, rank):
+	if rank <= len(distrib):
+		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
+
+	#find out which procRank curRank is distributed on
+	curProcRank = find(array(distrib) == curRank)[0]
+
+	#Ranks available for distribution
+	availableRanks = [j for j in r_[0:rank] if j not in distrib]
+
+	#The new distrib is similar to the old distrib, only with the distribution 
+	#curProcRank changed
+	newDistrib = array(distrib)
+	newDistrib[curProcRank] = min(availableRanks)
+
+	return newDistrib
+
+
 #----------------------------------------------------------------------------------------------------
 # Cartesian FFT Evaluator
 #----------------------------------------------------------------------------------------------------

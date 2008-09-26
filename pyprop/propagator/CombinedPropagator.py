@@ -36,8 +36,8 @@ class CombinedPropagator(PropagatorBase):
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 		self.DistributionList = []
 		self.DistributionList.append( (distrModel.GetDistribution().copy(), array(self.psi.GetData().shape)) )
-		if len(self.DistributionList[0][0]) > 1: 
-			raise "Does not support more than 1D proc grid"
+		#if len(self.DistributionList[0][0]) > 1: 
+		#	raise "Does not support more than 1D proc grid"
 		self.RankDistributionMap = zeros(len(self.SubPropagators)+1, dtype=int)
 
 		for prop in self.SubPropagators:
@@ -51,7 +51,7 @@ class CombinedPropagator(PropagatorBase):
 					startDistrib, startShape = self.DistributionList[distribIndex] 
 
 					#Find the next distribution
-					finalDistrib = GetAnotherDistribution(startDistrib, self.Rank)
+					finalDistrib = GetAnotherDistribution2(startDistrib, curRank, self.Rank)
 		
 					#Find shape of the next distribution
 					transpose = distrModel.GetTranspose()
@@ -84,8 +84,8 @@ class CombinedPropagator(PropagatorBase):
 
 		if not IsSingleProc():
 			distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-			if len(distr) != 1:
-				raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
+			#if len(distr) != 1:
+			#	raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
 			#if distr[0] != self.Rank-1:
 			#	raise "Distribution (%s) is invalid" % (distr)
 
