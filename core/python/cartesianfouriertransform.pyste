@@ -5,3 +5,7 @@ CartesianFourierTransform("2")
 CartesianFourierTransform("3")
 CartesianFourierTransform("4")
 
+declaration_code("#include <fftw3.h>\n")
+module_code('def("fftw_import_wisdom_from_file", fftw_import_wisdom_from_file);\n')
+module_code('def("fftw_import_wisdom_from_string", fftw_import_wisdom_from_string);\n')
+

@@ -10,6 +10,9 @@
 using namespace boost::python;
 
 // Declarations ================================================================
+#include <fftw3.h>
+
+
 namespace  {
 
 CartesianRepresentation<1> (CartesianFourierTransform<1>::*CartesianFourierTransform_1___CreateFourierRepresentationconstCartesianRepresentation_1__)(const CartesianRepresentation<1>&)  = &CartesianFourierTransform<1>::CreateFourierRepresentation;
@@ -75,5 +78,7 @@ void Export_python_cartesianfouriertransform()
         .def("CreateFourierRepresentation", CartesianFourierTransform_4___CreateFourierRepresentationconstCartesianRepresentation_4___int)
     ;
 
+def("fftw_import_wisdom_from_file", fftw_import_wisdom_from_file);
+def("fftw_import_wisdom_from_string", fftw_import_wisdom_from_string);
 }
 
