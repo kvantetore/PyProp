@@ -67,6 +67,14 @@ class PropagatorBase:
 
 	def GetPotentialList(self):
 		raise NotImplementedError
-			
-			
+
 	
+	def PerformGridOperation(self, gridFunction):
+		"""
+		Perform a grid operation, as defined by the function 'gridFunction'.
+		The wavefunction is assumed to be in the grid representation.
+		"""
+		gridFunction()
+
+	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
+		raise Exception("Must be implemented on subpropagator")

@@ -117,35 +117,18 @@ class CombinedPropagator(PropagatorBase):
 
 	
 	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
-		#first halfstep
-		for prop in self.SubPropagators:
-			#parallelization
-			curRank = prop.TransformRank
-			if not IsSingleProc():
-				self.Transpose(curRank, self.TransposeForward, self.psi)
-				self.Transpose(curRank, self.TransposeForward, tmpPsi)
+		"""
+		Calculate
+		"""
+		#Callback function, multiplies grid potential on psi
+		def MultiplyGridPotential():
+			tmpPsi.Clear()
+			potential.MultiplyPotential(self.psi, tmpPsi, t, dt)
 
-			#transform step
-			prop.InverseTransform(self.psi)
-			prop.InverseTransform(tmpPsi)
+		#Perform the grid potential multiplication
+		self.PerformGridOperation(MultiplyGridPotential, [tmpPsi, psi])
 
-		#multiply potential
-		tmpPsi.Clear()
-		potential.MultiplyPotential(self.psi, tmpPsi, t, dt)
-
-		#second halfstep
-		for prop in reversed(self.SubPropagators):
-			#transform step
-			prop.ForwardTransform(self.psi)
-			prop.ForwardTransform(tmpPsi)
-
-			#parallelization
-			curRank = prop.TransformRank
-			if not IsSingleProc():
-				self.Transpose(curRank, self.TransposeBackward, self.psi)
-				self.Transpose(curRank, self.TransposeBackward, tmpPsi)
-
-		#inner product yields 
+		#inner product yields expectation value
 		return prop.psi.InnerProduct(tmpPsi)
 
 	def AdvanceStep(self, t, dt):
@@ -265,4 +248,39 @@ class CombinedPropagator(PropagatorBase):
 		return prop.GetBasisFunction(rank, basisIndex)
 
 
-	
+		
+	def PerformGridOperation(self, gridFunction, wavefunctionList):
+		"""
+		Perform a grid operation, as defined by the function 'gridFunction'.
+		The wavefunction is transformed to the grid representation, then 
+		'gridFunction' is applied, and finally the wavefunction is transformed 
+		back to the basis representation.
+		"""
+
+		#Transform to grid
+		for prop in self.SubPropagators:
+			#parallelization
+			curRank = prop.TransformRank
+			if not IsSingleProc():
+				self.Transpose(curRank, self.TransposeForward, self.psi)
+				self.Transpose(curRank, self.TransposeForward, tmpPsi)
+
+			#transform step
+			for psi in wavefunctionList:
+				prop.InverseTransform(psi)
+
+		#Perform grid operation
+		gridFunction()
+
+		#Transform to basis
+		for prop in reversed(self.SubPropagators):
+			#transform step
+			for psi in wavefunctionList:
+				prop.ForwardTransform(psi)
+
+			#parallelization
+			curRank = prop.TransformRank
+			if not IsSingleProc():
+				for psi in wavefunctionList:
+					self.Transpose(curRank, self.TransposeBackward, psi)
+
