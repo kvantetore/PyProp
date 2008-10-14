@@ -6,7 +6,8 @@ DEBUG = False
 
 def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	"""
-	Saves the wavefunction data to a dataset in a HDF file.
+	Saves the wavefunction data to a dataset in a HDF file, and stores a config object
+	as an attribute on the wavefunction if applicable.
 
 	Parameters
 	--------------------------------------------------------------------
@@ -249,7 +250,11 @@ def SaveConfigObject(filename, datasetPath, conf):
 	if conf != None:
 		h5file = tables.openFile(filename, "r+")
 		try:
-			h5file.setNodeAttr(datasetPath, "configObject", conf.cfgObj)
+			dataset = GetExistingDataset(h5file, datasetPath)
+			if datasetPath:
+				h5file.setNodeAttr(dataset, "configObject", conf.cfgObj)
+		except:
+			print "WARNING: Could not store config object!"
 		finally:
 			h5file.close()
 
