@@ -831,7 +831,7 @@ public:
     //////////////////////////////////////////////
 	
 	int getReferenceCount() const
-	{ return numReferences(); }
+	{ return this->numReferences(); }
 
     const TinyVector<int, N_rank>&    base() const
     { return storage_.base(); }

@@ -364,26 +364,16 @@ void Array<P_numtype, N_rank>::doTranspose(int destRank, int sourceRank,
 }
 
 template<typename P_numtype, int N_rank>
-void Array<P_numtype, N_rank>::changeOrdering(const TinyVector<int, N_rank> &newOrder)
+void Array<P_numtype, N_rank>::changeShape(const TinyVector<int, N_rank> &newShape)
 {
-    BZPRECHECK(sum(newOrder) == N_rank * (N_rank-1) / 2,
-        "Invalid array changeOrdering() arguments." << endl
-        << "newOrder must be a permutation of the numerals (0,...,"
-        << (N_rank - 1) << ")");
+    BZPRECHECK(product(newShape) == size(),
+        "Invalid array changeShape() arguments." << endl
+        << "newShape (" << newShape << ") must total to a size equal to the "
+	<< "existing array (" << length_ << ")." << endl
+	<< " " << product(newShape) << " != " << product(length_) << endl);
 
-    //Create reference copy
-    Array<P_numtype, N_rank> array(*this);
-
-    for (int i=0; i < N_rank; i++)
-    {
-        int src = array.ordering(i);
-	int dst = newOrder(i);
-    	length_[dst] = array.length_[src];
-	stride_[dst] = array.stride_[src];
-	storage_.setAscendingFlag(dst, array.isRankStoredAscending(src));
-	storage_.setBase(dst, array.base(src));
-	storage_.setOrdering(i, dst);
-    }
+    length_ = newShape;    
+    computeStrides();
 }
 
 template<typename P_numtype, int N_rank>

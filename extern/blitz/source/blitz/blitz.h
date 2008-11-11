@@ -101,6 +101,7 @@ BZ_NAMESPACE_END
 #ifdef BZ_DISABLE_THREADS
  #ifdef BZ_THREADSAFE
   #undef BZ_THREADSAFE
+ #endif
 #endif
 #ifdef BZ_THREADSAFE
  #if defined(_REENTRANT)
