@@ -157,3 +157,9 @@ class FourierPropagatorBase(SubPropagatorBase):
 			self.type = type
 			self.classname = classname
 	
+
+	def ForwardTransform(self, psi):
+		self.TransformForward(psi)
+
+	def InverseTransform(self, psi):
+		self.TransformInverse(psi)
