@@ -125,6 +125,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 		"""
 		Transforms psi from Grid space to Fourier space, and updates the representation
 		"""
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.FourierTransform.ForwardTransform(psi, self.TransformRank)
 		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.FourierRepresentation)
 
@@ -132,6 +133,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 		"""
 		Transforms psi from Fourier space to Grid space, and updates the representation
 		"""
+		assert(not psi.GetRepresentation().GetDistributedModel().IsDistributedRank(self.TransformRank))
 		self.FourierTransform.InverseTransform(psi, self.TransformRank)
 		psi.GetRepresentation().SetRepresentation(self.TransformRank, self.GridRepresentation)
 	
