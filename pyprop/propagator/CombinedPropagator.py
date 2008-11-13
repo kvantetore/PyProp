@@ -126,10 +126,10 @@ class CombinedPropagator(PropagatorBase):
 			potential.MultiplyPotential(self.psi, tmpPsi, t, dt)
 
 		#Perform the grid potential multiplication
-		self.PerformGridOperation(MultiplyGridPotential, [tmpPsi, psi])
+		self.PerformGridOperation(MultiplyGridPotential, [tmpPsi, self.psi])
 
 		#inner product yields expectation value
-		return prop.psi.InnerProduct(tmpPsi)
+		return self.psi.InnerProduct(tmpPsi)
 
 	def AdvanceStep(self, t, dt):
 		#Advance one step using strang splitting
@@ -262,8 +262,8 @@ class CombinedPropagator(PropagatorBase):
 			#parallelization
 			curRank = prop.TransformRank
 			if not IsSingleProc():
-				self.Transpose(curRank, self.TransposeForward, self.psi)
-				self.Transpose(curRank, self.TransposeForward, tmpPsi)
+				for psi in wavefunctionList:
+				self.Transpose(curRank, self.TransposeForward, psi)
 
 			#transform step
 			for psi in wavefunctionList:
