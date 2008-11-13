@@ -263,7 +263,7 @@ class CombinedPropagator(PropagatorBase):
 			curRank = prop.TransformRank
 			if not IsSingleProc():
 				for psi in wavefunctionList:
-				self.Transpose(curRank, self.TransposeForward, psi)
+					self.Transpose(curRank, self.TransposeForward, psi)
 
 			#transform step
 			for psi in wavefunctionList:
