@@ -4,23 +4,43 @@
 
 PYPROP_ROOT    := /home/tore/prog/pyprop
 
+#optimization flags
 CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
 CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
-
 #CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
-CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_CBLAS 
+
+#blas/lapack flags. use installed mkl libraries.
+#make sure to install version 10.0.1.* or 10.0.2.*, as 
+#10.0.3.* will NOT work
+CPPFLAGS       := $(CPPFLAGS) -DPYPROP_USE_BLAS -DPYPROP_USE_BLAS_CBLAS -DPYPROP_USE_BLAS_MKL
 CPPFLAGS       := $(CPPFLAGS) -I/opt/intel/mkl/10.0.1.014/include 
+LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
+LAPACK_LIBS     = -lmkl -lguide -lmkl_core -lmkl_lapack -lpthread
+
+#other flags
 CPPFLAGS       := $(CPPFLAGS) -DBZ_DISABLE_THREADS
 
-LDFLAGS        := $(LDFLAGS) -L/opt/intel/mkl/10.0.1.014/lib/em64t
+#use bundled blitz. configure blitz first, by going to extern/blitz
+#and run ./configure-blitz
+#comment out the following lines to use system installed blitz
+BLITZ_ROOT     := $(PYPROP_ROOT)/extern/blitz/build
+BLITZ_INCLUDE  := -I$(BLITZ_ROOT)/include
+BLITZ_LIB      := -L$(BLITZ_ROOT)/lib
+CPPFLAGS       :=  $(BLITZ_INCLUDE) $(CPPFLAGS)
+LDFLAGS        :=  $(BLITZ_LIB) $(LDFLAGS)
+
+#pyste flags (use bundled pyste)
+#use version 3.4 or 4.1 of g++, otherwise pyste will not work
+PYSTE_BIN	   := $(PYPROP_ROOT)/extern/pyste/pyste.py
+#PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
+PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-4.1"
+#pyste needs to know where to find mpi.h
+PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
 
 MPICXX         := mpicxx
 BOOST_LIBS     := -lboost_python-mt
-PYSTE_BIN	   := $(PYPROP_ROOT)/extern/pyste/pyste.py
-PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
-PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
-LAPACK_LIBS = -lmkl -lguide -lmkl_core -lmkl_lapack -lpthread
 
+#configuration options set to blank or 0 to disable a pyprop module
 PYPROP_USE_ARPACK  := 1
 PYPROP_USE_PIRAM   := 1
 PYPROP_USE_EXPOKIT := 1
@@ -29,13 +49,16 @@ PYPROP_USE_BSPLINE := 1
 PYPROP_USE_RUNGEKUTTA := 1
 PYPROP_USE_PAMP    := 1
 
+#set whether we are building a static pyprop or not. currently static building only works on hex
 PYPROP_STATIC := 0
 
+#arpack flags
 ARPACK_LIB        = /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -lgfortran
 
+#fortran flags
 FC             := mpif90
 FORTRAN_FLAGS  := -ffree-form -implicit-none -ffree-line-length-none -fPIC -O3 -g -Wall
 #FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
-FORTRAN_LIBS   := -lmpi_f90 -lmpi_f77 -lg2c -lgfortran
+FORTRAN_LIBS   := -lmpi_f90 -lmpi_f77 -lgfortran
 
 
