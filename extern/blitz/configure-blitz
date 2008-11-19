@@ -1,0 +1,15 @@
+#!/bin/bash
+
+export BUILDPATH=`pwd`/build
+
+rm -rf blitz-configure
+mkdir blitz-configure
+
+pushd blitz-configure
+
+../source/configure $BLITZ_CONFIGURE_OPTIONS --prefix=$BUILDPATH
+make lib 
+make install
+
+popd
+
