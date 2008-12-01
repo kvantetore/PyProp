@@ -1,0 +1,6 @@
+GmresWrapper = Template("krylov::GmresWrapper", "gmreswrapper.h");
+no_virtual(GmresWrapper)
+GmresWrapper("1");
+GmresWrapper("2");
+GmresWrapper("3");
+GmresWrapper("4");
