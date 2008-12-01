@@ -30,7 +30,9 @@ void GmresWrapper<Rank>::ApplyOperator(blitz::Array<cplx, 1> &input, blitz::Arra
 	DataVector shape = Psi->GetData().shape();
 	DataVector stride = Psi->GetData().stride();
 	DataArray inData(input.data(), shape, stride, blitz::neverDeleteData);
+	DataArray inData2(input.data(), shape, stride, blitz::neverDeleteData);
 	DataArray outData(output.data(), shape, stride, blitz::neverDeleteData);
+	DataArray outData2(output.data(), shape, stride, blitz::neverDeleteData);
 	outData = 0;
 
 	//Set psi and tempPsi to point to correct vectorsbuffers
@@ -57,6 +59,7 @@ void GmresWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 	{
 		bool performDoubleOrthogonalization;
 		config.Get("krylov_double_orthogonalization", performDoubleOrthogonalization);
+		cout << "Using doubleorth = " << performDoubleOrthogonalization << endl;
 		Solver.PerformDoubleOrthogonalization = performDoubleOrthogonalization;
 	}
 }
@@ -88,9 +91,12 @@ void GmresWrapper<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr
 		Solver.Integration = integration;
 	}
 
-	typename Wavefunction<Rank>::DataArray vector = psi->GetData();
-	blitz::Array<cplx, 1> vector1d = MapToRank1(vector);
-	Solver.SolveVector(vector1d, vector1d);
+	typename Wavefunction<Rank>::DataArray inputVector = psi->GetData();
+	blitz::Array<cplx, 1> inputVector1d = MapToRank1(inputVector);
+	typename Wavefunction<Rank>::DataArray outputVector = tempPsi->GetData();
+	blitz::Array<cplx, 1> outputVector1d = MapToRank1(outputVector);
+
+	Solver.SolveVector(inputVector1d, outputVector1d);
 
 	//Zero the pointers to avoid mishaps
 	this->Psi = typename Wavefunction<Rank>::Ptr();

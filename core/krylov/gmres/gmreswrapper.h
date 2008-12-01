@@ -75,6 +75,17 @@ public:
 	{
 		return Solver.GetErrorEstimate();
 	}
+
+	blitz::Array<cplx, 1> GetErrorEstimateList()
+	{
+		return Solver.GetErrorEstimateList();
+	}
+
+	blitz::Array<cplx, 2> GetHessenbergMatrix()
+	{
+		return Solver.GetHessenbergMatrix();
+	}
+
 };
 
 } // Namespace

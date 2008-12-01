@@ -186,6 +186,11 @@ public:
 		return abs(ErrorEstimate);
 	}
 
+	VectorType GetErrorEstimateList()
+	{
+		return ErrorEstimateList;
+	}
+
 		
 };
 
@@ -271,7 +276,7 @@ void GMRES<T>::PerformInitialArnoldiStep()
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
-		cout << "Happy breakdown!" << endl;
+		cout << "Happy breakdown!, res = " << beta << ", alpha = " << alpha << endl;
 		HappyBreakdown = true;
 	}
 	HessenbergMatrix(0, 1) = beta;
@@ -324,13 +329,12 @@ void GMRES<T>::PerformArnoldiStep()
 
 	//Update the Hessenberg Matrix
 	HessenbergMatrix(j+1, blitz::Range(0, j+1)) = currentOverlap;
+
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
-		cout << "Happy breakdown!" << endl;
+		cout << "Happy breakdown (2)!, res = " << beta << endl;
 		HappyBreakdown = true;
-		Timers["Arnoldi Step"].Stop();
-		return;
 	}
 	HessenbergMatrix(j+1, j+2) = beta;
 
@@ -421,7 +425,8 @@ void GMRES<T>::SolveVector(VectorType rightHandSide, VectorType solution)
 {
 	Timers["Total"].Start();
 	Residual = rightHandSide;
-	T inputNorm = CalculateGlobalNorm(Residual);
+	double inputNorm = std::abs(CalculateGlobalNorm(Residual));
+	blas.ScaleVector(Residual, 1.0/inputNorm);
 
 	/*
 	 * A x = b
@@ -447,21 +452,26 @@ void GMRES<T>::SolveVector(VectorType rightHandSide, VectorType solution)
 		int krylovSize = CurrentArnoldiStep + 1;
 		HessenbergSolve = HessenbergMatrix;
 		MatrixType H = HessenbergSolve( blitz::Range(0, krylovSize-1), blitz::Range(0, krylovSize) );
-		VectorType y = HessenbergSolution( blitz::Range(0, krylovSize+1) );
+		VectorType y = HessenbergSolution( blitz::Range(0, krylovSize) );
 		y = 0;
-		y(1) = inputNorm;
+		y(0) = inputNorm;
 		lapack.SolveLeastSquareGeneral(lapack.TransposeNone, H, y);
+		VectorType x = HessenbergSolution( blitz::Range(0, krylovSize-1) );
 		
 		//Calculate error
 		HessenbergSolve = HessenbergMatrix;
-		VectorType r = HessenbergSolution2( blitz::Range(0, krylovSize+1) );
-		blas.MultiplyMatrixVector(H, y, r);
+		VectorType r = HessenbergSolution2( blitz::Range(0, krylovSize) );
+		blas.MultiplyMatrixVector(H, x, r);
+		r(0) -= inputNorm;
 		cplx residualNorm = blas.VectorNorm(r);
 
 		ErrorEstimateList(CurrentArnoldiStep) = residualNorm;
 		ErrorEstimate = residualNorm;
 	}
 
+	MatrixType currentArnoldiMatrix(ArnoldiVectors(blitz::Range(0, CurrentArnoldiStep), blitz::Range::all()));
+	VectorType x = HessenbergSolution( blitz::Range(0, CurrentArnoldiStep) );
+	blas.MultiplyMatrixVector(currentArnoldiMatrix, x, solution);
 
 	Timers["Total"].Stop();
 }

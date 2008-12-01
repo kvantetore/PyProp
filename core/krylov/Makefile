@@ -17,6 +17,10 @@ ifeq ($(PYPROP_USE_PAMP),1)
 SUBDIRS := $(SUBDIRS) pamp
 endif
 
+ifeq ($(PYPROP_USE_GMRES),1)
+SUBDIRS := $(SUBDIRS) gmres
+endif
+
 all:
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) $@); done 
 
