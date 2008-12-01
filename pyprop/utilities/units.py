@@ -37,7 +37,7 @@ def AtomicToSI(number,what):
 def SItoAtomic(number,what):
   "Convert from various SI units to atomic units"
   if(what == UNIT_FIELD_INTENSITY):
-    return number/(constantsAU.intensity/100**2)
+    return number/(constantsAU.intensity/100.0**2)
   elif(what == UNIT_FIELD_STRENGTH):
     return number / (constantsAU.electric_field_strength/100.) 
   elif(what == UNIT_FREQUENCY):
@@ -57,8 +57,13 @@ def AngularFrequencyAtomicFromWavelengthSI(wavelength):
 def ElectricFieldAtomicFromIntensitySI(intensity):
   """
   Intensity [W/cm**2] -> E-field strength [a.u.]
+
+  Relation obtained from time-averaging over one cycle,
+
+  E0 = sqrt( (2 <I>) / (eps0 * c) )
   """
-  return SItoAtomic(sqrt(intensity/0.0013),UNIT_FIELD_STRENGTH)
+  #return SItoAtomic(sqrt(intensity/0.0013),UNIT_FIELD_STRENGTH)
+  return SItoAtomic(sqrt(2 * intensity / (constantsAU.electrostatic_constant / (4*pi) * constantsSI.lightSpeed)), UNIT_FIELD_STRENGTH)
 
 def WavelengthSIFromAngularFrequencyAtomic(freq):
   """
@@ -100,3 +105,4 @@ class constantsAU:
 class constantsSI:
   lightSpeed = 299792458
   alpha = 1./137.03599911
+
