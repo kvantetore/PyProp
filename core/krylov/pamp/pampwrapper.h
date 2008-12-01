@@ -32,6 +32,9 @@ private:
 	//blitz::Array<cplx, 2> M;
 
 public:
+	PampWrapper() {}
+	virtual ~PampWrapper() {}
+	
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const typename Wavefunction<Rank>::Ptr psi);
 	void AdvanceStep(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, cplx dt, double t, bool usePypropIntegration);
