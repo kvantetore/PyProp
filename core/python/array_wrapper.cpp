@@ -41,9 +41,10 @@ public:
 		
 		//If the Array is about to expire (ie it is not stored anywhere but in the return
 		//argument of a function), we return a copy which is to be maintained by python
-		if (array.getReferenceCount() <= 2) 
+		int refCount = array.getReferenceCount();
+		if (refCount <= 2 && refCount != -1) 
 		{
-			std::cout << "Returning python-owning copy of array" << std::endl;
+			std::cout << "Returning python-owning copy of array (" << array.getReferenceCount() << ")" << std::endl;
 			
 			//Create a copy of the array (perhaps there is a more elegant way?)
 			PyObject* newObject = PyArray_FromAny(wrappedObject, type_descr, 0, 0, NPY_ENSURECOPY, 0);
