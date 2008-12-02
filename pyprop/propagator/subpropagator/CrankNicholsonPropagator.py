@@ -31,4 +31,10 @@ class CrankNicholsonPropagator(SubPropagatorBase):
 
 	def SupportsParallelPropagation(self):
 		return True
+	
+	def ForwardTransform(self, psi):
+		pass
+
+	def InverseTransform(self, psi):
+		pass
 
