@@ -594,6 +594,8 @@ blitz::Array<cplx, 1> BSpline::ExpandFunctionInBSplines(object func)
  *     0. Sum is performed with explicit loop. Performance: approx. two
  *        times faster than algorithm 1.
  *     1. Sum is performed with blitz++ sum-function (which is slow).
+ *     
+ *     Algorithm 2 is not working properly
  */
 void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array<cplx, 1> output)
 {
@@ -608,7 +610,7 @@ void BSpline::ExpandFunctionInBSplines(blitz::Array<cplx, 1> input, blitz::Array
 		{
 			int startIndex = GetGridIndex(i);
 			int stopIndex = std::min(startIndex + gridChunkSize - 1, globalGridSize - 1);
-			int curChunkSize = stopIndex - startIndex;
+			int curChunkSize = stopIndex - startIndex + 1;
 
 			cplx tempValue = 0;
 			for (int j=0; j<curChunkSize; j++)
