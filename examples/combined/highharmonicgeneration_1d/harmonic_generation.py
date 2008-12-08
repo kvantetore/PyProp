@@ -75,8 +75,8 @@ def SetupProblem(**args):
 	prop.SetupStep()
 	return prop
 
+
 def SetupInitialState(**args):
-	
 	stateIndex = args["stateIndex"]
 
 	#Set up problem
@@ -99,6 +99,7 @@ def SetupInitialState(**args):
 	prop.psi.Normalize()
 
 	return prop
+
 
 def FindGroundstate(**args):
 	"""
@@ -140,6 +141,28 @@ def GetHamiltonMatrix(prop):
 		matrix[:, i] = tempPsi.GetData()[:]
 		
 	return matrix
+
+
+def FindEigenstates(useARPACK = False, **args):
+	"""
+	Uses pIRAM to find the the lowest eigenvectors of the
+	problem specified in **args
+	"""
+	prop = SetupProblem(**args)
+
+	#use custom initial residual if provided
+	initialResidual = args.get("initialResidual")
+	if initialResidual != None:
+		prop.psi.GetData()[:] = initialResidual.GetData()
+
+	#find eigenstates
+	solver = None
+	if useARPACK:
+		solver = pyprop.ArpackSolver(prop)
+	else:
+		solver = pyprop.PiramSolver(prop)
+	solver.Solve()
+	return solver
 
 
 def EstimateRunTime(prop, returnTime = False, repetitions = 1, sampleSize = 20):
@@ -194,24 +217,36 @@ def GetGridLinear(conf, xmax=None, xmin=None):
 def SetupPotential(conf, rank=1):
 	potential = eval(conf.classname + "_%s()" % rank)
 	potential.ApplyConfigSection(conf)
+	
 	return potential
 
 
-def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sampleSize=20):
+def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sampleSize=20, \
+	useTensor=False):
+
+	def SetupPotentialFunction(conf, psi):
+		if useTensor:
+			pot = SetupTensorPotential(conf, psi)
+			pot.SetupStep(timeStep)
+			return pot
+		else:
+			return SetupPotential(conf)
+
 	#Set up propagator
 	prop = SetupProblem(config = config, stateIndex = 0)
 	prop.psi.GetData()[:] = psi.GetData()[:]
+	timeStep = prop.Config.Propagation.timestep
 
 	#Set up gradient potential
 	prop.dipoleAcc = []
 	gradPotentialConf = prop.Config.DiffPotential
-	gradPotential = SetupPotential(gradPotentialConf)
+	gradPotential = SetupPotentialFunction(gradPotentialConf, prop.psi)
 
 	#Set up dipole potential
 	prop.dipoleMoment = []
 	dipolePotConf = prop.Config.StarkPotential
 	dipolePotConf.field_strength = 1.0
-	dipolePot = SetupPotential(dipolePotConf)
+	dipolePot = SetupPotentialFunction(dipolePotConf, prop.psi)
 
 	#Set up tmpPsi
 	tmpPsi = prop.psi.CopyDeep()
@@ -250,3 +285,133 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 		prop.dipoleMoment.append(dipolePotExpVal)
 	
 	return prop
+
+#--------------------------------------------------------------------------------------------------
+# TENSOR POTENTIAL
+#--------------------------------------------------------------------------------------------------
+execfile("tensor/TensorGenerator.py")
+
+from tensor.libpotential import *
+
+
+def Propagate(algo=1, config="config/tensorpotential.ini", **args):
+	prop = SetupProblem(silent=True, additionalPotentials=["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"], config=config, **args)
+	#prop = SetupProblem(additionalPotentials=["LaserPotentialLength"], config="config/tensorpotential.ini")
+	#prop = SetupProblem(silent=True, config="config/tensorpotential.ini")
+
+	initPsi = prop.psi.Copy()
+
+	#pcolormesh(abs(prop.psi.GetData())**2)
+
+	timeList = []
+	corrList = []
+	normList = []
+	for t in prop.Advance(20):
+		n = prop.psi.GetNorm()
+		if n != n:
+			return prop
+		c = abs(prop.psi.InnerProduct(initPsi))**2
+		timeList.append(t)
+		normList.append(n)
+		corrList.append(c)
+		if pyprop.ProcId == 0:
+			print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
+		#hold(False)
+		#pcolormesh(abs(prop.psi.GetData())**2)
+		#draw()
+		#sys.stdout.flush()
+		#pcolormesh(abs(prop.psi.GetData())**2)
+	
+	prop.Propagator.PampWrapper.PrintStatistics()
+		
+	c = abs(prop.psi.InnerProduct(initPsi))**2
+	print "Final Correlation = %f" % c
+
+	prop.CorrelationList = array(corrList)
+	prop.NormList = array(normList)
+	prop.TimeList = array(timeList)
+
+	return prop
+
+def SetupTensorPotential(configSection, psi):
+	"""
+	Generate a TensorPotential.
+	"""
+
+	#Potentials we should create on the fly
+	generator = TensorPotentialGenerator(representation = psi.GetRepresentation())
+
+	#Use TensorPotentialGenerator to construct potential in basis
+	geometryList = generator.GetGeometryList(configSection)
+	potentialData = generator.GeneratePotential(configSection)
+
+	#Create PotentialWrapper for TensorPotential
+	potential = TensorPotential(psi)
+	configSection.Apply(potential)
+	potential.GeometryList = geometryList
+	potential.PotentialData = potentialData
+	potential.Name = configSection.classname
+
+	return potential
+
+#--------------------------------------------------------------------------------------------------
+# Time functions for time-dependent potentials
+#--------------------------------------------------------------------------------------------------
+def LaserFunctionVelocity(conf, t):
+	if 0 <= t < conf.pulse_duration:
+		curField = conf.amplitude;
+		curField *= sin(t * pi / conf.pulse_duration)**2;
+		curField *= - cos(t * conf.frequency) / conf.frequency;
+	else:
+		curField = 0
+	return curField
+
+def LaserFunctionVelocityFromSinSqrLength(conf, t):
+	w = conf.frequency
+	T = conf.pulse_duration
+	if 0 <= t < T:
+		curField = 1/4. * conf.amplitude
+		curField *= -(2*sin(w*t)/w + T*sin((w-2*pi/T)*t)/(2*pi-T*w) - \
+			T*sin((w+2*pi/T)*t)/(2*pi + T*w))
+	else:
+		curField = 0
+	return curField
+
+def LaserFunctionSimpleLength(conf, t):
+	pulseStart = getattr(conf, "pulse_start", 0)
+	if pulseStart <= t < pulseStart + conf.pulse_duration:
+		curField = conf.amplitude;
+		curField *= sin(t * pi / conf.pulse_duration)**2;
+		curField *= cos(t * conf.frequency);
+	else:
+		curField = 0
+	return curField
+
+
+def LaserFunctionLength(conf, t):
+	if 0 <= t < conf.pulse_duration:
+		curField = conf.amplitude / conf.frequency;
+		T = conf.pulse_duration
+		w = conf.frequency
+		curField *= sin(pi*t/T)*(-2*pi/T * cos(pi*t/T) * cos(w*t) + w*sin(pi*t/T)*sin(w*t))
+	else:
+		curField = 0
+	return curField
+
+
+def LaserFunctionLengthFlatTop(conf, t):
+	pulseStart = 0
+	if conf.Exists("pulse_start"):
+		pulseStart = conf.pulse_start
+	curField = conf.amplitude * cos(t * conf.frequency);
+
+	if (t > conf.pulse_duration) or (t < pulseStart):
+		curField = 0
+	elif 0 <= t < conf.ramp_on_time:
+		curField *= sin(t * pi / (2*conf.ramp_on_time))**2;
+	elif t > conf.pulse_duration - conf.ramp_off_time:
+		curField *= sin((conf.pulse_duration - t) * pi / (2*conf.ramp_off_time))**2;
+	else:
+		curField *= 1
+
+	return curField

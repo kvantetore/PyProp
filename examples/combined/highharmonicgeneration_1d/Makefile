@@ -2,6 +2,7 @@ PYPROP_ROOT  := pyprop
 include $(PYPROP_ROOT)/core/makefiles/Makefile.include
 include $(PYPROP_ROOT)/Makefile.platform
 
+PYTHON_STATIC_LIBS := $(PYTHON_STATIC_LIBS) tensor/libtensorpotential.a
 PYPROP_LIB_PATH := $(PYPROP_ROOT)/pyprop/core
 INCLUDE      := $(INCLUDE) -I$(PYPROP_ROOT)/
 
