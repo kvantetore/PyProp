@@ -27,6 +27,7 @@ void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapTensorblitz__Array_std__comp
 // Module ======================================================================
 void Export_python_overlapmatrix()
 {
+    scope* OverlapMatrix_scope = new scope(
     class_< OverlapMatrix, boost::noncopyable >("OverlapMatrix", init< int, int, const OverlapMatrixEvaluator& >())
         .def("GetOverlapHermitianUpper", &OverlapMatrix::GetOverlapHermitianUpper)
         .def("GetOverlapHermitianLower", &OverlapMatrix::GetOverlapHermitianLower)
@@ -46,7 +47,9 @@ void Export_python_overlapmatrix()
         .def("SolveSqrtOverlapVector", &OverlapMatrix::SolveSqrtOverlapVector)
         .def("MultiplySqrtOverlapTensor", &OverlapMatrix::MultiplySqrtOverlapTensor)
         .def("SolveSqrtOverlapTensor", &OverlapMatrix::SolveSqrtOverlapTensor)
-    ;
+    );
+    register_ptr_to_python< boost::shared_ptr< OverlapMatrix > >();
+    delete OverlapMatrix_scope;
 
 }
 

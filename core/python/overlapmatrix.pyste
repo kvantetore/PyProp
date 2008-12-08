@@ -1,1 +1,2 @@
 OverlapMatrix = Class("OverlapMatrix", "representation/overlapmatrix.h")
+use_shared_ptr(OverlapMatrix)
