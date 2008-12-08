@@ -1,0 +1,1 @@
+OverlapMatrix = Class("OverlapMatrix", "representation/overlapmatrix.h")

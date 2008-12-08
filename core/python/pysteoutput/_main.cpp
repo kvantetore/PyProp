@@ -36,6 +36,7 @@ void Export_python_blitzblas();
 void Export_python_combinedabsorber();
 void Export_python_tensorpotential();
 void Export_python_customgridrepresentation();
+void Export_python_overlapmatrix();
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libcore)
@@ -74,4 +75,5 @@ BOOST_PYTHON_MODULE(libcore)
     Export_python_combinedabsorber();
     Export_python_tensorpotential();
     Export_python_customgridrepresentation();
+    Export_python_overlapmatrix();
 }
