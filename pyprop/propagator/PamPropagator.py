@@ -85,3 +85,9 @@ class PamPropagator(PropagatorBase):
 			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
 		
 
+	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
+		"""
+		Calculate potential expectation value.
+		"""
+
+		return potential.GetExpectationValue(tmpPsi, t, dt)
