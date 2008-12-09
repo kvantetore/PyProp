@@ -286,6 +286,35 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 	
 	return prop
 
+
+def SetupProblemFromFile(file, nodeName=None):
+	"""
+	Set up problem object and load wavefunction from file.
+	"""
+	prop = None
+	cfgObj = pyprop.serialization.GetConfigFromHDF5(file)
+	cfgObj.set("InitialCondition", "type", "None")
+	conf = pyprop.Config(cfgObj)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	GetWavefunctionFromFile(file, prop.psi, nodeName=nodeName)
+	
+	return prop
+
+
+def GetWavefunctionFromFile(file, psi, nodeName=None):
+	h5file = tables.openFile(file, "r")
+	try:
+		if nodeName == None:
+			for node in h5file.walkNodes():
+				if node._v_name == "wavefunction":
+					psi.GetData()[:] = node[:]
+		else:
+			psi.GetData()[:] = h5file.getNode(nodeName)[:]
+	finally:
+		h5file.close()
+
 #--------------------------------------------------------------------------------------------------
 # TENSOR POTENTIAL
 #--------------------------------------------------------------------------------------------------
