@@ -45,6 +45,7 @@ PYSTEFILES = \
 	python/combinedabsorber.pyste \
 	python/tensorpotential.pyste \
 	python/customgridrepresentation.pyste \
+	python/overlapmatrix.pyste \
 	python/coupledsphericalharmonicrepresentation.pyste \
 
 
