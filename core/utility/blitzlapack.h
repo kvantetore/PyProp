@@ -36,6 +36,8 @@ extern "C"
 
 	void LAPACK_NAME(zgbtrs)( char* TRANS, int* N, int* KL, int* KU, int* NRHS, cplx* AB, int* LDAB, int* IPIV, cplx* B, int* LDB, int* INFO ); 
 	void LAPACK_NAME(zgbtrf)( int* M, int* N, int* KL, int* KU, cplx* AB, int* LDAB, int* IPIV, int* INFO );
+
+	void LAPACK_NAME(zgels)( char* TRANS, int* M, int* N, int* NRHS, cplx* A, int* LDA, cplx* B, int* LDB, cplx* WORK, int* LWORK, int* INFO );
 }
 
 
@@ -118,7 +120,9 @@ public:
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, MatrixType &matrix );
 	int ApplyQRTransformation( MultiplicationSide side, MultiplicationTranspose transpose, MatrixType &qrMatrix, VectorType &reflectors, VectorType &vector );
 
-	
+	//Least square
+	int SolveLeastSquareGeneral(MultiplicationTranspose transpose, MatrixType &matrix, VectorType &rhs);
+
 	/*
 	 * Hermitian Dense
 	 */
@@ -169,6 +173,8 @@ private:
 	Array<double, 1> doubleWork;
 	Array<float, 1> singleWork;
 
+	void PreconditionSolveLeastSquareGeneral(MultiplicationTranspose transpose, MatrixType &matrix, VectorType &rhs);
+
 	void PreconditionSolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide);
 
 	void PreconditionCalculateEigenvectorFactorization(bool calculateLeft, bool calculateRight, 
@@ -196,6 +202,13 @@ private:
  * Check wheter all parameters are valid to the BLAS functions. 
  * This is type independent, and need only be written once
  */
+
+template<class T>
+void LAPACK<T>::PreconditionSolveLeastSquareGeneral(MultiplicationTranspose transpose, MatrixType &matrix, VectorType &rhs)
+{
+	BZPRECONDITION(std::max(matrix.extent(0), matrix.extent(1)) == rhs.extent(0));
+}
+
 
 template<class T>
 void LAPACK<T>::PreconditionSolveGeneralFactored(MultiplicationTranspose transpose, MatrixType &factoredMatrix, VectorTypeInt &pivot, MatrixType &rightHandSide)
@@ -301,6 +314,44 @@ void LAPACK<T>::PreconditionSolvePositiveDefiniteBandedSystemOfEquations(MatrixT
  * Implementation for complex<double>
  */
 
+template<>
+inline int LAPACK<cplx>::SolveLeastSquareGeneral(MultiplicationTranspose transpose, MatrixType &matrix, VectorType &rhs)
+{
+	PreconditionSolveLeastSquareGeneral(transpose, matrix, rhs);
+	char trans = transpose == TransposeNone ? 'N' : 'C';
+	
+	int N = matrix.extent(0);
+	int M = matrix.extent(1);
+	int LDA = matrix.stride(0);
+
+	int NRHS = 1;
+	int LDB = rhs.extent(0);
+
+	//First call: calculate optimal work array size
+	int workLength = -1;
+	int info = 0;
+	LAPACK_NAME(zgels)(&trans, &M, &N, &NRHS, matrix.data(), &LDA, rhs.data(), &LDB, 
+		complexDoubleWork.data(), &workLength, &info );
+
+	//Resize work arrays
+	int optimalWorkLength = (int) real(complexDoubleWork(0));
+	if (complexDoubleWork.size() < optimalWorkLength)
+	{
+		complexDoubleWork.resize(optimalWorkLength);
+	}
+
+	//Second call: calculate eigenvalues/vectors
+	workLength = optimalWorkLength;
+	LAPACK_NAME(zgels)(&trans, &M, &N, &NRHS, matrix.data(), &LDA, rhs.data(), &LDB, 
+		complexDoubleWork.data(), &workLength, &info );
+
+	if (info != 0)
+	{
+		cout << "Could not solve least square problem, info = " << info << endl;
+	}
+
+	return info;
+}
 
 template<>
 inline int LAPACK<cplx>::CalculateLUFactorization(MatrixType &matrix, blitz::Array<int, 1> &pivot)
