@@ -141,6 +141,7 @@ template object ConfigSection::Get<object>(const std::string &name) const;
 template int ConfigSection::Get<int>(const std::string &name) const;
 template double ConfigSection::Get<double>(const std::string &name) const;
 template std::string ConfigSection::Get<std::string>(const std::string &name) const;
+template std::complex<double> ConfigSection::Get< std::complex<double> >(const std::string &name) const;
 
 template blitz::TinyVector<int, 1> ConfigSection::Get< blitz::TinyVector<int, 1> >(const std::string &name) const;
 template blitz::TinyVector<int, 2> ConfigSection::Get< blitz::TinyVector<int, 2> >(const std::string &name) const;
