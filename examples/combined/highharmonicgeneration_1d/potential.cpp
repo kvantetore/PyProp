@@ -185,7 +185,7 @@ public:
 	 */
 	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		return cplx(0.0, -1.0);
+		return cplx(0.0, 1.0);
 	}
 };
 
