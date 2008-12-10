@@ -1,0 +1,13 @@
+#Representation
+Repr = Class("CoupledSpherical::CoupledSphericalHarmonicRepresentation", "representation/coupledspherical/coupledsphericalharmonicrepresentation.h")
+no_virtual(Repr)
+use_shared_ptr(Repr)
+
+#Range-class for mananging quantum numbers
+CoupledRange = Class("CoupledSpherical::CoupledRange", "representation/coupledspherical/coupledrange.h")
+no_virtual(CoupledRange)
+use_shared_ptr(CoupledRange)
+
+#Range for theta 
+CoupledIndex = Class("CoupledSpherical::CoupledIndex", "representation/coupledspherical/coupledrange.h")
+

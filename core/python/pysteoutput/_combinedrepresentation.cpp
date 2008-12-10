@@ -37,8 +37,7 @@ void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyOverlapWave
 // Module ======================================================================
 void Export_python_combinedrepresentation()
 {
-    class_< CombinedRepresentation<1>, bases< Representation<1> >  >("CombinedRepresentation_1", init<  >())
-        .def(init< const CombinedRepresentation<1>& >())
+    class_< CombinedRepresentation<1>, bases< Representation<1> > , boost::noncopyable >("CombinedRepresentation_1", init<  >())
         .def_readwrite("Algorithm", &CombinedRepresentation<1>::Algorithm)
         .def("Copy", &CombinedRepresentation<1>::Copy)
         .def("GetRepresentation", &CombinedRepresentation<1>::GetRepresentation)
@@ -56,8 +55,7 @@ void Export_python_combinedrepresentation()
         .def("SolveSqrtOverlap", &CombinedRepresentation<1>::SolveSqrtOverlap)
     ;
 
-    class_< CombinedRepresentation<2>, bases< Representation<2> >  >("CombinedRepresentation_2", init<  >())
-        .def(init< const CombinedRepresentation<2>& >())
+    class_< CombinedRepresentation<2>, bases< Representation<2> > , boost::noncopyable >("CombinedRepresentation_2", init<  >())
         .def_readwrite("Algorithm", &CombinedRepresentation<2>::Algorithm)
         .def("Copy", &CombinedRepresentation<2>::Copy)
         .def("GetRepresentation", &CombinedRepresentation<2>::GetRepresentation)
@@ -75,8 +73,7 @@ void Export_python_combinedrepresentation()
         .def("SolveSqrtOverlap", &CombinedRepresentation<2>::SolveSqrtOverlap)
     ;
 
-    class_< CombinedRepresentation<3>, bases< Representation<3> >  >("CombinedRepresentation_3", init<  >())
-        .def(init< const CombinedRepresentation<3>& >())
+    class_< CombinedRepresentation<3>, bases< Representation<3> > , boost::noncopyable >("CombinedRepresentation_3", init<  >())
         .def_readwrite("Algorithm", &CombinedRepresentation<3>::Algorithm)
         .def("Copy", &CombinedRepresentation<3>::Copy)
         .def("GetRepresentation", &CombinedRepresentation<3>::GetRepresentation)
@@ -94,8 +91,7 @@ void Export_python_combinedrepresentation()
         .def("SolveSqrtOverlap", &CombinedRepresentation<3>::SolveSqrtOverlap)
     ;
 
-    class_< CombinedRepresentation<4>, bases< Representation<4> >  >("CombinedRepresentation_4", init<  >())
-        .def(init< const CombinedRepresentation<4>& >())
+    class_< CombinedRepresentation<4>, bases< Representation<4> > , boost::noncopyable >("CombinedRepresentation_4", init<  >())
         .def_readwrite("Algorithm", &CombinedRepresentation<4>::Algorithm)
         .def("Copy", &CombinedRepresentation<4>::Copy)
         .def("GetRepresentation", &CombinedRepresentation<4>::GetRepresentation)

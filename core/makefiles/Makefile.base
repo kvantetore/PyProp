@@ -45,6 +45,7 @@ PYSTEFILES = \
 	python/combinedabsorber.pyste \
 	python/tensorpotential.pyste \
 	python/customgridrepresentation.pyste \
+	python/coupledsphericalharmonicrepresentation.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
@@ -56,6 +57,7 @@ STATIC_MAIN_GENERATOR := utility/python_main.py
 
 #C++ source files
 SOURCES= \
+	representation/coupledspherical/coupledsphericalharmonicrepresentation.cpp \
 	representation/overlapmatrix.cpp \
 	transform/orthopol/orthopoltools.cpp \
 	transform/orthopol/orthopolpropagator.cpp \
@@ -116,6 +118,8 @@ endif
 
 all: $(STATIC_DEP) $(DYNAMIC_DEP)
 	for subdir in $(SUBDIRS); do (cd $${subdir}; $(MAKE) all); done 
+
+core: $(STATIC_DEP) $(DYNAMIC_DEP)
 
 #Generate the pyprop-exec file from its python file
 $(STATIC_MAIN).cpp: $(OUTPUT_STATIC) 
