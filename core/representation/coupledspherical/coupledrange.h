@@ -103,7 +103,8 @@ public:
 	int GetGridIndex(const CoupledIndex &c)
 	{
 		BZPRECONDITION(IndexMap.count(c) == 1);
-		return IndexMap[c];
+		CoupledIndexMap::iterator it = IndexMap.find(c);
+		return it->second;
 	}
 
 	int IsGridIndex(const CoupledIndex &c)
