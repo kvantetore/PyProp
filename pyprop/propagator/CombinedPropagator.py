@@ -82,14 +82,6 @@ class CombinedPropagator(PropagatorBase):
 			if not IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
 
-		if not IsSingleProc():
-			distr = self.psi.GetRepresentation().GetDistributedModel().GetDistribution()
-			#if len(distr) != 1:
-			#	raise "Invalid distribution length %i. Distribution (%s) is invalid" % (len(distr), distr)
-			#if distr[0] != self.Rank-1:
-			#	raise "Distribution (%s) is invalid" % (distr)
-
-
 	def MultiplyHamiltonian(self, destPsi, t, dt):
 		#first halfstep
 		for prop in self.SubPropagators:
@@ -155,24 +147,6 @@ class CombinedPropagator(PropagatorBase):
 			curRank = prop.TransformRank
 			if not IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
-
-	#Transpose
-	def SetupTranspose(self):
-		#get transpose
-		distrModel = self.psi.GetRepresentation().GetDistributedModel()
-		if not distrModel.IsSingleProc():
-			self.Distribution1 = distrModel.GetDistribution().copy()
-			self.Distribution2 = GetAnotherDistribution(self.Distribution1, self.Rank)
-			if len(self.Distribution1) > 1: 
-				raise "Does not support more than 1D proc grid"
-
-			transpose = distrModel.GetTranspose()
-			#Setup shape	
-			fullShape = self.psi.GetRepresentation().GetFullShape()
-			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
-		
-			self.DistributedShape1 = array(self.psi.GetData().shape)
-			self.DistributedShape2 = distribShape
 
 	def Transpose(self, curRank, direction, psi):
 		distrModel = psi.GetRepresentation().GetDistributedModel()
