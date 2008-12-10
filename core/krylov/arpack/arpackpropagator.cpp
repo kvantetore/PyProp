@@ -11,6 +11,8 @@
 #include "arpack++/ceupp.h"
 #include "arpack++/debug.h"
 
+#include "../piram/piram/functors.h"
+
 namespace krylov
 {
 
@@ -36,6 +38,14 @@ void ArpackPropagator<Rank>::ApplyConfigSection(const ConfigSection &config)
 	{
 		cout << "ARPACK: Using Parallel ARPACK" << endl;
 	}
+
+	UseEigenvalueShift = false;
+	if (config.HasValue("krylov_eigenvalue_shift"))
+	{
+		UseEigenvalueShift = true;
+		config.Get("krylov_eigenvalue_shift", EigenvalueShift);
+	}
+
 }
 
 
@@ -73,7 +83,8 @@ template<int Rank>
 void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi)
 {
 	int matrixSize = psi.GetData().size();
-	char* eigenvalueRange = "SR";        //Find eigenvalues of Smallest Magnitude
+	//char* eigenvalueRange = "SR";        //Find eigenvalues of Smallest Magnitude
+	char* eigenvalueRange = "LM";        //Find eigenvalues of Smallest Magnitude
 	bool findEigenvectors = true;         //If we should find eigenvectors or not
 	char matrixType = 'I';              //Normal eigenvalueproblem
 
@@ -111,14 +122,34 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 	}
 	cTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd);
 
-
-	IterationParameters(1 - 1) = 1;					//shift strategy 
+	//
+	piram::ShiftFunctor< cplx >::Ptr calculateShifts;
+	if (UseEigenvalueShift)
+	{
+		typedef piram::CompareComplexNearShift compareType;
+		typedef piram::ShiftFunctorSelectRitzValues< cplx, compareType > shiftFunctorType;
+		compareType compare(EigenvalueShift);
+		calculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
+		//typedef piram::CompareComplexLessReal compareType;
+		//typedef piram::ShiftFunctorSelectRitzValues< cplx, compareType > shiftFunctorType;
+		//compareType compare;
+		//calculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
+	
+		IterationParameters(1 - 1) = 0;					//shift strategy 
+	}
+	else
+	{
+		IterationParameters(1 - 1) = 1;					//shift strategy 
+	}
 	IterationParameters(3 - 1) = MaxIterationCount; //max number of iterations
 	IterationParameters(7 - 1) = 1;                 //mode1 of znaupd is used...
 
 	//Preserve the original psi and tempPsi
 	DataArray origPsiData(psi.GetData());
 	DataArray origTempPsiData(tempPsi.GetData());
+
+	blitz::Array<int, 1> eigenvalueOrder(BasisSize);
+	blitz::Array<cplx, 1> orderedEigenvalues(BasisSize);
 
 	//---------------------------------------------------------------------------
 	//Main loop
@@ -194,7 +225,27 @@ void ArpackPropagator<Rank>::Solve(object callback, Wavefunction<Rank> &psi, Wav
 			callback(psi, tempPsi);
 		}
 
-	} while(abs(iterationAction) == 1);
+		if (iterationAction == 3)
+		{
+			int startIndex = iterationPointer(6-1) - 1;
+			int endIndex = startIndex + BasisSize;
+			blitz::Array<cplx, 1> ev = WorkData( blitz::Range(startIndex, endIndex - 1) );
+
+			startIndex = iterationPointer(14-1) - 1 ;
+			endIndex = startIndex + BasisSize - EigenvalueCount;
+			blitz::Array<cplx, 1> shifts = WorkData( blitz::Range(startIndex, endIndex - 1) );
+
+			orderedEigenvalues = ev;
+			eigenvalueOrder = blitz::tensor::i;
+			(*calculateShifts)(orderedEigenvalues, eigenvalueOrder);
+
+			shifts = orderedEigenvalues(blitz::Range(EigenvalueCount, orderedEigenvalues.extent(0)-1));
+
+			//cout << "Ev = " << ev << endl;
+			//cout << "Shifts = " << shifts << endl;
+		}
+
+	} while(abs(iterationAction) == 1 || iterationAction == 3);
 
 	//Restore psi and tempPsi
 	psi.SetData(origPsiData);

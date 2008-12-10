@@ -40,6 +40,12 @@ public:
 	bool UseParpack;
 	bool PrintStatistics;
 
+	bool UseEigenvalueShift;
+	cplx EigenvalueShift;
+
+	ArpackPropagator() {}
+	~ArpackPropagator() {}
+
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const Wavefunction<Rank> &psi);
 	void Solve(object callback, Wavefunction<Rank> &psi, Wavefunction<Rank> &tempPsi);
