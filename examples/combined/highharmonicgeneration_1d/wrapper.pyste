@@ -7,4 +7,5 @@ PotentialEvaluatorDynamic("LaserPotentialVelocity<1> 1","LaserPotentialVelocity_
 PotentialEvaluatorDynamic("StarkPotential<1> 1","StarkPotential_1")
 PotentialEvaluatorDynamic("ModelAtomPotential<1> 1","ModelAtomPotential_1")
 PotentialEvaluatorDynamic("ModelAtomPotentialDiff<1> 1","ModelAtomPotentialDiff_1")
+PotentialEvaluatorDynamic("MaskFunction<1> 1","MaskFunction_1")
 

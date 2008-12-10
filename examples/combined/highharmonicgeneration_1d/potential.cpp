@@ -188,3 +188,34 @@ public:
 		return cplx(0.0, -1.0);
 	}
 };
+
+template<int Rank>
+class OpticalPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double Width;	
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("width", Width);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double x = pos(0);
+		return 1.0 - pow(cos(M_PI/2.0 * (1.0 - x/GridMax)), 50);
+	}
+};

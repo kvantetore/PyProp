@@ -2,6 +2,7 @@
 import time
 import sys
 import os
+import tables
 from pylab import *
 from numpy import *
 
@@ -222,7 +223,7 @@ def SetupPotential(conf, rank=1):
 
 
 def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sampleSize=20, \
-	useTensor=False):
+	useTensor=False, storeResult=False):
 
 	def SetupPotentialFunction(conf, psi):
 		if useTensor:
@@ -256,6 +257,16 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 	prop.initialCorr = []
 	prop.norm = []
 
+	#Store initial psi
+	outputFile = ""
+	if storeResult:
+		outputFile = "out/data"
+		for el in time.localtime():
+			outputFile += "_%s" % el
+		outputFile += ".h5"
+
+		prop.SaveWavefunctionHDF(outputFile, "/initial_wavefunction")
+
 	#Estimate runtime
 	EstimateRunTime(prop, sampleSize=sampleSize)
 
@@ -283,6 +294,20 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 		dipolePotExpVal = \
 			prop.Propagator.CalculatePotentialExpectationValue(tmpPsi, dipolePot, 0, 0)
 		prop.dipoleMoment.append(dipolePotExpVal)
+
+	#Store result
+	if storeResult:
+		
+		prop.SaveWavefunctionHDF(outputFile, "/wavefunction")
+		h5file = tables.openFile(outputFile, "r+")
+		try:
+			h5file.createArray("/", "SampleTimes", prop.sampleTimes) 
+			h5file.createArray("/", "Norm", prop.norm)
+			h5file.createArray("/", "InitialCorrelation", prop.initialCorr)
+			h5file.createArray("/", "DipoleMoment", prop.dipoleMoment)
+			h5file.createArray("/", "DipoleAcceleration", prop.dipoleAcc)
+		finally:
+			h5file.close()
 	
 	return prop
 
