@@ -21,6 +21,13 @@ except:
 	pass
 
 try:
+	from libgmres import *
+except:
+	#print "Warning: could not load GMRES wrapper (%s)" % sys.exc_info()[1]
+	pass
+
+
+try:
 	from libpiram import *
 except:
 	print "Warning: could not load pIRAM wrapper (%s)" % sys.exc_info()[1]
