@@ -68,6 +68,9 @@ private:
 	DynamicPotentialEvaluatorBase< GetClass, Rank> Get;	          //Returns V
 	
 public:
+	DynamicPotentialEvaluator() {}
+	~DynamicPotentialEvaluator() {}
+
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		Potential.ApplyConfigSection(config);

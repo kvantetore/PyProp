@@ -103,6 +103,9 @@ private:
 	SphericalDynamicPotentialEvaluatorBase< GetClass, Rank> Get;	       //Returns V
 
 public:
+	SphericalDynamicPotentialEvaluator() {}
+	~SphericalDynamicPotentialEvaluator() {}
+
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		Potential.ApplyConfigSection(config);
