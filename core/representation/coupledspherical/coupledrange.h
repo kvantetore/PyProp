@@ -8,9 +8,28 @@
 
 #include "../../common.h"
 #include "../orthogonalrepresentation.h"
+#include <gsl/gsl_sf_coupling.h>
+
 
 namespace CoupledSpherical
 {
+
+class ClebschGordan
+{
+public:
+	ClebschGordan() {}
+
+	double operator()(int l1, int l2, int m1, int m2, int L, int M)
+	{
+		gsl_sf_result result;
+		int status = gsl_sf_coupling_3j_e(2*l1, 2*l2, 2*L, 2*m1, 2*m2, -2*M, &result);
+		if (status != 0)
+		{
+			cout << "Error finding cg coeff " << l1 << ", " << l2 << ", " << m1 << ", " << m2 << ", " << L << ", " << M << endl;
+		}
+		return pow(-1., M + l1 - l2) * std::sqrt(2*L + 1) * result.val;
+	}
+};
 
 class CoupledIndex
 {
@@ -116,7 +135,7 @@ public:
 
 	CoupledIndex GetCoupledIndex(int i)
 	{
-		BZPRECONDITION(IndexList.extent(0) < i);
+		BZPRECONDITION(IndexList.extent(0) > i);
 		return IndexList(i);
 	}
 

@@ -54,5 +54,9 @@ void Export_python_coupledsphericalharmonicrepresentation()
         .def( self == self )
     ;
 
+    class_< CoupledSpherical::ClebschGordan, boost::noncopyable >("ClebschGordan", init<  >())
+        .def("__call__", &CoupledSpherical::ClebschGordan::operator ())
+    ;
+
 }
 

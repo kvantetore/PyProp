@@ -11,18 +11,15 @@ void CoupledSphericalHarmonicRepresentation::ApplyConfigSection(const ConfigSect
 	using namespace boost::python;
 	
 	object indexIterator = config.Get<object>("index_iterator");
-	stl_input_iterator<tuple> begin(indexIterator);
-	stl_input_iterator<tuple> end;
+
+	typedef stl_input_iterator<CoupledIndex> Iterator;
+	Iterator begin(indexIterator);
+	Iterator end;
 
 	Range.BeginIndexList();
-	for (stl_input_iterator<tuple> i=begin; i!=end; i++)
+	for (Iterator i=begin; i!=end; i++)
 	{
-		tuple c = (*i);
-		int l1 = extract<int>(c[0]);
-		int l2 = extract<int>(c[1]);
-		int L = extract<int>(c[2]);
-		int M = extract<int>(c[3]);
-		Range.AddIndex( CoupledIndex(l1, l2, L, M) );
+		Range.AddIndex(*i);
 	}
 	Range.EndIndexList();
 

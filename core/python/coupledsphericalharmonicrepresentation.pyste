@@ -8,6 +8,8 @@ CoupledRange = Class("CoupledSpherical::CoupledRange", "representation/coupledsp
 no_virtual(CoupledRange)
 use_shared_ptr(CoupledRange)
 
-#Range for theta 
+#Struct to keep track of the quantum numbers of the coupled spherical harmonic representation
 CoupledIndex = Class("CoupledSpherical::CoupledIndex", "representation/coupledspherical/coupledrange.h")
 
+#Class for calculating clebsh gordan coefficients
+ClebschGordan = Class("CoupledSpherical::ClebschGordan", "representation/coupledspherical/coupledrange.h")
