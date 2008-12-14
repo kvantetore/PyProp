@@ -1,4 +1,4 @@
-#declare potential evaluator for cartesian-like potentials
+##declare potential evaluator for cartesian-like potentials
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Compile potential for 1D and 2D
@@ -34,8 +34,20 @@ module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentP
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 2>);\n')
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 3>);\n')
 
-module_code('def("MultiplyTensorPotential_1", MultiplyTensorPotential_1<cplx>);\n')
-module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\n')
+#module_code('def("MultiplyTensorPotential_1", MultiplyTensorPotential_1<cplx>);\n')
+#module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\n')
+
+Class("CoupledSphericalSelectionRule", "coupledspherical.cpp")
+Class("CoupledSphericalSelectionRuleR12", "coupledspherical.cpp")
+
+CustomPotential = Template("CustomPotentialEvaluationR12", "coupledspherical.cpp")
+CustomPotential("3", "CustomPotentialEvaluationR12_3")
+
+CustomPotential = Template("CoupledSphericalKineticEnergyEvaluator", "coupledspherical.cpp")
+CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
+
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "coupledspherical.cpp")
+PotentialEvaluator("CoupledSphericalCoulombPotential<3> 3", "CoupledSphericalCoulombPotential_3")
 
 
 #declaration_code('#include "parallel_multiply_wrapper.cpp"')

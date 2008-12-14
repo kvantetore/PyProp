@@ -3,6 +3,7 @@ import sys
 sys.path.append("./pyprop")
 import pyprop
 pyprop = reload(pyprop)
+pyprop.ProjectNamespace = globals()
 
 from numpy import array
 from numpy import complex

@@ -1,13 +1,12 @@
-class UnsupportedGeometryException(Exception):
-	def __init__(self, string):
-		Exception.__init__(self, string)
-
-
 from numpy import int32
 
 #------------------------------------------------------------------------------------
 #                       Interfaces
 #------------------------------------------------------------------------------------
+
+class UnsupportedGeometryException(Exception):
+	def __init__(self, string):
+		Exception.__init__(self, string)
 
 class GeometryInfoBase(object):
 	"""
@@ -588,6 +587,87 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		RepresentPotentialInBasisReducedSphericalHarmonic(self.SphericalHarmonicObject, source, dest, pairs, storageId, rank, differentiation)
 
 
+#------------------------------------------------------------------------------------
+#                       Coupled Spherical Harmonic
+#------------------------------------------------------------------------------------
+
+class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
+	"""
+	Geometry information for coupled spherical harmonic geometries
+	The selection CoupledSphericalHarmonicRepresentation and a 
+	CoupledSphericalSelectionRule is specified.
+
+	"""
+	def __init__(self, representation, selectionRule):
+		self.SelectionRule = selectionRule
+		self.Representation = representation
+		self.IndexPairs = None
+
+	def UseGridRepresentation(self):
+		return False
+	
+	def GetBasisPairCount(self):
+		return self.GetBasisPairs().shape[0] 
+		
+	def GetBasisPairs(self):
+		if self.IndexPairs == None:
+			self.IndexPairs = self.SelectionRule.GetBasisPairs(self.Representation)
+		return self.IndexPairs
+
+	def GetStorageId(self):
+		return "Simp"
+
+	def GetMultiplyArguments(self):
+		return [self.GetBasisPairs()]
+
+class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
+	"""
+	Basisfunction class for coupled spherical harmonics Y{L,M,l1,l1} 
+
+	The CoupledSphericalHarmonic representation is never represented 
+	on the grid, but rather the matrix elements should be calculated
+	analytically, and passed to the TensorGenerator using a custom
+	potential evaluator.
+
+	A custom potential evaluator is a class implementing the following 
+	methods: 
+		UpdatePotential(potentialData, psi, dt, t)
+		SetBasisPairs(rank, basisPairs)
+
+	"""
+
+	def ApplyConfigSection(self, configSection):
+		self.SetupBasis(configSection)
+		
+	def SetupBasis(self, basisRepresentation):
+		self.BasisRepresentation = basisRepresentation
+		self.BasisSize = self.BasisRepresentation.Range.Count()
+
+	def GetGridRepresentation(self):
+		raise Exception("Coupled Spherical Harmonics does not support grid representations")
+
+	def GetBasisRepresentation(self):
+		return self.BasisRepresentation
+		
+	def GetGeometryInfo(self, geometryName):
+		geom = geometryName.lower().strip()
+		if geom == "identity":
+			return GeometryInfoCommonIdentity(self.BasisSize, False)
+		if geom == "diagonal":
+			return GeometryInfoCommonDiagonal(self.BasisSize, False)
+		elif geom.startswith("selectionrule_"):
+			selectionRuleName = geom[len("selectionrule_"):]
+			if selectionRuleName == "r12":
+				selectionRule = CoupledSphericalSelectionRuleR12()
+			else:	
+				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
+				
+			return GeometryInfoCoupledSphericalHarmonic(self.BasisRepresentation, selectionRule)
+		else:
+			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")
 
 
 #------------------------------------------------------------------------------------
@@ -607,6 +687,10 @@ def CreateBasisFromRepresentation(representation):
 	elif representation.__class__ == pyprop.core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
 		basis.SetupBasis(representation.Range.MaxL)
+	
+	elif representation.__class__ == pyprop.core.CoupledSphericalHarmonicRepresentation:
+		basis = BasisfunctionCoupledSphericalHarmonic()
+		basis.SetupBasis(representation)
 
 	else:
 		raise NotImplementedException("Unknown representation %s" % representation)
@@ -666,20 +750,37 @@ class TensorPotentialGenerator(object):
 		repr = self.SetupRepresentation(geometryList)
 
 		#2) Create a wavefunction in the potential representation. 
-		#This will be used to hold the potential
-		#and representation in order to use the existing potential evaluator
-		#framework in pyprop
+		#This will be used to hold the and representation in order 
+		#to use the existing potential evaluator framework in pyprop
 		psi = CreateWavefunctionInstance(repr)
 
 		#3) Create potential evaluator
-		evaluatorPrefix = "core.DynamicPotentialEvaluator"
-		classname = configSection.classname
-		potentialEvaluator = CreatePotentialInstance(classname, self.Rank, evaluatorPrefix)
-		configSection.Apply(potentialEvaluator)
+		potentialEvaluator = self.SetupPotentialEvaluator(configSection, psi)
+		
+		#4) Initialize potential with basis pairs for custom potentials
+		isCustomPotential = hasattr(potentialEvaluator, "SetBasisPairs")
+		potentialShape = list(psi.GetRepresentation().GetInitialShape())
+		if isCustomPotential:
+			for rank, geometryInfo in enumerate(geometryList):
+				if not geometryInfo.UseGridRepresentation():
+					#We currently can not be distributed in a basis rank
+					if repr.GetDistributedModel().IsDistributedRank(rank):
+						raise Exception("Representation %i can not be distributed during potential evaluation")
+
+					#Get basis pairs from geometry info, and pass it to the potential
+					potentialShape[rank] = geometryInfo.GetBasisPairCount()
+					potentialEvaluator.SetBasisPairs(rank, geometryInfo.GetBasisPairs())
 
 		#4) Evaluate the potential on the grid
-		potentialEvaluator.UpdatePotentialData(psi.GetData(), psi, 0, 0)
-
+		print "Using Potential of shape ", potentialShape
+		potentialData = zeros(potentialShape, dtype=complex)
+		potentialEvaluator.UpdatePotentialData(potentialData, psi, 0, 0)
+		
+		# Save a copy of the potential if we're debugging
+		debugPotential = getattr(configSection, "debug_potential", False)
+		if debugPotential:	
+			self.OriginalPotential = potentialData.copy()
+			
 		#for parallelization
 		#We only support the first rank initially distributed
 		assert(repr.GetDistributedModel().GetDistribution()[0] == 0)
@@ -699,7 +800,7 @@ class TensorPotentialGenerator(object):
 				raise Exception("Distributed Rank %i (%s), has no support for parallel multiplication" % (distribRank, geomInfo.GetStorageId()))
 
 		#5) Represent the potential in the bases
-		source = psi.GetData()
+		source = potentialData
 		for rank in reversed(range(self.Rank)):
 			basis = self.BasisList[rank]
 			geometryInfo = geometryList[rank]
@@ -711,7 +812,7 @@ class TensorPotentialGenerator(object):
 				differentiation = 0
 				if hasattr(configSection, "differentiation%i" % rank):
 					differentiation = configSection.Get("differentiation%i" % rank)
-				print "Rank %i (%s), using differentiation: %s" % (rank, classname, differentiation)
+				print "Rank %i (%s), using differentiation: %s" % (rank, configSection.classname, differentiation)
 
 				#Check if this rank is distributed. If it is, we must redistribute
 				if rank in distribution:
@@ -817,6 +918,16 @@ class TensorPotentialGenerator(object):
 
 		return repr
 
+	def SetupPotentialEvaluator(self, configSection, psi):
+		evaluatorPrefix = "core.DynamicPotentialEvaluator"
+		classname = configSection.classname
+		potentialEvaluator = CreatePotentialInstance(classname, self.Rank, evaluatorPrefix)
+		configSection.Apply(potentialEvaluator)
+		if hasattr(potentialEvaluator, "Setup"):
+			potentialEvaluator.Setup(psi)
+			
+		return potentialEvaluator
+		
 
 
 #------------------------------------------------------------------------------------
@@ -959,12 +1070,14 @@ class BasisPropagator(PropagatorBase):
 				#Use TensorPotentialGenerator to construct potential in basis
 				geometryList = generator.GetGeometryList(configSection)
 				potentialData = generator.GeneratePotential(configSection)
+				originalPotential = getattr(generator, "OriginalPotential", None)
 
 				#Create PotentialWrapper for TensorPotential
 				potential = TensorPotential(self.psi)
 				configSection.Apply(potential)
 				potential.GeometryList = geometryList
 				potential.PotentialData = potentialData
+				potential.OriginalPotential = originalPotential
 				potential.Name = potentialName
 
 				#Add potential to potential list

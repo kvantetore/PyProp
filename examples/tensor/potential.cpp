@@ -311,6 +311,7 @@ public:
 	{
 		return - 1. / (2. * mass);
 	}
+
 };
 
 
@@ -410,7 +411,7 @@ public:
 	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double r = pos(radialRank);
-		double theta = pos(angularRank);
+		//double theta = pos(angularRank);
 		//return -cplx(0.,1.)*sin(theta) / r;
 		return -cplx(0.,1.) / r;
 	}
