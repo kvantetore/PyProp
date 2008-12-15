@@ -53,12 +53,57 @@ public:
 class CoupledSphericalSelectionRuleR12  : public CoupledSphericalSelectionRule
 {
 public:
+	CoupledSpherical::ClebschGordan cg;
+
 	CoupledSphericalSelectionRuleR12() {}
 	virtual ~CoupledSphericalSelectionRuleR12() {}
 
 	virtual bool SelectionRule(CoupledSpherical::CoupledIndex const& left, CoupledSpherical::CoupledIndex const& right)
 	{
-		return left.L == right.L && left.M == right.M;
+		bool nonzero = left.L == right.L && left.M == right.M;
+		if (nonzero)
+		{
+			nonzero = false;
+
+			int L = left.L;
+			int M = left.M;
+			int l1p = left.l1;
+			int l2p = left.l2;
+			int l1 = right.l1;
+			int l2 = right.l2;
+		
+			int minL3 = std::max(std::abs(l1 - l1p), std::abs(l2 - l2p));
+			int maxL3 = std::min(l1+l1p, l2+l2p);
+
+			double eps = 1e-12;
+		
+			for (int l3=minL3; l3<=maxL3; l3++)
+			{
+				double l3Sum = 0;
+				for (int m1p=-l1; m1p<=l1; m1p++)
+				{
+					int m2p = M - m1p;
+					for (int m1=-right.l1; m1<=l1; m1++)
+					{
+						int m2 = M - m1;
+						for (int m3=-l3; m3<=l3; m3++)
+						{
+							double cur = 1.0;
+							cur *= cg(l1p, l2p, m1p, m2p, L, M);
+							cur *= cg(l1, l2, m1, m2, L, M);
+							cur *= cg(l1p, l1, -m1p, m1, l3, m3);
+							cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
+							cur *= std::pow(-1., m1p + m2p + m3);
+							l3Sum += cur;
+						}
+					}
+				}
+				
+				nonzero = nonzero || std::abs(l3Sum)>eps;
+			}
+		}
+
+		return nonzero;
 	}
 };
 
@@ -111,7 +156,7 @@ public:
 
 		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
 		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
-	
+
 		ClebschGordan cg;
 
 		BasisPairList angBasisPairs = GetBasisPairList(2);
@@ -130,7 +175,7 @@ public:
 	
 			CoupledIndex left = angRepr->Range.GetCoupledIndex(leftIndex);
 			CoupledIndex right = angRepr->Range.GetCoupledIndex(rightIndex);
-	
+		
 			if (left.L != right.L) continue;
 			if (left.M != right.M) continue;
 	
