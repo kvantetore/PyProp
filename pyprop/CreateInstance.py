@@ -86,7 +86,7 @@ def CreateSubRepresentations(combinedRepr, config):
 		combinedRepr.SetRepresentation(i, repr)
 
 	
-def CreateWavefunctionInstance(representation):
+def CreateWavefunctionInstance(representation, allocateData=True):
 	#Create instance
 	print "    Creating instance"
 	rank = len(representation.GetFullShape())
@@ -97,8 +97,9 @@ def CreateWavefunctionInstance(representation):
 	psi.SetRepresentation(representation)
 	
 	#Allocate data
-	print "    Allocating data"
-	psi.AllocateData()
+	if allocateData:
+		print "    Allocating data"
+		psi.AllocateData()
 	
 	return psi
 	

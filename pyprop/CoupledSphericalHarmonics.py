@@ -42,12 +42,13 @@ def DefaultCoupledIndexIterator(lmax, L=None, M=[0], fullTensor=False):
 	#Iterate through all permutations
 	for curM in M:
 		for curL in L:
-			for l1 in range(lmax):
-				for l2 in range(lmax):
+			for l1 in range(lmax+1):
+				for l2 in range(lmax+1):
 					#Only yield if l1, l2, L satisfies clebsch gordan condition
 					#or we have explicitly asked fo the full tensor product of states
 					if (abs(l1 - l2) <= curL <= l1 + l2) or fullTensor:
 						yield CoupledIndex(l1, l2, curL, curM)
+
 
 
 
