@@ -4,7 +4,7 @@
 //#include <boost/unordered_map.hpp>
 #include <map>
 //#include <boost/hash.hpp>
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
 
 #include "../../common.h"
 #include "../orthogonalrepresentation.h"
@@ -158,11 +158,12 @@ public:
 		Grid.resize(curGridIndex);
 		Weights.resize(curGridIndex);
 
-		BOOST_FOREACH(CoupledIndexMap::value_type c, IndexMap) 
+		typedef CoupledIndexMap::iterator Iterator;
+		for (Iterator it=IndexMap.begin(); it!=IndexMap.end(); it++)
 		{
-			int i = c.second;
+			int i = (*it).second;
 			BZPRECONDITION(i < curGridIndex);
-		    IndexList(i) = c.first;
+		    IndexList(i) = (*it).first;
 		}
 		Grid = blitz::tensor::i;
 		Weights = 1.0;
