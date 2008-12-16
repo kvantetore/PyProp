@@ -30,6 +30,9 @@ private:
 	//blitz::Array<cplx, 2> M;
 
 public:
+	PiramSolver() {}
+	virtual ~PiramSolver() {}
+
 	void ApplyConfigSection(const ConfigSection &config);
 	void Setup(const typename Wavefunction<Rank>::Ptr psi);
 	void Solve(object callback, typename Wavefunction<Rank>::Ptr psi, typename Wavefunction<Rank>::Ptr tempPsi, bool usePypropIntegration);

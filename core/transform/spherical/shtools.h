@@ -50,6 +50,8 @@ private:
 	void InverseTransform_Impl(blitz::Array<cplx, 3> &input, blitz::Array<cplx, 3> &output);
 
 public:	
+	typedef shared_ptr<SphericalTransformTensorGrid> Ptr;
+
 	static blitz::Array<double, 2> GenerateThetaQuadrature(int lmax);
 											//Generates quadrature rule for theta integration. This function
 											//returns a (n x 2) array, where the first column is the grid points
