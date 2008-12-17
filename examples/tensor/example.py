@@ -325,17 +325,16 @@ def TestStability():
 
 import pypar
 
-def Propagate(algo=1):
-	prop = FindGroundstate(silent=True)
-	initPsi = prop.psi
+def Propagate(initPsi, algo=1, **args):
+	#prop = FindGroundstate(silent=True)
+	#initPsi = prop.psi
 
-	#prop = SetupProblem(imtime=False, additionalPotentials=["LaserPotentialLength"])
-	prop = SetupProblem(silent=True, imtime=False, additionalPotentials=["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"])
+	#prop = SetupProblem(imtime=False, **args)
+	prop = SetupProblem(silent=False, imtime=False, additionalPotentials=["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"], **args)
 
-	prop.psi.GetData()[:] = initPsi.GetData()
+	prop.psi.Clear()
+	prop.psi.GetData()[:,:,:initPsi.GetData().shape[2]] = initPsi.GetData()
 	prop.psi.Normalize()
-
-	initPsi = prop.psi.Copy()
 
 	timeList = []
 	corrList = []

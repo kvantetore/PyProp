@@ -653,12 +653,16 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(self.BasisSize, False)
-		if geom == "diagonal":
+		elif geom == "diagonal":
 			return GeometryInfoCommonDiagonal(self.BasisSize, False)
+		elif geom == "dense":
+			return GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "r12":
 				selectionRule = CoupledSphericalSelectionRuleR12()
+			elif selectionRuleName == "linearpolarizedfield":
+				selectionRule = CoupledSphericalSelectionRuleLinearPolarizedField()
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 				
