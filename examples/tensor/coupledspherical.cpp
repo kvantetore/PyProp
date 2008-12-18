@@ -123,7 +123,7 @@ public:
 
 	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
 	{
-		if ( (std::abs(left.L - right.L) == 1) && left.M == right.M )
+		if ( (std::abs(left.L - right.L) == 1) && left.M == right.M)
 		{
 			if ( (std::abs(left.l1 - right.l1) == 1) && left.l2 == right.l2 )
 			{
@@ -286,7 +286,7 @@ class HelperFunctions
 	static double CoefficientC(int l, int m)
 	{
 		//Avoid division by zero or negative square root
-		if (l - 1 <= 0) return 0.0;
+		if (2 * l - 1 <= 0) return 0.0;
 
 		double C = std::sqrt( (2.0 * l + 1.0) / (2.0 * l - 1.0) * (l - m) * (l + m) );
 		//cout << "l = " << l << " m = " << m << " C = " << C << endl;
@@ -295,9 +295,7 @@ class HelperFunctions
 
 	static double CoefficientD(int l, int m)
 	{
-		double D =  (l - m + 1.0) / CondonShortleyPhase(m);
-		D *= std::sqrt( (4 * M_PI) / (2.0 * l + 3.0) * StableFactorial(l + m + 1, l - m + 1) );
-		return D;
+		return std::sqrt( (2.0 * l + 1.0) / (2.0 * l + 3.0) * (l + m + 1) * (l - m + 1) );
 	}
 
 	static double CoefficientE(int l, int m)
@@ -305,13 +303,12 @@ class HelperFunctions
 		//Avoid division by zero or negative square root
 		if (2 * l - 1 <= 0) return 0.0;
 
-		double E = (l + m) / CondonShortleyPhase(m);
-		E *= std::sqrt( (4 * M_PI) / (2.0 * l - 1.0) * StableFactorial(l + m - 1, l - m - 1) );
-		return E;
+		return std::sqrt( (2.0 * l + 1.0) / (2.0 * l - 1.0) * (l - m) * (l + m) );
 	}
 
 	static double CondonShortleyPhase(int m)
 	{
+		if (m < 0) return 1.0;
 		return std::pow(-1.0, m);
 	}
 
@@ -321,7 +318,7 @@ class HelperFunctions
 		return 0.0;
 	}
 
-	static double StableFactorial(int numerator, int denominator)
+	static double StableFactorialFraction(int numerator, int denominator)
 	{
 		double numeratorLogFactorial = 0;
 		for (int a = numerator; a>0; a--)
@@ -415,11 +412,13 @@ public:
 			if (std::abs(left.L - right.L) != 1) continue;
 			if (left.M != right.M) continue;
 	
+			// "Left" quantum numbers
 			int L = left.L;
 			int M = left.M;
 			int l1 = left.l1;
 			int l2 = left.l2;
-
+			
+			// "Right" quantum numbers (Mp = M)
 			int Lp = right.L;
 			int l1p = right.l1;
 			int l2p = right.l2;
@@ -439,19 +438,19 @@ public:
 				if (std::abs(m2) > l2) continue;
 				if (std::abs(m2p) > l2p) continue;
 
-				double cur = HelperFunctions::CoefficientD(l1, m1) * HelperFunctions::Kronecker(l1, l1p + 1);
-				cur += HelperFunctions::CoefficientE(l1, m1) * HelperFunctions::Kronecker(l1, l1p - 1);
+				double cur = HelperFunctions::CoefficientD(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p + 1);
+				cur += HelperFunctions::CoefficientE(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p - 1);
 				cur *= l1p;
-				cur -= HelperFunctions::CoefficientC(l1, m1) * HelperFunctions::Kronecker(l1, l1p - 1);
+				cur -= HelperFunctions::CoefficientC(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p - 1);
 				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
 				cur *= cg(l1, l2, m1, m2, L, M);
 				cur *= HelperFunctions::Kronecker(l2, l2p);
 				I1 += cur;
 
-				cur = HelperFunctions::CoefficientD(l2, m2) * HelperFunctions::Kronecker(l2, l2p + 1);
-				cur += HelperFunctions::CoefficientE(l2, m2) * HelperFunctions::Kronecker(l2, l2p - 1);
+				cur = HelperFunctions::CoefficientD(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p + 1);
+				cur += HelperFunctions::CoefficientE(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p - 1);
 				cur *= l2p;
-				cur -= HelperFunctions::CoefficientC(l2, m2) * HelperFunctions::Kronecker(l2, l2p - 1);
+				cur -= HelperFunctions::CoefficientC(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p - 1);
 				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
 				cur *= cg(l1, l2, m1, m2, L, M);
 				cur *= HelperFunctions::Kronecker(l1, l1p);
@@ -548,14 +547,17 @@ public:
 	
 			if (std::abs(left.L - right.L) != 1) continue;
 			if (left.M != right.M) continue;
-	
+
+			// "Left" quantum numbers
 			int L = left.L;
 			int M = left.M;
+			int l1 = left.l1;
+			int l2 = left.l2;
+			
+			// "Right" quantum numbers (Mp = M)
 			int Lp = right.L;
-			int l1p = left.l1;
-			int l2p = left.l2;
-			int l1 = right.l1;
-			int l2 = right.l2;
+			int l1p = right.l1;
+			int l2p = right.l2;
 
 			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
 
@@ -571,8 +573,8 @@ public:
 				if (std::abs(m2) > l2) continue;
 				if (std::abs(m2p) > l2p) continue;
 
-				double cur = HelperFunctions::CoefficientD(l1, m1) * HelperFunctions::Kronecker(l1, l1p+1);
-				cur += HelperFunctions::CoefficientE(l1, m1) * HelperFunctions::Kronecker(l1, l1p-1);
+				double cur = HelperFunctions::CoefficientD(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p+1);
+				cur += HelperFunctions::CoefficientE(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p-1);
 				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
 				cur *= cg(l1, l2, m1, m2, L, M);
 				cur *= HelperFunctions::Kronecker(l2, l2p);
@@ -590,11 +592,11 @@ public:
 	}
 };
 
+
 /*
  * Potential evaluator for linearly polarized velocity gauge electric field,
  * radial derivative in direction 2.
  */
-
 template<int Rank>
 class CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2
 {
@@ -667,13 +669,16 @@ public:
 			if (std::abs(left.L - right.L) != 1) continue;
 			if (left.M != right.M) continue;
 	
+			// "Left" quantum numbers
 			int L = left.L;
 			int M = left.M;
+			int l1 = left.l1;
+			int l2 = left.l2;
+			
+			// "Right" quantum numbers (Mp = M)
 			int Lp = right.L;
-			int l1p = left.l1;
-			int l2p = left.l2;
-			int l1 = right.l1;
-			int l2 = right.l2;
+			int l1p = right.l1;
+			int l2p = right.l2;
 
 			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
 
@@ -689,8 +694,8 @@ public:
 				if (std::abs(m2) > l2) continue;
 				if (std::abs(m2p) > l2p) continue;
 
-				double cur = HelperFunctions::CoefficientD(l2, m2) * HelperFunctions::Kronecker(l2, l2p+1);
-				cur += HelperFunctions::CoefficientE(l2, m2) * HelperFunctions::Kronecker(l2, l2p-1);
+				double cur = HelperFunctions::CoefficientD(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p+1);
+				cur += HelperFunctions::CoefficientE(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p-1);
 				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
 				cur *= cg(l1, l2, m1, m2, L, M);
 				cur *= HelperFunctions::Kronecker(l1, l1p);
