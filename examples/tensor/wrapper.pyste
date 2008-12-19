@@ -34,6 +34,10 @@ module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentP
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 2>);\n')
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 3>);\n')
 
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 3>);\n')
+
 module_code('def("MultiplyTensorPotential_1", MultiplyTensorPotential_1<cplx>);\n')
 module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\n')
 

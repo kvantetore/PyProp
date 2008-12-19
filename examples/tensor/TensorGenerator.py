@@ -268,9 +268,8 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 	To make less special cases, this class will return 1 
 	index pair, (0, 0)
 	"""
-	def __init__(self, rankCount, useGrid):
+	def __init__(self, useGrid):
 		#Set member variables 
-		self.RankCount = rankCount	
 		self.UseGrid = useGrid
 
 	def UseGridRepresentation(self):
@@ -291,6 +290,64 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 
 	def GetMultiplyArguments(self):
 		return []
+
+
+class GeometryInfoCommonBandedNonHermitian(GeometryInfoBase):
+	"""
+	Geometry information for general banded matrices, the potential
+	is stored in the BLAS general banded format such that 
+	multiplication can be done with blas calls
+	"""
+	def __init__(self, rankCount, bandCount, useGrid):
+		"""
+		rankCount is the number of rows in the matrix
+		bandCount is the number of super diagonals.
+
+		The matrix is assumed to have equally many super 
+		and sub diagonals, making the total number of diagonals
+		2 * bandCount + 1
+		"""
+		#Set member variables 
+		self.RankCount = rankCount
+		self.BandCount = bandCount
+		self.UseGrid = useGrid
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+	
+	def GetBasisPairCount(self):
+		print "USING BASIS PAIRS: ", self.RankCount * (self.BandCount * 2 + 1) 
+		return self.RankCount * (self.BandCount * 2 + 1) 
+
+	def GetBasisPairs(self):
+		count = self.GetBasisPairCount()
+
+		N = self.RankCount
+		k = self.BandCount
+
+		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs[:,0] = 0
+		pairs[:,1] = N-1
+
+		index = 0
+		for i in xrange(N):
+			for j in xrange(i-k, i+k+1):
+				if 0 <= j < N:
+					blasJ = j
+					blasI = k + i - j
+
+					index = blasJ * (2*k+1) + blasI
+					pairs[index, 0] = i
+					pairs[index, 1] = j
+
+		return pairs
+	
+	def GetStorageId(self):
+		return "BandNH"
+
+	def GetMultiplyArguments(self):
+		return []
+
 
 
 #------------------------------------------------------------------------------------
@@ -428,23 +485,33 @@ class BasisfunctionBSpline(BasisfunctionBase):
 
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
+
+		BasisSize = self.BSplineObject.NumberOfBSplines
+		BandCount = self.BSplineObject.MaxSplineOrder-1
+
 		if geom == "identity":
 			print "WARNING: Identity geometry might not do what you expect for BSplines"
-			return GeometryInfoCommonIdentity(self.BSplineObject.NumberOfBSplines, True)
+			return GeometryInfoCommonIdentity(True)
+		elif geom == "banded-nonhermitian":
+			return GeometryInfoCommonBandeNonhermitian(BasisSize, BandCount)
 		elif geom == "banded-old":
 			return GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded":
 			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.BSplineObject.NumberOfBSplines, True)
+			return GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "hermitian":
-			return GeometryInfoCommonDense(self.BSplineObject.NumberOfBSplines, True)
+			return GeometryInfoCommonDense(BasisSize, True)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
+
+		if (storageId == "Band" or storageId == "Herm") and differentiation % 1 == 1:
+			raise Exception("Cannot use hermitian storage and first order differentiation matrix (antihermitian)")
+
 		if storageId == "Ident":
 			sourceSlice = [slice(0, None, None)]*len(source.shape)
 			sourceSlice[rank] = slice(0, 1, None)
@@ -569,7 +636,7 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(self.LMax+1, True)
+			return GeometryInfoCommonIdentity(True)
 		if geom == "diagonal":
 			return GeometryInfoCommonDiagonal(self.LMax+1, False)
 		elif geom == "dense":
@@ -584,6 +651,8 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		pairs = geometryInfo.GetBasisPairs()
 		storageId = geometryInfo.GetStorageId()
+		if (storageId == "Band" or storageId == "Herm") and differentiation % 1 == 1:
+			raise Exception("Cannot use hermitian storage and first order differentiation matrix (antihermitian)")
 		RepresentPotentialInBasisReducedSphericalHarmonic(self.SphericalHarmonicObject, source, dest, pairs, storageId, rank, differentiation)
 
 
@@ -652,7 +721,7 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(self.BasisSize, False)
+			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
 			return GeometryInfoCommonDiagonal(self.BasisSize, False)
 		elif geom == "dense":
@@ -672,6 +741,70 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")
+
+
+
+#------------------------------------------------------------------------------------
+#                       Finite Difference Basis Function
+#------------------------------------------------------------------------------------
+
+
+class BasisfunctionFiniteDifference(BasisfunctionBase):
+	"""
+	Basisfunction class for finite differences. 
+
+	Finite differences is not really a basis expansion, as it is
+	always represented on a grid, but it's practical to have it 
+	in this framework, as it makes it easier to switch between 
+	FD and B-splines
+	"""
+
+	def ApplyConfigSection(self, configSection):
+		self.DifferenceOrder = configSection.difference_order
+		self.BandCount = (self.DifferenceOrder - 1) / 2
+
+	def SetupBasis(self, repr):
+		self.Representation = repr
+		baseRank = repr.GetBaseRank()
+		self.GridSize = len(self.Representation.GetGlobalGrid(baseRank))
+		self.DifferenceOrder = 11
+		self.BandCount = (self.DifferenceOrder - 1) / 2
+		
+	def GetGridRepresentation(self):
+		return self.Representation
+
+	def GetBasisRepresentation(self):
+		return self.Representation
+		
+	def GetGeometryInfo(self, geometryName):
+		geom = geometryName.lower().strip()
+		if geom == "identity":
+			return GeometryInfoCommonIdentity(True)
+		elif geom == "diagonal":
+			return GeometryInfoCommonDiagonal(self.GridSize, True)
+		elif geom == "dense":
+			return GeometryInfoCommonDense(self.GridSize, True)
+		elif geom == "banded-nonhermitian" or geom=="banded":
+			return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
+		elif geom == "bandeddistributed":
+			return GeometryInfoCommonBandedDistributed(self.GridSize, self.BandCount, True)
+		else:
+			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+		if differentiation == 0:
+			diffMatrix = ones((self.GridSize, 1), dtype=complex)
+		elif differentiation == 2:
+			fd = pyprop.core.FiniteDifferenceHelper()
+			grid = self.Representation.GetGlobalGrid(self.Representation.GetBaseRank())
+			fd.Setup(grid, self.DifferenceOrder)
+			diffMatrix = fd.SetupLaplacianBlasBanded().copy()
+		else:
+			raise Exception("Finite Difference currently only supports diff of order 2")
+
+		indexPairs = geometryInfo.GetBasisPairs()
+		RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
+
 
 
 #------------------------------------------------------------------------------------
@@ -694,6 +827,10 @@ def CreateBasisFromRepresentation(representation):
 	
 	elif representation.__class__ == pyprop.core.CoupledSphericalHarmonicRepresentation:
 		basis = BasisfunctionCoupledSphericalHarmonic()
+		basis.SetupBasis(representation)
+
+	elif representation.__class__ == pyprop.core.CustomGridRepresentation:
+		basis = BasisfunctionFiniteDifference()
 		basis.SetupBasis(representation)
 
 	else:
@@ -1156,29 +1293,29 @@ class BasisPropagator(PropagatorBase):
 	def SetupStep(self, dt):
 		self.__Base.SetupStep(self, dt)
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		#Multiply potentials
 		destPsi.GetData()[:] = 0
-		self.MultiplyPotential(self.psi, destPsi, t, dt)
+		self.MultiplyPotential(srcPsi, destPsi, t, dt)
 
 		#Solve for all overlap matrices
-		repr = self.psi.GetRepresentation()
+		repr = srcPsi.GetRepresentation()
 		repr.SolveOverlap(destPsi)
 
-	def MultiplyHamiltonianBalancedOverlap(self, destPsi, t, dt):
+	def MultiplyHamiltonianBalancedOverlap(self, srcPsi, destPsi, t, dt):
 		#Store input psi
 		def StorePsi():
-			self.TempPsi2.GetData()[:] = self.psi.GetData()
+			self.TempPsi2.GetData()[:] = srcPsi.GetData()
 
 		#Solve for all overlap matrices
 		def SolveOverlap1():
-			repr = self.psi.GetRepresentation()
-			repr.SolveSqrtOverlap(False, self.psi)
+			repr = srcPsi.GetRepresentation()
+			repr.SolveSqrtOverlap(False, srcPsi)
 		
 		#Multiply potentials
 		def MultiplyPotential():
 			destPsi.GetData()[:] = 0
-			self.MultiplyPotential(self.psi, destPsi, t, dt)
+			self.MultiplyPotential(srcPsi, destPsi, t, dt)
 
 		#Solve for all overlap matrices
 		def SolveOverlap2():
@@ -1187,7 +1324,7 @@ class BasisPropagator(PropagatorBase):
 
 		#Restore input psi back to its original state
 		def RestorePsi():
-			self.psi.GetData()[:] = self.TempPsi2.GetData()
+			srcPsi.GetData()[:] = self.TempPsi2.GetData()
 
 		StorePsi()
 		SolveOverlap1()
