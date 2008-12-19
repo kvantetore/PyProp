@@ -82,29 +82,29 @@ class CombinedPropagator(PropagatorBase):
 			if not IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		#first halfstep
 		for prop in self.SubPropagators:
 			#parallelization
 			curRank = prop.TransformRank
 			if not IsSingleProc():
-				self.Transpose(curRank, self.TransposeForward, self.psi)
+				self.Transpose(curRank, self.TransposeForward, srcPsi)
 				self.Transpose(curRank, self.TransposeForward, destPsi)
 
 			#advance step
-			prop.MultiplyHamiltonian(destPsi, t, dt/2.)
+			prop.MultiplyHamiltonian(srcPsi, destPsi, t, dt/2.)
 
 		#the potential is in the middle, so it does one full step
-		self.MultiplyPotential(self.psi, destPsi, t, dt)
+		self.MultiplyPotential(srcPsi, destPsi, t, dt)
 
 		#second halfstep
 		for prop in reversed(self.SubPropagators):
 			#advance step
-			prop.MultiplyHamiltonianConjugate(destPsi, t, dt/2.)
+			prop.MultiplyHamiltonianConjugate(srcPsi, destPsi, t, dt/2.)
 			#parallelization
 			curRank = prop.TransformRank
 			if not IsSingleProc():
-				self.Transpose(curRank, self.TransposeBackward, self.psi)
+				self.Transpose(curRank, self.TransposeBackward, srcPsi)
 				self.Transpose(curRank, self.TransposeBackward, destPsi)
 
 	

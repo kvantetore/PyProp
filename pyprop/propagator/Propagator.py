@@ -42,7 +42,7 @@ class PropagatorBase:
 		if self.RenormalizeActive:
 			self.psi.Normalize()
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		raise "MultiplyHamiltonian should be implemented by inheriting class %s, but it's not" % (self.__class__) 
 
 	#Basic functionality that inheriting classes should use.

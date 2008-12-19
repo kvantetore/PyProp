@@ -41,7 +41,7 @@ class ExponentialFiniteDifferencePropagator(PropagatorBase):
 		self.ApplyPotential(t, dt)
 		#self.AdvanceStepKrylov(t, dt)
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.MultiplyPotential(self.psi, destPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		self.MultiplyPotential(srcPsi, destPsi, t, dt)
 
 

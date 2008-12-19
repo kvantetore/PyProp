@@ -43,8 +43,8 @@ class RungeKuttaPropagator(PropagatorBase):
 		self.MatVecCount = 0
 
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
 
 
 	def AdvanceStep(self, t, dt):
@@ -60,7 +60,7 @@ class RungeKuttaPropagator(PropagatorBase):
 			print "inpsi[1] = %.17g " % abs(psi.GetData()[1])**2
 			print "inpsi[1] = %.17g " % abs(psi.GetData()[2])**2
 
-		self.BasePropagator.MultiplyHamiltonian(tempPsi, t, 0)
+		self.BasePropagator.MultiplyHamiltonian(psi, tempPsi, t, 0)
 
 		if self.MatVecCount == -1:
 			print "t = %.17g, %.17g" % (t, self.OdeWrapper.GetPropagatedTime())

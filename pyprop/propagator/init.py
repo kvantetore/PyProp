@@ -13,6 +13,7 @@ execfile(__path__[0] + "/propagator/ExponentialFiniteDifferencePropagator.py")
 execfile(__path__[0] + "/propagator/OdePropagator.py")
 execfile(__path__[0] + "/propagator/RungeKuttaPropagator.py")
 execfile(__path__[0] + "/propagator/VectorPropagator.py")
+execfile(__path__[0] + "/propagator/CayleyPropagator.py")
 #execfile(__path__[0] + "/propagator/Krotov.py")
 
 #init subpropagators

@@ -94,8 +94,8 @@ class TransformedGridPropagator(PropagatorBase):
 		else:
 			raise "invalid splitting order"
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
 		if self.SplittingOrder == 2:
 			dt /= 2.0
-		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
-		self.MultiplyPotential(self.psi, dstPsi, t, dt)
+		self.Propagator.ApplyDifferentiationMatrix(srcPsi, dstPsi)
+		self.MultiplyPotential(srcPsi, dstPsi, t, dt)

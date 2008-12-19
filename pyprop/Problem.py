@@ -145,11 +145,11 @@ class Problem:
 			self.PropagatedTime += self.TimeStep.real
 
 
-	def MultiplyHamiltonian(self, dstPsi):
+	def MultiplyHamiltonian(self, srcPsi, dstPsi):
 		"""
 		Applies the Hamiltonian to the wavefunction H psi -> psi
 		"""
-		self.Propagator.MultiplyHamiltonian(dstPsi, self.PropagatedTime, self.TimeStep )
+		self.Propagator.MultiplyHamiltonian(srcPsi, dstPsi, self.PropagatedTime, self.TimeStep )
 
 	def Advance(self, yieldCount, duration=None):
 		"""
@@ -227,7 +227,7 @@ class Problem:
 		tempPsi.GetData()[:] = 0
 
 		#Apply the Hamiltonian to the wavefunction
-		self.MultiplyHamiltonian(tempPsi)
+		self.MultiplyHamiltonian(self.psi, tempPsi)
 
 		#Calculate the inner product between the applied psi and the original psi
 		energy = self.psi.InnerProduct(tempPsi)

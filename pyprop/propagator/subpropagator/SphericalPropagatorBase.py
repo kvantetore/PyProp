@@ -33,15 +33,15 @@ class SphericalPropagatorBase(SubPropagatorBase):
 			self.Potential.AdvanceStep(t, dt)
 
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
 		if self.Potential != None:
-			self.Potential.MultiplyPotential(self.psi, dstPsi, t, dt)
+			self.Potential.MultiplyPotential(srcPsi, dstPsi, t, dt)
 
-		self.InverseTransform(self.psi)
+		self.InverseTransform(srcPsi)
 		self.InverseTransform(dstPsi)
 
-	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
-		self.ForwardTransform(self.psi)
+	def MultiplyHamiltonianConjugate(self, srcPsi, dstPsi, t, dt):
+		self.ForwardTransform(srcPsi)
 		self.ForwardTransform(dstPsi)
 
 	def InverseTransform(self, psi):

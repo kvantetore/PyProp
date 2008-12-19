@@ -62,10 +62,10 @@ class CartesianPropagator(PropagatorBase):
 		self.AdvanceKineticEnergy(t, dt)
 		self.ApplyPotential(t, dt/2.)
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		#self.MultiplyPotential(destPsi, t, dt/2.)
-		self.MultiplyKineticEnergy(destPsi, t, dt)
-		self.MultiplyPotential(self.psi, destPsi, t, dt/2.)
+		self.MultiplyKineticEnergy(srcPsi, destPsi, t, dt)
+		self.MultiplyPotential(srcPsi, destPsi, t, dt/2.)
 
 	def TransformForward(self, psi):
 		# transform into fourier space
@@ -109,17 +109,17 @@ class CartesianPropagator(PropagatorBase):
 		# transform back into real space
 		self.TransformInverse(self.psi)
 
-	def MultiplyKineticEnergy(self, destPsi, t, dt):
+	def MultiplyKineticEnergy(self, srcPsi, destPsi, t, dt):
 		# transform into fourier space
-		self.TransformForward(self.psi)
+		self.TransformForward(srcPsi)
 		self.TransformForward(destPsi)
 	
 		# apply kinetic energy potential
-		self.KineticPotential.MultiplyPotential(self.psi, destPsi, t, dt) 
+		self.KineticPotential.MultiplyPotential(srcPsi, destPsi, t, dt) 
 		
 		# transform back into real space
 		self.TransformInverse(destPsi)
-		self.TransformInverse(self.psi)
+		self.TransformInverse(srcPsi)
 
 	def SetupKineticPotential(self, dt):
 		#create config
@@ -129,6 +129,7 @@ class CartesianPropagator(PropagatorBase):
 				self.classname = classname
 		conf = staticEnergyConf(PotentialType.Static, "CartesianKineticEnergyPotential")
 		conf.mass = self.Mass
+		conf.storage_model = StaticStorageModel.StorageValue
 
 		#create potential 
 		pot = CreatePotentialFromSection(conf, "KineticEnergy", self.psi)

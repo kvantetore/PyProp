@@ -35,8 +35,8 @@ class ExpokitPropagator(PropagatorBase):
 		self.PsiDistrib = self.psi.GetRepresentation().GetDistributedModel()
 		self.TempDistrib = self.TempPsi.GetRepresentation().GetDistributedModel()
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
 
 	def AdvanceStep(self, t, dt):
 		repr = self.psi.GetRepresentation()
@@ -55,8 +55,8 @@ class ExpokitPropagator(PropagatorBase):
 		self.psi.GetRepresentation().SetDistributedModel(self.PsiDistrib)
 		tempPsi.GetRepresentation().SetDistributedModel(self.TempDistrib)
 
-		self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
-		#self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+		self.BasePropagator.MultiplyHamiltonianBalancedOverlap(psi, tempPsi, t, dt)
+		#self.BasePropagator.MultiplyHamiltonian(psi, tempPsi, t, dt)
 
 		#outN = self.TempPsi.GetNorm()
 		#if outN < 0.001:

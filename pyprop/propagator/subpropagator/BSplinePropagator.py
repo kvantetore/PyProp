@@ -48,9 +48,9 @@ class BSplinePropagator(SubPropagatorBase):
 		self.InverseTransform(self.psi)
 
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
-		self.Propagator.MultiplyHamiltonian(self.psi, dstPsi)
-		self.InverseTransform(self.psi)
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
+		self.Propagator.MultiplyHamiltonian(srcPsi, dstPsi)
+		self.InverseTransform(srcPsi)
 		self.InverseTransform(dstPsi)
 
 
@@ -95,8 +95,8 @@ class BSplinePropagator(SubPropagatorBase):
 		self.Propagator.AdvanceStep(self.psi)
 
 	
-	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
-		self.ForwardTransform(self.psi)
+	def MultiplyHamiltonianConjugate(self, srcPsi, dstPsi, t, dt):
+		self.ForwardTransform(srcPsi)
 		self.ForwardTransform(dstPsi)
 
 

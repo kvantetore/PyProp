@@ -52,7 +52,7 @@ class ArpackSolver:
 
 	def __MatVecCallback(self, psi, tempPsi):
 		tempPsi.GetData()[:] = 0
-		self.BaseProblem.Propagator.MultiplyHamiltonian(tempPsi, 0, 0)
+		self.BaseProblem.Propagator.MultiplyHamiltonian(psi, tempPsi, 0, 0)
 
 	def GetEigenvalues(self):
 		"""

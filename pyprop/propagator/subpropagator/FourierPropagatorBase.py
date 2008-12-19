@@ -71,19 +71,19 @@ class FourierPropagatorBase(SubPropagatorBase):
 		if 1.0j * imag(dt) == dt and self.ForceOriginZero:
 			self.SetValue(self.OriginIndex, 0)
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
 		"""
 		Calculates dstPsi += - 1/(2m) d^2/dx^2 psi
 		plus any other fourier potentials which is defined.
 		"""
-		self.TransformForward(self.psi)
+		self.TransformForward(srcPsi)
 		self.TransformForward(dstPsi)
 		
 		for pot in self.FourierPotentials:
-			pot.MultiplyPotential(self.psi, dstPsi, t, dt)
+			pot.MultiplyPotential(srcPsi, dstPsi, t, dt)
 
 		self.TransformInverse(dstPsi)
-		self.TransformInverse(self.psi)
+		self.TransformInverse(srcPsi)
 	
 	def SetupStepConjugate(self, dt):
 		pass
@@ -91,7 +91,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 	def AdvanceStepConjugate(self, t, dt):
 		self.AdvanceStep(t, dt)
 
-	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
+	def MultiplyHamiltonianConjugate(self, srcPsi, dstPsi, t, dt):
 		pass
 			
 	def GetOriginIndex(self):

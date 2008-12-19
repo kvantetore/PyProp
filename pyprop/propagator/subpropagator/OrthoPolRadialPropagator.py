@@ -65,11 +65,11 @@ class OrthoPolRadialPropagator(SubPropagatorBase):
 		self.Propagator.AdvanceStep(self.psi)
 		self.AddedPotential.AdvanceStep(t, dt)
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
-		self.Propagator.ApplyDifferentiationMatrix(self.psi, dstPsi)
-		self.AddedPotential.MultiplyPotential(self.psi, dstPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
+		self.Propagator.ApplyDifferentiationMatrix(srcPsi, dstPsi)
+		self.AddedPotential.MultiplyPotential(srcPsi, dstPsi, t, dt)
 
-	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
+	def MultiplyHamiltonianConjugate(self, srcPsi, dstPsi, t, dt):
 		pass
 
 	def GetBasisFunction(self, rank, basisIndex):

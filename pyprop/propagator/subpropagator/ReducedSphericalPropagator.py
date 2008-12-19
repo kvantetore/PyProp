@@ -17,6 +17,7 @@ class ReducedSphericalPropagator(SphericalPropagatorBase):
 		cfg.mass = self.Mass
 		cfg.l_rank = self.TransformRank
 		cfg.radial_rank = self.RadialRank
+		cfg.storage_model = StaticStorageModel.StorageValue
 
 		#Create potential
 		if hasattr(self.Config, 'no_centrifugal_potential'):

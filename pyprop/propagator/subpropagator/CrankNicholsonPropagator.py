@@ -17,8 +17,8 @@ class CrankNicholsonPropagator(SubPropagatorBase):
 	def AdvanceStep(self, t, dt):
 		self.Propagator.AdvanceStep(self.psi, dt)
 
-	def MultiplyHamiltonian(self, dstPsi, t, dt):
-		self.Propagator.MultiplyKineticEnergyOperator(self.psi, dstPsi)
+	def MultiplyHamiltonian(self, srcPsi, dstPsi, t, dt):
+		self.Propagator.MultiplyKineticEnergyOperator(srcPsi, dstPsi)
 
 	def SetupStepConjugate(self, dt):
 		pass		
@@ -26,7 +26,7 @@ class CrankNicholsonPropagator(SubPropagatorBase):
 	def AdvanceStepConjugate(self, t, dt):
 		self.AdvanceStep(t, dt)
 	
-	def MultiplyHamiltonianConjugate(self, dstPsi, t, dt):
+	def MultiplyHamiltonianConjugate(self, srcPsi, dstPsi, t, dt):
 		pass
 
 	def SupportsParallelPropagation(self):

@@ -19,7 +19,7 @@ class VectorPropagator(PropagatorBase):
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("Only MultiplyHamiltonian-base propagators are implemented for VectorPropagator")
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.MultiplyPotential(self.Psi, destPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		self.MultiplyPotential(srcPsi, destPsi, t, dt)
 
 

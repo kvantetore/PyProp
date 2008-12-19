@@ -1,5 +1,5 @@
  
-def CreateInstanceRank(className, rank):
+def CreateInstanceRank(className, rank, globals=globals(), locals=locals()):
 	try:
 		return eval("%s_%i()" % (className, rank) )
 	except Exception:

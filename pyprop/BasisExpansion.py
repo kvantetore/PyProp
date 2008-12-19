@@ -55,7 +55,7 @@ def GetBasisExpansionMatrix(prop):
 	for j in basisFuncs.Iterate(prop.psi):
 		#calculate |tempPsi> = H | prop.psi >
 		tempPsi.GetData()[:] = 0 
-		prop.MultiplyHamiltonian(tempPsi)
+		prop.MultiplyHamiltonian(prop.psi, tempPsi)
 
 		for i in basisFuncs.Iterate(psi):
 			#calculate < psi | H | prop.psi > = < psi | tempPsi >

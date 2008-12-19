@@ -44,8 +44,8 @@ class PamPropagator(PropagatorBase):
 		else:
 			self.IsOrthogonalBasis = False
 
-	def MultiplyHamiltonian(self, destPsi, t, dt):
-		self.BasePropagator.MultiplyHamiltonian(destPsi, t, dt)
+	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
 
 	def AdvanceStep(self, t, dt):
 		if self.UseBalancedOverlap:
@@ -71,18 +71,18 @@ class PamPropagator(PropagatorBase):
 		if self.UseBalancedOverlap:
 			#This should be implemented on propagators but its not.
 			#TODO: Do not solve for overap matrices on orthogonal ranks that is wrong!
-			self.BasePropagator.MultiplyHamiltonianBalancedOverlap(tempPsi, t, dt)
+			self.BasePropagator.MultiplyHamiltonianBalancedOverlap(psi, tempPsi, t, dt)
 
 		elif self.IsOrthogonalBasis:
 			#This only works on orthogonal representations (Not BSplines)
 			repr = psi.GetRepresentation()
 			repr.SolveSqrtOverlap(False, psi)
-			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+			self.BasePropagator.MultiplyHamiltonian(psi, tempPsi, t, dt)
 			repr.MultiplySqrtOverlap(False, psi)
 			repr.MultiplySqrtOverlap(False, tempPsi)
 
 		else:
-			self.BasePropagator.MultiplyHamiltonian(tempPsi, t, dt)
+			self.BasePropagator.MultiplyHamiltonian(psi, tempPsi, t, dt)
 		
 
 	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
