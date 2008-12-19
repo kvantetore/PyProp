@@ -57,6 +57,9 @@ CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1_
 CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2", "coupledspherical.cpp")
 CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2_3")
 
+CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedFieldLength", "coupledspherical.cpp")
+CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldLength_3")
+
 CustomPotential = Template("CoupledSphericalKineticEnergyEvaluator", "coupledspherical.cpp")
 CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
 

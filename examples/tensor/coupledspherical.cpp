@@ -327,7 +327,7 @@ class HelperFunctions
 		}
 
 		double denominatorLogFactorial = 0;
-		for (int b = numerator; b>0; b--)
+		for (int b = denominator; b>0; b--)
 		{
 			denominatorLogFactorial += std::log(b);
 		}
@@ -707,6 +707,138 @@ public:
 				for (int ri2=0; ri2<r2Count; ri2++)
 				{
 					data(ri1, ri2, angIndex) -= cplx(0., .1) * I2;
+				}
+			}
+		}
+	}
+};
+
+
+/*
+ * Potential evaluator for linearly polarized length gauge electric field
+ */
+template<int Rank>
+class CustomPotentialEvaluationLinearPolarizedFieldLength
+{
+public:
+	typedef blitz::Array<int, 2> BasisPairList;
+
+private:
+	BasisPairList AngularBasisPairs;
+
+public:
+	CustomPotentialEvaluationLinearPolarizedFieldLength() {}
+	virtual ~CustomPotentialEvaluationLinearPolarizedFieldLength() {}
+
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+	}
+
+	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
+	{
+		if (rank != 2)
+		{
+			throw std::runtime_error("Only rank 2 supports basis pairs");
+		}
+		AngularBasisPairs.reference(basisPairs.copy());
+	}
+
+	BasisPairList GetBasisPairList(int rank)
+	{
+		if (rank == 2)
+			return AngularBasisPairs;
+		else
+			return BasisPairList();
+	}
+
+	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
+	{
+		using namespace CoupledSpherical;
+
+		typedef CombinedRepresentation<Rank> CmbRepr;
+
+		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
+		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
+	
+		int r1Count = data.extent(0);
+		int r2Count = data.extent(1);
+		int angCount = data.extent(2);
+
+		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
+		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
+	
+		ClebschGordan cg;
+
+		BasisPairList angBasisPairs = GetBasisPairList(2);
+
+		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
+		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
+		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
+		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+
+		data = 0;
+	
+		for (int angIndex=0; angIndex<angCount; angIndex++)
+		{
+			int leftIndex = angBasisPairs(angIndex, 0);
+			int rightIndex = angBasisPairs(angIndex, 1);
+	
+			CoupledIndex left = angRepr->Range.GetCoupledIndex(leftIndex);
+			CoupledIndex right = angRepr->Range.GetCoupledIndex(rightIndex);
+	
+			if (std::abs(left.L - right.L) != 1) continue;
+			if (left.M != right.M) continue;
+	
+			// "Left" quantum numbers
+			int L = left.L;
+			int M = left.M;
+			int l1 = left.l1;
+			int l2 = left.l2;
+			
+			// "Right" quantum numbers (Mp = M)
+			int Lp = right.L;
+			int l1p = right.l1;
+			int l2p = right.l2;
+
+			double I1 = 0;
+			double I2 = 0;
+			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
+
+			for (int m1=-lStop; m1<=lStop; m1++)
+			{
+				int m2 = M - m1;
+				int m1p = m1;
+				int m2p = m2;
+
+				if (std::abs(m1) > l1) continue;
+				if (std::abs(m1p) > l1p) continue;
+				if (std::abs(m2) > l2) continue;
+				if (std::abs(m2p) > l2p) continue;
+
+				double cur = cg(l1, l2, m1, m2, L, M) * cg(l1p, l2p, m1p, m2p, Lp, M);
+				cur *= std::sqrt((2 * l1 + 1.0 ) * (2 * l1p + 1.0) / (12 * M_PI));
+				cur *= cg(l1, l1p, 0, 0, 1, 0) * cg(l1, l1p, -m1, m1p, 1, 0);
+				cur *= pow(-1.0, -m1);
+				I1 += cur;
+				
+				cur = cg(l1, l2, m1, m2, L, M) * cg(l1p, l2p, m1p, m2p, Lp, M);
+				cur *= std::sqrt((2 * l2 + 1.0 ) * (2 * l2p + 1.0) / (12 * M_PI));
+				cur *= cg(l2, l2p, 0, 0, 1, 0) * cg(l2, l2p, -m2, m2p, 1, 0);
+				cur *= pow(-1.0, -m2);
+				I1 += cur;
+
+				I2 += cur;
+			}
+
+			for (int ri1=0; ri1<r1Count; ri1++)
+			{
+				double r1 = localr1(ri1);
+
+				for (int ri2=0; ri2<r2Count; ri2++)
+				{
+					double r2 = localr2(ri2);
+
+					data(ri1, ri2, angIndex) += (I1 * r1 + I2 * r2);
 				}
 			}
 		}

@@ -1,5 +1,6 @@
 
 def SetupBigMatrix(prop, whichPotential):
+	print "Setting up potential matrix..."
 	matrixSize = prop.psi.GetData().size
 	potential = prop.Propagator.BasePropagator.PotentialList[whichPotential]
 
@@ -26,3 +27,13 @@ def SetupBigMatrix(prop, whichPotential):
 
 	return BigMatrix
 
+
+def CheckSymmetryFieldMatrix(whichPotential):
+	prop = SetupProblem(configFile="config_helium.ini")
+	BigMatrix = SetupBigMatrix(prop, whichPotential)
+	
+	#Check if matrix is hermittian
+	hermDeviation = numpy.max(numpy.abs(BigMatrix - conj(BigMatrix.transpose())))
+	print "Deviation from hermiticity (max norm) = %f" % hermDeviation
+
+	return prop, BigMatrix
