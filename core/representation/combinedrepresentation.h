@@ -48,6 +48,7 @@ public:
 	 */
 	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank);
 	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+	virtual void MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank);
 	virtual void MultiplyOverlap(Wavefunction<Rank> &psi);
 	virtual void SolveOverlap(Wavefunction<Rank> &psi);
 	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);

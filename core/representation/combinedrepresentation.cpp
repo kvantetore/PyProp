@@ -347,6 +347,27 @@ template<int Rank> void CombinedRepresentation<Rank>
 
 }
 
+template<int Rank> void CombinedRepresentation<Rank>
+::MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank)
+{
+	using namespace blitz;
+
+	if (this->IsOrthogonalBasis(rank))
+	{
+		//Todo: should multiply weights
+		dstPsi.GetData() = srcPsi.GetData();
+	}
+	else
+	{
+		//Map the data to a 3D array, where the b-spline part is the middle rank
+		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+
+		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+	}
+
+}
+
 
 
 /*----------------------------------------------------------------------------

@@ -54,6 +54,11 @@ void GmresWrapper<Rank>::ApplyConfigSection(const ConfigSection &config)
 {
 	config.Get("krylov_basis_size", Solver.BasisSize);
 
+	if (config.HasValue("krylov_tolerance"))
+	{
+		config.Get("krylov_tolerance", Solver.Tolerance);
+	}
+
 	//Perform double orthogonalization step?
 	if (config.HasValue("krylov_double_orthogonalization"))
 	{

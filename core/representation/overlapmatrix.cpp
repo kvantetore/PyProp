@@ -102,6 +102,12 @@ void OverlapMatrix::MultiplyOverlapVector(const VectorType &source, VectorType &
 	blas.MultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage::Upper, OverlapHermitianUpper, 1.0, source, 0.0, dest);
 }
 
+void OverlapMatrix::MultiplyOverlapVector(cplx sourceScaling, const VectorType &source, cplx destScaling, VectorType &dest)
+{
+	BLAS<cplx> blas;
+	blas.MultiplyMatrixVectorBandedHermitian(MatrixHermitianStorage::Upper, OverlapHermitianUpper, sourceScaling, source, destScaling, dest);
+}
+
 void OverlapMatrix::MultiplyOverlapVector(VectorType &vector)
 {
 	BLAS<cplx> blas;
@@ -146,6 +152,21 @@ void OverlapMatrix::MultiplyOverlapTensor(const TensorType &source, TensorType &
 		}
 	}
 }
+
+void OverlapMatrix::MultiplyOverlapTensor(cplx sourceScaling, const TensorType &source, cplx destScaling, TensorType &dest)
+{
+	for (int i = 0; i < source.extent(0); i++)
+	{
+		for (int j = 0; j < source.extent(2); j++)
+		{
+			VectorType srcSlice = source(i, Range::all(), j);
+			VectorType dstSlice = dest(i, Range::all(), j);
+			MultiplyOverlapVector(sourceScaling, srcSlice, destScaling, dstSlice);
+		}
+	}
+}
+
+
 
 void OverlapMatrix::MultiplyOverlapTensor(TensorType &vector)
 {

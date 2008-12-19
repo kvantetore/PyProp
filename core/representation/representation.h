@@ -100,6 +100,16 @@ public:
 	}
 
 	/*
+	 * Multiplies the overlap matrix on the wavefunction out-of-place 
+	 * destPsi := sourceScaling * S sourcePsi + destScaling * destPsi
+	 * S is the tensor product of the overlap matrices for each rank
+	 */
+	virtual void MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank)
+	{
+		throw std::runtime_error("MultiplyOverlap not implemented for this representation");
+	}
+
+	/*
 	 * Multiplies the overlap matrix on the wavefunction in-place Psi := S Psi
 	 * S is the tensor product of the overlap matrices for each rank
 	 */

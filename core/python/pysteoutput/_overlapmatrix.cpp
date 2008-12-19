@@ -14,7 +14,11 @@ namespace  {
 
 void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapVectorconstblitz__Array_std__complex_double__1___blitz__Array_std__complex_double__1__)(const blitz::Array<std::complex<double>,1>&, blitz::Array<std::complex<double>,1>&)  = &OverlapMatrix::MultiplyOverlapVector;
 
+void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapVectorcplx_constblitz__Array_std__complex_double__1___cplx_blitz__Array_std__complex_double__1__)(cplx, const blitz::Array<std::complex<double>,1>&, cplx, blitz::Array<std::complex<double>,1>&)  = &OverlapMatrix::MultiplyOverlapVector;
+
 void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapVectorblitz__Array_std__complex_double__1__)(blitz::Array<std::complex<double>,1>&)  = &OverlapMatrix::MultiplyOverlapVector;
+
+void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapTensorcplx_constblitz__Array_std__complex_double__3___cplx_blitz__Array_std__complex_double__3__)(cplx, const blitz::Array<std::complex<double>,3>&, cplx, blitz::Array<std::complex<double>,3>&)  = &OverlapMatrix::MultiplyOverlapTensor;
 
 void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapTensorconstblitz__Array_std__complex_double__3___blitz__Array_std__complex_double__3__)(const blitz::Array<std::complex<double>,3>&, blitz::Array<std::complex<double>,3>&)  = &OverlapMatrix::MultiplyOverlapTensor;
 
@@ -38,8 +42,10 @@ void Export_python_overlapmatrix()
         .def("GetBasisSize", &OverlapMatrix::GetBasisSize)
         .def("Setup", &OverlapMatrix::Setup)
         .def("MultiplyOverlapVector", OverlapMatrix__MultiplyOverlapVectorconstblitz__Array_std__complex_double__1___blitz__Array_std__complex_double__1__)
+        .def("MultiplyOverlapVector", OverlapMatrix__MultiplyOverlapVectorcplx_constblitz__Array_std__complex_double__1___cplx_blitz__Array_std__complex_double__1__)
         .def("MultiplyOverlapVector", OverlapMatrix__MultiplyOverlapVectorblitz__Array_std__complex_double__1__)
         .def("SolveOverlapVector", &OverlapMatrix::SolveOverlapVector)
+        .def("MultiplyOverlapTensor", OverlapMatrix__MultiplyOverlapTensorcplx_constblitz__Array_std__complex_double__3___cplx_blitz__Array_std__complex_double__3__)
         .def("MultiplyOverlapTensor", OverlapMatrix__MultiplyOverlapTensorconstblitz__Array_std__complex_double__3___blitz__Array_std__complex_double__3__)
         .def("MultiplyOverlapTensor", OverlapMatrix__MultiplyOverlapTensorblitz__Array_std__complex_double__3__)
         .def("SolveOverlapTensor", &OverlapMatrix::SolveOverlapTensor)

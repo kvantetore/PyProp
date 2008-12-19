@@ -44,6 +44,7 @@ public:
 	int MaxOrthogonalizationCount;
 	int MatrixSize;
 	int BasisSize;
+	double Tolerance;
 
 	bool PerformDoubleOrthogonalization;
 	
@@ -101,7 +102,6 @@ private:
 	int CurrentArnoldiStep;
 	bool IsConverged;
 	bool HappyBreakdown;
-	double Tolerance;
 	//...
 	
 	//Statistics
@@ -442,13 +442,20 @@ void GMRES<T>::SolveVector(VectorType rightHandSide, VectorType solution)
 	 */
 
 	PerformInitialArnoldiStep();
+	if (HappyBreakdown)
+	{
+		cplx c = HessenbergMatrix(0,0);
+		HessenbergSolution(0) = inputNorm/c;
+	}
+	ErrorEstimate = HessenbergMatrix(CurrentArnoldiStep, CurrentArnoldiStep+1) ;
+	ErrorEstimateList(CurrentArnoldiStep) = ErrorEstimate;
 
-	ErrorEstimate = inputNorm;
-	while (CurrentArnoldiStep < BasisSize-1 && !HappyBreakdown)
+	while (CurrentArnoldiStep < BasisSize-1 && !HappyBreakdown && (std::abs(ErrorEstimate)>Tolerance))
 	{
 		PerformArnoldiStep();
 
 		//Calculate minimal residual of current matrix
+		Timers["Minimize Residual"].Start();
 		int krylovSize = CurrentArnoldiStep + 1;
 		HessenbergSolve = HessenbergMatrix;
 		MatrixType H = HessenbergSolve( blitz::Range(0, krylovSize-1), blitz::Range(0, krylovSize) );
@@ -457,20 +464,29 @@ void GMRES<T>::SolveVector(VectorType rightHandSide, VectorType solution)
 		y(0) = inputNorm;
 		lapack.SolveLeastSquareGeneral(lapack.TransposeNone, H, y);
 		VectorType x = HessenbergSolution( blitz::Range(0, krylovSize-1) );
+		Timers["Minimize Residual"].Stop();
 		
 		//Calculate error
+		Timers["Error Estimation"].Start();
 		HessenbergSolve = HessenbergMatrix;
 		VectorType r = HessenbergSolution2( blitz::Range(0, krylovSize) );
 		blas.MultiplyMatrixVector(H, x, r);
 		r(0) -= inputNorm;
 		cplx residualNorm = blas.VectorNorm(r);
+		Timers["Error Estimation"].Stop();
+
 
 		ErrorEstimateList(CurrentArnoldiStep) = residualNorm;
 		ErrorEstimate = residualNorm;
 	}
 
+
 	MatrixType currentArnoldiMatrix(ArnoldiVectors(blitz::Range(0, CurrentArnoldiStep), blitz::Range::all()));
 	VectorType x = HessenbergSolution( blitz::Range(0, CurrentArnoldiStep) );
+	if (HappyBreakdown)
+	{
+		cout << "Solution = " << x << endl;
+	}
 	blas.MultiplyMatrixVector(currentArnoldiMatrix, x, solution);
 
 	Timers["Total"].Stop();

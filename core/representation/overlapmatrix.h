@@ -130,9 +130,11 @@ public:
 	void Setup(const OverlapMatrixEvaluator &evaluator);
 	//Vector
 	void MultiplyOverlapVector(const VectorType &source, VectorType &dest);
+	void MultiplyOverlapVector(cplx sourceScaling, const VectorType &source, cplx destScaling, VectorType &dest);
 	void MultiplyOverlapVector(VectorType &vector);
 	void SolveOverlapVector(VectorType &vector);
-	//Tensor is a 3D Array, with the rank of iterest as rank 1
+//Tensor is a 3D Array, with the rank of iterest as rank 1
+	void MultiplyOverlapTensor(cplx sourceScaling, const TensorType &source, cplx destScaling, TensorType &dest);
 	void MultiplyOverlapTensor(const TensorType &source, TensorType &dest);
 	void MultiplyOverlapTensor(TensorType &vector);
 	void SolveOverlapTensor(TensorType &vector);
