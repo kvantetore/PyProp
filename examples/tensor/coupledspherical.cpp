@@ -246,6 +246,9 @@ public:
 						cur *= cg(l1p, l1, -m1p, m1, l3, m3);
 						cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
 						cur *= std::pow(-1., m1p + m2p + m3);
+						//cur *= CondonShortleyPhase(m1p);
+						//cur *= CondonShortleyPhase(m2p);
+						//cur *= CondonShortleyPhase(m3);
 						l3Sum += cur;
 					}
 				}
@@ -273,6 +276,12 @@ public:
 	static double CoefficientR12(int l1, int l2, int l3)
 	{
 		return 	std::sqrt( (2.*l1 + 1.) * (2.*l2 + 1.) / (2.*l3 + 1.) );
+	}
+
+	static double CondonShortleyPhase(int m)
+	{
+		if (m < 0) return 1.0;
+		return std::pow(-1.0, m);
 	}
 };
 
@@ -816,17 +825,15 @@ public:
 				if (std::abs(m2p) > l2p) continue;
 
 				double cur = cg(l1, l2, m1, m2, L, M) * cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= std::sqrt((2 * l1 + 1.0 ) * (2 * l1p + 1.0) / (12 * M_PI));
+				cur *= Coefficient(l1, l1p);
 				cur *= cg(l1, l1p, 0, 0, 1, 0) * cg(l1, l1p, -m1, m1p, 1, 0);
-				cur *= pow(-1.0, -m1);
+				cur /= CondonShortleyPhase(m1);
 				I1 += cur;
 				
 				cur = cg(l1, l2, m1, m2, L, M) * cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= std::sqrt((2 * l2 + 1.0 ) * (2 * l2p + 1.0) / (12 * M_PI));
+				cur *= Coefficient(l2, l2p);
 				cur *= cg(l2, l2p, 0, 0, 1, 0) * cg(l2, l2p, -m2, m2p, 1, 0);
-				cur *= pow(-1.0, -m2);
-				I1 += cur;
-
+				cur /= CondonShortleyPhase(m2);
 				I2 += cur;
 			}
 
@@ -842,6 +849,17 @@ public:
 				}
 			}
 		}
+	}
+
+	static double Coefficient(int l, int lp)
+	{
+		return std::sqrt((2 * l + 1.0 ) * (2 * lp + 1.0) / (12 * M_PI));
+	}
+
+	static double CondonShortleyPhase(int m)
+	{
+		if (m < 0) return 1.0;
+		return std::pow(-1, m);
 	}
 };
 

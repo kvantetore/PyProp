@@ -325,21 +325,21 @@ def TestStability():
 
 import pypar
 
-def Propagate(initPsi, algo=1, **args):
+def Propagate(initPsi, algo=1, outputs=10, **args):
 	#prop = FindGroundstate(silent=True)
 	#initPsi = prop.psi
 
-	#prop = SetupProblem(imtime=False, **args)
-	prop = SetupProblem(silent=False, imtime=False, additionalPotentials=["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"], **args)
+	prop = SetupProblem(imtime=False, **args)
+	#prop = SetupProblem(silent=False, imtime=False, additionalPotentials=["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"], **args)
 
+	initPsi.Normalize()
 	prop.psi.Clear()
 	prop.psi.GetData()[:,:,:initPsi.GetData().shape[2]] = initPsi.GetData()
-	prop.psi.Normalize()
 
 	timeList = []
 	corrList = []
 	normList = []
-	for t in prop.Advance(10):
+	for t in prop.Advance(outputs):
 		n = prop.psi.GetNorm()
 		if n != n:
 			return prop
@@ -348,12 +348,7 @@ def Propagate(initPsi, algo=1, **args):
 		normList.append(n)
 		corrList.append(c)
 		if pyprop.ProcId == 0:
-			print "t = %.4f, N(t) = %.6f, P(t) = %.6f" % (t, n, c)
-		#hold(False)
-		#pcolormesh(abs(prop.psi.GetData())**2)
-		#draw()
-		#sys.stdout.flush()
-		
+			print "t = %.14f, N(t) = %.14f, P(t) = %.14f" % (t, n, c)
 	
 	prop.Propagator.PampWrapper.PrintStatistics()
 		
