@@ -1,0 +1,116 @@
+\documentclass[a4paper,12pt]{paper}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{url}
+ 
+\title{Two Electron Matrix Elements in Coupled Spherical Harmonics}
+\author{Tore Birkeland and Raymond Nepstad}
+
+\newcommand{\bra}[1]{\ensuremath{\langle #1 |}}
+\newcommand{\ket}[1]{\ensuremath{| #1 \rangle}}
+\newcommand{\innerprod}[2]{\langle #1 | #2 \rangle}
+\newcommand{\matelem}[3]{\langle #1 | #2 | #3 \rangle}
+\newcommand{\cg}[6]{\innerprod{#1 #2 #3 #4}{#5 #6}}
+\renewcommand{\imath}{{\mathrm i}}
+\newcommand{\partialdiff}[2]{\frac{\partial #1}{\partial #2}}
+
+
+\begin{document}
+
+\section{Associated Legendre Polys}
+
+Differentiation (from MathWorld):
+\begin{equation}
+	\sin \theta \partialdiff{}{\theta} P_l^m = l \cos \theta P_l^m - (l+m)
+P_{l-1}^m
+\end{equation}
+
+Recursion (from MathWorld)
+\begin{equation}
+	\cos \theta P_l^m = \frac{ (l+1-m) P_{l+1}^m + (l+m) P_{l-1}^m }{ (2 l +
+1) }
+\end{equation}
+
+Which gives
+\begin{equation}
+	\sin \theta \partialdiff{}{\theta} P_l^m = \frac{l(l+1-m) P_{l+1}^m 
+- 2l(l+m) P_{l-1}^m}{2l + 1} 
+\end{equation}
+
+
+\section{Spherical Harmonics}
+
+Spherical Harmonics (from MathWorld)
+\begin{equation}
+	\label{eqn:spherical-harmonics}
+	Y_l^m(\theta, \phi) = \delta_m \sqrt{ \frac{2l + 1}{2 \pi}
+\frac{(l-m)!}{(l+m)!} } P_l^m(\theta) e^{\imath m \phi}
+\end{equation}
+$\delta_m$ is the Condon Shortley phase if it is not included in the associated
+legendre polys (I suspect that in the defenitions from MathWorld, the Condon
+Shortley phase is included in $P_l^m$, while most physics books includes in in
+the $Y_l^m$s).
+
+\begin{equation}
+	\sin \theta \partialdiff{Y_l^m}{\theta} = C_l^m Y_{l+1}^m
++ D_l^m Y_{l-1}^m
+\end{equation}
+where
+\begin{eqnarray}
+	C_l^m &=& l \sqrt{ \frac{(l+1+m)(l+1-m)}{(2l + 3)(2l +1})} \\
+	D_l^m &=& - 2 l \sqrt{ \frac{(l+m)(l-m)}{(2l + 1)(2l - 1)} }
+\end{eqnarray}
+
+\begin{equation}
+ 	\cos \theta Y_l^m = E_l^m Y_{l+1}^m + F_l^m Y_{l-1}^m
+\end{equation}
+where
+\begin{eqnarray}
+	E_l^m &=& \sqrt{ \frac{(l+1-m)(l+1+m)}{(2l+1)(2l+3)} } \\
+	F_l^m &=& \sqrt{ \frac{(l+m)(l-m)}{(2l+1)(2l-1)} }
+\end{eqnarray}
+
+
+\section{Coupled Spherical Harmonics}
+Coupled Spherical Harmonics (from Brandsen)
+\begin{equation}
+	\label{eqn:coupled-sph}
+	\mathcal{Y}_{l_1 l_2}^{LM} = \sum_m \cg{l_1}{l_2}{m}{M-m}{L}{M}
+Y_{l_1}^m(\Omega_1) Y_{l_2}^{M-m}(\Omega_2) 
+\end{equation}
+
+\begin{eqnarray}
+  \matelem
+	{\mathcal{Y}_{l_1 l_2}^{LM}}
+	{sin \theta\partialdiff{}{\theta}}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}} =
+   \sum_m
+	\cg{l_1}{l_2}{m}{M-m}{L}{M}
+	\cg{l_1'}{l_2'}{m}{M-m}{L'}{M} \\
+	\times \delta_{l_2, l_2'} \left[ 
+		C_{l_1'}^m \delta_{l_1, l_1'+1} 
+		+ D_{l_1'}^m \delta_{l_1, l_1'-1}  \right] \\
+	+ \delta_{l_1, l_1'} \left[ 
+		C_{l_2'}^m \delta_{l_2, l_2'+1} 
+		+ D_{l_2'}^m \delta_{l_2, l_2'-1}  \right]
+\end{eqnarray}
+
+\begin{eqnarray}
+  \matelem
+	{\mathcal{Y}_{l_1 l_2}^{LM}}
+	{\cos \theta}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}} =
+   \sum_m
+	\cg{l_1}{l_2}{m}{M-m}{L}{M}
+	\cg{l_1'}{l_2'}{m}{M-m}{L'}{M} \\
+	\times \delta_{l_2, l_2'} \left[ 
+		E_{l_1'}^m \delta_{l_1, l_1'+1} 
+		+ F_{l_1'}^m \delta_{l_1, l_1'-1}  \right] \\
+	+ \delta_{l_1, l_1'} \left[ 
+		E_{l_2'}^m \delta_{l_2, l_2'+1} 
+		+ F_{l_2'}^m \delta_{l_2, l_2'-1}  \right]
+\end{eqnarray}
+
+
+\end{document}
+
