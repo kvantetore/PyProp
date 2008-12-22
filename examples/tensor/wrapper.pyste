@@ -19,6 +19,8 @@ PotentialEvaluator("CoulombSofted1D<1> 1","CoulombSofted1D_1")
 
 PotentialEvaluator("SingleActiveElectronPotential<2> 2","SingleActiveElectronPotential2D_2")
 
+PotentialEvaluator("OverlapPotential<3> 3","OverlapPotential_3")
+
 PotentialEvaluator("AngularKineticEnergyPotential<2> 2","AngularKineticEnergyPotential_2")
 
 PotentialEvaluator("RadialHarmonicPotential<1> 1","RadialHarmonicPotential_1")

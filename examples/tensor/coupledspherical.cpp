@@ -859,7 +859,7 @@ public:
 	static double CondonShortleyPhase(int m)
 	{
 		if (m < 0) return 1.0;
-		return std::pow(-1, m);
+		return std::pow(-1.0, m);
 	}
 };
 

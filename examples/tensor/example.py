@@ -78,6 +78,31 @@ def FindEigenvalues(**args):
 	print solver.GetEigenvalues()
 	return solver
 
+
+def GetGridLinear(conf, xmax=None, xmin=None):
+	if xmin == None: xmin = conf.xmin
+	if xmax == None: xmax = conf.xmax
+	count = conf.count
+
+	start = xmin
+	end = xmax
+
+	if not conf.include_left_boundary:
+		count += 1
+	if not conf.include_right_boundary:
+		count += 1
+
+	dx = (xmax - xmin) / float(count-1)
+	if not conf.include_left_boundary:
+		start += dx
+	if conf.include_right_boundary:
+		end += dx
+	grid = r_[start:end:dx]
+
+	return array(grid, dtype=double)
+
+
+
 #------------------------------------------------------------------------------------
 #                       New test-functions
 #------------------------------------------------------------------------------------
