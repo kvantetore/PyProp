@@ -13,6 +13,7 @@
 \newcommand{\cg}[6]{\innerprod{#1 #2 #3 #4}{#5 #6}}
 \renewcommand{\imath}{{\mathrm i}}
 \newcommand{\partialdiff}[2]{\frac{\partial #1}{\partial #2}}
+\renewcommand{\vec}[1]{\ensuremath{\textbf{#1}}}
 
 
 \begin{document}
@@ -82,8 +83,10 @@ Y_{l_1}^m(\Omega_1) Y_{l_2}^{M-m}(\Omega_2)
 \begin{eqnarray}
   \matelem
 	{\mathcal{Y}_{l_1 l_2}^{LM}}
-	{sin \theta\partialdiff{}{\theta}}
-	{\mathcal{Y}_{l_1' l_2'}^{L'M}} =
+	{sin \theta_1 \partialdiff{}{\theta_1}
+	+sin \theta_2 \partialdiff{}{\theta_2}}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}}
+	\\ =
    \sum_m
 	\cg{l_1}{l_2}{m}{M-m}{L}{M}
 	\cg{l_1'}{l_2'}{m}{M-m}{L'}{M} \\
@@ -98,8 +101,8 @@ Y_{l_1}^m(\Omega_1) Y_{l_2}^{M-m}(\Omega_2)
 \begin{eqnarray}
   \matelem
 	{\mathcal{Y}_{l_1 l_2}^{LM}}
-	{\cos \theta}
-	{\mathcal{Y}_{l_1' l_2'}^{L'M}} =
+	{\cos \theta_1 + \cos \theta_2}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}} \\ = 
    \sum_m
 	\cg{l_1}{l_2}{m}{M-m}{L}{M}
 	\cg{l_1'}{l_2'}{m}{M-m}{L'}{M} \\
@@ -110,6 +113,88 @@ Y_{l_1}^m(\Omega_1) Y_{l_2}^{M-m}(\Omega_2)
 		E_{l_2'}^m \delta_{l_2, l_2'+1} 
 		+ F_{l_2'}^m \delta_{l_2, l_2'-1}  \right]
 \end{eqnarray}
+
+
+\section{Length Gauge}
+
+\begin{equation}
+ 	H_l = \vec{E}(t) \cdot (\vec{r}_1 + \vec{r}_2)
+\end{equation}
+For fields along the $z$ axis, 
+\begin{equation}
+	H_l = E_z(t) (r_1 \cos \theta_1 + r_2 \cos \theta_2)
+\end{equation}
+In coupled spherical harmonics:
+\begin{eqnarray}
+   \matelem
+	{\mathcal{Y}_{l_1 l_2}^{LM}}
+	{H_l}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}} = E_z(t) 
+    \matelem
+	{\mathcal{Y}_{l_1 l_2}^{LM}}
+	{r_1 \cos \theta_1 + r_2 \cos \theta_2}
+	{\mathcal{Y}_{l_1' l_2'}^{L'M}} \\ =
+   \sum_m
+	\cg{l_1}{l_2}{m}{M-m}{L}{M}
+	\cg{l_1'}{l_2'}{m}{M-m}{L'}{M} \\
+	\times r_1 \delta_{l_2, l_2'} \left[ 
+		E_{l_1'}^m \delta_{l_1, l_1'+1} 
+		+ F_{l_1'}^m \delta_{l_1, l_1'-1}  \right] \\
+	+ r_2 \delta_{l_1, l_1'} \left[ 
+		E_{l_2'}^m \delta_{l_2, l_2'+1} 
+		+ F_{l_2'}^m \delta_{l_2, l_2'-1}  \right]
+\end{eqnarray}
+
+\section{Velocity Gauge}
+
+\begin{equation}
+ 	H_v' = \frac{q}{m} \vec{A} \cdot \vec{p}
+\end{equation}
+But, using the reduced wavefunction $\psi(r) = r \Psi(r)$, we get (Thomas
+Kjeldsen Ph.D. Thesis, p)
+\begin{equation}
+ 	H_v = -\imath \vec{A}(t) \cdot (\nabla - \frac{\vec{r}}{r^2})
+\end{equation}
+For a field along the $z$ axis
+\begin{equation}
+ 	H_v = -\imath A_z(t) \left( \partialdiff{}{z} - \frac{\cos \theta}{r}
+\right)
+\end{equation}
+
+In spherical coordinates 
+\begin{equation}
+ 	\partialdiff{}{z} = 
+		\cos \theta \partialdiff{}{r} 
+		- \frac{1}{r} \sin \theta \partialdiff{}{\theta}
+\end{equation}
+\begin{equation}
+ 	H_v = -\imath A_z(t) \left( 
+		\cos \theta \partialdiff{}{r} 
+		- \frac{1}{r} \sin \theta \partialdiff{}{\theta} 
+		- \frac{\cos \theta}{r}
+		\right)
+\end{equation}
+
+In spherical harmonics
+\begin{eqnarray}
+ 	\matelem{Y_l^m}{H_v}{Y_{l'}^m} = -\imath A_z(t)
+ 	\matelem
+	{Y_l^m}
+	{ 
+	\cos \theta \partialdiff{}{r} 
+	- \frac{1}{r} \sin \theta \partialdiff{}{\theta} 
+	- \frac{\cos \theta}{r}
+	}
+	{Y_{l'}^m}
+	\\ = 
+	-\imath A_z(t)
+	(
+	\partialdiff{}{r} (E_l^m \delta_{l,l'+1} + F_l^m \delta_{l,l'-1}) \\
+	- \frac{1}{r} (E_l^m \delta_{l,l'+1} + F_l^m \delta_{l,l'-1}) \\
+	+ \frac{1}{r} (C_l^m \delta_{l,l'+1} + D_l^m \delta_{l,l'-1})
+	)
+\end{eqnarray}
+
 
 
 \end{document}
