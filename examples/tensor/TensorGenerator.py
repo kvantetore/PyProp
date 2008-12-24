@@ -316,7 +316,6 @@ class GeometryInfoCommonBandedNonHermitian(GeometryInfoBase):
 		return self.UseGrid
 	
 	def GetBasisPairCount(self):
-		print "USING BASIS PAIRS: ", self.RankCount * (self.BandCount * 2 + 1) 
 		return self.RankCount * (self.BandCount * 2 + 1) 
 
 	def GetBasisPairs(self):
@@ -493,7 +492,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 			print "WARNING: Identity geometry might not do what you expect for BSplines"
 			return GeometryInfoCommonIdentity(True)
 		elif geom == "banded-nonhermitian":
-			return GeometryInfoCommonBandeNonhermitian(BasisSize, BandCount)
+			return GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
 		elif geom == "banded-old":
 			return GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded":
@@ -531,12 +530,13 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	with delta l = +- 1 symetry, that is for potentials on the form
 	P(x, theta) = f(x) * cos(theta)
 	"""
-	def __init__(self, sphericalHarmonicObject):
+	def __init__(self, sphericalHarmonicObject, useGrid):
 		#Set member variables 
 		self.SphericalHarmonicObject = sphericalHarmonicObject	
+		self.UseGrid = useGrid
 
 	def UseGridRepresentation(self):
-		return True
+		return self.UseGrid
 	
 	def GetBasisPairCount(self):
 		return self.SphericalHarmonicObject.GetLMax()*2 
@@ -635,16 +635,25 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
+
+		#Use grid unless the geometry is prefixed with "custom-"
+		useGrid = True
+		customStr = "custom-"
+		if geom.startswith(customStr):
+			useGrid = False
+			geom = geom[len(customStr):]
+
+		#Select geometry info
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(True)
-		if geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.LMax+1, False)
+			return GeometryInfoCommonIdentity(useGrid)
+		elif geom == "diagonal":
+			return GeometryInfoCommonDiagonal(self.LMax+1, False) #diagonal potentials are always in basis repr
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.LMax+1, True)
+			return GeometryInfoCommonDense(self.LMax+1, useGrid)
 		elif geom == "dipoleselectionrule":
-			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject)
+			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject, useGrid)
 		elif geom == "bandeddistributed":
-			return GeometryInfoCommonBandedDistributed(self.LMax+1, 1, True)
+			return GeometryInfoCommonBandedDistributed(self.LMax+1, 1, useGrid)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 

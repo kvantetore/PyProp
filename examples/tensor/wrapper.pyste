@@ -68,6 +68,13 @@ CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "coupledspherical.cpp")
 PotentialEvaluator("CoupledSphericalCoulombPotential<3> 3", "CoupledSphericalCoulombPotential_3")
 
+CustomPotential = Template("CustomPotential_LaserVelocity1_ReducedSpherical", "potential.cpp")
+CustomPotential("2")
+
+CustomPotential = Template("CustomPotential_LaserVelocity2_ReducedSpherical", "potential.cpp")
+CustomPotential("2")
+
+
 #declaration_code('#include "parallel_multiply_wrapper.cpp"')
 ##module_code('def("BandedMatrixMultiply_Wrapper", BandedMatrixMultiply_Wrapper);')
 #

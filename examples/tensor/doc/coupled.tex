@@ -35,7 +35,7 @@ Recursion (from MathWorld)
 Which gives
 \begin{equation}
 	\sin \theta \partialdiff{}{\theta} P_l^m = \frac{l(l+1-m) P_{l+1}^m 
-- 2l(l+m) P_{l-1}^m}{2l + 1} 
+- (l+1)(l+m) P_{l-1}^m}{2l + 1} 
 \end{equation}
 
 
@@ -58,9 +58,10 @@ the $Y_l^m$s).
 \end{equation}
 where
 \begin{eqnarray}
-	C_l^m &=& l \sqrt{ \frac{(l+1+m)(l+1-m)}{(2l + 3)(2l +1})} \\
-	D_l^m &=& - 2 l \sqrt{ \frac{(l+m)(l-m)}{(2l + 1)(2l - 1)} }
+	C_l^m &=& l \sqrt{ \frac{(l+1+m)(l+1-m)}{(2l + 3)(2l + 1)}} \\
+	D_l^m &=& - (l+1) \sqrt{ \frac{(l+m)(l-m)}{(2l + 1)(2l - 1)} }
 \end{eqnarray}
+There is something wrong with the $D_l$ coeff.
 
 \begin{equation}
  	\cos \theta Y_l^m = E_l^m Y_{l+1}^m + F_l^m Y_{l-1}^m
@@ -190,8 +191,8 @@ In spherical harmonics
 	-\imath A_z(t)
 	(
 	\partialdiff{}{r} (E_l^m \delta_{l,l'+1} + F_l^m \delta_{l,l'-1}) \\
-	- \frac{1}{r} (E_l^m \delta_{l,l'+1} + F_l^m \delta_{l,l'-1}) \\
-	+ \frac{1}{r} (C_l^m \delta_{l,l'+1} + D_l^m \delta_{l,l'-1})
+	- \frac{1}{r} (C_l^m \delta_{l,l'+1} + D_l^m \delta_{l,l'-1}) \\
+	- \frac{1}{r} (E_l^m \delta_{l,l'+1} + F_l^m \delta_{l,l'-1})
 	)
 \end{eqnarray}
 

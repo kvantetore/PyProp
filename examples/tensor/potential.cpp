@@ -750,4 +750,238 @@ public:
 };
 
 
+class LaserHelper
+{
+public:
+	static double C(double l, double m)
+	{
+		return l * std::sqrt( ((l+1+m)*(l+1-m)) / ((2*l+1)*(2*l+3)) );
+	}
+
+	static double D(double l, double m)
+	{
+		return -(l+1) * std::sqrt( ((l+m)*(l-m)) / ((2*l+1)*(2*l-1)) );
+	}
+
+	static double E(double l, double m)
+	{
+		return std::sqrt( ((l+1+m)*(l+1-m)) / ((2*l+1)*(2*l+3)) );
+	}
+
+	static double F(double l, double m)
+	{
+		return std::sqrt( ((l+m)*(l-m)) / ((2*l+1)*(2*l-1)) );
+	}
+
+	static int kronecker(int a, int b)
+	{
+		return a == b ? 1 : 0;
+	}
+};
+
+#include <core/representation/combinedrepresentation.h>
+#include <core/representation/reducedspherical/reducedsphericalharmonicrepresentation.h>
+
+/* First part of the linearly polarized laser in the velocity gauge
+ * expressed in spherical harmonics
+ *
+ * <Ylm | - \frac{1}{r} \sin \theta \partialdiff{}{\theta} 
+ *	      - \frac{\cos \theta}{r} | Yl'm'>
+ */
+template<int Rank>
+class CustomPotential_LaserVelocity1_ReducedSpherical
+{
+public:
+	typedef blitz::Array<int, 2> BasisPairList;
+
+private:
+	BasisPairList AngularBasisPairs;
+	int AngularRank;
+	int RadialRank;
+
+public:
+	CustomPotential_LaserVelocity1_ReducedSpherical() {}
+	virtual ~CustomPotential_LaserVelocity1_ReducedSpherical() {}
+
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("radial_rank", RadialRank);
+		config.Get("angular_rank", AngularRank);
+	}
+
+	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
+	{
+		if (rank != AngularRank)
+		{
+			throw std::runtime_error("Only angular rank supports basis pairs");
+		}
+		AngularBasisPairs.reference(basisPairs.copy());
+	}
+
+	BasisPairList GetBasisPairList(int rank)
+	{
+		if (rank == AngularRank)
+			return AngularBasisPairs;
+		else
+			return BasisPairList();
+	}
+
+	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
+	{
+		using namespace ReducedSpherical;
+
+		typedef CombinedRepresentation<Rank> CmbRepr;
+		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
+		ReducedSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< ReducedSphericalHarmonicRepresentation >(repr->GetRepresentation(AngularRank));
+	
+		int rCount = data.extent(RadialRank);
+		int angCount = data.extent(AngularRank);
+
+		blitz::Array<double, 1> localr = psi->GetRepresentation()->GetLocalGrid(RadialRank);
+		BasisPairList angBasisPairs = GetBasisPairList(AngularRank);
+
+		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(AngularRank)) throw std::runtime_error("Angular rank can not be distributed");
+		if (data.extent(RadialRank) != rCount) throw std::runtime_error("Invalid r size");
+		if (data.extent(AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+
+		cplx IM(0,1.0);
+
+		data = 0;
+		blitz::TinyVector<int, Rank> index;
+	
+		for (int angIndex=0; angIndex<angCount; angIndex++)
+		{
+			index(AngularRank) = angIndex;
+
+			int leftIndex = angBasisPairs(angIndex, 0);
+			int rightIndex = angBasisPairs(angIndex, 1);
+	
+			//"Left" quantum numbers
+			int l = leftIndex;
+			int m = 0;
+			
+			//"Right" quantum numbers (Mp = M)
+			int lp = rightIndex;
+			int mp = 0;
+
+			double C = LaserHelper::C(lp, mp) * LaserHelper::kronecker(l, lp+1);
+			double D = LaserHelper::D(lp, mp) * LaserHelper::kronecker(l, lp-1);
+			double E = LaserHelper::E(lp, mp) * LaserHelper::kronecker(l, lp+1);
+			double F = LaserHelper::F(lp, mp) * LaserHelper::kronecker(l, lp-1);
+
+			double coupling = -(C + D) - (E + F);
+
+			for (int ri=0; ri<rCount; ri++)
+			{
+				index(RadialRank) = ri;
+				double r = localr(ri);
+
+				data(index) = - IM * coupling/r;
+			}
+		}
+	}
+};
+
+/* Second part of the linearly polarized laser in the velocity gauge
+ * expressed in spherical harmonics.
+ *
+ * Should be used with first order differentiation in r
+ *
+ * <Ylm | \frac{\partial}{\partial r} \cos \theta | Yl'm'>
+ */
+template<int Rank>
+class CustomPotential_LaserVelocity2_ReducedSpherical
+{
+public:
+	typedef blitz::Array<int, 2> BasisPairList;
+
+private:
+	BasisPairList AngularBasisPairs;
+	int AngularRank;
+	int RadialRank;
+
+public:
+	CustomPotential_LaserVelocity2_ReducedSpherical() {}
+	virtual ~CustomPotential_LaserVelocity2_ReducedSpherical() {}
+
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("radial_rank", RadialRank);
+		config.Get("angular_rank", AngularRank);
+	}
+
+	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
+	{
+		if (rank != AngularRank)
+		{
+			throw std::runtime_error("Only angular rank supports basis pairs");
+		}
+		AngularBasisPairs.reference(basisPairs.copy());
+	}
+
+	BasisPairList GetBasisPairList(int rank)
+	{
+		if (rank == AngularRank)
+			return AngularBasisPairs;
+		else
+			return BasisPairList();
+	}
+
+	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
+	{
+		using namespace ReducedSpherical;
+
+		typedef CombinedRepresentation<Rank> CmbRepr;
+		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
+		ReducedSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< ReducedSphericalHarmonicRepresentation >(repr->GetRepresentation(AngularRank));
+	
+		int rCount = data.extent(RadialRank);
+		int angCount = data.extent(AngularRank);
+
+		blitz::Array<double, 1> localr = psi->GetRepresentation()->GetLocalGrid(RadialRank);
+		BasisPairList angBasisPairs = GetBasisPairList(AngularRank);
+
+		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(AngularRank)) throw std::runtime_error("Angular rank can not be distributed");
+		if (data.extent(RadialRank) != rCount) throw std::runtime_error("Invalid r size");
+		if (data.extent(AngularRank) != angBasisPairs.extent(0)) 
+		{
+			cout << "Angular Rank = " << AngularRank << ", " << data.extent(AngularRank) << " != " << angBasisPairs.extent(0) << endl;
+			throw std::runtime_error("Invalid ang size");
+		}
+
+		data = 0;
+		blitz::TinyVector<int, Rank> index;
+
+		cplx IM(0,1.0);
+	
+		for (int angIndex=0; angIndex<angCount; angIndex++)
+		{
+			index(AngularRank) = angIndex;
+
+			int leftIndex = angBasisPairs(angIndex, 0);
+			int rightIndex = angBasisPairs(angIndex, 1);
+	
+			//"Left" quantum numbers
+			int l = leftIndex;
+			int m = 0;
+			
+			//"Right" quantum numbers (Mp = M)
+			int lp = rightIndex;
+			int mp = 0;
+
+			double E = LaserHelper::E(lp, mp) * LaserHelper::kronecker(l, lp+1);
+			double F = LaserHelper::F(lp, mp) * LaserHelper::kronecker(l, lp-1);
+
+			double coupling = (E + F);
+
+			for (int ri=0; ri<rCount; ri++)
+			{
+				index(RadialRank) = ri;
+				double r = localr(ri);
+
+				data(index) =  - IM * coupling;
+			}
+		}
+	}
+};
 
