@@ -1,3 +1,15 @@
+
+CustomPotential = Template("CustomPotential_LaserVelocityDerivativeR1_CoupledSpherical", "coupledlaser.cpp")
+CustomPotential("3")
+
+CustomPotential = Template("CustomPotential_LaserVelocityDerivativeR2_CoupledSpherical", "coupledlaser.cpp")
+CustomPotential("3")
+
+CustomPotential = Template("CustomPotential_LaserVelocity_CoupledSpherical", "coupledlaser.cpp")
+CustomPotential("3")
+
+
+
 #declare potential evaluator for cartesian-like potentials
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
