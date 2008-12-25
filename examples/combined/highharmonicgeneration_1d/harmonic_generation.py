@@ -223,7 +223,7 @@ def SetupPotential(conf, rank=1):
 
 
 def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sampleSize=20, \
-	useTensor=False, storeResult=False):
+	storeResult=False):
 
 	def SetupPotentialFunction(conf, psi):
 		if useTensor:
@@ -237,6 +237,11 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 	prop = SetupProblem(config = config, stateIndex = 0)
 	prop.psi.GetData()[:] = psi.GetData()[:]
 	timeStep = prop.Config.Propagation.timestep
+
+	#Determine whether we are using tensor potentials
+	useTensor = False
+	if hasattr(prop.Config.Propagation, "base_propagator"):
+		useTensor = prop.Config.Propagation.base_propagator == BasisPropagator
 
 	#Set up gradient potential
 	prop.dipoleAcc = []
@@ -256,6 +261,9 @@ def PropagateHHG(psi, config = "highharmonicgeneration.ini", numSteps = 3000, sa
 	initPsi = prop.psi.CopyDeep()
 	prop.initialCorr = []
 	prop.norm = []
+	
+	print "Using tensor = %s" % useTensor
+	print "Storing result = %s" % storeResult
 
 	#Store initial psi
 	outputFile = ""
