@@ -1,3 +1,4 @@
+import scipy.linalg
 
 def SetupBigMatrix2D(prop, whichPotentials):
 	print "Setting up potential matrix..."
@@ -69,3 +70,26 @@ def CheckSymmetryFieldMatrix(whichPotential):
 	print "Deviation from hermiticity (max norm) = %f" % hermDeviation
 
 	return prop, BigMatrix
+
+
+
+def GetTwoElectronEnergies(L=0, lmax=3):
+	"""
+	Get energies and eigenstates by direct diagonalization of L-subspace matrix
+	"""
+	#Coupled spherical index iterator based on given lmax and L
+	index_iterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
+	
+	#Set up problem
+	prop = SetupProblem(configFile="config_helium_local.ini", index_iterator=index_iterator)
+
+	#Set up hamilton and overlap matrices
+	HamiltonMatrix = SetupBigMatrix(prop, [0,1])
+	OverlapMatrix = SetupBigMatrix(prop, [2])
+
+	#Calculate generalized eigenvalues and eigenvectors
+	print "Calculating generalized eigenvalues and eigenvectors..."
+	sys.stdout.flush()
+	E, V = scipy.linalg.eig(HamiltonMatrix, b=OverlapMatrix)
+
+	return prop, HamiltonMatrix, OverlapMatrix, E, V
