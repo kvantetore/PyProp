@@ -27,7 +27,7 @@ public:
 		{
 			cout << "Error finding cg coeff " << l1 << ", " << l2 << ", " << m1 << ", " << m2 << ", " << L << ", " << M << endl;
 		}
-		return pow(-1., M + l1 - l2) * std::sqrt(2*L + 1) * result.val;
+		return pow(-1., M + l1 - l2) * std::sqrt(2*L + 1.0) * result.val;
 	}
 };
 

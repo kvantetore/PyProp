@@ -332,13 +332,13 @@ class HelperFunctions
 		double numeratorLogFactorial = 0;
 		for (int a = numerator; a>0; a--)
 		{
-			numeratorLogFactorial += std::log(a);
+			numeratorLogFactorial += std::log((double)a);
 		}
 
 		double denominatorLogFactorial = 0;
 		for (int b = denominator; b>0; b--)
 		{
-			denominatorLogFactorial += std::log(b);
+			denominatorLogFactorial += std::log((double)b);
 		}
 
 		return std::exp(numeratorLogFactorial - denominatorLogFactorial);
