@@ -436,7 +436,7 @@ class GCCXMLParser(object):
         name = element.get('name')
         type = self.GetType(element.get('type'))        
         context = self.GetDecl(element.get('context'))
-        if isinstance(context, Class):
+        if isinstance(context, Class) or isinstance(context, Method):
             context = context.FullName()
         typedef = Typedef(type, name, context)
         self.Update(id, typedef)
