@@ -110,7 +110,7 @@ class CombinedPropagator(PropagatorBase):
 	
 	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
 		"""
-		Calculate
+		Calculate expectation value of a grid potential
 		"""
 		#Callback function, multiplies grid potential on psi
 		def MultiplyGridPotential():
