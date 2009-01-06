@@ -1,4 +1,5 @@
 from numpy import int32
+import re
 
 #------------------------------------------------------------------------------------
 #                       Interfaces
@@ -776,7 +777,7 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 		self.Representation = repr
 		baseRank = repr.GetBaseRank()
 		self.GridSize = len(self.Representation.GetGlobalGrid(baseRank))
-		self.DifferenceOrder = 11
+		self.DifferenceOrder = 1
 		self.BandCount = (self.DifferenceOrder - 1) / 2
 		
 	def GetGridRepresentation(self):
@@ -791,14 +792,21 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 			return GeometryInfoCommonIdentity(True)
 		elif geom == "diagonal":
 			return GeometryInfoCommonDiagonal(self.GridSize, True)
-		elif geom == "dense":
-			return GeometryInfoCommonDense(self.GridSize, True)
-		elif geom == "banded-nonhermitian" or geom=="banded":
-			return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
-		elif geom == "bandeddistributed":
-			return GeometryInfoCommonBandedDistributed(self.GridSize, self.BandCount, True)
 		else:
-			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+			diffOrderSearch =  re.search("-\d+", geom)
+			if not diffOrderSearch:
+				raise  UnsupportedGeometryException("BasisfunctionFiniteDifference requires specification of difference order, you said %s" % geometryName)
+
+			self.DifferenceOrder =  eval(diffOrderSearch.group()[1:])
+			self.BandCount = (self.DifferenceOrder - 1) / 2
+			if geom.startswith == "dense":
+				return GeometryInfoCommonDense(self.GridSize, True)
+			elif re.search("banded-nonhermitian", geom) or re.search("banded", geom):
+				return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
+			elif re.search("bandeddistributed", geom):
+				return GeometryInfoCommonBandedDistributed(self.GridSize, self.BandCount, True)
+			else:
+				raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		if differentiation == 0:
@@ -1185,10 +1193,10 @@ class BasisPropagator(PropagatorBase):
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
 		self.Rank = psi.GetRank()
-	
+
 		#Create a tensor potential generator 		
 		#We will use this to construct tensor potentials from potentials specified on the grid
-		self.TensorPotentialGenerator = TensorPotentialGenerator(representation = self.psi.GetRepresentation())
+		self.TensorPotentialGenerator = TensorPotentialGenerator(representation = psi.GetRepresentation())
 
 		#We need the temp array for solving overlap matrix eqns
 		self.TempPsi2 = self.psi.Copy()
@@ -1308,7 +1316,8 @@ class BasisPropagator(PropagatorBase):
 
 		#Solve for all overlap matrices
 		repr = srcPsi.GetRepresentation()
-		repr.SolveOverlap(destPsi)
+		if not all([repr.IsOrthogonalBasis(i) for i in range(self.Rank)]):
+			repr.SolveOverlap(destPsi)
 
 	def MultiplyHamiltonianBalancedOverlap(self, srcPsi, destPsi, t, dt):
 		#Store input psi
