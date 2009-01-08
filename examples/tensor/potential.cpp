@@ -369,6 +369,7 @@ public:
 	//Potential parameters
 	int angularRank;
 	int radialRank;
+	double Charge;
 
 	/*
 	 * Called once with the corresponding config section
@@ -379,6 +380,7 @@ public:
 	{
 		config.Get("angular_rank", angularRank);
 		config.Get("radial_rank", radialRank);
+		config.Get("charge", Charge);
 	}
 
 	/*
@@ -388,7 +390,7 @@ public:
 	{
 		double theta = pos(angularRank);
 		double r = pos(radialRank);
-		return r * cos(theta);
+		return -Charge * r * cos(theta);
 	}
 };
 
@@ -403,6 +405,7 @@ public:
 	//Potential parameters
 	int angularRank;
 	int radialRank;
+	double Charge;
 
 	/*
 	 * Called once with the corresponding config section
@@ -413,6 +416,7 @@ public:
 	{
 		config.Get("angular_rank", angularRank);
 		config.Get("radial_rank", radialRank);
+		config.Get("charge", Charge);
 	}
 
 	/*
@@ -421,7 +425,7 @@ public:
 	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double theta = pos(angularRank);
-		return cplx(0.,1.)*cos(theta);
+		return -Charge * cplx(0.,1.)*cos(theta);
 	}
 };
 
@@ -436,6 +440,7 @@ public:
 	//Potential parameters
 	int angularRank;
 	int radialRank;
+	double Charge;
 
 	/*
 	 * Called once with the corresponding config section
@@ -446,6 +451,7 @@ public:
 	{
 		config.Get("angular_rank", angularRank);
 		config.Get("radial_rank", radialRank);
+		config.Get("charge", Charge);
 	}
 
 	/*
@@ -456,7 +462,7 @@ public:
 		double r = pos(radialRank);
 		//double theta = pos(angularRank);
 		//return -cplx(0.,1.)*sin(theta) / r;
-		return -cplx(0.,1.) / r;
+		return -Charge * -cplx(0.,1.) / r;
 	}
 };
 
@@ -471,6 +477,7 @@ public:
 	//Potential parameters
 	int angularRank;
 	int radialRank;
+	double Charge;
 
 	/*
 	 * Called once with the corresponding config section
@@ -481,6 +488,7 @@ public:
 	{
 		config.Get("angular_rank", angularRank);
 		config.Get("radial_rank", radialRank);
+		config.Get("charge", Charge);
 	}
 
 	/*
@@ -490,7 +498,7 @@ public:
 	{
 		double r = pos(radialRank);
 		double theta = pos(angularRank);
-		return - cplx(0.,1.) * cos(theta) / r;
+		return -Charge * -cplx(0.,1.) * cos(theta) / r;
 	}
 };
 
