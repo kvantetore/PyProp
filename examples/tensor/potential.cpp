@@ -425,7 +425,7 @@ public:
 	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
 		double theta = pos(angularRank);
-		return -Charge * cplx(0.,1.)*cos(theta);
+		return Charge * cplx(0.,1.)*cos(theta);
 	}
 };
 
@@ -462,7 +462,7 @@ public:
 		double r = pos(radialRank);
 		//double theta = pos(angularRank);
 		//return -cplx(0.,1.)*sin(theta) / r;
-		return -Charge * -cplx(0.,1.) / r;
+		return -Charge * cplx(0.,1.) / r;
 	}
 };
 
@@ -498,7 +498,7 @@ public:
 	{
 		double r = pos(radialRank);
 		double theta = pos(angularRank);
-		return -Charge * -cplx(0.,1.) * cos(theta) / r;
+		return -Charge * cplx(0.,1.) * cos(theta) / r;
 	}
 };
 
