@@ -15,7 +15,6 @@ def SetupBigMatrix2D(prop, whichPotentials):
 		basisPairs0 = potential.BasisPairs[0]
 		basisPairs1 = potential.BasisPairs[1]
 		
-		#GetCoupledIndex = prop.psi.GetRepresentation().GetRepresentation(2).Range.GetCoupledIndex
 		Count0 = prop.psi.GetData().shape[0]
 		Count1 = prop.psi.GetData().shape[1]
 
@@ -40,23 +39,20 @@ def SetupBigMatrix(prop, whichPotentials):
 		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
 		print "    Processing potential %i: %s" % (potNum, potential.Name)
 
-		basisPairs1 = potential.BasisPairs[0]
-		basisPairs2 = potential.BasisPairs[1]
-		basisPairs3 = potential.BasisPairs[2]
+		basisPairs0 = potential.BasisPairs[0]
+		basisPairs1 = potential.BasisPairs[1]
+		basisPairs2 = potential.BasisPairs[2]
 		
-		#GetCoupledIndex = prop.psi.GetRepresentation().GetRepresentation(2).Range.GetCoupledIndex
-		r1Count = prop.psi.GetData().shape[0]
-		r2Count = prop.psi.GetData().shape[1]
-		lCount = prop.psi.GetData().shape[2]
+		Count0 = prop.psi.GetData().shape[0]
+		Count1 = prop.psi.GetData().shape[1]
+		Count2 = prop.psi.GetData().shape[2]
 
-		for i, (A, Ap) in enumerate(basisPairs3):
-			for j, (r1,r1p) in enumerate(basisPairs1):
-				for k, (r2,r2p) in enumerate(basisPairs2):
-					#indexLeft = (A*r1Count*r2Count) + (r1 * r2Count) + r2
-					#indexRight = (Ap*r1Count*r2Count) + (r1p * r2Count) + r2p
-					indexLeft = (r1 * r2Count*lCount) + (r2*lCount) + A
-					indexRight = (r1p * r2Count*lCount) + (r2p*lCount) + Ap
-					BigMatrix[indexLeft, indexRight] += potential.PotentialData[j, k, i]
+		for i, (x0,x0p) in enumerate(basisPairs0):
+			for j, (x1,x1p) in enumerate(basisPairs1):
+				for k, (x2,x2p) in enumerate(basisPairs2):
+					indexLeft = x2 + (x1 * Count2) + (x0 * Count1 * Count2) 
+					indexRight = x2p + (x1p * Count2) + (x0p * Count1 * Count2) 
+					BigMatrix[indexLeft, indexRight] += potential.PotentialData[i, j, k]
 
 	return BigMatrix
 
