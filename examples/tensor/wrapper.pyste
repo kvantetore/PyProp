@@ -58,18 +58,10 @@ module_code('def("MultiplyTensorPotential_2", MultiplyTensorPotential_2<cplx>);\
 Class("CoupledSphericalSelectionRule", "coupledspherical.cpp")
 Class("CoupledSphericalSelectionRuleR12", "coupledspherical.cpp")
 Class("CoupledSphericalSelectionRuleLinearPolarizedField", "coupledspherical.cpp")
+Class("CoupledSphericalSelectionRuleDiagonal", "coupledspherical.cpp")
 
 CustomPotential = Template("CustomPotentialEvaluationR12", "coupledspherical.cpp")
 CustomPotential("3", "CustomPotentialEvaluationR12_3")
-
-CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedField", "coupledspherical.cpp")
-CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedField_3")
-
-CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1", "coupledspherical.cpp")
-CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1_3")
-
-CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2", "coupledspherical.cpp")
-CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2_3")
 
 CustomPotential = Template("CustomPotentialEvaluationLinearPolarizedFieldLength", "coupledspherical.cpp")
 CustomPotential("3", "CustomPotentialEvaluationLinearPolarizedFieldLength_3")

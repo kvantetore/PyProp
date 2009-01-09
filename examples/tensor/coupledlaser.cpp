@@ -71,7 +71,6 @@ public:
 
 		ClebschGordan cg;
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(AngularRank)) throw std::runtime_error("Angular rank can not be distributed");
 		if (data.extent(RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
 		if (data.extent(RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
 		if (data.extent(AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
@@ -222,7 +221,6 @@ public:
 
 		ClebschGordan cg;
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(AngularRank)) throw std::runtime_error("Angular rank can not be distributed");
 		if (data.extent(RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
 		if (data.extent(RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
 		if (data.extent(AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
@@ -358,7 +356,6 @@ public:
 
 		ClebschGordan cg;
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(AngularRank)) throw std::runtime_error("Angular rank can not be distributed");
 		if (data.extent(RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
 		if (data.extent(RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
 		if (data.extent(AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");

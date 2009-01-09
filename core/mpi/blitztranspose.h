@@ -123,7 +123,7 @@ public:
 			 * for each remaining proc from its shape. These are then claimed by
 			 * the remaining procs by the std::min statement below (1 per proc).
 			 */
-			if ( (shape < paddedDistrShape) && (shape > 0) )
+			if ( (shape <= paddedDistrShape) && (shape > 0) )
 			{
 				shape -= CartesianShape(procRank) - groupRank - 1;
 
@@ -147,18 +147,20 @@ public:
 	}
 
 
-	int GetLocalStartIndex(int globalSize, int procRank)
+	int GetLocalStartIndex(int globalSize, int procRank, int groupRank)
 	{
 		int paddedShape = CreatePaddedShape(globalSize, procRank);
-		int paddedDistribShape = CreateDistributedShape(paddedShape, procRank);
-
-		int groupRank = CartesianCoord(procRank);
+		int paddedDistribShape = CreateDistributedShape(paddedShape, procRank, groupRank);
 		int groupSize = CartesianShape(procRank);
 
 		int firstSmallRank = globalSize/paddedDistribShape;
+		if (globalSize % paddedDistribShape == 0)
+		{
+			firstSmallRank -= 1;
+		}
 		if (groupRank <= firstSmallRank)
 		{
-			return CartesianCoord(procRank) * paddedDistribShape;
+			return groupRank * paddedDistribShape;
 		}
 		else
 		{
@@ -167,12 +169,25 @@ public:
 
 	}
 
-	blitz::Range GetLocalRange(int globalSize, int procRank)
+	blitz::Range GetLocalRange(int globalSize, int procRank, int groupRank)
 	{
-		int startIndex = GetLocalStartIndex(globalSize, procRank);
-		int distribShape = CreateDistributedShape(globalSize, procRank);
+		int startIndex = GetLocalStartIndex(globalSize, procRank, groupRank);
+		int distribShape = CreateDistributedShape(globalSize, procRank, groupRank);
 		return blitz::Range(startIndex, startIndex + distribShape - 1);	
 	}
+
+	int GetLocalStartIndex(int globalSize, int procRank)
+	{
+		int groupRank = CartesianCoord(procRank);
+		return this->GetLocalStartIndex(globalSize, procRank, groupRank);
+	}
+
+	blitz::Range GetLocalRange(int globalSize, int procRank)
+	{
+		int groupRank = CartesianCoord(procRank);
+		return this->GetLocalRange(globalSize, procRank, groupRank);
+	}
+
 
 	/*
 	 * Creates a test-array such that each cell in the array will have its value equal to its

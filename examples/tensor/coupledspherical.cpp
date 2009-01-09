@@ -66,48 +66,16 @@ public:
 
 	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
 	{
-		bool nonzero = left.L == right.L && left.M == right.M;
-		if (nonzero)
-		{
-			nonzero = false;
+		int Lp = left.L;
+		int Mp = left.M;
+		int l1p = left.l1;
+		int l2p = left.l2;
+		int L = right.L;
+		int M = right.M;
+		int l1 = right.l1;
+		int l2 = right.l2;
 
-			int L = left.L;
-			int M = left.M;
-			int l1p = left.l1;
-			int l2p = left.l2;
-			int l1 = right.l1;
-			int l2 = right.l2;
-		
-			int minL3 = std::max(std::abs(l1 - l1p), std::abs(l2 - l2p));
-			int maxL3 = std::min(l1+l1p, l2+l2p);
-
-			double eps = 1e-12;
-		
-			for (int l3=minL3; l3<=maxL3; l3++)
-			{
-				double l3Sum = 0;
-				for (int m1p=-l1; m1p<=l1; m1p++)
-				{
-					int m2p = M - m1p;
-					for (int m1=-right.l1; m1<=l1; m1++)
-					{
-						int m2 = M - m1;
-						for (int m3=-l3; m3<=l3; m3++)
-						{
-							double cur = 1.0;
-							cur *= cg(l1p, l2p, m1p, m2p, L, M);
-							cur *= cg(l1, l2, m1, m2, L, M);
-							cur *= cg(l1p, l1, -m1p, m1, l3, m3);
-							cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
-							cur *= std::pow(-1., m1p + m2p + m3);
-							l3Sum += cur;
-						}
-					}
-				}
-				
-				nonzero = nonzero || std::abs(l3Sum)>eps;
-			}
-		}
+		bool nonzero = (L==Lp) && (M==Mp) && (L<=l1p+l2p) && (std::abs(l1p-l2p)<=L) && (L<=l1+l2) && (std::abs(l1-l2)<=L);
 
 		return nonzero;
 	}
@@ -139,70 +107,106 @@ public:
 	}
 };
 
+class CoupledSphericalSelectionRuleDiagonal  : public CoupledSphericalSelectionRule
+{
+public:
+	CoupledSphericalSelectionRuleDiagonal() {}
+	virtual ~CoupledSphericalSelectionRuleDiagonal() {}
+
+	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
+	{
+		return (left.L == right.L) && (left.M == right.M) && (left.l1 == right.l1) && (left.l2 == right.l2);
+	}
+};
+
+
 
 template<int Rank>
-class CustomPotentialEvaluationR12
+class CustomPotentialCoupledSphericalBase
 {
 public:
 	typedef blitz::Array<int, 2> BasisPairList;
 
-private:
+protected:
 	BasisPairList AngularBasisPairs;
+	int AngularRank;
+	int RadialRank1;
+	int RadialRank2;
 
 public:
-	CustomPotentialEvaluationR12() {}
-	virtual ~CustomPotentialEvaluationR12() {}
+	CustomPotentialCoupledSphericalBase() {}
+	virtual ~CustomPotentialCoupledSphericalBase() {}
 
-	void ApplyConfigSection(const ConfigSection &config)
+	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
+		config.Get("radial_rank1", RadialRank1);
+		config.Get("radial_rank2", RadialRank2);
+		config.Get("angular_rank", AngularRank);
 	}
 
 	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
 	{
-		if (rank != 2)
+		if (rank != AngularRank)
 		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
+			throw std::runtime_error("Only angular rank supports basis pairs");
 		}
 		AngularBasisPairs.reference(basisPairs.copy());
 	}
 
-	BasisPairList GetBasisPairList(int rank)
+	virtual BasisPairList GetBasisPairList(int rank)
 	{
-		if (rank == 2)
+		if (rank == AngularRank)
 			return AngularBasisPairs;
 		else
 			return BasisPairList();
 	}
+
+	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime) = 0;
+};
+
+
+template<int Rank>
+class CustomPotentialEvaluationR12 : public CustomPotentialCoupledSphericalBase<Rank>
+{
+public:
+	typedef blitz::Array<int, 2> BasisPairList;
+
+public:
+	CustomPotentialEvaluationR12() {}
+	virtual ~CustomPotentialEvaluationR12() {}
 
 	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
 	{
 		using namespace CoupledSpherical;
 
 		typedef CombinedRepresentation<Rank> CmbRepr;
+		typedef CoupledSphericalHarmonicRepresentation CplHarmRepr;
 
 		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
+		CplHarmRepr::Ptr angRepr = boost::static_pointer_cast< CplHarmRepr >(repr->GetRepresentation(this->AngularRank));
 	
-		int r1Count = data.extent(0);
-		int r2Count = data.extent(1);
-		int angCount = data.extent(2);
+		int r1Count = data.extent(this->RadialRank1);
+		int r2Count = data.extent(this->RadialRank2);
+		int angCount = data.extent(this->AngularRank);
 
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
+		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank1);
+		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank2);
 
 		ClebschGordan cg;
 
-		BasisPairList angBasisPairs = GetBasisPairList(2);
+		BasisPairList angBasisPairs = GetBasisPairList(this->AngularRank);
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+		if (data.extent(this->RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
+		if (data.extent(this->RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
+		if (data.extent(this->AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
 
+		blitz::TinyVector<int, Rank> index;
 		data = 0;
 	
 		for (int angIndex=0; angIndex<angCount; angIndex++)
 		{
+			index(this->AngularRank) = angIndex; 
+
 			int leftIndex = angBasisPairs(angIndex, 0);
 			int rightIndex = angBasisPairs(angIndex, 1);
 	
@@ -246,9 +250,6 @@ public:
 						cur *= cg(l1p, l1, -m1p, m1, l3, m3);
 						cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
 						cur *= std::pow(-1., m1p + m2p + m3);
-						//cur *= CondonShortleyPhase(m1p);
-						//cur *= CondonShortleyPhase(m2p);
-						//cur *= CondonShortleyPhase(m3);
 						l3Sum += cur;
 					}
 				}
@@ -257,16 +258,18 @@ public:
 				for (int ri1=0; ri1<r1Count; ri1++)
 				{
 					double r1 = localr1(ri1);
+					index(this->RadialRank1) = ri1;
 			
 					for (int ri2=0; ri2<r2Count; ri2++)
 					{
 						double r2 = localr2(ri2);
+						index(this->RadialRank2) = ri2;
 			
 						double rmin = std::min(r1, r2);
 						double rmax = std::max(r1, r2);
 						double rfrac = rmin / rmax;
 				
-						data(ri1, ri2, angIndex) += l3Sum * std::pow(rfrac, l3) / rmax;
+						data(index) += l3Sum * std::pow(rfrac, l3) / rmax;
 					}
 				}
 			}
@@ -285,510 +288,52 @@ public:
 	}
 };
 
-/*
- * Helper functions for coupled spherical harmonics laser interaction matrix elements
- */
-class HelperFunctions
-{
-	public:
-
-	static double CoefficientC(int l, int m)
-	{
-		//Avoid division by zero or negative square root
-		if (2 * l - 1 <= 0) return 0.0;
-
-		double C = std::sqrt( (2.0 * l + 1.0) / (2.0 * l - 1.0) * (l - m) * (l + m) );
-		//cout << "l = " << l << " m = " << m << " C = " << C << endl;
-		return C;
-	}
-
-	static double CoefficientD(int l, int m)
-	{
-		return std::sqrt( (2.0 * l + 1.0) / (2.0 * l + 3.0) * (l + m + 1) * (l - m + 1) );
-	}
-
-	static double CoefficientE(int l, int m)
-	{
-		//Avoid division by zero or negative square root
-		if (2 * l - 1 <= 0) return 0.0;
-
-		return std::sqrt( (2.0 * l + 1.0) / (2.0 * l - 1.0) * (l - m) * (l + m) );
-	}
-
-	static double CondonShortleyPhase(int m)
-	{
-		if (m < 0) return 1.0;
-		return std::pow(-1.0, m);
-	}
-
-	static double Kronecker(int a, int b)
-	{
-		if (a == b) return 1.0;
-		return 0.0;
-	}
-
-	static double StableFactorialFraction(int numerator, int denominator)
-	{
-		double numeratorLogFactorial = 0;
-		for (int a = numerator; a>0; a--)
-		{
-			numeratorLogFactorial += std::log((double)a);
-		}
-
-		double denominatorLogFactorial = 0;
-		for (int b = denominator; b>0; b--)
-		{
-			denominatorLogFactorial += std::log((double)b);
-		}
-
-		return std::exp(numeratorLogFactorial - denominatorLogFactorial);
-	}
-};
-
-/*
- * Potential evaluator for linearly polarized velocity gauge electric field,
- * 1/r1 and 1/r2 term.
- */
-template<int Rank>
-class CustomPotentialEvaluationLinearPolarizedField
-{
-public:
-	typedef blitz::Array<int, 2> BasisPairList;
-
-private:
-	BasisPairList AngularBasisPairs;
-
-public:
-	CustomPotentialEvaluationLinearPolarizedField() {}
-	virtual ~CustomPotentialEvaluationLinearPolarizedField() {}
-
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-	}
-
-	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
-	{
-		if (rank != 2)
-		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
-		}
-		AngularBasisPairs.reference(basisPairs.copy());
-	}
-
-	BasisPairList GetBasisPairList(int rank)
-	{
-		if (rank == 2)
-			return AngularBasisPairs;
-		else
-			return BasisPairList();
-	}
-
-	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
-	{
-		using namespace CoupledSpherical;
-
-		typedef CombinedRepresentation<Rank> CmbRepr;
-
-		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
-	
-		int r1Count = data.extent(0);
-		int r2Count = data.extent(1);
-		int angCount = data.extent(2);
-
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
-	
-		ClebschGordan cg;
-
-		BasisPairList angBasisPairs = GetBasisPairList(2);
-
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
-
-		data = 0;
-	
-		for (int angIndex=0; angIndex<angCount; angIndex++)
-		{
-			int leftIndex = angBasisPairs(angIndex, 0);
-			int rightIndex = angBasisPairs(angIndex, 1);
-	
-			CoupledIndex left = angRepr->Range.GetCoupledIndex(leftIndex);
-			CoupledIndex right = angRepr->Range.GetCoupledIndex(rightIndex);
-	
-			if (std::abs(left.L - right.L) != 1) continue;
-			if (left.M != right.M) continue;
-	
-			// "Left" quantum numbers
-			int L = left.L;
-			int M = left.M;
-			int l1 = left.l1;
-			int l2 = left.l2;
-			
-			// "Right" quantum numbers (Mp = M)
-			int Lp = right.L;
-			int l1p = right.l1;
-			int l2p = right.l2;
-
-			double I1 = 0;
-			double I2 = 0;
-			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
-
-			for (int m1=-lStop; m1<=lStop; m1++)
-			{
-				int m2 = M - m1;
-				int m1p = m1;
-				int m2p = m2;
-
-				if (std::abs(m1) > l1) continue;
-				if (std::abs(m1p) > l1p) continue;
-				if (std::abs(m2) > l2) continue;
-				if (std::abs(m2p) > l2p) continue;
-
-				double cur = HelperFunctions::CoefficientD(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p + 1);
-				cur += HelperFunctions::CoefficientE(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p - 1);
-				cur *= l1p;
-				cur -= HelperFunctions::CoefficientC(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p - 1);
-				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= cg(l1, l2, m1, m2, L, M);
-				cur *= HelperFunctions::Kronecker(l2, l2p);
-				I1 += cur;
-
-				cur = HelperFunctions::CoefficientD(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p + 1);
-				cur += HelperFunctions::CoefficientE(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p - 1);
-				cur *= l2p;
-				cur -= HelperFunctions::CoefficientC(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p - 1);
-				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= cg(l1, l2, m1, m2, L, M);
-				cur *= HelperFunctions::Kronecker(l1, l1p);
-				I2 += cur;
-			}
-
-			for (int ri1=0; ri1<r1Count; ri1++)
-			{
-				double r1 = localr1(ri1);
-
-				for (int ri2=0; ri2<r2Count; ri2++)
-				{
-					double r2 = localr2(ri2);
-
-					data(ri1, ri2, angIndex) += cplx(0., .1) * (I1 / r1 + I2 / r2);
-				}
-			}
-		}
-	}
-};
-
-/*
- * Potential evaluator for linearly polarized velocity gauge electric field,
- * radial derivative in direction 1.
- */
-template<int Rank>
-class CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1
-{
-public:
-	typedef blitz::Array<int, 2> BasisPairList;
-
-private:
-	BasisPairList AngularBasisPairs;
-
-public:
-	CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1() {}
-	virtual ~CustomPotentialEvaluationLinearPolarizedFieldDerivativeR1() {}
-
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-	}
-
-	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
-	{
-		if (rank != 2)
-		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
-		}
-		AngularBasisPairs.reference(basisPairs.copy());
-	}
-
-	BasisPairList GetBasisPairList(int rank)
-	{
-		if (rank == 2)
-			return AngularBasisPairs;
-		else
-			return BasisPairList();
-	}
-
-	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
-	{
-		using namespace CoupledSpherical;
-
-		typedef CombinedRepresentation<Rank> CmbRepr;
-
-		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
-	
-		int r1Count = data.extent(0);
-		int r2Count = data.extent(1);
-		int angCount = data.extent(2);
-
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
-	
-		ClebschGordan cg;
-
-		BasisPairList angBasisPairs = GetBasisPairList(2);
-
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
-
-		data = 0;
-	
-		for (int angIndex=0; angIndex<angCount; angIndex++)
-		{
-			int leftIndex = angBasisPairs(angIndex, 0);
-			int rightIndex = angBasisPairs(angIndex, 1);
-	
-			CoupledIndex left = angRepr->Range.GetCoupledIndex(leftIndex);
-			CoupledIndex right = angRepr->Range.GetCoupledIndex(rightIndex);
-	
-			if (std::abs(left.L - right.L) != 1) continue;
-			if (left.M != right.M) continue;
-
-			// "Left" quantum numbers
-			int L = left.L;
-			int M = left.M;
-			int l1 = left.l1;
-			int l2 = left.l2;
-			
-			// "Right" quantum numbers (Mp = M)
-			int Lp = right.L;
-			int l1p = right.l1;
-			int l2p = right.l2;
-
-			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
-
-			double I1 = 0;
-			for (int m1=-lStop; m1<=lStop; m1++)
-			{
-				int m2 = M - m1;
-				int m1p = m1;
-				int m2p = m2;
-
-				if (std::abs(m1) > l1) continue;
-				if (std::abs(m1p) > l1p) continue;
-				if (std::abs(m2) > l2) continue;
-				if (std::abs(m2p) > l2p) continue;
-
-				double cur = HelperFunctions::CoefficientD(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p+1);
-				cur += HelperFunctions::CoefficientE(l1p, m1p) * HelperFunctions::Kronecker(l1, l1p-1);
-				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= cg(l1, l2, m1, m2, L, M);
-				cur *= HelperFunctions::Kronecker(l2, l2p);
-				I1 += cur;
-			}
-
-			for (int ri1=0; ri1<r1Count; ri1++)
-			{
-				for (int ri2=0; ri2<r2Count; ri2++)
-				{
-					data(ri1, ri2, angIndex) -= cplx(0., .1) * I1;
-				}
-			}
-		}
-	}
-};
-
-
-/*
- * Potential evaluator for linearly polarized velocity gauge electric field,
- * radial derivative in direction 2.
- */
-template<int Rank>
-class CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2
-{
-public:
-	typedef blitz::Array<int, 2> BasisPairList;
-
-private:
-	BasisPairList AngularBasisPairs;
-
-public:
-	CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2() {}
-	virtual ~CustomPotentialEvaluationLinearPolarizedFieldDerivativeR2() {}
-
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-	}
-
-	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
-	{
-		if (rank != 2)
-		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
-		}
-		AngularBasisPairs.reference(basisPairs.copy());
-	}
-
-	BasisPairList GetBasisPairList(int rank)
-	{
-		if (rank == 2)
-			return AngularBasisPairs;
-		else
-			return BasisPairList();
-	}
-
-	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
-	{
-		using namespace CoupledSpherical;
-
-		typedef CombinedRepresentation<Rank> CmbRepr;
-
-		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
-	
-		int r1Count = data.extent(0);
-		int r2Count = data.extent(1);
-		int angCount = data.extent(2);
-
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
-	
-		ClebschGordan cg;
-
-		BasisPairList angBasisPairs = GetBasisPairList(2);
-
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
-
-		data = 0;
-	
-		for (int angIndex=0; angIndex<angCount; angIndex++)
-		{
-			int leftIndex = angBasisPairs(angIndex, 0);
-			int rightIndex = angBasisPairs(angIndex, 1);
-	
-			CoupledIndex left = angRepr->Range.GetCoupledIndex(leftIndex);
-			CoupledIndex right = angRepr->Range.GetCoupledIndex(rightIndex);
-	
-			if (std::abs(left.L - right.L) != 1) continue;
-			if (left.M != right.M) continue;
-	
-			// "Left" quantum numbers
-			int L = left.L;
-			int M = left.M;
-			int l1 = left.l1;
-			int l2 = left.l2;
-			
-			// "Right" quantum numbers (Mp = M)
-			int Lp = right.L;
-			int l1p = right.l1;
-			int l2p = right.l2;
-
-			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
-
-			double I2 = 0;
-			for (int m1=-lStop; m1<=lStop; m1++)
-			{
-				int m2 = M - m1;
-				int m1p = m1;
-				int m2p = m2;
-
-				if (std::abs(m1) > l1) continue;
-				if (std::abs(m1p) > l1p) continue;
-				if (std::abs(m2) > l2) continue;
-				if (std::abs(m2p) > l2p) continue;
-
-				double cur = HelperFunctions::CoefficientD(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p+1);
-				cur += HelperFunctions::CoefficientE(l2p, m2p) * HelperFunctions::Kronecker(l2, l2p-1);
-				cur *= cg(l1p, l2p, m1p, m2p, Lp, M);
-				cur *= cg(l1, l2, m1, m2, L, M);
-				cur *= HelperFunctions::Kronecker(l1, l1p);
-				I2 += cur;
-			}
-
-			for (int ri1=0; ri1<r1Count; ri1++)
-			{
-				for (int ri2=0; ri2<r2Count; ri2++)
-				{
-					data(ri1, ri2, angIndex) -= cplx(0., .1) * I2;
-				}
-			}
-		}
-	}
-};
-
 
 /*
  * Potential evaluator for linearly polarized length gauge electric field
  */
 template<int Rank>
-class CustomPotentialEvaluationLinearPolarizedFieldLength
+class CustomPotentialEvaluationLinearPolarizedFieldLength : public CustomPotentialCoupledSphericalBase<Rank>
 {
 public:
 	typedef blitz::Array<int, 2> BasisPairList;
 
-private:
-	BasisPairList AngularBasisPairs;
-
 public:
 	CustomPotentialEvaluationLinearPolarizedFieldLength() {}
 	virtual ~CustomPotentialEvaluationLinearPolarizedFieldLength() {}
-
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-	}
-
-	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
-	{
-		if (rank != 2)
-		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
-		}
-		AngularBasisPairs.reference(basisPairs.copy());
-	}
-
-	BasisPairList GetBasisPairList(int rank)
-	{
-		if (rank == 2)
-			return AngularBasisPairs;
-		else
-			return BasisPairList();
-	}
 
 	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
 	{
 		using namespace CoupledSpherical;
 
 		typedef CombinedRepresentation<Rank> CmbRepr;
+		typedef CoupledSphericalHarmonicRepresentation CplHarmRepr;
 
 		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
+		CplHarmRepr::Ptr angRepr = boost::static_pointer_cast< CplHarmRepr >(repr->GetRepresentation(this->AngularRank));
 	
-		int r1Count = data.extent(0);
-		int r2Count = data.extent(1);
-		int angCount = data.extent(2);
+		int r1Count = data.extent(this->RadialRank1);
+		int r2Count = data.extent(this->RadialRank2);
+		int angCount = data.extent(this->AngularRank);
 
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
-	
+		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank1);
+		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank2);
+
 		ClebschGordan cg;
 
-		BasisPairList angBasisPairs = GetBasisPairList(2);
+		BasisPairList angBasisPairs = GetBasisPairList(this->AngularRank);
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+		if (data.extent(this->RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
+		if (data.extent(this->RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
+		if (data.extent(this->AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
 
+		blitz::TinyVector<int, Rank> index;
 		data = 0;
 	
 		for (int angIndex=0; angIndex<angCount; angIndex++)
 		{
+			index(this->AngularRank) = angIndex;
+
 			int leftIndex = angBasisPairs(angIndex, 0);
 			int rightIndex = angBasisPairs(angIndex, 1);
 	
@@ -840,12 +385,14 @@ public:
 			for (int ri1=0; ri1<r1Count; ri1++)
 			{
 				double r1 = localr1(ri1);
+				index(this->RadialRank1) = ri1;
 
 				for (int ri2=0; ri2<r2Count; ri2++)
 				{
 					double r2 = localr2(ri2);
+					index(this->RadialRank2) = ri2;
 
-					data(ri1, ri2, angIndex) += (I1 * r1 + I2 * r2);
+					data(index) += (I1 * r1 + I2 * r2);
 				}
 			}
 		}
@@ -865,13 +412,10 @@ public:
 
 
 template<int Rank>
-class CoupledSphericalKineticEnergyEvaluator
+class CoupledSphericalKineticEnergyEvaluator : public CustomPotentialCoupledSphericalBase<Rank>
 {
 public:
 	typedef blitz::Array<int, 2> BasisPairList;
-
-private:
-	BasisPairList AngularBasisPairs;
 
 public:
 	CoupledSphericalKineticEnergyEvaluator() {}
@@ -879,65 +423,54 @@ public:
 
 	double Mass;
 
-	void ApplyConfigSection(const ConfigSection &config)
+	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
+		CustomPotentialCoupledSphericalBase<Rank>::ApplyConfigSection(config);
 		config.Get("mass", Mass);
-	}
-
-	virtual void SetBasisPairs(int rank, const BasisPairList &basisPairs)
-	{
-		if (rank != 2)
-		{
-			throw std::runtime_error("Only rank 2 supports basis pairs");
-		}
-		AngularBasisPairs.reference(basisPairs.copy());
-	}
-
-	BasisPairList GetBasisPairList(int rank)
-	{
-		if (rank == 2)
-			return AngularBasisPairs;
-		else
-			return BasisPairList();
 	}
 
 	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
 	{
 		using namespace CoupledSpherical;
 
-		cout << "Got data of shape " << data.shape() << endl;
-
 		typedef CombinedRepresentation<Rank> CmbRepr;
+		typedef CoupledSphericalHarmonicRepresentation CplHarmRepr;
 
 		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
-		CoupledSphericalHarmonicRepresentation::Ptr angRepr = boost::static_pointer_cast< CoupledSphericalHarmonicRepresentation >(repr->GetRepresentation(2));
+		CplHarmRepr::Ptr angRepr = boost::static_pointer_cast< CplHarmRepr >(repr->GetRepresentation(this->AngularRank));
 	
-		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(0);
-		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(1);
+		int r1Count = data.extent(this->RadialRank1);
+		int r2Count = data.extent(this->RadialRank2);
+		int angCount = data.extent(this->AngularRank);
 
-		int r1Count = localr1.extent(0);
-		int r2Count = localr2.extent(0);
-		int angCount = data.extent(2);
+		blitz::Array<double, 1> localr1 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank1);
+		blitz::Array<double, 1> localr2 = psi->GetRepresentation()->GetLocalGrid(this->RadialRank2);
 
 		ClebschGordan cg;
 
-		BasisPairList angBasisPairs = GetBasisPairList(2);
+		BasisPairList angBasisPairs = GetBasisPairList(this->AngularRank);
 
-		if (psi->GetRepresentation()->GetDistributedModel()->IsDistributedRank(2)) throw std::runtime_error("Angular rank can not be distributed");
-		if (data.extent(0) != r1Count) throw std::runtime_error("Invalid r1 size");
-		if (data.extent(1) != r2Count) throw std::runtime_error("Invalid r2 size");
-		if (data.extent(2) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+		if (data.extent(this->RadialRank1) != r1Count) throw std::runtime_error("Invalid r1 size");
+		if (data.extent(this->RadialRank2) != r2Count) throw std::runtime_error("Invalid r2 size");
+		if (data.extent(this->AngularRank) != angBasisPairs.extent(0)) throw std::runtime_error("Invalid ang size");
+
+		blitz::TinyVector<int, Rank> index;
+		data = 0;
 	
 		for (int ri1=0; ri1<r1Count; ri1++)
 		{
+			index(this->RadialRank1) = ri1;
 			double r1 = localr1(ri1);
 	
 			for (int ri2=0; ri2<r2Count; ri2++)
 			{
+				index(this->RadialRank2) = ri2;
 				double r2 = localr2(ri2);
 	
 				for (int angIndex=0; angIndex<angCount; angIndex++)
 				{
+					index(this->AngularRank) = angIndex;
+
 					int leftIndex = angBasisPairs(angIndex, 0);
 					int rightIndex = angBasisPairs(angIndex, 1);
 	
@@ -952,7 +485,7 @@ public:
 					double V1 = left.l1 * (left.l1 + 1.) / (2. * Mass * r1 * r1);
 					double V2 = left.l2 * (left.l2 + 1.) / (2. * Mass * r2 * r2);
 	
-					data(ri1, ri2, angIndex) = V1 + V2;
+					data(index) = V1 + V2;
 				}
 			}
 		}
@@ -969,6 +502,8 @@ public:
 	double CurTime;
 
 	double Z;
+	int RadialRank1;
+	int RadialRank2;
 
 	/*
 	 * Called once with the corresponding config section
@@ -978,6 +513,8 @@ public:
 	void ApplyConfigSection(const ConfigSection &config)
 	{
 		config.Get("z", Z);
+		config.Get("radial_rank1", RadialRank1);
+		config.Get("radial_rank2", RadialRank2);
 	}
 
 	/*
@@ -985,8 +522,8 @@ public:
 	 */
 	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double r1 = pos(0);
-		double r2 = pos(1);
+		double r1 = pos(RadialRank1);
+		double r2 = pos(RadialRank2);
 		return - Z/r1 - Z/r2;
 	}
 };

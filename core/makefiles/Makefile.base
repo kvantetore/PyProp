@@ -152,15 +152,17 @@ python/pysteoutput/_main.cpp:
 
 #CombinedRepresentation depends on some of the generated code
 representation/combinedrepresentation.cpp : representation/combinedrepresentation_generated.cpp
-representation/combinedrepresentation.cpp : tensorpotential/tensorpotentialmultiply_wrapper.cpp
+representation/combinedrepresentation.cpp : tensorpotential/tensorpotentialmultiply_wrapper.h
 
 #Generate combined representation inner product code
-representation/combinedrepresentation_generated.cpp: representation/combinedrepresentation_generator.py
+representation/combinedrepresentation_generated.cpp: representation/combinedrepresentation_generator.py 
 	python $< > $*.cpp
 
 #Generate tensorpotential code
-tensorpotential/tensorpotentialmultiply_wrapper.cpp: tensorpotential/tensorpotentialmultiply_generator.py
+tensorpotential/tensorpotentialmultiply_wrapper.cpp: tensorpotential/tensorpotentialmultiply_generator.py tensorpotential/tensorpotentialmultiply_wrapper.h 
 	python -c "execfile('$<'); PrintWrapperCode()" > $*.cpp
+
+tensorpotential/tensorpotentialmultiply_wrapper.h: tensorpotential/tensorpotentialmultiply_generator.py
 	python -c "execfile('$<'); PrintWrapperHeader()" > $*.h
 
 #Generate tensorpotential code

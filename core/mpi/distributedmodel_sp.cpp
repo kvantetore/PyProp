@@ -100,6 +100,26 @@ blitz::Range DistributedModel<Rank>::GetLocalIndexRange(int globalSize, int curr
 	return blitz::Range(0, globalSize-1);
 }
 
+/**
+ * Returns the index in the virtual super wavefunction
+ * on which this proc starts (on the rank currentRank)
+ */
+template<int Rank>
+int DistributedModel<Rank>::GetLocalStartIndex(int globalSize, int currentRank, int procId)
+{
+	return 0;
+}
+
+/** 
+ * Returns the local portion of the range of currentRank in 
+ * the global virtual super-wavefunction.  
+ */	
+template<int Rank>
+blitz::Range DistributedModel<Rank>::GetLocalIndexRange(int globalSize, int currentRank, int procId)
+{
+	return blitz::Range(0, globalSize-1);
+}
+
 
 template<int Rank>
 double DistributedModel<Rank>::GetGlobalSum(double localValue)

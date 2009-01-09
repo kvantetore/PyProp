@@ -307,10 +307,12 @@ def GenerateAlgorithm3(rank):
 	str += """
 	void TensorPotentialMultiply_Rank1_Distr(int rank, blitz::Array<cplx, %(rank)i> potential, double scaling, blitz::Array<cplx, %(rank)i> &source, blitz::Array<cplx, %(rank)i> &dest, int globalSize, int bands)
 	{
+			if (false) {}
 	""" % { "rank": rank }
-	for i in range(rank):
+	#for i in range(rank):
+	for i in range(1): #Distr ranks must be first
 		str += """
-			if (rank == %(curRank)s)
+			else if (rank == %(curRank)s)
 			{
 				TensorPotential::TensorPotentialMultiply_%(storageIdString)s_Wrapper(potential, scaling, source, dest, globalSize, bands);
 			}
@@ -319,7 +321,13 @@ def GenerateAlgorithm3(rank):
 			"curRank": i, \
 			"storageIdString": "_".join(["Ident"]*i + ["Distr"] + ["Ident"]*(rank-i-1)), \
 		}
-	str += "}\n"
+	str += """
+			else 
+			{
+				throw std::runtime_error("Only the first rank can be distributed for Distr multiply");
+			}
+		}
+		"""
 
 
 	return str

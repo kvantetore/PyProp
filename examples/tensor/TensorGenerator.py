@@ -1,5 +1,15 @@
 from numpy import int32
+from numpy import array
+from numpy import asarray
+from numpy import zeros
+from numpy import ones
 import re
+
+execfile("SimpleDistributed.py")
+
+def PrintOut(args):
+	if pyprop.ProcId == 0:
+		print args
 
 #------------------------------------------------------------------------------------
 #                       Interfaces
@@ -490,7 +500,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		BandCount = self.BSplineObject.MaxSplineOrder-1
 
 		if geom == "identity":
-			print "WARNING: Identity geometry might not do what you expect for BSplines"
+			PrintOut( "WARNING: Identity geometry might not do what you expect for BSplines" )
 			return GeometryInfoCommonIdentity(True)
 		elif geom == "banded-nonhermitian":
 			return GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
@@ -699,6 +709,57 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 	def GetMultiplyArguments(self):
 		return [self.GetBasisPairs()]
 
+
+class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
+	"""
+	Geometry information for coupled spherical harmonic geometries using distributed matvec.
+	The CoupledSphericalHarmonicRepresentation and a 
+	CoupledSphericalSelectionRule is specified.
+
+	"""
+	def __init__(self, representation, selectionRule):
+		self.SelectionRule = selectionRule
+		self.Representation = representation
+		self.LocalIndexPairs = None
+		self.MultiplyArguments = None
+
+	def UseGridRepresentation(self):
+		return False
+	
+	def GetBasisPairCount(self):
+		return self.GetBasisPairs().shape[0] 
+		
+	def GetBasisPairs(self):
+		if self.LocalIndexPairs == None:
+			self.SetupLocalBasisPairs()
+		return self.LocalIndexPairs
+
+	def GetStorageId(self):
+		return "SimpD"
+
+	def GetMultiplyArguments(self):
+		if self.MultiplyArguments == None:
+			self.SetupLocalBasisPairs()
+		return self.MultiplyArguments
+	
+	def HasParallelMultiply(self):
+		return True
+
+	def SetupLocalBasisPairs(self):
+		indexPairs = self.SelectionRule.GetBasisPairs(self.Representation)
+		distrib = self.Representation.GetDistributedModel()
+		rank = self.Representation.GetBaseRank()
+		globalSize = self.Representation.GetFullShape()[0]
+	
+		distribIndexList = SetupDistributedIndexList(globalSize, indexPairs, distrib, rank)
+		stepList = SetupStepList(globalSize, indexPairs, distribIndexList, distrib, rank)
+
+		self.MultiplyArguments = [int(globalSize)] + list(StepListToArray(stepList))
+		self.LocalIndexPairs = array([[step.GlobalRow, step.GlobalCol] for step in stepList if step.LocalMatrixIndex!=-1], dtype=int32)
+
+
+
+
 class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 	"""
 	Basisfunction class for coupled spherical harmonics Y{L,M,l1,l1} 
@@ -733,7 +794,9 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.BasisSize, False)
+			#return GeometryInfoCommonDiagonal(self.BasisSize, False)
+			selectionRule = CoupledSphericalSelectionRuleDiagonal()
+			return GeometryInfoCoupledSphericalHarmonicDistributed(self.BasisRepresentation, selectionRule)
 		elif geom == "dense":
 			return GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
@@ -745,7 +808,7 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 				
-			return GeometryInfoCoupledSphericalHarmonic(self.BasisRepresentation, selectionRule)
+			return GeometryInfoCoupledSphericalHarmonicDistributed(self.BasisRepresentation, selectionRule)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
@@ -922,7 +985,7 @@ class TensorPotentialGenerator(object):
 			for rank, geometryInfo in enumerate(geometryList):
 				if not geometryInfo.UseGridRepresentation():
 					#We currently can not be distributed in a basis rank
-					if repr.GetDistributedModel().IsDistributedRank(rank):
+					if repr.GetDistributedModel().IsDistributedRank(rank) and not geometryInfo.HasParallelMultiply():
 						raise Exception("Representation %i can not be distributed during potential evaluation")
 
 					#Get basis pairs from geometry info, and pass it to the potential
@@ -930,7 +993,6 @@ class TensorPotentialGenerator(object):
 					potentialEvaluator.SetBasisPairs(rank, geometryInfo.GetBasisPairs())
 
 		#4) Evaluate the potential on the grid
-		print "Using Potential of shape ", potentialShape
 		potentialData = zeros(potentialShape, dtype=complex)
 		potentialEvaluator.UpdatePotentialData(potentialData, psi, 0, 0)
 		
@@ -970,11 +1032,10 @@ class TensorPotentialGenerator(object):
 				differentiation = 0
 				if hasattr(configSection, "differentiation%i" % rank):
 					differentiation = configSection.Get("differentiation%i" % rank)
-				print "Rank %i (%s), using differentiation: %s" % (rank, configSection.classname, differentiation)
 
 				#Check if this rank is distributed. If it is, we must redistribute
 				if rank in distribution:
-					print "Rank %i is distributed" % rank
+					PrintOut( "Rank %i is distributed" % rank )
 					assert(rank != self.Rank-1)
 					assert(not rank+1 in distribution)
 
@@ -1248,10 +1309,10 @@ class BasisPropagator(PropagatorBase):
 		dependent part needs to be treated separately, and thus is not considered
 		"""
 		
-		print "Consolidating similar potentials: "
-		print "Starting with potentials:"
+		PrintOut( "Consolidating similar potentials: " )
+		PrintOut( "Starting with potentials:" )
 		for pot in self.PotentialList:
-			print "    %s" % pot.Name
+			PrintOut( "    %s" % pot.Name )
 
 		#only non timedependent potentials are considered
 		potentials = list(self.PotentialList) #[pot for pot in self.PotentialList if not pot.IsTimeDependent]
@@ -1298,9 +1359,9 @@ class BasisPropagator(PropagatorBase):
 		for pot in removePotentials:
 			self.PotentialList.remove(pot)
 
-		print "Ended up with potentials:"
+		PrintOut( "Ended up with potentials:" )
 		for pot in self.PotentialList:
-			print "    %s" % pot.Name
+			PrintOut( "    %s" % pot.Name )
 
 
 	def ApplyConfigSection(self, configSection): 

@@ -104,6 +104,9 @@ public:
 	blitz::Range GetLocalIndexRange(int globalSize, int currentRank);
 	void ApplyConfigSection(const ConfigSection &cfg);
 
+	int GetLocalStartIndex(int globalSize, int currentRank, int procId);
+	blitz::Range GetLocalIndexRange(int globalSize, int currentRank, int procId);
+
 	double GetGlobalSum(double localValue);
 	cplx GetGlobalSum(cplx localValue);
 	void GetGlobalSum(blitz::Array<cplx, 1> &in, blitz::Array<cplx, 1> &out);

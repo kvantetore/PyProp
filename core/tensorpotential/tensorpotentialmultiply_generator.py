@@ -183,12 +183,12 @@ def PrettyPrintFortran(str):
 	
 	indent = 0
 	for line in lines:
-		if line.startswith("enddo") or line.startswith("endif") or line.startswith("end subroutine") or line.startswith("end function"):
+		if line.startswith("enddo") or line.startswith("endif") or line.startswith("end subroutine") or line.startswith("end function") or line.startswith("else"):
 			indent -= 1
 
 		outStr += "    " * indent + line + "\n"
 
-		if line.startswith("if ") or line.startswith("do ") or line.startswith("subroutine") or line.startswith("function"):
+		if line.startswith("if ") or line.startswith("do ") or line.startswith("subroutine") or line.startswith("function") or line.startswith("else"):
 			indent += 1
 
 	return outStr
@@ -758,7 +758,228 @@ class SnippetGeneratorBandedNonHermitianBlas(SnippetGeneratorBase):
 					"conjg": conjg, \
 				}
 		return str
-	
+
+
+#-----------------------------------------------------------------------------------
+
+class SnippetGeneratorSimpleDistributed(SnippetGeneratorBase):
+	"""
+	"""
+
+	def __init__(self, systemRank, curRank, innerGenerator):
+		SnippetGeneratorBase.__init__(self, systemRank, curRank, innerGenerator)
+
+	def GetParameterList(self):
+		parameterList = []
+		parameterList += [("globalSize%i" % self.CurRank, "scalar", "integer")]
+		parameterList += [("localMatrixIndex%i" % self.CurRank, "array", 1, "integer")]
+		parameterList += [("globalRow%i" % self.CurRank, "array", 1, "integer")]
+		parameterList += [("globalCol%i" % self.CurRank, "array", 1, "integer")]
+		parameterList += [("sendProc%i" % self.CurRank, "array", 1, "integer")]
+		parameterList += [("recvProcList%i" % self.CurRank, "array", 2, "integer")]
+		parameterList += [("recvLocalRowList%i" % self.CurRank, "array", 2, "integer")]
+		parameterList += [("recvCount%i" % self.CurRank, "array", 1, "integer")]
+		return parameterList
+
+	def GetParameterDeclarationCode(self):
+
+		tempDimension = ["0:destExtent%i-1" % i for i in range(self.CurRank+1, self.SystemRank)]
+		sendTempDim = ["0:1"] + tempDimension 
+		recvTempDim = ["0:recvProcList%iExtent1" % self.CurRank] + tempDimension 
+
+		str = ""
+		str += GetFortranArrayDeclaration("localMatrixIndex%i" % self.CurRank, 1, "integer", "in")
+		str += GetFortranArrayDeclaration("globalRow%i" % self.CurRank, 1, "integer", "in")
+		str += GetFortranArrayDeclaration("globalCol%i" % self.CurRank, 1, "integer", "in")
+		str += GetFortranArrayDeclaration("sendProc%i" % self.CurRank, 1, "integer", "in")
+		str += GetFortranArrayDeclaration("recvProcList%i" % self.CurRank, 2, "integer", "in")
+		str += GetFortranArrayDeclaration("recvLocalRowList%i" % self.CurRank, 2, "integer", "in")
+		str += GetFortranArrayDeclaration("recvCount%i" % self.CurRank, 1, "integer", "in")
+		str += """
+			integer, intent(in) :: globalSize%(rank)i
+			integer :: i%(rank)i, row%(rank)i, col%(rank)i
+			
+			!temporary arrays TODO:FIX TEMPS
+			complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
+			complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
+			integer :: tempIndex%(rank)i
+			
+			integer :: curSend%(rank)i
+			integer :: recvIdx%(rank)i
+			
+			!Indices to map between local and global index ranges
+			integer :: globalStartIndex%(rank)i !!!!, paddedLocalSize%(rank)i, localSize%(rank)i
+			
+			!MPI variables
+			integer, dimension(0:recvProcList%(rank)iExtent1) :: recvRequest%(rank)i 
+			integer :: error%(rank)i, tag%(rank)i, sendSize%(rank)i 
+			integer :: sendRequest%(rank)i 
+			integer :: waitRecieve%(rank)i, waitSend%(rank)i
+			integer :: procId%(rank)i, procCount%(rank)i, communicator%(rank)i
+			
+			!Indices for the recieved data
+			integer :: sourceRow%(rank)i
+		""" % \
+			{ \
+				"rank": self.CurRank, \
+				"recvTempDim": self.GetIndexString(recvTempDim), \
+				"sendTempDim": self.GetIndexString(sendTempDim), \
+			}
+		return str
+
+	def GetInitializationCode(self):
+		str = """
+			call MPI_Comm_rank(MPI_COMM_WORLD, procId%(rank)i, error%(rank)i)
+			call MPI_Comm_size(MPI_COMM_WORLD, procCount%(rank)i, error%(rank)i)
+			communicator%(rank)i = MPI_COMM_WORLD
+
+			globalStartIndex%(rank)i = GetLocalStartIndex(globalSize%(rank)i, procCount%(rank)i, procId%(rank)i)
+			!paddedLocalSize%(rank)i = GetPaddedLocalSize(globalSize%(rank)i, procCount%(rank)i)
+			
+			sourceRow%(rank)i = -1
+			sendSize%(rank)i = %(sendSize)s
+			tag%(rank)i = 0
+		    tempIndex%(rank)i = 1
+		    curSend%(rank)i = 0
+		""" % \
+			{ \
+				"rank": self.CurRank, \
+				"sendSize": " * ".join(["1"] + ["destExtent%i" %i for i in range(self.CurRank+1, self.SystemRank)])
+			}
+		return str
+
+	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
+		innerRankCount = self.SystemRank - self.CurRank - 1
+		str = ""
+		str += """
+			waitRecieve%(rank)i = 0
+			waitSend%(rank)i = 0
+			tempIndex%(rank)i = 1
+
+			!Iterate over all rows of the matrix for the columns stored on proc
+			do i%(rank)i = 0, localMatrixIndex%(rank)iExtent0-1
+			    !----------------------------------------------------------------------------
+			    !                         Calculation
+			    !----------------------------------------------------------------------------
+			
+			     !Perform calculation for this step
+		    	curSend%(rank)i = 0
+			    if (localMatrixIndex%(rank)i(i%(rank)i) .ne. -1) then
+			        col%(rank)i = globalCol%(rank)i(i%(rank)i) - globalStartIndex%(rank)i
+			        row%(rank)i = globalRow%(rank)i(i%(rank)i) - globalStartIndex%(rank)i
+			
+			        if (sendProc%(rank)i(i%(rank)i) .eq. procId%(rank)i) then
+			            %(destInnerLoop)s
+			        else
+						sendTemp%(rank)i(%(allSendTempIndex)s) = 0
+			            %(tempInnerLoop)s
+			            curSend%(rank)i = 1
+			        endif
+			    endif
+
+				!----------------------------------------------------------------------------
+				!                         Communication
+				!----------------------------------------------------------------------------
+				
+				! Theese are the sends and recvs from the previous step. wait for them
+				! now instead of in the previous iteration in order to try to overlap computation
+				! and communication
+				
+				!Wait for previous recv
+				do recvIdx%(rank)i = 0, waitRecieve%(rank)i-1
+				    call MPI_Wait(recvRequest%(rank)i(recvIdx%(rank)i), MPI_STATUS_IGNORE, error%(rank)i)
+				    sourceRow%(rank)i = recvLocalRowList%(rank)i(recvIdx%(rank)i, i%(rank)i-1)
+					%(dest)s(%(sourceDestIndex)s) = %(dest)s(%(sourceDestIndex)s) + recvTemp%(rank)i(%(allRecvTempIndex)s)
+				enddo
+				
+				!Wait for previous send
+				if (waitSend%(rank)i .eq. 1) then
+				    call MPI_Wait(sendRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+				endif
+				
+				! Theese are the sends and recvs for the current step. Post them now,
+				! and wait for completion at the next iteration 
+				
+				!Post recvs for this step
+				waitRecieve%(rank)i = recvCount%(rank)i(i%(rank)i)
+				do recvIdx%(rank)i = 0, waitRecieve%(rank)i-1
+				    call MPI_Irecv(recvTemp%(rank)i(%(zeroRecvTempIndex)s), sendSize%(rank)i, MPI_DOUBLE_COMPLEX, recvProcList%(rank)i(recvIdx%(rank)i, i%(rank)i), tag%(rank)i, communicator%(rank)i, recvRequest%(rank)i(recvIdx%(rank)i), error%(rank)i)
+				enddo 
+				
+				!Post send for this step if we have calculated anything
+				waitSend%(rank)i = 0
+				if (curSend%(rank)i .eq. 1) then
+				    call MPI_ISend(sendTemp%(rank)i(%(zeroSendTempIndex)s), sendSize%(rank)i, MPI_DOUBLE_COMPLEX, sendProc%(rank)i(i%(rank)i), tag%(rank)i, communicator%(rank)i, sendRequest%(rank)i, error%(rank)i)
+				    waitSend%(rank)i = 1
+				endif
+				
+				!Use the next tempIndex for the next computation
+				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 1)
+			enddo 
+			
+			!Wait for last recv
+			do recvIdx%(rank)i = 0, waitRecieve%(rank)i-1
+			    call MPI_Wait(recvRequest%(rank)i(recvIdx%(rank)i), MPI_STATUS_IGNORE, error%(rank)i)
+			    sourceRow%(rank)i = recvLocalRowList%(rank)i(recvIdx%(rank)i, i%(rank)i-1)
+				%(dest)s(%(sourceDestIndex)s) = %(dest)s(%(sourceDestIndex)s) + recvTemp%(rank)i(%(allRecvTempIndex)s)
+			enddo
+			
+			!Wait for last send
+			if (waitSend%(rank)i .eq. 1) then
+			    call MPI_Wait(sendRequest%(rank)i, MPI_STATUS_IGNORE, error%(rank)i)
+			endif
+
+		""" % \
+			{ \
+				"rank":self.CurRank, \
+				"destInnerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex, False), \
+				"tempInnerLoop": self.GetInnerLoop(conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex, True), \
+				"source" : sourceName, \
+				"dest" : destName, 
+				"potential": potentialName, \
+				"sourceDestIndex": self.GetIndexString( destIndex + ["sourceRow%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"destIndex": self.GetIndexString( destIndex + ["row%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"allSendTempIndex": self.GetIndexString( ["tempIndex%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"allRecvTempIndex": self.GetIndexString( ["recvIdx%i" % self.CurRank] + [":"] * innerRankCount ), \
+				"zeroSendTempIndex": self.GetIndexString( ["tempIndex%i" % self.CurRank] + ["0"] * innerRankCount ), \
+				"zeroRecvTempIndex": self.GetIndexString( ["recvIdx%i" % self.CurRank] + ["0"] * innerRankCount ), \
+			}
+
+		return str
+
+	def GetInnerLoop(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex, useTemp):
+		if useTemp:
+			destName = "sendTemp%i" % self.CurRank
+			subDestIndex = ["tempIndex%i" % self.CurRank]
+		else:
+			subDestIndex = ["row%i" % self.CurRank]
+		subSourceIndex = sourceIndex + ["col%i" % self.CurRank]
+		subPotentialIndex = potentialIndex + ["i%i" % self.CurRank]
+
+		str = ""
+		if self.InnerGenerator != None:
+			str += self.InnerGenerator.GetLoopingCodeRecursive(conjugate, destName, subDestIndex, sourceName, subSourceIndex, potentialName, subPotentialIndex)
+		else:
+			#We're at the innermost loop
+			conjg = ""
+			if conjugate:
+				conjg = "conjg"
+			str += """
+				%(dest)s(%(rowIndex)s) = %(dest)s(%(rowIndex)s) + %(conjg)s(%(potential)s(%(potentialIndex)s)) * scaling * %(source)s(%(colIndex)s)
+			""" % \
+				{ \
+					"dest": destName, \
+					"source": sourceName, \
+					"potential": potentialName, \
+					"rowIndex": self.GetIndexString(subDestIndex), \
+					"potentialIndex": self.GetIndexString(subPotentialIndex), \
+					"colIndex": self.GetIndexString(subSourceIndex),  \
+					"conjg": conjg, \
+				}
+		return str
+
+
+
 
 #-----------------------------------------------------------------------------------
 
@@ -1111,6 +1332,7 @@ snippetGeneratorMap = { \
 	"BandNH": SnippetGeneratorBandedNonHermitianBlas, \
 	"Dense": SnippetGeneratorDenseBlas, \
     "Distr": SnippetGeneratorBandedDistributed, \
+    "SimpD": SnippetGeneratorSimpleDistributed, \
 }
 
 class TensorPotentialMultiplyGenerator(object):
@@ -1292,9 +1514,11 @@ def GetAllPermutations(systemRank, curRank):
 		yield ()
 	else:
 		for key in snippetGeneratorMap.keys():
-			if (key == "Ident" or key == "Band" or key == "BandNH" or key == "Dense" or key == "Distr") or systemRank < 4:
-				for subperm in GetAllPermutations(systemRank, curRank+1):
-					yield (key,) +  subperm
+			if (key != "Distr" and key != "SimpD") or curRank == 0:
+				if (key == "Ident" or key == "Band" or key == "BandNH" or key == "Dense" or key == "Distr") or systemRank < 4:
+					for subperm in GetAllPermutations(systemRank, curRank+1):
+						yield (key,) +  subperm
+
 
 def PrintFortranCode(curPart, partCount):
 	#Print the indextricks part only once
@@ -1314,15 +1538,19 @@ def PrintFortranCode(curPart, partCount):
 				function GetLocalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, procId
-					integer :: rest, paddedSize, globalStartIndex, distribSize, firstSmallRank
+					integer :: rest, paddedSize, globalStartIndex, distribSize, firstSmallRank, distrPaddedSize
 	
 					paddedSize	= fullSize
 					rest = mod(fullSize, procCount)
 					if (rest .ne. 0) then
 						paddedSize = paddedSize + procCount - rest
 					endif
+					distrPaddedSize = paddedSize/procCount
 
-					firstSmallRank = fullSize / paddedSize
+					firstSmallRank = fullSize / distrPaddedSize
+					if (mod(fullSize, distrPaddedSize) .eq. 0) then
+						firstSmallRank = firstSmallRank - 1
+					endif
 					if (procId .le. firstSmallRank) then
 						globalStartIndex = (paddedSize / procCount) * procId
 					else
@@ -1344,7 +1572,7 @@ def PrintFortranCode(curPart, partCount):
 						paddedDistribSize = (fullSize + procCount - rest) / procCount 
 						distribSize = fullSize - paddedDistribSize * procId
 
-						if ( (distribSize .le. paddedDistribSize) .or. (distribSize .ge. 0) ) then
+						if ( (distribSize .le. paddedDistribSize) .and. (distribSize .gt. 0) ) then
 							distribSize = distribSize - (procCount - procId - 1)
 						endif
 
@@ -1373,7 +1601,7 @@ def PrintFortranCode(curPart, partCount):
 				function GetOwnerProcId(fullSize, procCount, globalIndex) result(procId)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, globalIndex
-					integer :: rest, paddedSize, procId, localSize, firstSmallRank, distribPaddedSize
+					integer :: rest, paddedSize, procId, firstSmallRank, distribPaddedSize
 	
 					include "parameters.f"
 						
@@ -1385,7 +1613,7 @@ def PrintFortranCode(curPart, partCount):
 					distribPaddedSize = paddedSize / procCount
 
 					!round towards zero
-					firstSmallRank = fullSize / paddedSize
+					firstSmallRank = fullSize / distribPaddedSize
 
 					!round towards zero
 					procId = globalIndex / distribPaddedSize
@@ -1438,6 +1666,9 @@ def PrintWrapperCode():
 
 def PrintWrapperHeader():
 	str = """
+	#ifndef TENSORPOTENTIAL_H
+	#define TENSORPOTENTIAL_H
+
 	#include "../common.h"
 
 	namespace TensorPotential
@@ -1452,6 +1683,7 @@ def PrintWrapperHeader():
 
 	str += """
 	}
+	#endif
 	""" 
 
 	print PrettyPrintC(str)

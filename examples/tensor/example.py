@@ -671,3 +671,17 @@ def TestMatrixMultiply2():
 			if t<minT:
 				minT = t / avgCount
 		print "Time (Algo %i) = %f" % (algoList.index((geom1, geom2)), minT)
+
+
+def GetBasisPairs(selectionRule, indexIterator):
+	class reprConfigSection(pyprop.Section):
+		def __init__(self):
+			self.index_iterator = indexIterator
+
+	cfg = reprConfigSection()
+	repr = pyprop.core.CoupledSphericalHarmonicRepresentation()
+	cfg.Apply(repr)
+
+	return selectionRule.GetBasisPairs(repr)
+
+
