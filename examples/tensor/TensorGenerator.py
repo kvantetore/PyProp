@@ -1344,6 +1344,17 @@ class BasisPropagator(PropagatorBase):
 						if curPot.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
 							canConsolidate = False
 							break
+						else:
+							#Potentials must have the same basis pairs
+							curBasisPairs = asarray(curPot.GeometryList[rank].GetBasisPairs())
+							otherBasisPairs = asarray(otherPot.GeometryList[rank].GetBasisPairs())
+							
+							if len(curBasisPairs) != len(otherBasisPairs):
+								canConsolidate = False
+								break
+							elif not (curBasisPairs == otherBasisPairs).all():
+								canConsolidate = False
+								break
 
 				#Add otherPot to curPot
 				if canConsolidate:
