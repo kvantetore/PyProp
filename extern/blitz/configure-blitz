@@ -7,7 +7,7 @@ mkdir blitz-configure
 
 pushd blitz-configure
 
-../source/configure $BLITZ_CONFIGURE_OPTIONS --prefix=$BUILDPATH
+../source/configure --with-pic $BLITZ_CONFIGURE_OPTIONS --prefix=$BUILDPATH
 make lib 
 make install
 

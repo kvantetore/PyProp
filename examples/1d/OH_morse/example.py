@@ -9,6 +9,7 @@ import tables
 sys.path.insert(1, os.path.abspath("./pyprop"))
 import pyprop
 pyprop = reload(pyprop)
+pyprop.ProjectNamespace = globals()
 
 #Load the project module
 from libpotential import *
@@ -67,6 +68,26 @@ def FindGroundstate(**args):
 
 	return prop
 
+def Propagate(**args):
+	args['imtime'] = False
+	prop = SetupProblem(**args)
+	prop.psi.Normalize()
+
+	prop.AdvanceStep()
+	#return prop
+	
+	for t in prop.Advance(10):
+		N = prop.psi.GetNorm()
+		if pyprop.ProcId == 0:
+			print "t = %f, N = %f" % (t, N)
+			plot(abs(prop.psi.GetData()))
+
+
+	E = prop.GetEnergy()
+	if pyprop.ProcId == 0:
+		print "Ground State Energy = %f" % E
+
+	return prop
 
 def FindEigenstates(**args):
 	prop = SetupProblem(**args)

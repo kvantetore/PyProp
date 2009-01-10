@@ -1,0 +1,31 @@
+#Laser Potentials (Velocity Gauge)
+CustomPotential = Template("CustomPotential_LaserVelocityDerivativeR1", "coupledvelocity.cpp")
+CustomPotential("3")
+
+CustomPotential = Template("CustomPotential_LaserVelocityDerivativeR2", "coupledvelocity.cpp")
+CustomPotential("3")
+
+CustomPotential = Template("CustomPotential_LaserVelocity", "coupledvelocity.cpp")
+CustomPotential("3")
+
+#Laser Potentials (Length Gauge)
+CustomPotential = Template("CustomPotential_LaserLength", "coupledlength.cpp")
+CustomPotential("3", "CustomPotential_LaserLength_3")
+
+#Radial Kinetic Energy
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+PotentialEvaluator("KineticEnergyPotential<3> 3","KineticEnergyPotential_3")
+
+#Coulomb Potential
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+PotentialEvaluator("CoupledSphericalCoulombPotential<3> 3", "CoupledSphericalCoulombPotential_3")
+
+#Repulsion Potential
+CustomPotential = Template("CustomPotentialEvaluationR12", "coupledspherical.cpp")
+CustomPotential("3", "CustomPotentialEvaluationR12_3")
+
+#Angular Kinetic Energy
+CustomPotential = Template("CoupledSphericalKineticEnergyEvaluator", "coupledspherical.cpp")
+CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
+
+

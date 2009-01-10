@@ -11,8 +11,6 @@ from numpy import zeros
 
 #from pylab import *
 
-execfile("TensorGenerator.py")
-
 from libpotential import *
 
 #------------------------------------------------------------------------------------

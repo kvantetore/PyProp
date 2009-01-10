@@ -26,3 +26,11 @@ BSpline = Class("BSpline::BSpline", "../transform/bspline/bspline.h")
 rename(BSpline.BSplineGlobalOverlapIntegral_cplx, "BSplineGlobalOverlapIntegral")
 rename(BSpline.BSplineGlobalOverlapIntegral_double, "BSplineGlobalOverlapIntegral")
 use_shared_ptr(BSpline)
+
+#Evaluation of potentials in BSplines
+declaration_code('#include "../tensorpotential/basis_bspline.h"\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 3>);\n')
+
+

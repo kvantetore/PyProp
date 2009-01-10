@@ -6,8 +6,8 @@ PYPROP_ROOT    := /home/tore/prog/pyprop
 
 #optimization flags
 CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
-CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
-#CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
+#CXXFLAGS       := $(CXXFLAGS) -O3 -funroll-loops
+CPPFLAGS       := $(CPPFLAGS) -DBZ_DEBUG 
 
 #blas/lapack flags. use installed mkl libraries.
 #make sure to install version 10.0.1.* or 10.0.2.*, as 
@@ -27,7 +27,15 @@ BLITZ_ROOT     := $(PYPROP_ROOT)/extern/blitz/build
 BLITZ_INCLUDE  := -I$(BLITZ_ROOT)/include
 BLITZ_LIB      := -L$(BLITZ_ROOT)/lib
 CPPFLAGS       :=  $(BLITZ_INCLUDE) $(CPPFLAGS)
-LDFLAGS        :=  $(BLITZ_LIB) $(LDFLAGS)
+LDFLAGS        :=  $(BLITZ_LIB) $(LDFLAGS) -lgsl
+
+#Custom boost 
+BOOST_ROOT     := /opt/boost
+BOOST_INCLUDE  := -I$(BOOST_ROOT)/include
+BOOST_LIB      := -L$(BOOST_ROOT)/lib
+CPPFLAGS       := $(BOOST_INCLUDE) $(CPPFLAGS)
+LDFLAGS        := $(BOOST_LIB) $(LDFLAGS)
+BOOST_LIBS     := -lboost_python-mt
 
 #pyste flags (use bundled pyste)
 #use version 3.4 or 4.1 of g++, otherwise pyste will not work
@@ -38,7 +46,6 @@ PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-4.1"
 PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
 
 MPICXX         := mpicxx
-BOOST_LIBS     := -lboost_python-mt
 
 #configuration options set to blank or 0 to disable a pyprop module
 PYPROP_USE_ARPACK  := 1
@@ -48,6 +55,7 @@ PYPROP_USE_ODE     := 1
 PYPROP_USE_BSPLINE := 1
 PYPROP_USE_RUNGEKUTTA := 1
 PYPROP_USE_PAMP    := 1
+PYPROP_USE_GMRES   := 1
 
 #set whether we are building a static pyprop or not. currently static building only works on hex
 PYPROP_STATIC := 0
@@ -58,7 +66,7 @@ ARPACK_LIB        = /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -
 #fortran flags
 FC             := mpif90
 FORTRAN_FLAGS  := -ffree-form -implicit-none -ffree-line-length-none -fPIC -O3 -g -Wall
-#FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
+FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
 FORTRAN_LIBS   := -lmpi_f90 -lmpi_f77 -lgfortran
 
 

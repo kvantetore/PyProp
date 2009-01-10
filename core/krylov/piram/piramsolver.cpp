@@ -63,6 +63,17 @@ void PiramSolver<Rank>::ApplyConfigSection(const ConfigSection &config)
 	config.Get("krylov_eigenvalue_count", Solver.EigenvalueCount);
 	config.Get("krylov_max_iteration_count", Solver.MaxRestartCount);
 	config.Get("krylov_use_random_start", Solver.UseRandomStart);
+
+	if (config.HasValue("krylov_eigenvalue_shift"))
+	{
+		cplx shift;
+		config.Get("krylov_eigenvalue_shift", shift);
+	
+		typedef piram::CompareComplexNearShift compareType;
+		typedef piram::ShiftFunctorSelectRitzValues< cplx, compareType > shiftFunctorType;
+		compareType compare(shift);
+		Solver.CalculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
+	}
 }
 
 

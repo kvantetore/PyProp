@@ -5,3 +5,8 @@ PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 PotentialEvaluator("CoulombPotential<2> 2","CoulombPotential_2")
 PotentialEvaluator("LaserPotential<2> 2","LaserPotential_2")
 
+FiniteDifferenceSolver = Template("FiniteDifferenceSolver", "potential.cpp")
+FiniteDifferenceSolver("1")
+FiniteDifferenceSolver("2")
+
+

@@ -47,6 +47,8 @@ PYSTEFILES = \
 	python/customgridrepresentation.pyste \
 	python/overlapmatrix.pyste \
 	python/coupledsphericalharmonicrepresentation.pyste \
+	python/coupledsphericalselectionrule.pyste \
+	python/tensorpotential_basis.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput

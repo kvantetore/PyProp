@@ -1,0 +1,13 @@
+
+#Evaluation of potentials in Reduced Spherical Harmonics
+declaration_code('#include "tensorpotential/basis_reducedspherical.h"\n')
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 3>);\n')
+
+#Evaluation of potentials in Finite Differences
+declaration_code('#include "tensorpotential/basis_finitedifference.h"\n')
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 3>);\n')
+

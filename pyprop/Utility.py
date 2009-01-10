@@ -42,3 +42,6 @@ def IsSingleProc():
 def ReshapeArray(array, newShape):
 	return ndarray.__new__(array.__class__, dtype=array.dtype, shape=newShape, buffer=array.data)
 
+def PrintOut(str=""):
+	if IsMaster():
+		print str

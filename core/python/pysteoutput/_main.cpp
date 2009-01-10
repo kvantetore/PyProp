@@ -38,6 +38,8 @@ void Export_python_tensorpotential();
 void Export_python_customgridrepresentation();
 void Export_python_overlapmatrix();
 void Export_python_coupledsphericalharmonicrepresentation();
+void Export_python_coupledsphericalselectionrule();
+void Export_python_tensorpotential_basis();
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libcore)
@@ -78,4 +80,6 @@ BOOST_PYTHON_MODULE(libcore)
     Export_python_customgridrepresentation();
     Export_python_overlapmatrix();
     Export_python_coupledsphericalharmonicrepresentation();
+    Export_python_coupledsphericalselectionrule();
+    Export_python_tensorpotential_basis();
 }

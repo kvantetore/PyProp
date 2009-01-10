@@ -8,6 +8,7 @@ from numpy import *
 sys.path.insert(1, os.path.abspath("./pyprop"))
 import pyprop
 pyprop = reload(pyprop)
+pyprop.ProjectNamespace = globals()
 
 #Load the project module
 from libpotential import *
@@ -124,8 +125,101 @@ def GetHamiltonMatrixSubspace(prop, l):
 		prop.psi.GetData()[i,l] = 1
 
 		tempPsi.GetData()[:] = 0
-		prop.MultiplyHamiltonian(tempPsi)
+		prop.MultiplyHamiltonian(prop.psi, tempPsi)
 		
 		matrix[:, i] = tempPsi.GetData()[:,l]
 		
 	return matrix
+
+def GetEigenstates(l):
+	prop = SetupProblem(silent=True)
+	M = GetHamiltonMatrixSubspace(prop, l)
+	E, V = eig(M)
+
+	#Filter out the eigenstates which are not 0 in origin
+	if isinstance(prop.Propagator, pyprop.CombinedPropagator):
+		originIndex = prop.Propagator.SubPropagators[0].OriginIndex
+		goodIdx = where(abs(V[256, :]) < 1e-10)[0]
+		E = real(E[goodIdx])
+		V = V[:, goodIdx]
+
+	idx = argsort(E)
+	E = E[idx]
+	V = V[:,idx]
+
+	return E, V
+
+def SetEigenstate(prop, V, l, idx):
+	prop.psi.Clear()
+	prop.psi.GetData()[:,l] = V[:,idx]
+
+def PlotFourierRadial(prop):
+	prop.Propagator.SubPropagators[0].TransformForward(prop.psi)
+
+	k = prop.psi.GetRepresentation().GetGlobalGrid(0).copy()
+	data = sum(abs(prop.psi.GetData())**2, axis=1)
+
+	prop.Propagator.SubPropagators[0].TransformInverse(prop.psi)
+
+	#plot(fftshift(k), fftshift(data))
+	plot(k, data)
+	
+
+
+def GetGridLinear(conf, xmax=None, xmin=None):
+	if xmin == None: xmin = conf.xmin
+	if xmax == None: xmax = conf.xmax
+	count = conf.count
+
+	start = xmin
+	end = xmax
+
+	if not conf.include_left_boundary:
+		count += 1
+	if not conf.include_right_boundary:
+		count += 1
+
+	dx = (xmax - xmin) / float(count-1)
+	if not conf.include_left_boundary:
+		start += dx
+	if conf.include_right_boundary:
+		end += dx
+	grid = r_[start:end:dx]
+
+	return array(grid, dtype=double)
+
+class FiniteDifferencePreconditioner:
+	def __init__(self, psi):
+		self.Rank = psi.GetRank()
+		#self.Solver = pyprop.CreateInstanceRank("FiniteDifferenceSolver", self.Rank, globals=globals())
+		self.Solver = FiniteDifferenceSolver_2()
+		self.psi = psi
+
+	def ApplyConfigSection(self, conf):
+		self.PreconditionRank = conf.rank
+		potentialNames = conf.potential_evaluation
+		self.Potentials = [pyprop.CreatePotential(conf.Config, potName, self.psi) for potName in potentialNames]
+
+	def Setup(self, prop, dt):
+		#Add all potentials to solver
+		for pot in self.Potentials:
+			pot.SetupStep(0)
+			if not isinstance(pot, pyprop.StaticPotentialWrapper):
+				raise "Only static potentials supported"
+			if pot.Storage != pyprop.StaticStorageModel.StorageValue:
+				raise "Only StorageValue is supported"
+
+			potentialData = asarray(pot.GetPotential(0), dtype=complex)
+			self.Solver.AddPotential(potentialData)
+		del self.Potentials
+
+		#Setup solver
+		mass = 1.0
+		scalingI = 1.0
+		scalingH = (1.0j*dt/2.)
+		self.Solver.Setup(prop.psi, self.PreconditionRank, 3, 1.0, scalingH)
+		print "Setting up!"
+
+	def Solve(self, psi):
+		self.Solver.Solve(psi)
+

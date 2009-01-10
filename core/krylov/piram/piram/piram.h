@@ -57,6 +57,7 @@ public:
 	typename OperatorFunctor<T>::Ptr MatrixOperator;
 	typename SetupResidualFunctor<T>::Ptr SetupResidual;
 	typename IntegrationFunctor<T, NormType>::Ptr Integration;
+	typename ShiftFunctor<T>::Ptr CalculateShifts;
 
 	//Constructor
 	pIRAM() 
@@ -98,6 +99,7 @@ private:
 	VectorType Overlap3;
 	VectorType Reflectors;
 	VectorType Eigenvalues;
+	VectorType Shifts;
 	IntVectorType EigenvalueOrdering;
 	NormVectorType ConvergenceEstimates;
 	NormVectorType ErrorEstimates;
@@ -256,6 +258,14 @@ void pIRAM<T>::Setup()
 		Integration = typename IntegrationFunctor<T, NormType>::Ptr(new BLASIntegrationFunctor<T, NormType>(DisableMPI, CommBase));
 	}
 
+	if (CalculateShifts == 0)
+	{
+		typedef CompareComplexLessReal compareType;
+		typedef ShiftFunctorSelectRitzValues< T, compareType > shiftFunctorType;
+		compareType compare;
+		CalculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
+	}
+
 	//Allocate workspace-memory
 	ArnoldiVectors.resize(BasisSize, MatrixSize);
 	Residual.resize(MatrixSize);
@@ -268,6 +278,7 @@ void pIRAM<T>::Setup()
 	Overlap2.resize(BasisSize);
 	Overlap3.resize(BasisSize);
 	Eigenvalues.resize(BasisSize);
+	Shifts.resize(BasisSize-EigenvalueCount);
 	EigenvalueOrdering.resize(BasisSize);
 	Reflectors.resize(BasisSize);
 	ConvergenceEstimates.resize(EigenvalueCount);
@@ -465,8 +476,18 @@ void pIRAM<T>::UpdateEigenvalues()
 	//CalculateEigenvectorFactorization destroys the input matrix, so we make a copy
 	HessenbergTriangular = HessenbergMatrix; 
 	lapack.CalculateEigenvectorFactorization(false, true, HessenbergTriangular, Eigenvalues, emtpyMatrix, HessenbergEigenvectors);
-	SortVector(Eigenvalues, EigenvalueOrdering); 
 
+	//Sorth the eigenvalues
+	//TODO: don't make a copy here
+	EigenvalueOrdering = blitz::tensor::i;
+	(*CalculateShifts)(Eigenvalues, EigenvalueOrdering);
+
+	//Use the last eigenvalues as shifts (exact shift strategy)
+	Shifts = Eigenvalues(blitz::Range(EigenvalueCount, Eigenvalues.extent(0)-1));
+
+	//cout << "ev = " << Eigenvalues << endl;
+	//cout << "shift = " << Shifts << endl;
+	
 	/*
 	 * Check if solution is converged. See ARPACK Users Guide for information
 	 * about the convergence cirterium
@@ -479,21 +500,20 @@ void pIRAM<T>::UpdateEigenvalues()
 	//Update Error Bounds
 	for (int i=0; i<BasisSize; i++)
 	{
-		int sortedIndex = EigenvalueOrdering(i);
-		NormType ritzError = std::abs(HessenbergEigenvectors(sortedIndex, BasisSize-1));
-		ErrorBounds(sortedIndex) = ritzError * normResidual;
+		NormType ritzError = std::abs(HessenbergEigenvectors(i, BasisSize-1));
+		ErrorBounds(i) = ritzError * normResidual;
 	}
 
-	//Sort unwanted eigenvalues by Error Bounds
-	VectorType errorSlice = ErrorBounds(blitz::Range(EigenvalueCount, BasisSize-1));
-	IntVectorType errorIndexSlice = ErrorSorting(blitz::Range(EigenvalueCount, BasisSize-1));
-	SortVector(errorSlice, errorIndexSlice);
-	errorSlice = Eigenvalues(blitz::Range(EigenvalueCount, BasisSize-1));
-	for (int i=0; i<errorSlice.size(); i++)
+	//Sort eigenvalues by error bounds
+	/*
+	SortVector(ErrorBounds, EigenvalueOrdering);
+	ErrorBounds = Eigenvalues;
+	for (int i=0; i<BasisSize; i++)
 	{
-		//errorSlice now contains a copy of the eigenvalues
-		Eigenvalues(EigenvalueCount+i) = errorSlice(errorIndexSlice(i));
+		//ErrorBounds now contains a copy of the eigenvalues
+		Eigenvalues(i) = ErrorBounds(EigenvalueOrdering(i));
 	}
+	*/
 
 
 	IsConverged = true;
@@ -537,7 +557,8 @@ void pIRAM<T>::PerformRestartStep()
 	for (int i=EigenvalueCount; i<BasisSize; i++)
 	{
 		//Get shift
-		T shift = Eigenvalues(i);
+		T shift = Shifts(i-EigenvalueCount);
+		//cout << "Using shift " << shift << endl;
 
 		//Shift the Hessenberg matrix
 		for (int j=0; j<BasisSize; j++)

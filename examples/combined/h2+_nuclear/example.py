@@ -17,6 +17,8 @@ from numpy import *
 from datetime import timedelta
 import commands
 
+import tables
+
 #use a submitpbs wrapper depending on the installation
 #we are currently running from 
 installation = os.environ.get("INSTALLATION", "local")
@@ -25,6 +27,7 @@ if installation == "hexagon":
 if installation == "stallo":
 	import pyprop.utilities.submitpbs_stallo as submitpbs
 
+execfile("benchmark.py")
 
 def SetupProblem(**args):
 	"""
