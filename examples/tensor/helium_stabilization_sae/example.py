@@ -5,12 +5,13 @@ import pyprop
 pyprop = reload(pyprop)
 pyprop.ProjectNamespace = globals()
 
-from numpy import array
-from numpy import complex
-from numpy import zeros
+from pyprop import PrintOut
 
-#from pylab import *
+import numpy
+import pylab
+import time
 
+from numpy import array, complex, zeros, sin, cos, pi
 from libpotential import *
 
 execfile("stabilization.py")
@@ -43,9 +44,6 @@ def SetupConfig(**args):
 
 	if "eigenvalueCount" in args:
 		conf.Arpack.krylov_eigenvalue_count = args["eigenvalueCount"]
-
-	if "index_iterator" in args:
-		conf.AngularRepresentation.index_iterator = args["index_iterator"]
 
 	additionalPotentials = args.get("additionalPotentials", [])
 	conf.Propagation.grid_potential_list += additionalPotentials
@@ -106,6 +104,7 @@ def LaserFunctionSimpleLength(conf, t):
 	return curField
 
 
+
 def LaserFunctionLength(conf, t):
 	if 0 <= t < conf.pulse_duration:
 		curField = conf.amplitude;
@@ -116,20 +115,5 @@ def LaserFunctionLength(conf, t):
 		curField = 0
 	return curField
 
-
-#------------------------------------------------------------------------------------
-#                       Debug Functions
-#------------------------------------------------------------------------------------
-
-def GetBasisPairs(selectionRule, indexIterator):
-	class reprConfigSection(pyprop.Section):
-		def __init__(self):
-			self.index_iterator = indexIterator
-
-	cfg = reprConfigSection()
-	repr = pyprop.core.CoupledSphericalHarmonicRepresentation()
-	cfg.Apply(repr)
-
-	return selectionRule.GetBasisPairs(repr)
 
 

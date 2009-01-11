@@ -1,0 +1,31 @@
+
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Kinetic Energy Potentials
+PotentialEvaluator("KineticEnergyPotential<2> 2","KineticEnergyPotential_2")
+PotentialEvaluator("AngularKineticEnergyPotential<2> 2","AngularKineticEnergyPotential_2")
+
+#Length Gauge Laser
+PotentialEvaluator("DipoleLaserPotentialLength<2> 2","DipoleLaserPotentialLength_2")
+
+#Velocity Gauge Laser
+PotentialEvaluator("DipoleLaserPotentialVelocityRadialDerivative<2> 2","DipoleLaserPotentialVelocityRadialDerivative_2")
+PotentialEvaluator("DipoleLaserPotentialVelocityAngularDerivative<2> 2","DipoleLaserPotentialVelocityAngularDerivative_2")
+PotentialEvaluator("DipoleLaserPotentialVelocity<2> 2","DipoleLaserPotentialVelocity_2")
+
+#SAE Potential
+PotentialEvaluator("SingleActiveElectronPotential<2> 2","SingleActiveElectronPotential_2")
+
+#Absorber
+PotentialEvaluator("ComplexAbsorbingPotential<2> 2","ComplexAbsorbingPotential_2")
+
+#Alternative Velocity Gauge Potential
+CustomPotential = Template("CustomPotential_LaserVelocity1_ReducedSpherical", "potential.cpp")
+CustomPotential("2")
+
+CustomPotential = Template("CustomPotential_LaserVelocity2_ReducedSpherical", "potential.cpp")
+CustomPotential("2")
+
+
+

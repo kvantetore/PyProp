@@ -1,4 +1,3 @@
-execfile("example.py")
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions
@@ -18,8 +17,6 @@ def FormatDuration(duration):
 	return " ".join(str)
 
 def RunStabilization(**args):
-	if "configFile" not in args: args["configFile"] = "config_helium.ini"
-
 	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
@@ -44,7 +41,8 @@ def RunStabilization(**args):
 		
 		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"]
+	#potList = ["LaserPotentialLength"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
@@ -54,14 +52,34 @@ def RunStabilization(**args):
 	else:
 		prop.psi.GetData()[:] = initPsi.GetData()
 
+	timeList = []
+	corrList = []
+	normList = []
+	radialDensityList = []
+	angularDensityList = []
+
+	tempPsi = prop.psi.Copy()
+
 	#Propagate
 	PrintOut("Starting propagation")
 	outputCount = args.get("outputCount", 100)
 	startTime = time.time()
-	for t in prop.Advance(outputCount):
+	for t in prop.Advance(outputCount, yieldEnd=True):
 		#calculate values
 		norm = prop.psi.GetNorm()
 		corr = abs(initPsi.InnerProduct(prop.psi))**2
+		radialDensity = numpy.sum(abs(prop.psi.GetData()), axis=0)
+
+		#Calculate l-distribution
+		tempPsi.GetData()[:] = prop.psi.GetData()
+		tempPsi.GetRepresentation().MultiplySqrtOverlap(False, tempPsi)
+		angularDensity = numpy.sum(abs(tempPsi.GetData())**2, axis=1)
+
+		timeList.append(t)
+		corrList.append(corr)
+		normList.append(norm)
+		radialDensityList.append(radialDensity)
+		angularDensityList.append(angularDensity)
 
 		#estimate remaining time
 		curTime = time.time() - startTime
@@ -71,10 +89,12 @@ def RunStabilization(**args):
 		#Print stats
 		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
 
-	#Final output
-	norm = prop.psi.GetNorm()
-	corr = abs(initPsi.InnerProduct(prop.psi))**2
-	PrintOut("t = %.2f; N = %.10f; Corr = %.10f" % (t, norm, corr))
+	#Save the time-valued variables
+	prop.TimeList = timeList
+	prop.CorrList = corrList
+	prop.NormList = normList
+	prop.RadialDensityList = radialDensityList
+	prop.AngularDensityList = angularDensityList
 
 	PrintOut("")
 	prop.Propagator.PampWrapper.PrintStatistics()
@@ -83,4 +103,35 @@ def RunStabilization(**args):
 	outputFilename = args.get("outputFilename", "final.h5")
 	outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
 	prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
+
+	return prop
+
+
+def SetupBigMatrix(prop, whichPotentials):
+	print "Setting up potential matrix..."
+	matrixSize = prop.psi.GetData().size
+	
+	#Allocate the hamilton matrix
+	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" % (matrixSize, matrixSize, matrixSize**2 * 16 / 1024.**2)
+	BigMatrix = zeros((matrixSize, matrixSize), dtype="complex")
+
+	for potNum in whichPotentials:
+		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
+		print "    Processing potential %i: %s" % (potNum, potential.Name)
+
+		basisPairs0 = potential.BasisPairs[0]
+		basisPairs1 = potential.BasisPairs[1]
+		
+		Count0 = prop.psi.GetData().shape[0]
+		Count1 = prop.psi.GetData().shape[1]
+
+		for i, (x0,x0p) in enumerate(basisPairs0):
+			for j, (x1,x1p) in enumerate(basisPairs1):
+				indexLeft = (x1 * Count0) + x0
+				indexRight = (x1p * Count0) + x0p
+				BigMatrix[indexLeft, indexRight] += potential.PotentialData[i, j]
+
+	return BigMatrix
+
+
 
