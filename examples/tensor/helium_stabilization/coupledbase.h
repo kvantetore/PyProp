@@ -6,6 +6,8 @@
 #include <core/representation/combinedrepresentation.h>
 #include <core/representation/coupledspherical/coupledsphericalharmonicrepresentation.h>
 
+using namespace CoupledSpherical;
+
 template<int Rank>
 class CustomPotentialCoupledSphericalBase
 {
