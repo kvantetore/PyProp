@@ -1,4 +1,5 @@
 import scipy.linalg
+import tables
 
 def SetupBigMatrix2D(prop, whichPotentials):
 	print "Setting up potential matrix..."
@@ -89,3 +90,54 @@ def GetTwoElectronEnergies(L=0, lmax=3):
 	E, V = scipy.linalg.eig(HamiltonMatrix, b=OverlapMatrix)
 
 	return prop, HamiltonMatrix, OverlapMatrix, E, V
+
+
+
+def TestFieldCoupling(config="config_2e_fieldtest.ini", outputs=100):
+	"""
+	Testing the two-electron electric field velocity coupling. The electron-electron
+	interaction is neglected, thus we may compare with known one-electron results.
+	"""
+
+	solver = FindEigenvalues(config=config)
+
+	prop = SetupProblem(silent=False, imtime=False, additionalPotentials = \
+		["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", \
+		"LaserPotentialVelocity"], config=config)
+	#prop = SetupProblem(silent=False, imtime=False, configFile=config)
+	
+	prop.psi.Clear()
+	solver.SetEigenvector(prop.psi, 0)
+	prop.psi.Normalize()
+	initPsi = prop.psi.Copy()
+
+	timeList = []
+	corrList = []
+	normList = []
+	for t in prop.Advance(outputs):
+		n = prop.psi.GetNorm()
+		if n != n:
+			return prop
+		c = abs(prop.psi.InnerProduct(initPsi))**2
+		timeList.append(t)
+		normList.append(n)
+		corrList.append(c)
+		if pyprop.ProcId == 0:
+			print "t = %.14f, N(t) = %.14f, P(t) = %.14f" % (t, n, c)
+	
+	prop.Propagator.PampWrapper.PrintStatistics()
+		
+	c = abs(prop.psi.InnerProduct(initPsi))**2
+	print "Final Correlation = %f" % c
+
+	outFile = "twoelectron_field_test.h5"
+	prop.SaveWavefunctionHDF(outFile, "/wavefunction")
+	if pyprop.ProcId == 0:
+		h5file = tables.openFile(outFile, "r+")
+		try:
+			h5file.createArray("/", "SampleTimes", corrList)
+			h5file.createArray("/", "Norm", normList)
+			h5file.createArray("/", "InitialCorrelation", corrList)
+		finally:
+			h5file.close()
+
