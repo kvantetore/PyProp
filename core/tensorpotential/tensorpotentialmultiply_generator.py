@@ -920,7 +920,7 @@ class SnippetGeneratorSimpleDistributed(SnippetGeneratorBase):
 			!Wait for last recv
 			do recvIdx%(rank)i = 0, waitRecieve%(rank)i-1
 			    call MPI_Wait(recvRequest%(rank)i(recvIdx%(rank)i), MPI_STATUS_IGNORE, error%(rank)i)
-			    sourceRow%(rank)i = recvLocalRowList%(rank)i(recvIdx%(rank)i, i%(rank)i-1)
+			    sourceRow%(rank)i = recvLocalRowList%(rank)i(recvIdx%(rank)i, localMatrixIndex%(rank)iExtent0-1)
 				%(dest)s(%(sourceDestIndex)s) = %(dest)s(%(sourceDestIndex)s) + recvTemp%(rank)i(%(allRecvTempIndex)s)
 			enddo
 			
