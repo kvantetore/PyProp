@@ -1,4 +1,7 @@
-import scipy.linalg
+try:
+	import scipy.linalg
+except:
+	pass
 import tables
 
 def SetupBigMatrix2D(prop, whichPotentials):

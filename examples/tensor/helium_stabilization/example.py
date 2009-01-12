@@ -8,6 +8,7 @@ pyprop.ProjectNamespace = globals()
 from numpy import array
 from numpy import complex
 from numpy import zeros
+from numpy import sin, cos, pi
 
 #from pylab import *
 
