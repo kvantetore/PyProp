@@ -47,11 +47,16 @@ def RunStabilization(**args):
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
-	if initPsi == None:
-		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-		initPsi = prop.psi.Copy()
-	else:
-		prop.psi.GetData()[:] = initPsi.GetData()
+	#if initPsi == None:
+	#	prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
+	#	initPsi = prop.psi.Copy()
+	#else:
+	#	prop.psi.GetData()[:] = initPsi.GetData()
+	prop.psi.Normalize()
+	initPsi = prop.psi.Copy()
+
+	for pot in prop.Propagator.BasePropagator.PotentialList:
+		PrintOut( "Potential %s: \n %s" % (pot.Name,  pot.MultiplyFunction.__doc__) )
 
 	#Propagate
 	PrintOut("Starting propagation")
@@ -68,7 +73,7 @@ def RunStabilization(**args):
 		eta = totalTime - curTime
 	
 		#Print stats
-		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
+		PrintOut("t = %.2f; N = %.15f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
 
 	#Final output
 	norm = prop.psi.GetNorm()
