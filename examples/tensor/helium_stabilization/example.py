@@ -1,18 +1,15 @@
 import sys
+import time
 
 sys.path.append("./pyprop")
 import pyprop
 pyprop = reload(pyprop)
 pyprop.ProjectNamespace = globals()
 
-from numpy import array
-from numpy import complex
-from numpy import zeros
-from numpy import sin, cos, pi
-
+from numpy import *
 #from pylab import *
-
 from libpotential import *
+from pyprop import PrintOut
 
 execfile("stabilization.py")
 
