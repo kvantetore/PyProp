@@ -76,3 +76,56 @@ public:
 };
 
 
+template<int Rank>
+class ComplexAbsorbingPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	int radialRank1;
+	int radialRank2;
+	double scalingReal;
+	double scalingImag;
+	double factorReal;
+	double factorImag;
+	double absorberStart;
+	double absorberLength;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("radial_rank_1", radialRank1);
+		config.Get("radial_rank_1", radialRank2);
+		config.Get("absorber_start", absorberStart);
+		config.Get("absorber_length", absorberLength);
+		config.Get("scaling_real", scalingReal);
+		config.Get("scaling_imag", scalingImag);
+		config.Get("factor_real", factorReal);
+		config.Get("factor_imag", factorImag);
+	}
+
+	/*
+	 * Called for every grid point 
+	 */
+	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r1 = pos(radialRank1);
+		double r2 = pos(radialRank2);
+		double r = std::sqrt(r1*r1 + r2*r2);
+		cplx V = 0;
+		if (r > absorberStart)
+		{
+			double curLength = (r - absorberStart) / absorberLength;
+			double Vr = factorReal * std::pow(curLength, scalingReal);
+			double Vi = factorImag * std::pow(curLength, scalingImag);
+			V = cplx(Vr , Vi);
+		}
+		return V;
+	}
+};

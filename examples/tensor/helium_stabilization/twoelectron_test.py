@@ -138,7 +138,7 @@ def TestFieldCoupling(config="config_2e_fieldtest.ini", outputs=100):
 	if pyprop.ProcId == 0:
 		h5file = tables.openFile(outFile, "r+")
 		try:
-			h5file.createArray("/", "SampleTimes", corrList)
+			h5file.createArray("/", "SampleTimes", timeList)
 			h5file.createArray("/", "Norm", normList)
 			h5file.createArray("/", "InitialCorrelation", corrList)
 		finally:

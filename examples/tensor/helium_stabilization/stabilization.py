@@ -1,3 +1,4 @@
+import tables
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions
@@ -16,8 +17,9 @@ def FormatDuration(duration):
 
 	return " ".join(str)
 
+
 def RunStabilization(**args):
-	if "configFile" not in args: args["configFile"] = "config_helium.ini"
+	if "configFile" not in args: args["configFile"] = "config.ini"
 
 	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
@@ -43,7 +45,7 @@ def RunStabilization(**args):
 		
 		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"]
+	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
@@ -51,12 +53,16 @@ def RunStabilization(**args):
 	#	prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 	#	initPsi = prop.psi.Copy()
 	#else:
-	#	prop.psi.GetData()[:] = initPsi.GetData()
+	prop.psi.GetData()[:] = initPsi.GetData()
 	prop.psi.Normalize()
 	initPsi = prop.psi.Copy()
 
 	for pot in prop.Propagator.BasePropagator.PotentialList:
 		PrintOut( "Potential %s: \n %s" % (pot.Name,  pot.MultiplyFunction.__doc__) )
+
+	timeList = []
+	normList = []
+	corrList = []
 
 	#Propagate
 	PrintOut("Starting propagation")
@@ -66,6 +72,11 @@ def RunStabilization(**args):
 		#calculate values
 		norm = prop.psi.GetNorm()
 		corr = abs(initPsi.InnerProduct(prop.psi))**2
+
+		#keep these values
+		timeList.append(t)
+		normList.append(norm)
+		corrList.append(corr)
 
 		#estimate remaining time
 		curTime = time.time() - startTime
@@ -87,4 +98,15 @@ def RunStabilization(**args):
 	outputFilename = args.get("outputFilename", "final.h5")
 	outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
 	prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
+
+
+	#Save sample times, norm and initial correlation
+	if pyprop.ProcId == 0:
+		h5file = tables.openFile(outputFilename, "r+")
+		try:
+			h5file.createArray("/", "SampleTimes", timeList)
+			h5file.createArray("/", "Norm", normList)
+			h5file.createArray("/", "InitialCorrelation", corrList)
+		finally:
+			h5file.close()
 

@@ -28,4 +28,6 @@ CustomPotential("3", "CustomPotentialEvaluationR12_3")
 CustomPotential = Template("CoupledSphericalKineticEnergyEvaluator", "coupledspherical.cpp")
 CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
 
+#Absorber
+PotentialEvaluator("ComplexAbsorbingPotential<3> 3","ComplexAbsorbingPotential_3")
 
