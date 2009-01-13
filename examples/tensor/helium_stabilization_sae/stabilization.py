@@ -25,7 +25,7 @@ def RunStabilization(**args):
 	initPsi = None
 	if findGroundstate:
 		#Find Groundstate with piram
-		initProp = SetupProblem(eigenvalueCount=1, **args)
+		initProp = SetupProblem(eigenvalueCount=2, **args)
 		solver = pyprop.PiramSolver(initProp)
 		solver.Solve()
 	
@@ -41,8 +41,7 @@ def RunStabilization(**args):
 		
 		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"]
-	#potList = ["LaserPotentialLength"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
