@@ -914,7 +914,7 @@ class SnippetGeneratorSimpleDistributed(SnippetGeneratorBase):
 				endif
 				
 				!Use the next tempIndex for the next computation
-				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 1)
+				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 2)
 			enddo 
 			
 			!Wait for last recv
@@ -1156,7 +1156,7 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 				endif
 
 				!Use the next tempIndex for the next computation
-				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 1)
+				tempIndex%(rank)i = mod(tempIndex%(rank)i+1, 2)
 			enddo
 			
 			! Theese are the sends and recvs from the last step. 
