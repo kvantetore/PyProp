@@ -32,6 +32,23 @@ class BasisPropagator(PropagatorBase):
 		self.GeneratePotentials(config)
 		self.ConsolidatePotentials()
 
+	def GeneratePotential(self, configSection):
+		generator = self.TensorPotentialGenerator
+
+		#Use TensorPotentialGenerator to construct potential in basis
+		geometryList = generator.GetGeometryList(configSection)
+		potentialData = generator.GeneratePotential(configSection)
+		originalPotential = getattr(generator, "OriginalPotential", None)
+
+		#Create PotentialWrapper for TensorPotential
+		potential = TensorPotential(self.psi)
+		configSection.Apply(potential)
+		potential.GeometryList = geometryList
+		potential.PotentialData = potentialData
+		potential.OriginalPotential = originalPotential
+		potential.Name = configSection.name
+
+		return potential
 
 	def GeneratePotentials(self, config):
 		"""
@@ -47,23 +64,10 @@ class BasisPropagator(PropagatorBase):
 			for potentialName in potentials:
 				#Find the corresponding config section
 				configSection = config.GetSection(potentialName)
-
-				#Use TensorPotentialGenerator to construct potential in basis
-				geometryList = generator.GetGeometryList(configSection)
-				potentialData = generator.GeneratePotential(configSection)
-				originalPotential = getattr(generator, "OriginalPotential", None)
-
-				#Create PotentialWrapper for TensorPotential
-				potential = TensorPotential(self.psi)
-				configSection.Apply(potential)
-				potential.GeometryList = geometryList
-				potential.PotentialData = potentialData
-				potential.OriginalPotential = originalPotential
-				potential.Name = potentialName
-
-				#Add potential to potential list
-				self.PotentialList.append(potential)
-
+				#generate potential 
+				pot = self.GeneratePotential(configSection)
+				#add to potential list
+				self.PotentialList.append(pot)
 
 	def ConsolidatePotentials(self):
 		"""

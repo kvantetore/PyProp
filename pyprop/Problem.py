@@ -151,7 +151,7 @@ class Problem:
 		"""
 		self.Propagator.MultiplyHamiltonian(srcPsi, dstPsi, self.PropagatedTime, self.TimeStep )
 
-	def Advance(self, yieldCount, duration=None):
+	def Advance(self, yieldCount, duration=None, yieldEnd=False):
 		"""
 		Returns a generator for advancing the wavefunction a number of timesteps. 
 		If duration is specified the wavefunction is propagated until propagated 
@@ -161,6 +161,8 @@ class Problem:
 		yield control back to the caller. 
 		If is a boolean, yieldCount=True will make this function yield every timestep
 		and yieldCount=False will make it yield one time. (at the last timestep (i think))
+
+		if yieldEnd is set, a final yield will be given at t=duration
 		"""
 		if duration == None:
 			duration = self.Duration
@@ -188,6 +190,7 @@ class Problem:
 			#real time
 			stoppingCriterion = lambda: abs(self.PropagatedTime - endTime) > 0.5 * abs(self.TimeStep)
 
+		prevYield = numpy.NAN
 		while stoppingCriterion():
 			#next timestep
 			self.AdvanceStep()
@@ -200,6 +203,10 @@ class Problem:
 			index += 1
 			if index % yieldStep == 0:
 				yield self.PropagatedTime
+				prevYield = self.PropagatedTime
+		
+		if yieldEnd and prevYield != self.PropagatedTime:
+			yield self.PropagatedTime
 	
 		if RedirectInterrupt:
 			InterruptHandler.UnRegister()
