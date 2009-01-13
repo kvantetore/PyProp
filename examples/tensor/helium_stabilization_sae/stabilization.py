@@ -1,3 +1,5 @@
+import scipy
+import scipy.linalg
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions
@@ -38,12 +40,16 @@ def RunStabilization(**args):
 		#free memory
 		del solver
 		del initProp
-		
+
+	
 		
 	#Set up propagation problem
 	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
-	
+
+	#Find radial eigenstates
+	E, V = SetupRadialEigenstates(prop)
+		
 	#Setup initial state
 	if initPsi == None:
 		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
@@ -112,7 +118,7 @@ def SetupBigMatrix(prop, whichPotentials):
 	
 	#Allocate the hamilton matrix
 	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" % (matrixSize, matrixSize, matrixSize**2 * 16 / 1024.**2)
-	BigMatrix = zeros((matrixSize, matrixSize), dtype="complex")
+	BigMatrix = zeros((matrixSize, matrixSize), dtype=complex)
 
 	for potNum in whichPotentials:
 		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
@@ -132,5 +138,57 @@ def SetupBigMatrix(prop, whichPotentials):
 
 	return BigMatrix
 
+def SetupRadialEigenstates(prop):
+	S = SetupOverlapMatrix(prop)
 
+	eigenValues = []
+	eigenVectors = []
+
+	for l in range(prop.psi.GetData().shape[0]):
+		l = int(l)
+		M = SetupRadialMatrix(prop, [0], l)
+
+		E, V = scipy.linalg.eig(a=M, b=S)
+		idx = argsort(real(E))
+		eigenValues.append(real(E[idx]))
+		eigenVectors.append(V[:,idx])
+
+	return eigenValues, eigenVectors
+
+
+
+def SetupRadialMatrix(prop, whichPotentials, angularIndex):
+	matrixSize = prop.psi.GetData().shape[1]
+	matrix = zeros((matrixSize, matrixSize), dtype=complex)
+
+
+	for potNum in whichPotentials:	
+		if isinstance(potNum, pyprop.TensorPotential):
+			potential = potNum
+		else:
+			potential = prop.Propagator.BasePropagator.PotentialList[potNum]
+		print "    Processing potential: %s" % (potential.Name, )
+
+		angularBasisPairs = potential.BasisPairs[0]
+		idx = [idx for idx, (i,j) in enumerate(zip(angularBasisPairs[:,0], angularBasisPairs[:,1])) if i==j==angularIndex]
+		if len(idx) != 1:
+			raise "Invalid angular indices %s" % idx
+		idx = idx[0]
+
+		basisPairs = potential.BasisPairs[1]
+
+		for i, (x,xp) in enumerate(basisPairs):
+			indexLeft = x
+			indexRight = xp
+			matrix[indexLeft, indexRight] += potential.PotentialData[idx, i]
+
+	return matrix
+
+
+def SetupOverlapMatrix(prop):
+	overlap = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.OverlapMatrixPotential)
+	overlap.SetupStep(0.)
+	matrix = SetupRadialMatrix(prop, [overlap], 0)
+	return matrix
+	
 
