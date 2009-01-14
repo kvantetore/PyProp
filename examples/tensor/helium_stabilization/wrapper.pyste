@@ -31,3 +31,6 @@ CustomPotential("3", "CoupledSphericalKineticEnergyEvaluator_3")
 #Absorber
 PotentialEvaluator("ComplexAbsorbingPotential<3> 3","ComplexAbsorbingPotential_3")
 
+#"Overlap" potential (to extract overlap matrix)
+PotentialEvaluator("OverlapPotential<3> 3","OverlapPotential_3")
+

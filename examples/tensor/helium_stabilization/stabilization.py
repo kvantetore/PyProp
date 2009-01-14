@@ -110,3 +110,23 @@ def RunStabilization(**args):
 		finally:
 			h5file.close()
 
+
+def SubmitStabilizationRun():
+	"""
+	Calculate total ionization for a range of intensities to determine stabilization
+	"""
+	outputDir = "stabilization_freq_5/photoelectron_spectrum_scan"
+	frequency = 5.0
+	amplitudeList = arange(1,31)
+	
+	for I in amplitudeList:
+		name = "stabilization_I_%i" % I
+		Submit(executable="run_stabilization.py", \
+			runHours=1, \
+			jobname="stabilization", \
+			nodes=17, \
+			config="config.ini", \
+			amplitude=I/frequency, \
+			outputCount=300, \
+			outputFilename=name)
+

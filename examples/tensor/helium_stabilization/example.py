@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 
 sys.path.append("./pyprop")
@@ -135,5 +136,48 @@ def GetBasisPairs(selectionRule, indexIterator):
 	cfg.Apply(repr)
 
 	return selectionRule.GetBasisPairs(repr)
+
+
+#------------------------------------------------------------------------------------
+#                       Job Submit Functions
+#------------------------------------------------------------------------------------
+installation = os.environ.get("INSTALLATION", "local")
+if installation == "hexagon":
+	import pyprop.utilities.submitpbs_hexagon as submitpbs
+if installation == "stallo":
+	import pyprop.utilities.submitpbs_stallo as submitpbs
+
+
+def Submit(executable=None, writeScript=False, installation="hexagon", **args):
+	"""
+	Set up job scripts and other necessary stuff to run ionization rate
+	cycle scan experiment.
+	"""
+
+	#Create jobscript 
+	jscript = submitpbs.SubmitScript()
+	jscript.jobname = args.get(jobname, "pyprop")
+	jscript.walltime = timedelta(hours=args.get("runHours",1), minutes=0, seconds=0)
+	jscript.ppn = args.get("ppn", 4)
+	jscript.proc_memory = args.get("proc_memory", "1000mb")
+	jscript.nodes = args.get("nodes", "1")
+	jscript.interconnect = args.get("interconnect", "ib")
+	numProcs = args.get("numProcs", jscript.ppn*jscript.nodes)
+	if installation == "stallo":
+		jscript.workingdir = args.get("workingDir", "/home/nepstad/proj/argon/")
+		jscript.executable = "mpirun -n %s " % (jscript.ppn*jscript.nodes)
+		jscript.executable += "python %s" % executable
+	elif installation == "hexagon":
+		jscript.workingdir = args.get("workingDir", "/work/nepstad/dev/argon/")
+		jscript.executable = "aprun -n %s -N %s " % (numProcs, jscript.ppn)
+		jscript.executable += "./pyprop-exec %s" % executable
+	jscript.parameters = commands.mkarg(repr(args))
+	jscript.account = args.get("account", "fysisk")
+
+	#Submit this job
+	if writeScript:
+		print "\n".join(jscript.CreateScript())
+	else:
+		jscript.Submit()
 
 

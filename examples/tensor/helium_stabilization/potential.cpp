@@ -129,3 +129,24 @@ public:
 		return V;
 	}
 };
+
+
+template<int Rank>
+class OverlapPotential : public PotentialBase<Rank>
+{
+public:
+        //Required by DynamicPotentialEvaluator
+        cplx TimeStep;
+        double CurTime;
+
+
+        void ApplyConfigSection(const ConfigSection &config)
+        {
+        }
+
+        inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+        {
+                return 1.0;
+        }
+};
+
