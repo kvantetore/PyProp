@@ -29,26 +29,32 @@ def SetupConfig(**args):
 	if "imtime" in args:
 		imtime = args["imtime"]
 		if imtime:
-			conf.Propagation.timestep = -1.0j * abs(conf.Propagation.timestep)
-			conf.Propagation.renormalization = True
+			conf.SetValue("Propagation", "timestep", 1.0j * abs(conf.Propagation.timestep))
+			conf.SetValue("Propagation", "renormalization", True)
 		else:
-			conf.Propagation.timestep = abs(conf.Propagation.timestep)
-			conf.Propagation.renormalization = False
+			conf.SetValue("Propagation", "timestep", abs(conf.Propagation.timestep))
+			conf.SetValue("Propagation", "renormalization", False)
 
 	if "duration" in args:
 		duration = args["duration"]
-		conf.Propagation.duration = duration
+		conf.SetValue("Propagation", "duration", duration)
 
 	if "eigenvalueCount" in args:
-		conf.Arpack.krylov_eigenvalue_count = args["eigenvalueCount"]
+		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
 
 	if "index_iterator" in args:
-		conf.AngularRepresentation.index_iterator = args["index_iterator"]
+		conf.SetValue("AngularRepresentation", "index_iterator", args["index_iterator"])
 
-	additionalPotentials = args.get("additionalPotentials", [])
-	conf.Propagation.grid_potential_list += additionalPotentials
+	if "amplitude" in args:
+		conf.SetValue("PulseParameters", "amplitude", args["amplitude"])
 
-	return conf
+	potentials = conf.Propagation.grid_potential_list + args.get("additionalPotentials", [])
+	conf.SetValue("Propagation", "grid_potential_list", potentials)
+
+	#Update config object from possible changed ConfigParser object
+	newConf = pyprop.Config(conf.cfgObj)
+
+	return newConf
 
 
 def SetupProblem(**args):
