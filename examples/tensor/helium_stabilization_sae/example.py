@@ -45,6 +45,13 @@ def SetupConfig(**args):
 	if "eigenvalueCount" in args:
 		conf.Arpack.krylov_eigenvalue_count = args["eigenvalueCount"]
 
+	if "amplitude" in args:
+		amp = args["amplitude"]
+		freq = conf.LaserPotentialVelocity1.frequency
+		conf.LaserPotentialVelocity1.amplitude = amp / freq
+		conf.LaserPotentialVelocity2.amplitude = amp / freq
+		conf.LaserPotentialVelocity3.amplitude = amp / freq
+
 	additionalPotentials = args.get("additionalPotentials", [])
 	conf.Propagation.grid_potential_list += additionalPotentials
 

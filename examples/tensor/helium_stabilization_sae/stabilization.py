@@ -22,46 +22,26 @@ def RunStabilization(**args):
 	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
-	#Find Groundstate
-	findGroundstate = args.get("findGroundstate", True)
-	initPsi = None
-	if findGroundstate:
-		#Find Groundstate with piram
-		initProp = SetupProblem(eigenvalueCount=2, **args)
-		solver = pyprop.PiramSolver(initProp)
-		solver.Solve()
-	
-		#Get groundstate wavefunction
-		initPsi = initProp.psi
-		solver.SetEigenvector(initPsi, 0)
-
-		initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-
-		#free memory
-		del solver
-		del initProp
-
-	
-		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3" ]# , "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 
 	#Find radial eigenstates
 	E, V = SetupRadialEigenstates(prop)
+	overlapMatrix = SetupOverlapMatrix(prop)
 		
 	#Setup initial state
-	if initPsi == None:
-		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-		initPsi = prop.psi.Copy()
-	else:
-		prop.psi.GetData()[:] = initPsi.GetData()
+	SetRadialEigenstate(prop.psi, V, n=1, l=0)
+	print "Norm = ", prop.psi.Normalize()
+	PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
+	initPsi = prop.psi.Copy()
 
 	timeList = []
 	corrList = []
 	normList = []
 	radialDensityList = []
 	angularDensityList = []
+	boundTotalList = []
 
 	tempPsi = prop.psi.Copy()
 
@@ -80,11 +60,15 @@ def RunStabilization(**args):
 		tempPsi.GetRepresentation().MultiplySqrtOverlap(False, tempPsi)
 		angularDensity = numpy.sum(abs(tempPsi.GetData())**2, axis=1)
 
+		#Calculate bound state distribution
+		boundE, boundDistr, boundTotal = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix)
+
 		timeList.append(t)
 		corrList.append(corr)
 		normList.append(norm)
 		radialDensityList.append(radialDensity)
 		angularDensityList.append(angularDensity)
+		boundTotalList.append(boundTotal)
 
 		#estimate remaining time
 		curTime = time.time() - startTime
@@ -100,6 +84,7 @@ def RunStabilization(**args):
 	prop.NormList = normList
 	prop.RadialDensityList = radialDensityList
 	prop.AngularDensityList = angularDensityList
+	prop.BoundTotalList = boundTotalList
 
 	PrintOut("")
 	prop.Propagator.PampWrapper.PrintStatistics()
@@ -144,23 +129,85 @@ def SetupRadialEigenstates(prop):
 	eigenValues = []
 	eigenVectors = []
 
-	for l in range(prop.psi.GetData().shape[0]):
+	lCount = prop.psi.GetData().shape[0]
+	eigenvectorScaling = 1
+
+	for l in range(lCount):
 		l = int(l)
 		M = SetupRadialMatrix(prop, [0], l)
 
 		E, V = scipy.linalg.eig(a=M, b=S)
+
 		idx = argsort(real(E))
 		eigenValues.append(real(E[idx]))
-		eigenVectors.append(V[:,idx])
+
+		#Sort an normalize eigenvectors
+		sNorm = lambda v: sqrt(abs(sum(conj(v) * dot(S, v))))
+		V = array([v/sNorm(v) for v in [V[:,idx[i]] for i in range(V.shape[1])]]).transpose()
+		eigenVectors.append(V)
 
 	return eigenValues, eigenVectors
 
+def SetRadialEigenstate(psi, eigenVectors, n, l):
+	radialIndex = n - l - 1
+	psi.Clear()
+	psi.GetData()[l, :] = eigenVectors[l][:, radialIndex]
 
+
+def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
+	radialIndex = n - l - 1
+	psi.Clear()
+	vec = eigenVectors[l][:, radialIndex]
+	return sum( conj(vec) * dot(overlap, psi.GetData()[l, :]) )
+	
+
+def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
+	dE = min(diff(eigenValues[0]))
+	E = r_[eigenValues[0][0]:eigenValues[0][-1]:dE]
+	energyDistr = []
+
+	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
+		#Get projection on eigenstates
+		psiSlice = psi.GetData()[l, :]
+		overlapPsi = dot(overlap, psiSlice)
+		proj = abs(dot(curV.transpose(), overlapPsi))**2
+
+		#Calculate density of states
+		interiorSpacing = list((diff(curE[:-1]) + diff(curE[1:])) / 2.)
+		leftSpacing = (curE[1] - curE[0]) / 2.
+		rightSpacing = (curE[-1] - curE[-2]) / 2.
+		spacing = array([leftSpacing] + interiorSpacing + [rightSpacing])
+		density = 1.0 / spacing
+
+		#Interpolate to get equispaced dP/dE
+		energyDistr.append( scipy.interp(E, curE, proj * density, left=0, right=0) )
+
+	return E, energyDistr
+	
+def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap):
+	boundDistr = []
+	boundE = []
+	boundTotal = 0
+
+	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
+		boundIdx = where(curE < 0)[0]
+
+		#Get projection on eigenstates
+		psiSlice = psi.GetData()[l, :]
+		overlapPsi = dot(overlap, psiSlice)
+		proj = abs(dot(curV[:,boundIdx].transpose(), overlapPsi))**2
+
+		#Interpolate to get equispaced dP/dE
+		energyDistr.append( proj )
+		boundE.append( curE[boundIdx] )
+		boundTotal += sum(proj)
+
+	return boundE, boundDistr, boundTotal
+	
 
 def SetupRadialMatrix(prop, whichPotentials, angularIndex):
 	matrixSize = prop.psi.GetData().shape[1]
 	matrix = zeros((matrixSize, matrixSize), dtype=complex)
-
 
 	for potNum in whichPotentials:	
 		if isinstance(potNum, pyprop.TensorPotential):
