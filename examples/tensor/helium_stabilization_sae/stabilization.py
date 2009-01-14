@@ -23,7 +23,7 @@ def RunStabilization(**args):
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3" ]# , "Absorber"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 
 	#Find radial eigenstates
