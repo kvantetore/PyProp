@@ -162,7 +162,8 @@ class Problem:
 		If is a boolean, yieldCount=True will make this function yield every timestep
 		and yieldCount=False will make it yield one time. (at the last timestep (i think))
 
-		if yieldEnd is set, a final yield will be given at t=duration
+		if yieldEnd is True, a yield will be given at the end of propagation, regardless if 
+		it matches the wanted number of yields
 		"""
 		if duration == None:
 			duration = self.Duration

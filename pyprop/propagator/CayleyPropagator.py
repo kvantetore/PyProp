@@ -60,7 +60,7 @@ class CayleyPropagator(PropagatorBase):
 			for rank in range(self.Rank):
 				if repr.IsOrthogonalBasis(rank):
 					subRepr = repr.GetRepresentation(rank)
-					if any(abs(subRepr.GetGlobalWeights() - 1) > 1e-15):
+					if any(abs(subRepr.GetGlobalWeights(rank) - 1) > 1e-15):
 						raise Exception("CayleyPropagator does not support combination of grid and non-orthogonal basises")
 
 		#Setup preconditioner
@@ -88,7 +88,7 @@ class CayleyPropagator(PropagatorBase):
 		#solve (S - i dt H) psi(t+dt)
 		if self.Preconditioner:
 			self.Preconditioner.Solve(self.TempPsi)
-		callback = lambda srcPsi, dstPsi: self.SolverCallback(srcPsi, dstPsi, t+dt, dt)
+		callback = lambda srcPsi, dstPsi: self.SolverCallback(srcPsi, dstPsi, t+abs(dt), dt)
 		#self.psi.GetData()[:] = 0
 		self.Solver.Solve(callback, self.TempPsi, self.psi, False)
 

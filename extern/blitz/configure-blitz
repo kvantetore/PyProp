@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export BUILDPATH=`pwd`/build
+export BLITZ_CONFIGURE_OPTIONS=--with-pic
 
 rm -rf blitz-configure
 mkdir blitz-configure

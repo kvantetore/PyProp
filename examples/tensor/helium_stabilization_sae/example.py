@@ -11,7 +11,7 @@ import numpy
 import pylab
 import time
 
-from numpy import array, complex, zeros, sin, cos, pi
+from numpy import *
 from libpotential import *
 
 execfile("stabilization.py")

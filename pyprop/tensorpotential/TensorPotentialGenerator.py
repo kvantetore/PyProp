@@ -96,7 +96,13 @@ class TensorPotentialGenerator(object):
 
 					#Get basis pairs from geometry info, and pass it to the potential
 					potentialShape[rank] = geometryInfo.GetBasisPairCount()
-					potentialEvaluator.SetBasisPairs(rank, geometryInfo.GetBasisPairs())
+					try:
+						basisPairs = geometryInfo.GetBasisPairs()
+						potentialEvaluator.SetBasisPairs(rank, basisPairs)
+					except:
+						print "BASISPAIRSHAPE=", basisPairs.shape
+						raise
+
 
 		#4) Evaluate the potential on the grid
 		potentialData = zeros(potentialShape, dtype=complex)

@@ -98,6 +98,12 @@ def RunStabilization(**args):
 
 
 def SetupBigMatrix(prop, whichPotentials):
+	"""
+	Generates a huge dense matrix of a list of potentials in prop.
+
+	whichPotentials is a list of integers specifying the indices of 
+	the tensor-potentials to include in the dense matrix
+	"""
 	print "Setting up potential matrix..."
 	matrixSize = prop.psi.GetData().size
 	
@@ -123,7 +129,19 @@ def SetupBigMatrix(prop, whichPotentials):
 
 	return BigMatrix
 
-def SetupRadialEigenstates(prop):
+def SetupRadialEigenstates(prop, potentialIndices=[0]):
+	"""
+	Finds the eigenvalues and eigenvectors of the first potential
+	of prop. From the default config file, this is the field free
+	SAE Helium system.
+
+	The eigenvalues are found by setting up a radial matrix for each l-value
+	and using the generalized eigenvalue solver in scipy to find all
+	eigenvalues and vectors. 
+	
+	eigenvalues is a list of 1-d eigenvalue arrays. Each array corresponding
+	to a
+	"""
 	S = SetupOverlapMatrix(prop)
 
 	eigenValues = []
@@ -134,7 +152,7 @@ def SetupRadialEigenstates(prop):
 
 	for l in range(lCount):
 		l = int(l)
-		M = SetupRadialMatrix(prop, [0], l)
+		M = SetupRadialMatrix(prop, potentialIndices, l)
 
 		E, V = scipy.linalg.eig(a=M, b=S)
 
@@ -149,9 +167,16 @@ def SetupRadialEigenstates(prop):
 	return eigenValues, eigenVectors
 
 def SetRadialEigenstate(psi, eigenVectors, n, l):
+	"""
+	Sets psi to an eigenvector from a list of eigenvectors as calculated by
+	SetupRadialEigenstates()
+
+	n, l is the quantum number of the state to set in psi
+	"""
 	radialIndex = n - l - 1
+	vec = eigenVectors[l][:, radialIndex]
 	psi.Clear()
-	psi.GetData()[l, :] = eigenVectors[l][:, radialIndex]
+	psi.GetData()[l, :] = vec
 
 
 def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
@@ -198,7 +223,7 @@ def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap):
 		proj = abs(dot(curV[:,boundIdx].transpose(), overlapPsi))**2
 
 		#Interpolate to get equispaced dP/dE
-		energyDistr.append( proj )
+		boundDistr.append( proj )
 		boundE.append( curE[boundIdx] )
 		boundTotal += sum(proj)
 
