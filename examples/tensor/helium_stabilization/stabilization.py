@@ -49,13 +49,13 @@ def RunStabilization(**args):
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
-	#if initPsi == None:
-	#	prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-	#	initPsi = prop.psi.Copy()
-	#else:
-	prop.psi.GetData()[:] = initPsi.GetData()
-	prop.psi.Normalize()
-	initPsi = prop.psi.Copy()
+	if initPsi == None:
+		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
+		initPsi = prop.psi.Copy()
+	else:
+		prop.psi.GetData()[:] = initPsi.GetData()
+		prop.psi.Normalize()
+		initPsi = prop.psi.Copy()
 
 	for pot in prop.Propagator.BasePropagator.PotentialList:
 		PrintOut( "Potential %s: \n %s" % (pot.Name,  pot.MultiplyFunction.__doc__) )

@@ -34,3 +34,6 @@ PotentialEvaluator("ComplexAbsorbingPotential<3> 3","ComplexAbsorbingPotential_3
 #"Overlap" potential (to extract overlap matrix)
 PotentialEvaluator("OverlapPotential<3> 3","OverlapPotential_3")
 
+#Box norm potential, used to calculate the wavefunction norm for r < r_c
+PotentialEvaluator("BoxNormPotential<3> 3","BoxNormPotential_3")
+

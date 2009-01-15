@@ -150,3 +150,32 @@ public:
         }
 };
 
+
+template<int Rank>
+class BoxNormPotential : public PotentialBase<Rank>
+{
+public:
+		int RadialRank1;
+		int RadialRank2;
+		int BoxSize;
+
+        void ApplyConfigSection(const ConfigSection &config)
+        {
+			config.Get("radial_rank_1", RadialRank1);
+			config.Get("radial_rank_2", RadialRank2);
+			config.Get("box_size", BoxSize);
+        }
+
+        inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+        {
+			double r1 = pos(RadialRank1);
+			double r2 = pos(RadialRank2);
+			double r = std::sqrt(r1 * r1 + r2 * r2);
+
+			if (r < BoxSize)
+				return 1.0;
+			else 
+				return 0.0;
+        }
+};
+
