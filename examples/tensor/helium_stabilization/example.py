@@ -126,9 +126,12 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 	#Set up linked list matrix
 	MatrixLL = pysparse.spmatrix.ll_mat_sym(matrixSize, potentialSize)
 
+	countSize = 1e4
+
 	for potNum in whichPotentials:
 		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
 		print "    Processing potential %i: %s" % (potNum, potential.Name)
+		curPotSize = potList[potNum].PotentialData.size
 
 		count = 0
 		outStr = ""
@@ -142,10 +145,9 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 				continue
 
 			#Print progress info
-			countSize = 1e4
 			if mod(count, countSize) == 0:
 				outStr = " " * 8
-				outStr += "Progress: %i/%i" % (count/countSize, round(potentialSize/2./countSize))
+				outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/2./countSize))
 				sys.stdout.write("\b"*len(outStr) + outStr)
 				sys.stdout.flush()
 
@@ -167,6 +169,45 @@ def TensorPotentialIndexMap(psiShape, tensorPotential):
 	basisPairs0 = tensorPotential.BasisPairs[0]
 	basisPairs1 = tensorPotential.BasisPairs[1]
 	basisPairs2 = tensorPotential.BasisPairs[2]
+
+	basisCount0 = basisPairs0.shape[0]
+	basisCount1 = basisPairs1.shape[0]
+	basisCount2 = basisPairs2.shape[0]
+	
+	Count0 = psiShape[0]
+	Count1 = psiShape[1]
+	Count2 = psiShape[2]
+
+#	for i, (x0,x0p) in enumerate(basisPairs0):
+#		xIndex0 = (x0 * Count1 * Count2)
+#		xIndex0p = (x0p * Count1 * Count2) 
+#		for j, (x1,x1p) in enumerate(basisPairs1):
+#			xIndex1 = (x1 * Count2)
+#			xIndex1p = (x1p * Count2)
+#			for k, (x2,x2p) in enumerate(basisPairs2):
+#				indexLeft = x2 + xIndex1 + xIndex0
+#				indexRight = x2p + xIndex1p + xIndex0p 
+#				yield indexLeft, indexRight, i, j, k
+	for i in xrange(basisCount0):
+		xIndex0 = (basisPairs0[i,0] * Count1 * Count2)
+		xIndex0p = (basisPairs0[i,1] * Count1 * Count2) 
+		for j in xrange(basisCount1):
+			xIndex1 = (basisPairs1[j,0] * Count2)
+			xIndex1p = (basisPairs1[j,1] * Count2)
+			for k in xrange(basisCount2):
+				indexLeft = basisPairs2[k,0] + xIndex1 + xIndex0
+				indexRight = basisPairs2[k,1] + xIndex1p + xIndex0p 
+				yield indexLeft, indexRight, i, j, k
+
+
+
+def TensorPotentialIndexMapOld(psiShape, tensorPotential):
+	"""
+	Returns a generator for a map between indices in an m x m matrix and 
+	"""
+	basisPairs0 = tensorPotential.BasisPairs[0]
+	basisPairs1 = tensorPotential.BasisPairs[1]
+	basisPairs2 = tensorPotential.BasisPairs[2]
 	
 	Count0 = psiShape[0]
 	Count1 = psiShape[1]
@@ -178,6 +219,7 @@ def TensorPotentialIndexMap(psiShape, tensorPotential):
 				indexLeft = x2 + (x1 * Count2) + (x0 * Count1 * Count2) 
 				indexRight = x2p + (x1p * Count2) + (x0p * Count1 * Count2) 
 				yield indexLeft, indexRight, i, j, k
+
 
 
 #------------------------------------------------------------------------------------
@@ -349,3 +391,42 @@ def StoreTensorPotentialMTX(prop, whichPotentials, outFileName, eps = 1e-14):
 					fh.write(outStr)
 
 	fh.close()
+
+
+
+
+#------------------------------------------------------------------------------------
+#                       Eigenvalue Functions
+#------------------------------------------------------------------------------------
+
+def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/",
+	configFileName="config_eigenvalues.ini", L=0):
+	"""
+	Find some eigenvalues for a given L-subspace using Jacobi-Davidson method
+	"""
+
+	#Set up problem
+	index_iterator = DefaultIndexIterator
+	prop = SetupProblem(config = configFileName)
+
+	#Set up hamilton matrix
+	H_llL = SetupPotentialMatrixLL(prop,[0,1])
+	H = H_ll.to_sss()
+
+	#Set up overlap matrix
+	S_ll = SetupPotentialMatrixLL(prop,[2])
+	S = S_ll.to_sss()
+
+	#Call Jacobi-Davison rountine
+	numConv, E, V, numIter, numIterInner = \
+		pysparse.jdsym.jdsym(A, S, None, howMany, -3.0, tol, 200, pysparse.itsolvers.qmrs)
+
+	#Store eigenvalues and eigenvectors
+	h5file = tables.openFile(outFileName, "w")
+	try:
+		h5file.createArray(dataSetPath, "Eigenvectors", V)
+		h5file.createArray(dataSetPath, "Eigenvalues", E)
+		h5file.setNodeAttr(dataSetPath, "NumberOfIterations", numIter)
+		h5file.setNodeAttr(dataSetPath, "NumberOfConvergedEigs", numConv)
+	finally:
+		h5file.close()
