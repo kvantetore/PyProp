@@ -124,7 +124,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 	potentialSize = max([potList[w].PotentialData.size for w in whichPotentials])
 
 	#Set up linked list matrix
-	MatrixLL = pysparse.spmatrix.ll_mat_sym(matrixSize, potentialSize)
+	#MatrixLL = pysparse.spmatrix.ll_mat_sym(matrixSize, potentialSize)
+	MatrixLL = pysparse.spmatrix.ll_mat(matrixSize, matrixSize)
 
 	countSize = 1e4
 
@@ -137,8 +138,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 		outStr = ""
 		for idxL, idxR, i, j, k in TensorPotentialIndexMap(prop.psi.GetData().shape, potential):
 			#Skip upper triangle (we have a symmetric matrix)
-			if idxL < idxR:
-				continue
+			#if idxL < idxR:
+			#	continue
 
 			#Skip current element if less than eps
 			if abs(potential.PotentialData[i, j, k]) < eps:
@@ -147,7 +148,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 			#Print progress info
 			if mod(count, countSize) == 0:
 				outStr = " " * 8
-				outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/2./countSize))
+				#outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/2./countSize))
+				outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/countSize))
 				sys.stdout.write("\b"*len(outStr) + outStr)
 				sys.stdout.flush()
 
@@ -430,3 +432,85 @@ def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/
 		h5file.setNodeAttr(dataSetPath, "NumberOfConvergedEigs", numConv)
 	finally:
 		h5file.close()
+
+
+#------------------------------------------------------------------------------------
+#                      Misc Functions
+#------------------------------------------------------------------------------------
+def CalculatePolarizabilityGroundState(fieldRange = linspace(0.001,0.01,10), **args):
+	"""
+	Calculate polarizability of ground state using the Jacobi-Davidson method. We use
+	the formula
+
+	    polarizability = -2 * E_shift / field**2,
+	
+	thus assuming that the hyperpolarizability term is negligible.
+	"""
+	def JacobiDavidson(TotalMatrix):
+		numConv, E, V, numIter, numIterInner = pysparse.jdsym.jdsym( \
+			TotalMatrix, OverlapMatrix, None, 1, -3.0, 1e-10, 100, \
+			pysparse.itsolvers.qmrs) 
+
+		return E
+
+	def SetupTotalMatrix(fieldStrength):
+		#Add H matrix
+		idx = H.keys()
+		for key in idx:
+			I = key[0]
+			J = key[1]
+			TotalMatrixLL[I,J] = H[I,J]
+
+		#Add field matrix
+		idx2 = FieldMatrix.keys()
+		for key in idx2:
+			I = key[0]
+			J = key[1]
+			TotalMatrixLL[I,J] = fieldStrength * FieldMatrix[I,J]
+
+		TotalMatrix = TotalMatrixLL.to_sss()
+		return TotalMatrix
+
+	#Setup problem
+	prop = SetupProblem(**args)
+
+	#Set up the field-free hamilton matrix
+	H = SetupPotentialMatrixLL(prop, [0,1])
+
+	#Set up the field matrix
+	FieldMatrix = SetupPotentialMatrixLL(prop, [2])
+
+	#Set up overlap matrix
+	S_ll = SetupPotentialMatrixLL(prop,[3])
+	OverlapMatrix = S_ll.to_sss()
+
+	#Setup total system matrix
+	TotalMatrixLL = H.copy()
+
+	#Get reference energy
+	TotalMatrix = SetupTotalMatrix(0.0)
+	refEnergy = JacobiDavidson(TotalMatrix)
+	print "Reference energy = %.15f" % refEnergy
+
+	#Store shifted energies and polarizabilities
+	energies = []
+	polarizabilities = []
+	
+	for fieldStrength in fieldRange:
+		print "Calculating energy shift for field strength = %s..." % fieldStrength
+		#Reset potential with current intensity
+		TotalMatrix = SetupTotalMatrix(fieldStrength)
+		
+		#Find shifted eigenvalue
+		energy = JacobiDavidson(TotalMatrix)
+
+		#Compute polarizability
+		energyShift = energy - refEnergy
+		polarizability = -2.0 * energyShift / fieldStrength**2
+
+		#Store current energy and polarizability
+		energies.append(energy)
+		polarizabilities.append(polarizability)
+
+	return fieldRange, polarizabilities, energies
+
