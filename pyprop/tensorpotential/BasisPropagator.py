@@ -104,7 +104,11 @@ class BasisPropagator(PropagatorBase):
 				if canConsolidate and curPot.IsTimeDependent and otherPot.IsTimeDependent:
 					if otherPot.OriginalTimeFunction != curPot.OriginalTimeFunction:
 						canConsolidate = False
-			
+
+				#don't consolidate debug potentials
+				if canConsolidate and (curPot.DebugPotential or otherPot.DebugPotential):
+					canConsolidate = False
+					
 				#Both potentials must have the same storage 
 				if canConsolidate:
 					for rank in range(self.Rank):
@@ -112,6 +116,12 @@ class BasisPropagator(PropagatorBase):
 							canConsolidate = False
 							break
 
+				if canConsolidate:
+					for rank in range(self.Rank):
+						if any(curPot.GeometryList[rank].GetBasisPairs() != otherPot.GeometryList[rank].GetBasisPairs()):
+							canConsolidate = False
+							break
+					
 				#Add otherPot to curPot
 				if canConsolidate:
 					curPot.PotentialData[:] += otherPot.PotentialData

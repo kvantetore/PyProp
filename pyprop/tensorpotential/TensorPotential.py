@@ -27,9 +27,12 @@ class TensorPotential(PotentialWrapper):
 		self.PotentialData = None
 		self.Name = None
 		self.psi = psi
-		self.MultiplyAlgorithm = 4
 
 	def ApplyConfigSection(self, configSection):
+		self.DebugPotential = False
+		if hasattr(configSection, "debug_potential"):
+			self.DebugPotential = configSection.debug_potential
+
 		#Check wheter this is a time dependent potential
 		self.IsTimeDependent = False
 		if hasattr(configSection, "time_function"):
