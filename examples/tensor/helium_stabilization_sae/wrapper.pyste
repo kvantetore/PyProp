@@ -19,6 +19,7 @@ PotentialEvaluator("SingleActiveElectronPotential<2> 2","SingleActiveElectronPot
 
 #Absorber
 PotentialEvaluator("ComplexAbsorbingPotential<2> 2","ComplexAbsorbingPotential_2")
+PotentialEvaluator("RadialMaskPotential<2> 2","RadialMaskPotential_2")
 
 #Alternative Velocity Gauge Potential
 CustomPotential = Template("CustomPotential_LaserVelocity1_ReducedSpherical", "potential.cpp")

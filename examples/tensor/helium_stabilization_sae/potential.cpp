@@ -312,9 +312,9 @@ public:
 	 */
 	inline cplx GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
 	{
-		double r = std::fabs(pos(radialRank));
+		double r = pos(radialRank);
 		cplx V = 0;
-		if (r > absorberStart)
+		if (absorberStart < r && r <= absorberStart+absorberLength)
 		{
 			double curLength = (r - absorberStart) / absorberLength;
 			double Vr = factorReal * std::pow(curLength, scalingReal);
@@ -533,5 +533,59 @@ public:
 		}
 	}
 };
+
+
+/*
+ * Radial Mask potential, used to filter out the part of the wavefunction outside a 
+ * box in the radial grid
+ */
+template<int Rank>
+class RadialMaskPotential : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double CutoffDistance;
+	double MaskStart;
+	double MaskEnd;
+	int RadialRank;
+
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("radial_rank", RadialRank);
+		config.Get("mask_start", MaskStart);
+		config.Get("mask_end", MaskEnd);
+	}
+
+	/*
+	 * Called for every grid point.
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = pos(RadialRank);
+
+		double V1;
+		if ( MaskStart <= r && r < MaskEnd )
+		{
+			V1 = 1;
+		}
+		else
+		{
+			V1 = 0;
+		}
+
+		return V1;
+	}
+};
+
 
 

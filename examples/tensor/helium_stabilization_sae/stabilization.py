@@ -42,13 +42,33 @@ def RunStabilization(**args):
 	radialDensityList = []
 	angularDensityList = []
 	boundTotalList = []
+	outsideAbsorberList = []
 
 	tempPsi = prop.psi.Copy()
+
+	#print "Potentials:\n    %s" % "\n    ".join([pot.Name for pot in prop.Propagator.BasePropagator.PotentialList])
+
+	#Setup absorber tests
+	absorberStart = prop.Config.Absorber.absorber_start
+	absorberEnd = absorberStart + prop.Config.Absorber.absorber_length
+	outsideAbsorberBox = SetupRadialMaskPotential(prop, absorberEnd, 100)
+	insideAbsorberBox = SetupRadialMaskPotential(prop, 0, absorberStart)
 
 	#Propagate
 	PrintOut("Starting propagation")
 	outputCount = args.get("outputCount", 100)
 	startTime = time.time()
+
+	#Propagate until end of pulse
+	duration = prop.Duration
+	prop.Duration  = 2*pi
+	for t in prop.Advance(False):
+		pass
+	#Remove bound states
+	RemoveBoundDistribution(prop.psi, E, V, overlapMatrix)
+	prop.psi.GetData()[0,:] = 0
+
+	prop.Duration = duration
 	for t in prop.Advance(outputCount, yieldEnd=True):
 		#calculate values
 		norm = prop.psi.GetNorm()
@@ -61,7 +81,10 @@ def RunStabilization(**args):
 		angularDensity = numpy.sum(abs(tempPsi.GetData())**2, axis=1)
 
 		#Calculate bound state distribution
-		boundE, boundDistr, boundTotal = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix)
+		boundE, boundV, boundDistr, boundTotal = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix)
+
+		#Calculate amount of stuff outside absorber
+		outsideAbsorber = abs(outsideAbsorberBox.GetExpectationValue(prop.psi, prop.GetTempPsi(), 0, 0))
 
 		timeList.append(t)
 		corrList.append(corr)
@@ -69,6 +92,7 @@ def RunStabilization(**args):
 		radialDensityList.append(radialDensity)
 		angularDensityList.append(angularDensity)
 		boundTotalList.append(boundTotal)
+		outsideAbsorberList.append(outsideAbsorber)
 
 		#estimate remaining time
 		curTime = time.time() - startTime
@@ -76,7 +100,7 @@ def RunStabilization(**args):
 		eta = totalTime - curTime
 	
 		#Print stats
-		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
+		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, outsideAbsorber, FormatDuration(eta)))
 
 	#Save the time-valued variables
 	prop.TimeList = timeList
@@ -85,6 +109,7 @@ def RunStabilization(**args):
 	prop.RadialDensityList = radialDensityList
 	prop.AngularDensityList = angularDensityList
 	prop.BoundTotalList = boundTotalList
+	prop.OutsideAbsorberList = outsideAbsorberList
 
 	PrintOut("")
 	prop.Propagator.PampWrapper.PrintStatistics()
@@ -128,6 +153,10 @@ def SetupBigMatrix(prop, whichPotentials):
 				BigMatrix[indexLeft, indexRight] += potential.PotentialData[i, j]
 
 	return BigMatrix
+
+#---------------------------------------------------------------------------------------
+#            Eigenstate Analysis
+#---------------------------------------------------------------------------------------
 
 def SetupRadialEigenstates(prop, potentialIndices=[0]):
 	"""
@@ -192,10 +221,13 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 	energyDistr = []
 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
+		idx = where(curE>0)[0]
+		curE = curE[idx]
+
 		#Get projection on eigenstates
 		psiSlice = psi.GetData()[l, :]
 		overlapPsi = dot(overlap, psiSlice)
-		proj = abs(dot(curV.transpose(), overlapPsi))**2
+		proj = abs(dot(conj(curV[:,idx].transpose()), overlapPsi))**2
 
 		#Calculate density of states
 		interiorSpacing = list((diff(curE[:-1]) + diff(curE[1:])) / 2.)
@@ -212,6 +244,7 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap):
 	boundDistr = []
 	boundE = []
+	boundV = []
 	boundTotal = 0
 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
@@ -220,15 +253,25 @@ def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap):
 		#Get projection on eigenstates
 		psiSlice = psi.GetData()[l, :]
 		overlapPsi = dot(overlap, psiSlice)
-		proj = abs(dot(curV[:,boundIdx].transpose(), overlapPsi))**2
+		proj = dot(conj(curV[:,boundIdx].transpose()), overlapPsi)
 
 		#Interpolate to get equispaced dP/dE
 		boundDistr.append( proj )
 		boundE.append( curE[boundIdx] )
-		boundTotal += sum(proj)
+		boundV.append(curV[:, boundIdx])
+		boundTotal += sum(abs(proj)**2)
 
-	return boundE, boundDistr, boundTotal
+	return boundE, boundV, boundDistr, boundTotal
 	
+
+def RemoveBoundDistribution(psi, E, V, S):
+	boundE, boundV, boundDistr, boundTotal = CalculateBoundDistribution(psi, E, V, S)
+	
+	for l, (curE, curV, curDist) in enumerate(zip(boundE, boundV, boundDistr)):
+		psi.GetData()[l, :] -= dot(curV, curDist)
+
+	return boundE, boundV, boundDistr, boundTotal
+
 
 def SetupRadialMatrix(prop, whichPotentials, angularIndex):
 	matrixSize = prop.psi.GetData().shape[1]
@@ -263,4 +306,19 @@ def SetupOverlapMatrix(prop):
 	matrix = SetupRadialMatrix(prop, [overlap], 0)
 	return matrix
 	
+
+#---------------------------------------------------------------------------------------
+#            Box-norm analyisis
+#---------------------------------------------------------------------------------------
+
+def SetupRadialMaskPotential(prop, maskStart, maskEnd):
+	conf = prop.Config.RadialMaskPotential
+	conf.mask_start = maskStart
+	conf.mask_end = maskEnd
+
+	pot = prop.Propagator.BasePropagator.GeneratePotential(conf)
+	pot.SetupStep(0)
+
+	return pot
+
 
