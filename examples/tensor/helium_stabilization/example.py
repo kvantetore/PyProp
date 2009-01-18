@@ -124,8 +124,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 	potentialSize = max([potList[w].PotentialData.size for w in whichPotentials])
 
 	#Set up linked list matrix
-	#MatrixLL = pysparse.spmatrix.ll_mat_sym(matrixSize, potentialSize)
-	MatrixLL = pysparse.spmatrix.ll_mat(matrixSize, matrixSize)
+	MatrixLL = pysparse.spmatrix.ll_mat_sym(matrixSize, potentialSize)
+	#MatrixLL = pysparse.spmatrix.ll_mat(matrixSize, matrixSize)
 
 	countSize = 1e4
 
@@ -138,8 +138,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 		outStr = ""
 		for idxL, idxR, i, j, k in TensorPotentialIndexMap(prop.psi.GetData().shape, potential):
 			#Skip upper triangle (we have a symmetric matrix)
-			#if idxL < idxR:
-			#	continue
+			if idxL < idxR:
+				continue
 
 			#Skip current element if less than eps
 			if abs(potential.PotentialData[i, j, k]) < eps:
@@ -148,8 +148,8 @@ def SetupPotentialMatrixLL(prop, whichPotentials, eps=1e-14):
 			#Print progress info
 			if mod(count, countSize) == 0:
 				outStr = " " * 8
-				#outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/2./countSize))
-				outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/countSize))
+				outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/2./countSize))
+				#outStr += "Progress: %i/%i" % (count/countSize, round(curPotSize/countSize))
 				sys.stdout.write("\b"*len(outStr) + outStr)
 				sys.stdout.flush()
 
@@ -401,27 +401,33 @@ def StoreTensorPotentialMTX(prop, whichPotentials, outFileName, eps = 1e-14):
 #                       Eigenvalue Functions
 #------------------------------------------------------------------------------------
 
-def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/",
-	configFileName="config_eigenvalues.ini", L=0):
+def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/", \
+	configFileName="config_eigenvalues.ini", L=0, lmax=4, outFileName = "eig_jd.h5", \
+	preconType = pysparse.precon.jacobi):
 	"""
 	Find some eigenvalues for a given L-subspace using Jacobi-Davidson method
 	"""
 
 	#Set up problem
-	index_iterator = DefaultIndexIterator
-	prop = SetupProblem(config = configFileName)
+	idxIt = pyprop.DefaultCoupledIndexIterator(lmax = lmax, L = L)
+	prop = SetupProblem(config = configFileName, index_iterator = idxIt)
 
 	#Set up hamilton matrix
-	H_llL = SetupPotentialMatrixLL(prop,[0,1])
+	H_ll = SetupPotentialMatrixLL(prop,[0,1])
 	H = H_ll.to_sss()
 
 	#Set up overlap matrix
 	S_ll = SetupPotentialMatrixLL(prop,[2])
 	S = S_ll.to_sss()
 
+	#Set up preconditioner
+	Precon = None
+	if preconType:
+		Precon = preconType(H)
+
 	#Call Jacobi-Davison rountine
 	numConv, E, V, numIter, numIterInner = \
-		pysparse.jdsym.jdsym(A, S, None, howMany, -3.0, tol, 200, pysparse.itsolvers.qmrs)
+		pysparse.jdsym.jdsym(H, S, Precon, howMany, shift, tol, maxIter, pysparse.itsolvers.qmrs)
 
 	#Store eigenvalues and eigenvectors
 	h5file = tables.openFile(outFileName, "w")
@@ -430,8 +436,74 @@ def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/
 		h5file.createArray(dataSetPath, "Eigenvalues", E)
 		h5file.setNodeAttr(dataSetPath, "NumberOfIterations", numIter)
 		h5file.setNodeAttr(dataSetPath, "NumberOfConvergedEigs", numConv)
+	except:
+		pass
 	finally:
 		h5file.close()
+
+
+	return numConv, E, V, numIter, numIterInner
+
+
+class InverseIterator:
+	def __init__(self, prop):
+		self.BaseProblem = prop
+		self.Rank = prop.psi.GetRank()
+		self.Config = self.BaseProblem.Config.Arpack
+		self.psi = prop.psi
+		self.TempPsi = prop.psi.Copy()
+		self.Shift = self.Config.shift
+
+		#Set up GMRES
+		self.Solver = pyprop.CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
+		self.Config.Apply(self.Solver)
+		self.Solver.Setup(self.psi);
+
+	def __callback(self, srcPsi, dstPsi):
+		dstPsi.GetData()[:] = srcPsi.GetData()[:]
+		dstPsi.GetData()[:] *= -self.Shift
+		self.BaseProblem.Propagator.BasePropagator.MultiplyHamiltonian(srcPsi, dstPsi, 0, 0)
+
+	def InverseIterations(self, srcPsi, destPsi, t, dt):
+		self.Solver.Solve(self.__callback, srcPsi, destPsi, False)
+
+
+class BlockPreconditioner:
+	def __init__(self, A, blockSize=1):
+		self.Matrix = A
+		self.shape = A.shape
+		self.BlockSize = blockSize
+		self.ProbSize = A.shape[0]
+		self.NumCalls = 0
+		
+		#Check that blocksize divides matrix shape
+		if mod(self.ProbSize, self.BlockSize) != 0:
+			raise Exception("Preconditioner block size must divide matrix size!")
+
+		#Set up preconditioner matrix
+		self.Preconditioner = pysparse.spmatrix.ll_mat(self.shape[0], self.shape[1])
+		curBlock = zeros((self.BlockSize, self.BlockSize))
+		for k in range(self.ProbSize / self.BlockSize):
+			curBlock[:] = 0.0
+			curSlice = [slice(k*(blockSize), (k+1)*blockSize)] * 2
+			
+			for i in range(self.BlockSize):
+				for j in range(self.BlockSize):
+					I = k * blockSize + i
+					J = k * blockSize + j
+					curBlock[i,j] = self.Matrix[I, J]
+
+			invBlock = linalg.inv(curBlock)
+
+			for i in range(self.BlockSize):
+				for j in range(self.BlockSize):
+					I = k * blockSize + i
+					J = k * blockSize + j
+					self.Preconditioner[I,J] = invBlock[i,j]
+
+	def precon(self, x, y):
+		self.Preconditioner.matvec(x, y)
+		self.NumCalls += 1
 
 
 #------------------------------------------------------------------------------------
