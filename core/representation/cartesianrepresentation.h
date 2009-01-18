@@ -89,11 +89,16 @@ public:
 	virtual cplx InnerProduct(const Wavefunction<Rank> &w1, const Wavefunction<Rank> &w2);
 	virtual void ApplyConfigSection(const ConfigSection &cfg);
 
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, int rank);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi);
+
 	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
-	virtual void MultiplyOverlap(Wavefunction<Rank> &psi);
-	virtual void SolveOverlap(Wavefunction<Rank> &psi);
-	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
-	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
+	virtual void MultiplyOverlap(Wavefunction<Rank> &psi) {}
+	virtual void SolveOverlap(Wavefunction<Rank> &psi) {}
+	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi) {}
+	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi) {}
 	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank);
 };
 

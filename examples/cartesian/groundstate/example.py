@@ -208,6 +208,7 @@ def Propagate():
 	conf = pyprop.Load("propagation.ini")
 	prop = pyprop.Problem(conf)
 	prop.SetupStep()
+	prop.psi.Normalize()
 
 	#Create a copy of the wavefunction so that we can calculate
 	#the autocorrelation function during propagation
@@ -218,8 +219,9 @@ def Propagate():
 	#10 evenly spaced times during the propagation
 	for t in prop.Advance(10):
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
+		norm = prop.psi.GetNorm()
 		if pyprop.ProcId == 0:
-			print "t = ", t, ", P(t) = ", corr
+			print "t = ", t, ", P(t) = ", corr, ", N(t) = ", norm
 		#pyprop.Plot2DFull(prop)
 
 	return prop

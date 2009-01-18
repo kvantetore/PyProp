@@ -46,6 +46,11 @@ public:
 	/*
 	 * Overlap Matrix related stuff
 	 */
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, int rank);
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi);
+
 	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank);
 	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank);
 	virtual void MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank);

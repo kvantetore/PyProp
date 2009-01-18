@@ -66,31 +66,35 @@ void CartesianFourierTransform<Rank>::FourierTransform(Wavefunction<Rank> &psi, 
 
 /** Create representations for a full transform */
 template<int Rank> 
-CartesianRepresentation<Rank> CartesianFourierTransform<Rank>::CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation)
+typename CartesianRepresentation<Rank>::Ptr CartesianFourierTransform<Rank>::CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation)
 {
 	//A fourier representation is basically another cartesian representation 
 	//(of the same size) with a different grid
-	CartesianRepresentation<Rank> fftRepr(gridRepresentation);
-	
+	typedef CartesianRepresentation<Rank> Repr;
+	typedef typename CartesianRepresentation<Rank>::Ptr ReprPtr;
+	ReprPtr fftRepr(new Repr(gridRepresentation));
+
 	for (int i=0;i<Rank;i++)
 	{
 		double kMin = - M_PI / gridRepresentation.Range(i).Dx;
 		double kMax = - kMin;
 		//std::cout << " [" << kMin << ", " << kMax << ", " << Range(i).Count << "]" << std::endl;
-		fftRepr.Range(i) = CartesianRange(kMin, kMax, gridRepresentation.Range(i).Count, true);
+		fftRepr->Range(i) = CartesianRange(kMin, kMax, gridRepresentation.Range(i).Count, true);
 	}
 	return fftRepr;
 }		
 	
 /** Create representations for partial transforms */
 template<int Rank>
-CartesianRepresentation<Rank> CartesianFourierTransform<Rank>::CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation, int rank)
+typename CartesianRepresentation<Rank>::Ptr CartesianFourierTransform<Rank>::CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation, int rank)
 {
-	CartesianRepresentation<Rank> fftRepr(gridRepresentation);
+	typedef CartesianRepresentation<Rank> Repr;
+	typedef typename CartesianRepresentation<Rank>::Ptr ReprPtr;
+	ReprPtr fftRepr(new Repr(gridRepresentation));
 	
 	double kMin = - M_PI / gridRepresentation.Range(rank).Dx;
 	double kMax = - kMin;
-	fftRepr.Range(rank) = CartesianRange(kMin, kMax, gridRepresentation.Range(rank).Count, true);
+	fftRepr->Range(rank) = CartesianRange(kMin, kMax, gridRepresentation.Range(rank).Count, true);
 	
 	return fftRepr;
 }

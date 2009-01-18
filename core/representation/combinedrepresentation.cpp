@@ -25,22 +25,22 @@ typename Representation<Rank>::RepresentationPtr CombinedRepresentation<Rank>::C
 /*----------------------------------------------------------------------------
                 Implementation of the Representation interface
   ----------------------------------------------------------------------------*/
-template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::
-GetGlobalGrid(int rank)
+template<int Rank> 
+blitz::Array<double, 1> CombinedRepresentation<Rank>::GetGlobalGrid(int rank)
 {
 	//Get the local grid in the specified rank
 	return GetRepresentation(rank)->GetGlobalGrid(rank);
 }
 
-template<int Rank> blitz::Array<double, 1> CombinedRepresentation<Rank>::
-GetGlobalWeights(int rank)
+template<int Rank> 
+blitz::Array<double, 1> CombinedRepresentation<Rank>::GetGlobalWeights(int rank)
 {
 	//Get the local grid in the specified rank
 	return GetRepresentation(rank)->GetGlobalWeights(rank);
 }
 
-template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
-::GetFullShape() 
+template<int Rank> 
+blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>::GetFullShape() 
 {
 	blitz::TinyVector<int, Rank> shape;
 	for (int i=0;i<Rank;i++)
@@ -51,16 +51,16 @@ template<int Rank> blitz::TinyVector<int, Rank> CombinedRepresentation<Rank>
 }
 
 //Get the representation of the specified rank
-template<int Rank> Representation1DPtr CombinedRepresentation<Rank>
-::GetRepresentation(int rank)
+template<int Rank> 
+Representation1DPtr CombinedRepresentation<Rank>::GetRepresentation(int rank)
 {
 	//return Representations[rank];
 	return Representations(rank);
 }
 
 //Change the representation of the specified rank
-template<int Rank> void CombinedRepresentation<Rank>
-::SetRepresentation(int rank, Representation1DPtr repr)
+template<int Rank> 
+void CombinedRepresentation<Rank>::SetRepresentation(int rank, Representation1DPtr repr)
 {
 	if (Representations(rank) != 0 && Representations(rank)->GetDistributedModel() != 0 && repr->GetDistributedModel() != 0)
 	{
@@ -69,8 +69,8 @@ template<int Rank> void CombinedRepresentation<Rank>
 	Representations(rank) = repr;
 }
 
-template<int Rank> void CombinedRepresentation<Rank>
-::ApplyConfigSection(const ConfigSection &config) 
+template<int Rank> 
+void CombinedRepresentation<Rank>::ApplyConfigSection(const ConfigSection &config) 
 {
 	//Do this manually for each sub-representation
 
@@ -86,6 +86,70 @@ OverlapMatrix::Ptr CombinedRepresentation<Rank>::GetGlobalOverlapMatrix(int rank
 	return GetRepresentation(rank)->GetGlobalOverlapMatrix(rank);
 }
 
+/* Integration Weights */
+template<int Rank>
+void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+{
+	using namespace blitz;
+
+	//Map the data to a 3D array, where rank is the middle rank
+	Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+	Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+
+	if (this->IsOrthogonalBasis(rank))
+	{
+		blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
+		srcData = dstData(tensor::i, tensor::j, tensor::k) * weights(blitz::tensor::j);
+	}
+	else
+	{
+		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+	}
+
+}
+
+template<int Rank>
+void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
+{
+	MultiplyIntegrationWeights(srcPsi, dstPsi, 0);
+
+	for (int i=1; i<Rank; i++)
+	{	
+		MultiplyIntegrationWeights(dstPsi, i);
+	}
+}
+
+template<int Rank>
+void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &psi, int rank)
+{
+	if (this->GetDistributedModel()->IsDistributedRank(rank) && !this->IsOrthogonalBasis(rank))
+	{
+		throw std::runtime_error("Rank is distributed and not orthogonal");
+	}
+
+	blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), rank, 1);
+	if (this->IsOrthogonalBasis(rank))
+	{
+		blitz::Array<double, 1> weights = this->GetLocalWeights(rank);
+		data *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
+	}
+	else
+	{
+		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(data);
+	}
+}
+
+template<int Rank>
+void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &psi)
+{
+	for (int i=0; i<Rank; i++)
+	{	
+		MultiplyIntegrationWeights(psi, i);
+	}
+}
+
+
+/* Overlap Matrix */
 template<int Rank>
 void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
 {
@@ -96,14 +160,9 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
 
-		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		if (this->IsOrthogonalBasis(i))
+		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
-			data *= weights(blitz::tensor::j) + 0*blitz::tensor::k;
-		}
-		else
-		{
+			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
 			this->GetGlobalOverlapMatrix(i)->MultiplyOverlapTensor(data);
 		}
 	}
@@ -118,14 +177,9 @@ void CombinedRepresentation<Rank>::SolveOverlap(Wavefunction<Rank> &psi)
 		{
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
-		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		if (this->IsOrthogonalBasis(i))
+		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
-			data /= weights(blitz::tensor::j) + 0*blitz::tensor::k;
-		}
-		else
-		{
+			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
 			this->GetGlobalOverlapMatrix(i)->SolveOverlapTensor(data);
 		}
 	}
@@ -140,15 +194,9 @@ void CombinedRepresentation<Rank>::MultiplySqrtOverlap(bool conjugate, Wavefunct
 		{
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
-		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		if (this->IsOrthogonalBasis(i))
+		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
-			//TODO: This can't be good. too many sqrt evals
-			data *= sqrt(weights(blitz::tensor::j)) + 0*blitz::tensor::k;
-		}
-		else
-		{
+			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
 			this->GetGlobalOverlapMatrix(i)->MultiplySqrtOverlapTensor(conjugate, data);
 		}
 	}
@@ -163,23 +211,58 @@ void CombinedRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunction
 		{
 			throw std::runtime_error("Rank is distributed and not orthogonal");
 		}
-		blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-		if (this->IsOrthogonalBasis(i))
+		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<double, 1> weights = this->GetLocalWeights(i);
-			//TODO: This can't be good. too many sqrt evals
-			data /= sqrt(weights(blitz::tensor::j)) + 0*blitz::tensor::k;
-		}
-		else
-		{
+			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
 			this->GetGlobalOverlapMatrix(i)->SolveSqrtOverlapTensor(conjugate, data);
 		}
 	}
 }
 
+template<int Rank> 
+void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+{
+	using namespace blitz;
 
-template<int Rank> cplx CombinedRepresentation<Rank>
-::InnerProduct(const Wavefunction<Rank>& w1, const Wavefunction<Rank>& w2)
+	if (this->IsOrthogonalBasis(rank))
+	{
+		dstPsi.GetData() = srcPsi.GetData();
+	}
+	else
+	{
+		//Map the data to a 3D array, where the b-spline part is the middle rank
+		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+
+		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+	}
+
+}
+
+template<int Rank> 
+void CombinedRepresentation<Rank>::MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank)
+{
+	using namespace blitz;
+
+	if (this->IsOrthogonalBasis(rank))
+	{
+		dstPsi.GetData() = srcPsi.GetData();
+	}
+	else
+	{
+		//Map the data to a 3D array, where the b-spline part is the middle rank
+		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+
+		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+	}
+
+}
+
+
+
+template<int Rank> 
+cplx CombinedRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, const Wavefunction<Rank>& w2)
 {
 	blitz::Array<cplx, Rank> d1(w1.GetData());
 	blitz::Array<cplx, Rank> d2(w2.GetData());
@@ -318,52 +401,6 @@ template<int Rank> cplx CombinedRepresentation<Rank>
 	{
 		cout << "Unknown InnerProduct algorithm " << Algorithm << endl;
 		throw std::runtime_error("Unknown InnerProduct algorithm");
-	}
-
-}
-
-
-/*
- * Multiply rank of wavefunction by overlapmatrix
- */
-template<int Rank> void CombinedRepresentation<Rank>
-::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
-{
-	using namespace blitz;
-
-	if (this->IsOrthogonalBasis(rank))
-	{
-		//Todo: should multiply weights
-		dstPsi.GetData() = srcPsi.GetData();
-	}
-	else
-	{
-		//Map the data to a 3D array, where the b-spline part is the middle rank
-		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
-		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
-
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
-	}
-
-}
-
-template<int Rank> void CombinedRepresentation<Rank>
-::MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank)
-{
-	using namespace blitz;
-
-	if (this->IsOrthogonalBasis(rank))
-	{
-		//Todo: should multiply weights
-		dstPsi.GetData() = srcPsi.GetData();
-	}
-	else
-	{
-		//Map the data to a 3D array, where the b-spline part is the middle rank
-		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
-		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
-
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
 	}
 
 }

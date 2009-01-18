@@ -74,12 +74,45 @@ public:
 	}
 
 	/*
-	 * Overlap Matrix related stuff
+	 * Overlap Matrix- and weights-related stuff
+	 *
+	 * As it turns out, overlap matrices and integration weights are not the same thing
+	 * weights are used for integration, as in inner products and such, and overlap matrices
+	 * are alse used for "integration", but overlap matrices are used other places as well, 
+	 * as in solving for overlap matrices after multiplying with the operators and such. 
+	 *
+	 * We therefore give two interfaces to overlaps and weights: 
+	 * *Overlap (SolveOverlap, MultiplyOverlap, etc.). This involves ONLY overlap
+	 *  matrices, and no integration weights
+	 *
+	 * *Weights (MultiplyWeights) This involves BOTH overlap AND integration weights for grid
+	 *  representations
+	 *
 	 */
 
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+	{
+		throw std::runtime_error("MultiplyIntegrationWeights not implemented for this representation");
+	}
+
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
+	{
+		throw std::runtime_error("MultiplyIntegrationWeights not implemented for this representation");
+	}
+
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, int rank)
+	{
+		throw std::runtime_error("MultiplyIntegrationWeights not implemented for this representation");
+	}
+
+	virtual void MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi)
+	{
+		throw std::runtime_error("MultiplyIntegrationWeights not implemented for this representation");
+	}
+
 	/*
-	 * Returns the overlap matrix for a given rank. For orthogonal ranks, this will be a 
-	 * diagonal matrix, while for non-orthogonal basises, it will be a banded matrix
+	 * Returns the overlap matrix for a given rank. For orthogonal ranks, this will be the 
+	 * identity matrix, while for non-orthogonal basises, it will be a banded matrix
 	 * (Only compact basises are supported for now)
 	 */
 	virtual OverlapMatrix::Ptr GetGlobalOverlapMatrix(int rank)
@@ -91,7 +124,7 @@ public:
 	 * These are methods from OverlapMatrix, only operated on wavefunctions for all ranks
 	 *
 	 * Non-Orthogonal basises will typically implement these by calling methods on OverlapMatrix
-	 * while orthogonal basises will use the weights to implement it more efficiently
+	 * while orthogonal basises do nothing
 	 */
 
 	virtual void MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)

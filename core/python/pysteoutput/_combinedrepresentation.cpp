@@ -14,11 +14,27 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1___int)(Wavefunction<1>&, Wavefunction<1>&, int)  = &CombinedRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1__)(Wavefunction<1>&, Wavefunction<1>&)  = &CombinedRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___int)(Wavefunction<1>&, int)  = &CombinedRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1__)(Wavefunction<1>&)  = &CombinedRepresentation<1>::MultiplyIntegrationWeights;
+
 void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyOverlapWavefunction_1___Wavefunction_1___int)(Wavefunction<1>&, Wavefunction<1>&, int)  = &CombinedRepresentation<1>::MultiplyOverlap;
 
 void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyOverlapstd__complex_double__Wavefunction_1___std__complex_double__Wavefunction_1___int)(std::complex<double>, Wavefunction<1>&, std::complex<double>, Wavefunction<1>&, int)  = &CombinedRepresentation<1>::MultiplyOverlap;
 
 void (CombinedRepresentation<1>::*CombinedRepresentation_1___MultiplyOverlapWavefunction_1__)(Wavefunction<1>&)  = &CombinedRepresentation<1>::MultiplyOverlap;
+
+void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2___int)(Wavefunction<2>&, Wavefunction<2>&, int)  = &CombinedRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2__)(Wavefunction<2>&, Wavefunction<2>&)  = &CombinedRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___int)(Wavefunction<2>&, int)  = &CombinedRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2__)(Wavefunction<2>&)  = &CombinedRepresentation<2>::MultiplyIntegrationWeights;
 
 void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyOverlapWavefunction_2___Wavefunction_2___int)(Wavefunction<2>&, Wavefunction<2>&, int)  = &CombinedRepresentation<2>::MultiplyOverlap;
 
@@ -26,11 +42,27 @@ void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyOverlapstd_
 
 void (CombinedRepresentation<2>::*CombinedRepresentation_2___MultiplyOverlapWavefunction_2__)(Wavefunction<2>&)  = &CombinedRepresentation<2>::MultiplyOverlap;
 
+void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3___int)(Wavefunction<3>&, Wavefunction<3>&, int)  = &CombinedRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3__)(Wavefunction<3>&, Wavefunction<3>&)  = &CombinedRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___int)(Wavefunction<3>&, int)  = &CombinedRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3__)(Wavefunction<3>&)  = &CombinedRepresentation<3>::MultiplyIntegrationWeights;
+
 void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyOverlapWavefunction_3___Wavefunction_3___int)(Wavefunction<3>&, Wavefunction<3>&, int)  = &CombinedRepresentation<3>::MultiplyOverlap;
 
 void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyOverlapstd__complex_double__Wavefunction_3___std__complex_double__Wavefunction_3___int)(std::complex<double>, Wavefunction<3>&, std::complex<double>, Wavefunction<3>&, int)  = &CombinedRepresentation<3>::MultiplyOverlap;
 
 void (CombinedRepresentation<3>::*CombinedRepresentation_3___MultiplyOverlapWavefunction_3__)(Wavefunction<3>&)  = &CombinedRepresentation<3>::MultiplyOverlap;
+
+void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4___int)(Wavefunction<4>&, Wavefunction<4>&, int)  = &CombinedRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4__)(Wavefunction<4>&, Wavefunction<4>&)  = &CombinedRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___int)(Wavefunction<4>&, int)  = &CombinedRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4__)(Wavefunction<4>&)  = &CombinedRepresentation<4>::MultiplyIntegrationWeights;
 
 void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyOverlapWavefunction_4___Wavefunction_4___int)(Wavefunction<4>&, Wavefunction<4>&, int)  = &CombinedRepresentation<4>::MultiplyOverlap;
 
@@ -55,6 +87,10 @@ void Export_python_combinedrepresentation()
         .def("GetGlobalGrid", &CombinedRepresentation<1>::GetGlobalGrid)
         .def("GetGlobalWeights", &CombinedRepresentation<1>::GetGlobalWeights)
         .def("ApplyConfigSection", &CombinedRepresentation<1>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1__)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_1___MultiplyIntegrationWeightsWavefunction_1__)
         .def("GetGlobalOverlapMatrix", &CombinedRepresentation<1>::GetGlobalOverlapMatrix)
         .def("MultiplyOverlap", CombinedRepresentation_1___MultiplyOverlapWavefunction_1___Wavefunction_1___int)
         .def("MultiplyOverlap", CombinedRepresentation_1___MultiplyOverlapstd__complex_double__Wavefunction_1___std__complex_double__Wavefunction_1___int)
@@ -74,6 +110,10 @@ void Export_python_combinedrepresentation()
         .def("GetGlobalGrid", &CombinedRepresentation<2>::GetGlobalGrid)
         .def("GetGlobalWeights", &CombinedRepresentation<2>::GetGlobalWeights)
         .def("ApplyConfigSection", &CombinedRepresentation<2>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2__)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_2___MultiplyIntegrationWeightsWavefunction_2__)
         .def("GetGlobalOverlapMatrix", &CombinedRepresentation<2>::GetGlobalOverlapMatrix)
         .def("MultiplyOverlap", CombinedRepresentation_2___MultiplyOverlapWavefunction_2___Wavefunction_2___int)
         .def("MultiplyOverlap", CombinedRepresentation_2___MultiplyOverlapstd__complex_double__Wavefunction_2___std__complex_double__Wavefunction_2___int)
@@ -93,6 +133,10 @@ void Export_python_combinedrepresentation()
         .def("GetGlobalGrid", &CombinedRepresentation<3>::GetGlobalGrid)
         .def("GetGlobalWeights", &CombinedRepresentation<3>::GetGlobalWeights)
         .def("ApplyConfigSection", &CombinedRepresentation<3>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3__)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_3___MultiplyIntegrationWeightsWavefunction_3__)
         .def("GetGlobalOverlapMatrix", &CombinedRepresentation<3>::GetGlobalOverlapMatrix)
         .def("MultiplyOverlap", CombinedRepresentation_3___MultiplyOverlapWavefunction_3___Wavefunction_3___int)
         .def("MultiplyOverlap", CombinedRepresentation_3___MultiplyOverlapstd__complex_double__Wavefunction_3___std__complex_double__Wavefunction_3___int)
@@ -112,6 +156,10 @@ void Export_python_combinedrepresentation()
         .def("GetGlobalGrid", &CombinedRepresentation<4>::GetGlobalGrid)
         .def("GetGlobalWeights", &CombinedRepresentation<4>::GetGlobalWeights)
         .def("ApplyConfigSection", &CombinedRepresentation<4>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4__)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___int)
+        .def("MultiplyIntegrationWeights", CombinedRepresentation_4___MultiplyIntegrationWeightsWavefunction_4__)
         .def("GetGlobalOverlapMatrix", &CombinedRepresentation<4>::GetGlobalOverlapMatrix)
         .def("MultiplyOverlap", CombinedRepresentation_4___MultiplyOverlapWavefunction_4___Wavefunction_4___int)
         .def("MultiplyOverlap", CombinedRepresentation_4___MultiplyOverlapstd__complex_double__Wavefunction_4___std__complex_double__Wavefunction_4___int)

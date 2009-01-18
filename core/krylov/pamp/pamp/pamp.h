@@ -276,11 +276,6 @@ void pAMP<T>::PerformInitialArnoldiStep()
 	HessenbergMatrix = 0;
 	CurrentArnoldiStep = 0;
 
-	//Normalize Residual
-	//T norm = CalculateGlobalNorm(Residual);
-	//cout << "Initial norm = " << norm << endl;
-	//blas.ScaleVector(Residual, 1.0/norm);
-
 	//First Arnoldi Vector is the init residual
 	VectorType v0(ArnoldiVectors(0, blitz::Range::all()));
 	blas.CopyVector(Residual, v0);
@@ -620,6 +615,11 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 	Timers["Total"].Start();
 	Residual = input;
 
+	//Normalize Residual
+	T norm = CalculateGlobalNorm(Residual);
+	blas.ScaleVector(Residual, 1.0/norm);
+
+
 	PerformInitialArnoldiStep();
 	RecreateArnoldiFactorization();
 
@@ -658,6 +658,8 @@ void pAMP<T>::PropagateVector(VectorType input, T dt)
 
 	//Transform the solution vector back from Krylov space to the original space
 	blas.MultiplyMatrixVector(ArnoldiVectors, v, input);
+
+	blas.ScaleVector(input, norm);
 
 	//We use the magnutude of the population of the last krylov vector as an estimate
 	//of whether our krylov space was too small, or the timestep too large

@@ -13,17 +13,49 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1___int)(Wavefunction<1>&, Wavefunction<1>&, int)  = &CartesianRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1__)(Wavefunction<1>&, Wavefunction<1>&)  = &CartesianRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___int)(Wavefunction<1>&, int)  = &CartesianRepresentation<1>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1__)(Wavefunction<1>&)  = &CartesianRepresentation<1>::MultiplyIntegrationWeights;
+
 void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyOverlapWavefunction_1___Wavefunction_1___int)(Wavefunction<1>&, Wavefunction<1>&, int)  = &CartesianRepresentation<1>::MultiplyOverlap;
 
 void (CartesianRepresentation<1>::*CartesianRepresentation_1___MultiplyOverlapWavefunction_1__)(Wavefunction<1>&)  = &CartesianRepresentation<1>::MultiplyOverlap;
+
+void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2___int)(Wavefunction<2>&, Wavefunction<2>&, int)  = &CartesianRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2__)(Wavefunction<2>&, Wavefunction<2>&)  = &CartesianRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___int)(Wavefunction<2>&, int)  = &CartesianRepresentation<2>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2__)(Wavefunction<2>&)  = &CartesianRepresentation<2>::MultiplyIntegrationWeights;
 
 void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyOverlapWavefunction_2___Wavefunction_2___int)(Wavefunction<2>&, Wavefunction<2>&, int)  = &CartesianRepresentation<2>::MultiplyOverlap;
 
 void (CartesianRepresentation<2>::*CartesianRepresentation_2___MultiplyOverlapWavefunction_2__)(Wavefunction<2>&)  = &CartesianRepresentation<2>::MultiplyOverlap;
 
+void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3___int)(Wavefunction<3>&, Wavefunction<3>&, int)  = &CartesianRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3__)(Wavefunction<3>&, Wavefunction<3>&)  = &CartesianRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___int)(Wavefunction<3>&, int)  = &CartesianRepresentation<3>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3__)(Wavefunction<3>&)  = &CartesianRepresentation<3>::MultiplyIntegrationWeights;
+
 void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyOverlapWavefunction_3___Wavefunction_3___int)(Wavefunction<3>&, Wavefunction<3>&, int)  = &CartesianRepresentation<3>::MultiplyOverlap;
 
 void (CartesianRepresentation<3>::*CartesianRepresentation_3___MultiplyOverlapWavefunction_3__)(Wavefunction<3>&)  = &CartesianRepresentation<3>::MultiplyOverlap;
+
+void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4___int)(Wavefunction<4>&, Wavefunction<4>&, int)  = &CartesianRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4__)(Wavefunction<4>&, Wavefunction<4>&)  = &CartesianRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___int)(Wavefunction<4>&, int)  = &CartesianRepresentation<4>::MultiplyIntegrationWeights;
+
+void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4__)(Wavefunction<4>&)  = &CartesianRepresentation<4>::MultiplyIntegrationWeights;
 
 void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyOverlapWavefunction_4___Wavefunction_4___int)(Wavefunction<4>&, Wavefunction<4>&, int)  = &CartesianRepresentation<4>::MultiplyOverlap;
 
@@ -37,8 +69,7 @@ void (CartesianRepresentation<4>::*CartesianRepresentation_4___MultiplyOverlapWa
 void Export_python_cartesianrange()
 {
     scope* CartesianRepresentation_1_scope = new scope(
-    class_< CartesianRepresentation<1>, bases< Representation<1> >  >("CartesianRepresentation_1", init<  >())
-        .def(init< const CartesianRepresentation<1>& >())
+    class_< CartesianRepresentation<1>, bases< Representation<1> > , boost::noncopyable >("CartesianRepresentation_1", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,1>& >())
         .def_readwrite("Range", &CartesianRepresentation<1>::Range)
@@ -50,6 +81,10 @@ void Export_python_cartesianrange()
         .def("GetFullShape", &CartesianRepresentation<1>::GetFullShape)
         .def("InnerProduct", &CartesianRepresentation<1>::InnerProduct)
         .def("ApplyConfigSection", &CartesianRepresentation<1>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___Wavefunction_1__)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_1___MultiplyIntegrationWeightsWavefunction_1__)
         .def("MultiplyOverlap", CartesianRepresentation_1___MultiplyOverlapWavefunction_1___Wavefunction_1___int)
         .def("MultiplyOverlap", CartesianRepresentation_1___MultiplyOverlapWavefunction_1__)
         .def("SolveOverlap", &CartesianRepresentation<1>::SolveOverlap)
@@ -61,8 +96,7 @@ void Export_python_cartesianrange()
     delete CartesianRepresentation_1_scope;
 
     scope* CartesianRepresentation_2_scope = new scope(
-    class_< CartesianRepresentation<2>, bases< Representation<2> >  >("CartesianRepresentation_2", init<  >())
-        .def(init< const CartesianRepresentation<2>& >())
+    class_< CartesianRepresentation<2>, bases< Representation<2> > , boost::noncopyable >("CartesianRepresentation_2", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,2>& >())
         .def_readwrite("Range", &CartesianRepresentation<2>::Range)
@@ -74,6 +108,10 @@ void Export_python_cartesianrange()
         .def("GetFullShape", &CartesianRepresentation<2>::GetFullShape)
         .def("InnerProduct", &CartesianRepresentation<2>::InnerProduct)
         .def("ApplyConfigSection", &CartesianRepresentation<2>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___Wavefunction_2__)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_2___MultiplyIntegrationWeightsWavefunction_2__)
         .def("MultiplyOverlap", CartesianRepresentation_2___MultiplyOverlapWavefunction_2___Wavefunction_2___int)
         .def("MultiplyOverlap", CartesianRepresentation_2___MultiplyOverlapWavefunction_2__)
         .def("SolveOverlap", &CartesianRepresentation<2>::SolveOverlap)
@@ -85,8 +123,7 @@ void Export_python_cartesianrange()
     delete CartesianRepresentation_2_scope;
 
     scope* CartesianRepresentation_3_scope = new scope(
-    class_< CartesianRepresentation<3>, bases< Representation<3> >  >("CartesianRepresentation_3", init<  >())
-        .def(init< const CartesianRepresentation<3>& >())
+    class_< CartesianRepresentation<3>, bases< Representation<3> > , boost::noncopyable >("CartesianRepresentation_3", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,3>& >())
         .def_readwrite("Range", &CartesianRepresentation<3>::Range)
@@ -98,6 +135,10 @@ void Export_python_cartesianrange()
         .def("GetFullShape", &CartesianRepresentation<3>::GetFullShape)
         .def("InnerProduct", &CartesianRepresentation<3>::InnerProduct)
         .def("ApplyConfigSection", &CartesianRepresentation<3>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___Wavefunction_3__)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_3___MultiplyIntegrationWeightsWavefunction_3__)
         .def("MultiplyOverlap", CartesianRepresentation_3___MultiplyOverlapWavefunction_3___Wavefunction_3___int)
         .def("MultiplyOverlap", CartesianRepresentation_3___MultiplyOverlapWavefunction_3__)
         .def("SolveOverlap", &CartesianRepresentation<3>::SolveOverlap)
@@ -109,8 +150,7 @@ void Export_python_cartesianrange()
     delete CartesianRepresentation_3_scope;
 
     scope* CartesianRepresentation_4_scope = new scope(
-    class_< CartesianRepresentation<4>, bases< Representation<4> >  >("CartesianRepresentation_4", init<  >())
-        .def(init< const CartesianRepresentation<4>& >())
+    class_< CartesianRepresentation<4>, bases< Representation<4> > , boost::noncopyable >("CartesianRepresentation_4", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,4>& >())
         .def_readwrite("Range", &CartesianRepresentation<4>::Range)
@@ -122,6 +162,10 @@ void Export_python_cartesianrange()
         .def("GetFullShape", &CartesianRepresentation<4>::GetFullShape)
         .def("InnerProduct", &CartesianRepresentation<4>::InnerProduct)
         .def("ApplyConfigSection", &CartesianRepresentation<4>::ApplyConfigSection)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___Wavefunction_4__)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4___int)
+        .def("MultiplyIntegrationWeights", CartesianRepresentation_4___MultiplyIntegrationWeightsWavefunction_4__)
         .def("MultiplyOverlap", CartesianRepresentation_4___MultiplyOverlapWavefunction_4___Wavefunction_4___int)
         .def("MultiplyOverlap", CartesianRepresentation_4___MultiplyOverlapWavefunction_4__)
         .def("SolveOverlap", &CartesianRepresentation<4>::SolveOverlap)

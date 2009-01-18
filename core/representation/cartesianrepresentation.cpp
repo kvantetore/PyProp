@@ -50,8 +50,9 @@ void CartesianRepresentation<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 	}
 }
 
+/* Integration Weights */
 template<int Rank>
-void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
+void CartesianRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
 {
 	int activeRank = rank - this->GetBaseRank();
 	if (activeRank < 0 || activeRank >= Rank)
@@ -63,27 +64,41 @@ void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, 
 }
 
 template<int Rank>
-void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
+void CartesianRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi)
 {
-	ScaleVector(GetScalarWeight(), psi.GetData());
+	CopyVector(GetScalarWeight(), srcPsi.GetData(), 0.0, dstPsi.GetData());
 }
 
 template<int Rank>
-void CartesianRepresentation<Rank>::SolveOverlap(Wavefunction<Rank> &psi)
+void CartesianRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi, int rank)
 {
-	ScaleVector(1./GetScalarWeight(), psi.GetData());
+	int activeRank = rank - this->GetBaseRank();
+	if (activeRank < 0 || activeRank >= Rank)
+	{
+		cout << "Rank " << rank << " invalid for CartesianRepresntation" << endl;
+		throw std::runtime_error("Invalid Rank");
+	}
+	ScaleVector(Range(activeRank).Dx, srcPsi.GetData());
 }
 
 template<int Rank>
-void CartesianRepresentation<Rank>::MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi)
+void CartesianRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &srcPsi)
 {
-	ScaleVector(sqrt(GetScalarWeight()), psi.GetData());
+	ScaleVector(GetScalarWeight(), srcPsi.GetData());
 }
 
+
+/* Overlap Matrix */
 template<int Rank>
-void CartesianRepresentation<Rank>::SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi)
+void CartesianRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, Wavefunction<Rank> &dstPsi, int rank)
 {
-	ScaleVector(1.0/sqrt(GetScalarWeight()), psi.GetData());
+	int activeRank = rank - this->GetBaseRank();
+	if (activeRank < 0 || activeRank >= Rank)
+	{
+		cout << "Rank " << rank << " invalid for CartesianRepresntation" << endl;
+		throw std::runtime_error("Invalid Rank");
+	}
+	CopyVector(1.0, srcPsi.GetData(), 0.0, dstPsi.GetData());
 }
 
 template<int Rank>

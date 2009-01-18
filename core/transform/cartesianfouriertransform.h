@@ -50,9 +50,9 @@ public:
 	 * Methods for manipulating representations
 	*/
 	// Create representations for a full transform 
-	CartesianRepresentation<Rank> CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation);
+	typename CartesianRepresentation<Rank>::Ptr CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation);
 	//Create representations for partial transforms 
-	CartesianRepresentation<Rank> CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation, int rank);
+	typename CartesianRepresentation<Rank>::Ptr CreateFourierRepresentation(const CartesianRepresentation<Rank> &gridRepresentation, int rank);
 }
 ;
 

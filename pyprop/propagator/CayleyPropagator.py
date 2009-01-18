@@ -52,21 +52,9 @@ class CayleyPropagator(PropagatorBase):
 		else:
 			self.IsOrthogonalBasis = False
 
-		#Currently we only support either non-orthogonal basises + vector basises,
-		#or grid basises, not both at the same time, due to the way MultiplyOverlap 
-		#multiplies the weights for grid basises
-		#TODO: separate overlap from weights, they are separate and should be treated as such
-		if not self.IsOrthogonalBasis:
-			for rank in range(self.Rank):
-				if repr.IsOrthogonalBasis(rank):
-					subRepr = repr.GetRepresentation(rank)
-					if any(abs(subRepr.GetGlobalWeights(rank) - 1) > 1e-15):
-						raise Exception("CayleyPropagator does not support combination of grid and non-orthogonal basises")
-
 		#Setup preconditioner
 		if self.Preconditioner:
 			self.Preconditioner.Setup(self, dt)
-				
 
 	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
@@ -120,8 +108,7 @@ class CayleyPropagator(PropagatorBase):
 
 		#Multiply
 		destPsi.GetData()[:] = sourcePsi.GetData()
-		if not self.IsOrthogonalBasis:
-			repr.MultiplyOverlap(destPsi)
+		repr.MultiplyOverlap(destPsi)
 
 		destPsi.GetData()[:] *= 1.0/hFactor
 		self.BasePropagator.MultiplyHamiltonian(sourcePsi, destPsi, t, dt)

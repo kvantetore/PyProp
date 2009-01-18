@@ -29,7 +29,7 @@ public:
 	{
 		if (GlobalOverlapMatrix == 0)
 		{
-			OverlapMatrixEvaluatorDiagonal evaluator(this->GetGlobalWeights(rank));
+			OverlapMatrixEvaluatorScalar evaluator(1.0);
 			int size = this->GetFullShape()(0);
 			GlobalOverlapMatrix = OverlapMatrix::Ptr(new OverlapMatrix(size, 0, evaluator));
 		}
