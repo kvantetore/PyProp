@@ -56,6 +56,8 @@ class CayleyPropagator(PropagatorBase):
 		if self.Preconditioner:
 			self.Preconditioner.Setup(self, dt)
 
+		self.TempPsiMultiply = self.psi.Copy()
+
 	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
 
@@ -69,6 +71,7 @@ class CayleyPropagator(PropagatorBase):
 		#plot(abs(self.psi.GetData()), "r")
 
 		#construct tempPsi = (S + i dt H) psi(t)
+		self.TempPsi.Clear()
 		self.MultiplySpH(self.psi, self.TempPsi, -1.0j*dt/2, t, dt)
 		
 		#plot(abs(self.TempPsi.GetData()), "g--")
@@ -92,7 +95,7 @@ class CayleyPropagator(PropagatorBase):
 		#
 		if err > 1e-4 :
 			print "Error = %s" % (err)
-		print self.Solver.GetErrorEstimateList()
+		#print find(self.Solver.GetErrorEstimateList() == 0)[0]
 
 	def MultiplySpH(self, sourcePsi, destPsi, hFactor, t, dt):
 		"""
@@ -107,12 +110,20 @@ class CayleyPropagator(PropagatorBase):
 		repr = destPsi.GetRepresentation()
 
 		#Multiply
-		destPsi.GetData()[:] = sourcePsi.GetData()
-		repr.MultiplyOverlap(destPsi)
+		#destPsi.GetData()[:] = sourcePsi.GetData()
+		#repr.MultiplyOverlap(destPsi)
 
-		destPsi.GetData()[:] *= 1.0/hFactor
-		self.BasePropagator.MultiplyHamiltonian(sourcePsi, destPsi, t, dt)
+		#destPsi.GetData()[:] *= 1.0/hFactor
+		#self.BasePropagator.MultiplyHamiltonian(sourcePsi, destPsi, t, dt)
+		#destPsi.GetData()[:] *= hFactor
+
+		self.TempPsiMultiply.GetData()[:] = sourcePsi.GetData()
+		self.TempPsiMultiply.GetRepresentation().MultiplyOverlap(self.TempPsiMultiply)
+
+		self.BasePropagator.MultiplyHamiltonianNoOverlap(sourcePsi, destPsi, t, dt)
 		destPsi.GetData()[:] *= hFactor
+
+		destPsi.GetData()[:] += self.TempPsiMultiply.GetData()
 		
 
 	def SolverCallback(self, sourcePsi, destPsi, t, dt):
@@ -122,9 +133,9 @@ class CayleyPropagator(PropagatorBase):
 		if self.Preconditioner:
 			self.Preconditioner.Solve(destPsi)
 
-		tempPsi = sourcePsi.Copy()
-		tempPsi.GetData()[:] -= destPsi.GetData()
-		print tempPsi.GetNorm()
+		#tempPsi = sourcePsi.Copy()
+		#tempPsi.GetData()[:] -= destPsi.GetData()
+		#print sum(abs(tempPsi.GetData())**2), abs(sum(conj(sourcePsi.GetData()) * destPsi.GetData()))**2
 
 
 		

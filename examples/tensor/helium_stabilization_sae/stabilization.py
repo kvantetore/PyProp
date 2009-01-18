@@ -23,7 +23,7 @@ def RunStabilization(**args):
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"] #, "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 
 	#Find radial eigenstates
@@ -31,9 +31,10 @@ def RunStabilization(**args):
 	overlapMatrix = SetupOverlapMatrix(prop)
 		
 	#Setup initial state
-	SetRadialEigenstate(prop.psi, V, n=1, l=0)
-	print "Norm = ", prop.psi.Normalize()
-	PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
+	#SetRadialEigenstate(prop.psi, V, n=1, l=0)
+	#print "Norm = ", prop.psi.Normalize()
+	#PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
+	prop.psi.Normalize()
 	initPsi = prop.psi.Copy()
 
 	timeList = []
@@ -61,12 +62,12 @@ def RunStabilization(**args):
 
 	#Propagate until end of pulse
 	duration = prop.Duration
-	prop.Duration  = 2*pi
-	for t in prop.Advance(False):
-		pass
+	#prop.Duration  = 2*pi
+	#for t in prop.Advance(False):
+	#	pass
 	#Remove bound states
-	RemoveBoundDistribution(prop.psi, E, V, overlapMatrix)
-	prop.psi.GetData()[0,:] = 0
+	#RemoveBoundDistribution(prop.psi, E, V, overlapMatrix)
+	#prop.psi.GetData()[0,:] = 0
 
 	prop.Duration = duration
 	for t in prop.Advance(outputCount, yieldEnd=True):
@@ -112,7 +113,7 @@ def RunStabilization(**args):
 	prop.OutsideAbsorberList = outsideAbsorberList
 
 	PrintOut("")
-	prop.Propagator.PampWrapper.PrintStatistics()
+	#prop.Propagator.PampWrapper.PrintStatistics()
 
 	#Saving final wavefunction
 	outputFilename = args.get("outputFilename", "final.h5")

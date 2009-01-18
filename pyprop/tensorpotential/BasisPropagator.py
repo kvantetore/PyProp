@@ -157,6 +157,11 @@ class BasisPropagator(PropagatorBase):
 		if not all([repr.IsOrthogonalBasis(i) for i in range(self.Rank)]):
 			repr.SolveOverlap(destPsi)
 
+	def MultiplyHamiltonianNoOverlap(self, srcPsi, destPsi, t, dt):
+		#Multiply potentials
+		destPsi.GetData()[:] = 0
+		self.MultiplyPotential(srcPsi, destPsi, t, dt)
+
 	def MultiplyHamiltonianBalancedOverlap(self, srcPsi, destPsi, t, dt):
 		#Store input psi
 		def StorePsi():

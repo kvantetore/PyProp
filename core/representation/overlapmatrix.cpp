@@ -56,6 +56,18 @@ void OverlapMatrix::Setup(const OverlapMatrixEvaluator &evaluator)
 		}
 	}
 
+	//Banded Blas (nonhermitian)
+	OverlapBlasBanded.resize(BasisSize, 2*SuperDiagonals+1);
+	OverlapBlasBanded = 0;
+	for (int i=0; i<BasisSize; i++)
+	{
+		int startIndex = std::max(0, i-SuperDiagonals);
+		int endIndex = std::min(BasisSize, i+SuperDiagonals+1);
+		for (int j=startIndex; j<endIndex; j++)
+		{
+			 OverlapBlasBanded(j, SuperDiagonals+i-j) = evaluator(i, j);
+		}
+	}
 
 	//Set up "full" storage formats, used by InnerProduct
 	int bandwidth = 2*SuperDiagonals + 1;

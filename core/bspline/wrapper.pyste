@@ -1,3 +1,10 @@
+#bspline solver
+BSplineSolver = Template("BSpline::BSplineSolver", "../transform/bspline/bsplinesolver.h")
+BSplineSolver("1")
+BSplineSolver("2")
+BSplineSolver("3")
+BSplineSolver("4")
+
 #Representation for the bspline representation
 BSplineRepresentation = Class("BSpline::BSplineRepresentation", "../representation/bspline/bsplinerepresentation.h")
 no_virtual(BSplineRepresentation)

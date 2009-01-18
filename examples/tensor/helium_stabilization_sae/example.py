@@ -122,5 +122,42 @@ def LaserFunctionLength(conf, t):
 		curField = 0
 	return curField
 
+#------------------------------------------------------------------------------------
+#                       Preconditioner for Cayley Propagator
+#------------------------------------------------------------------------------------
 
+
+class BSplinePreconditioner:
+	def __init__(self, psi):
+		self.Rank = psi.GetRank()
+		#self.Solver = pyprop.CreateInstanceRank("FiniteDifferenceSolver", self.Rank, globals=globals())
+		self.Solver = pyprop.CreateInstanceRank("core.BSpline_BSplineSolver", self.Rank)
+		self.psi = psi
+
+	def ApplyConfigSection(self, conf):
+		self.PreconditionRank = conf.rank
+		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
+
+	def Setup(self, prop, dt):
+		#Add all potentials to solver
+		for conf in self.PotentialSections:
+			#Setup potential in basis
+			potential = prop.BasePropagator.GeneratePotential(conf)
+			for i, geom in enumerate(potential.GeometryList):
+				if i==self.PreconditionRank and geom.GetStorageId() != "BandNH":
+					raise "Potentials must be banded-nonhermitian in precondition rank"
+				elif i!=self.PreconditionRank and geom.GetStorageId() != "Diag":
+					raise "Potentials must be diagonal in non-precondition ranks"
+		
+			#Add potential to solver
+			self.Solver.AddTensorPotential(potential.PotentialData)
+
+		#Setup solver
+		scalingS = 1.0
+		scalingH = (1.0j*dt/2.)
+		self.Solver.Setup(prop.psi, self.PreconditionRank, scalingS, scalingH)
+		print "Setting up!"
+
+	def Solve(self, psi):
+		self.Solver.Solve(psi)
 

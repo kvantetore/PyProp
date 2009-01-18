@@ -90,6 +90,7 @@ SOURCES= \
 	utility/timer.cpp \
 	tensorpotential/tensorpotentialmultiply_wrapper.cpp \
 	representation/customgridrepresentation.cpp \
+	utility/matrix_conversion.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 

@@ -218,6 +218,12 @@ void GMRES<T>::Setup()
 		ProcCount = 1;
 	}
 
+	double minTol = std::pow(std::numeric_limits<NormType>::epsilon(), 2.0/3.0);
+	if (Tolerance < minTol)
+	{
+		Tolerance = minTol;
+	}
+
 	//Use blas for InnerProducts unless another
 	//integration functor has ben specified
 	if (Integration == 0)
@@ -276,7 +282,7 @@ void GMRES<T>::PerformInitialArnoldiStep()
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
-		cout << "Happy breakdown!, res = " << beta << ", alpha = " << alpha << endl;
+		//cout << "Happy breakdown!, res = " << beta << ", alpha = " << alpha << endl;
 		HappyBreakdown = true;
 	}
 	HessenbergMatrix(0, 1) = beta;
@@ -333,7 +339,7 @@ void GMRES<T>::PerformArnoldiStep()
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
-		cout << "Happy breakdown (2)!, res = " << beta << endl;
+		//cout << "Happy breakdown (2)!, res = " << beta << endl;
 		HappyBreakdown = true;
 	}
 	HessenbergMatrix(j+1, j+2) = beta;
@@ -478,15 +484,17 @@ void GMRES<T>::SolveVector(VectorType rightHandSide, VectorType solution)
 
 		ErrorEstimateList(CurrentArnoldiStep) = residualNorm;
 		ErrorEstimate = residualNorm;
+
+		//cout << "Error Estimate = " << ErrorEstimate << " > " << Tolerance << endl;
 	}
 
 
 	MatrixType currentArnoldiMatrix(ArnoldiVectors(blitz::Range(0, CurrentArnoldiStep), blitz::Range::all()));
 	VectorType x = HessenbergSolution( blitz::Range(0, CurrentArnoldiStep) );
-	if (HappyBreakdown)
-	{
-		cout << "Solution = " << x << endl;
-	}
+	//if (HappyBreakdown)
+	//{
+	//	cout << "Solution = " << x << endl;
+	//}
 	blas.MultiplyMatrixVector(currentArnoldiMatrix, x, solution);
 
 	Timers["Total"].Stop();

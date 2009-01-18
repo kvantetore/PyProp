@@ -107,6 +107,11 @@ public:
 		return OverlapCholeskyUpper;
 	}
 
+	MatrixType GetOverlapBlasBanded()
+	{
+		return OverlapBlasBanded;
+	}
+
 	MatrixTypeReal GetOverlapFullRow()
 	{
 		return OverlapFullRow;
@@ -160,6 +165,7 @@ private:
 	MatrixType OverlapHermitianUpper;
 	MatrixType OverlapHermitianLower;
 	MatrixType OverlapCholeskyUpper;
+	MatrixType OverlapBlasBanded;
 
 	//Used by inner product
 	MatrixTypeReal OverlapFullRow;
