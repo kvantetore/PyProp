@@ -3,6 +3,7 @@ import os
 import time
 try:
 	import pysparse
+	import scipy.linalg
 except:
 	pass
 
@@ -222,6 +223,34 @@ def TensorPotentialIndexMapOld(psiShape, tensorPotential):
 				indexRight = x2p + (x1p * Count2) + (x0p * Count1 * Count2) 
 				yield indexLeft, indexRight, i, j, k
 
+
+def SetupBigMatrixReal(prop, whichPotentials):
+	print "Setting up potential matrix..."
+	matrixSize = prop.psi.GetData().size
+	psiShape = prop.psi.GetData().shape
+	
+	#Allocate the hamilton matrix
+	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" \
+		% (matrixSize, matrixSize, matrixSize**2 * 8 / 1024.**2)
+	BigMatrix = zeros((matrixSize, matrixSize), dtype="double")
+
+	for potNum in whichPotentials:
+		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
+		print "    Processing potential %i: %s" % (potNum, potential.Name)
+
+		basisPairs0 = potential.BasisPairs[0]
+		basisPairs1 = potential.BasisPairs[1]
+		basisPairs2 = potential.BasisPairs[2]
+		
+		Count0 = prop.psi.GetData().shape[0]
+		Count1 = prop.psi.GetData().shape[1]
+		Count2 = prop.psi.GetData().shape[2]
+
+		tMap = TensorPotentialIndexMap
+		for idxL, idxR, i, j, k in tMap(psiShape, potential):
+			BigMatrix[idxL, idxR] += potential.PotentialData[i, j, k].real
+
+	return BigMatrix
 
 
 #------------------------------------------------------------------------------------
@@ -444,6 +473,72 @@ def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/
 
 
 	return numConv, E, V, numIter, numIterInner
+
+
+def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSymmetry=False, \
+	outFileName = "eig_direct.h5"):
+	"""
+	Get energies and eigenstates by direct diagonalization of L-subspace matrix
+	"""
+	#Coupled spherical index iterator based on given lmax and L
+	index_iterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
+	
+	#Set up problem
+	prop = SetupProblem(config="config_eigenvalues.ini", index_iterator=index_iterator)
+
+	#Set up hamilton and overlap matrices
+	HamiltonMatrix = SetupBigMatrixReal(prop, [0,1])
+	OverlapMatrix = SetupBigMatrixReal(prop, [2])
+
+	#Calculate generalized eigenvalues and eigenvectors
+	print "Calculating generalized eigenvalues and eigenvectors..."
+	sys.stdout.flush()
+	E, V = scipy.linalg.eig(HamiltonMatrix, b=OverlapMatrix)
+
+	#Sort eigenvalues and eigenvectors
+	sortIdx = argsort(E)
+	E = E[sortIdx].real
+	V = V[:,sortIdx]
+
+	#Check symmetry of eigenstates
+	psiShape = prop.psi.GetData().shape
+	lmax = psiShape[0]
+	eps = 1e-9
+	symmetryList = []
+	if checkSymmetry:
+		for stateIdx in range(len(E)):
+			
+			#Check symmetry of l-component with largest norm
+			lSpaceNorm = \
+				[scipy.linalg.norm(V[:,stateIdx].reshape(psiShape)[i,:]) for i in range(lmax)]
+			largestComponentIdx = argmax(lSpaceNorm)
+			v_radial = V[:,stateIdx].reshape(psiShape)[largestComponentIdx,:,:]
+
+			#Check if even/odd or not symmetric
+			if scipy.linalg.norm(v_radial - transpose(v_radial)) < eps:
+				symmetryList.append("Even")
+			elif scipy.linalg.norm(v_radial + transpose(v_radial)) < eps:
+				symmetryList.append("Odd")
+			else:
+				print "E = %s, idx = %s" % (E[stateIdx], stateIdx)
+				symmetryList.append("NoSym")
+
+	#Store result
+	if storeResult:
+		h5file = tables.openFile(outFileName, "w")
+		try:
+			myGroup = h5file.createGroup("/", "Eig")
+			h5file.createArray(myGroup, "Eigenvectors", V)
+			h5file.createArray(myGroup, "Eigenvalues", E)
+			if symmetryList:
+				h5file.createArray(myGroup, "SymmetryList", symmetryList)
+			myGroup._v_attrs.configObject = prop.Config.cfgObj
+		finally:
+			h5file.close()
+
+	#...or return result
+	else:
+		return prop, HamiltonMatrix, OverlapMatrix, E, V
 
 
 class InverseIterator:
