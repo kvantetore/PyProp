@@ -216,6 +216,9 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 		self.RankCount = rankCount	
 		self.BandCount = bandCount
 		self.UseGrid = useGrid
+		self.BaseRank = 0 #Supports only distributed in the first rank
+		self.TempArrays = None
+		self.MultiplyArguments = None
 
 	def UseGridRepresentation(self):
 		return self.UseGrid
@@ -242,10 +245,31 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 		return "Distr"
 
 	def GetMultiplyArguments(self, psi):
-		return [self.RankCount, self.BandCount]
+		if self.MultiplyArguments == None:
+			if self.TempArrays == None:
+				self.SetupTempArrays(psi)
+			self.MultiplyArguments = [self.RankCount, self.BandCount] + self.TempArrays
+
+		return self.MultiplyArguments
 
 	def HasParallelMultiply(self):
 		return True
+
+	def SetupTempArrays(self, psi):
+		dataShape = psi.GetData().shape
+		rank = self.BaseRank
+
+		recvTempShape = list(dataShape)
+		recvTempShape[rank] = 1
+		recvTemp = zeros(recvTempShape, dtype=complex)
+
+		sendTempShape = list(dataShape)
+		sendTempShape[rank] = 2
+		sendTemp = zeros(sendTempShape, dtype=complex)
+
+		self.TempArrays = [recvTemp, sendTemp]
+
+
 
 class GeometryInfoCommonIdentity(GeometryInfoBase):
 	"""

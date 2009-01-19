@@ -314,7 +314,13 @@ def GenerateAlgorithm3(rank):
 		str += """
 			else if (rank == %(curRank)s)
 			{
-				TensorPotential::TensorPotentialMultiply_%(storageIdString)s_Wrapper(potential, scaling, source, dest, globalSize, bands);
+				blitz::TinyVector<int, %(rank)i> shape = source.shape();
+				blitz::Array<cplx, %(rank)i> recvTemp, sendTemp;
+				shape(%(curRank)i) = 1;
+				recvTemp.resize(shape);
+				shape(%(curRank)i) = 2;
+				sendTemp.resize(shape);
+				TensorPotential::TensorPotentialMultiply_%(storageIdString)s_Wrapper(potential, scaling, source, dest, globalSize, bands, recvTemp, sendTemp);
 			}
 		""" % { \
 			"rank": rank, \

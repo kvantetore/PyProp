@@ -998,6 +998,8 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 		parameterList = []
 		parameterList += [("globalSize%i" % self.CurRank, "scalar", "integer")]
 		parameterList += [("bands%i" % self.CurRank, "scalar", "integer")]
+		parameterList += [("recvTemp%i" % self.CurRank, "array", self.SystemRank, "complex (kind=dbl)")]
+		parameterList += [("sendTemp%i" % self.CurRank, "array", self.SystemRank, "complex (kind=dbl)")]
 		return parameterList
 
 	def GetParameterDeclarationCode(self):
@@ -1007,13 +1009,15 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 		recvTempDim = ["0:0"] + tempDimension 
 
 		str = ""
+		str += GetFortranArrayDeclaration("recvTemp%i" % self.CurRank, self.SystemRank, "complex (kind=dbl)", "inout")
+		str += GetFortranArrayDeclaration("sendTemp%i" % self.CurRank, self.SystemRank, "complex (kind=dbl)", "inout")
 		str += """
 			integer, intent(in) :: globalSize%(rank)i, bands%(rank)i
 			integer :: i%(rank)i, row%(rank)i, col%(rank)i
 			
-			!temporary arrays TODO:FIX TEMPS
-			complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
-			complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
+			!temporary arrays TODO:FIX TEMPS <= FIXED :D
+			!complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
+			!complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
 			integer :: tempIndex%(rank)i
 			
 			!Row/Col indices for calculating row vector product
