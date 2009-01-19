@@ -779,6 +779,8 @@ class SnippetGeneratorSimpleDistributed(SnippetGeneratorBase):
 		parameterList += [("recvProcList%i" % self.CurRank, "array", 2, "integer")]
 		parameterList += [("recvLocalRowList%i" % self.CurRank, "array", 2, "integer")]
 		parameterList += [("recvCount%i" % self.CurRank, "array", 1, "integer")]
+		parameterList += [("recvTemp%i" % self.CurRank, "array", self.SystemRank, "complex (kind=dbl)")]
+		parameterList += [("sendTemp%i" % self.CurRank, "array", self.SystemRank, "complex (kind=dbl)")]
 		return parameterList
 
 	def GetParameterDeclarationCode(self):
@@ -795,13 +797,15 @@ class SnippetGeneratorSimpleDistributed(SnippetGeneratorBase):
 		str += GetFortranArrayDeclaration("recvProcList%i" % self.CurRank, 2, "integer", "in")
 		str += GetFortranArrayDeclaration("recvLocalRowList%i" % self.CurRank, 2, "integer", "in")
 		str += GetFortranArrayDeclaration("recvCount%i" % self.CurRank, 1, "integer", "in")
+		str += GetFortranArrayDeclaration("recvTemp%i" % self.CurRank, self.SystemRank, "complex (kind=dbl)", "inout")
+		str += GetFortranArrayDeclaration("sendTemp%i" % self.CurRank, self.SystemRank, "complex (kind=dbl)", "inout")
 		str += """
 			integer, intent(in) :: globalSize%(rank)i
 			integer :: i%(rank)i, row%(rank)i, col%(rank)i
 			
-			!temporary arrays TODO:FIX TEMPS
-			complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
-			complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
+			!temporary arrays TODO:FIX TEMPS <= FIXED! :D
+			!complex (kind=dbl), dimension(%(recvTempDim)s) :: recvTemp%(rank)i
+			!complex (kind=dbl), dimension(%(sendTempDim)s) :: sendTemp%(rank)i
 			integer :: tempIndex%(rank)i
 			
 			integer :: curSend%(rank)i
@@ -1636,6 +1640,7 @@ def PrintFortranCode(curPart, partCount):
 
 def PrintWrapperCode():
 	str = """
+	#define BOOST_PYTHON_MAX_ARITY 20
 	#include <boost/python.hpp>
 
 	#include "../common.h"

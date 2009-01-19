@@ -28,7 +28,7 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simp"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return [self.GetBasisPairs()]
 
 
@@ -43,6 +43,8 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 		self.SelectionRule = selectionRule
 		self.Representation = representation
 		self.LocalIndexPairs = None
+		self.StepArguments = None
+		self.TempArrays = None
 		self.MultiplyArguments = None
 
 	def UseGridRepresentation(self):
@@ -59,10 +61,15 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 	def GetStorageId(self):
 		return "SimpD"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if self.MultiplyArguments == None:
-			self.SetupLocalBasisPairs()
-		return self.MultiplyArguments
+			if self.StepArguments == None:
+				self.SetupLocalBasisPairs()
+			if self.TempArrays == None:
+				self.SetupTempArrays(psi)
+			self.MultiplyArguments = self.StepArguments + self.TempArrays
+
+		return self.StepArguments + self.TempArrays
 	
 	def HasParallelMultiply(self):
 		return True
@@ -75,11 +82,24 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 	
 		distribIndexList = SetupDistributedIndexList(globalSize, indexPairs, distrib, rank)
 		stepList = SetupStepList(globalSize, indexPairs, distribIndexList, distrib, rank)
+		self.MaxRecvCount = max([len(step.RecvProcList) for step in stepList])
 
-		self.MultiplyArguments = [int(globalSize)] + list(StepListToArray(stepList))
+		self.StepArguments = [int(globalSize)] + list(StepListToArray(stepList))
 		self.LocalIndexPairs = array([[step.GlobalRow, step.GlobalCol] for step in stepList if step.LocalMatrixIndex!=-1], dtype=int32)
 
+	def SetupTempArrays(self, psi):
+		dataShape = psi.GetData().shape
+		rank = self.Representation.GetBaseRank()
 
+		recvTempShape = list(dataShape)
+		recvTempShape[rank] = self.MaxRecvCount
+		recvTemp = zeros(recvTempShape, dtype=complex)
+
+		sendTempShape = list(dataShape)
+		sendTempShape[rank] = 2
+		sendTemp = zeros(sendTempShape, dtype=complex)
+
+		self.TempArrays = [recvTemp, sendTemp]
 
 
 class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):

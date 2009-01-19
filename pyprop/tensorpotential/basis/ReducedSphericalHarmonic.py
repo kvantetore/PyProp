@@ -39,7 +39,7 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simp"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if not hasattr(self, "BasisPairs"):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
@@ -80,7 +80,7 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Herm"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if not hasattr(self, "BasisPairs"):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]

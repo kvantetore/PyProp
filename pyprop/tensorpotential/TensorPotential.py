@@ -66,7 +66,7 @@ class TensorPotential(PotentialWrapper):
 		argList = [self.PotentialData, timeScaling, source, dest]
 		#Parameters for each storage
 		for i, geom in enumerate(self.GeometryList):
-			argList += geom.GetMultiplyArguments()
+			argList += geom.GetMultiplyArguments(srcPsi)
 
 		#Perform multiplication
 		self.MultiplyFunction(*argList)

@@ -42,7 +42,7 @@ class GeometryInfoBase(object):
 		"""
 		raise NotImplementedException()	
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		"""
 		Returns the arguments needed for TensorMultiply
 		"""
@@ -119,7 +119,7 @@ class GeometryInfoCommonDense(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simp"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if not hasattr(self, "BasisPairs"):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
@@ -154,7 +154,7 @@ class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Herm"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if not hasattr(self, "BasisPairs"):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
@@ -199,7 +199,7 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Diag"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return []
 
 	def HasParallelMultiply(self):
@@ -241,7 +241,7 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Distr"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return [self.RankCount, self.BandCount]
 
 	def HasParallelMultiply(self):
@@ -288,7 +288,7 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Ident"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return []
 
 
@@ -344,7 +344,7 @@ class GeometryInfoCommonBandedNonHermitian(GeometryInfoBase):
 	def GetStorageId(self):
 		return "BandNH"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return []
 
 

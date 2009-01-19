@@ -49,7 +49,7 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Simp"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		if not hasattr(self, "BasisPairs"):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
@@ -103,7 +103,7 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 	def GetStorageId(self):
 		return "Band"
 
-	def GetMultiplyArguments(self):
+	def GetMultiplyArguments(self, psi):
 		return []
 
 
