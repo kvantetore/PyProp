@@ -403,7 +403,7 @@ def StoreTensorPotentialMTX(prop, whichPotentials, outFileName, eps = 1e-14):
 
 def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/", \
 	configFileName="config_eigenvalues.ini", L=0, lmax=4, outFileName = "eig_jd.h5", \
-	preconType = pysparse.precon.jacobi):
+	preconType = None):
 	"""
 	Find some eigenvalues for a given L-subspace using Jacobi-Davidson method
 	"""
@@ -432,12 +432,13 @@ def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/
 	#Store eigenvalues and eigenvectors
 	h5file = tables.openFile(outFileName, "w")
 	try:
-		h5file.createArray(dataSetPath, "Eigenvectors", V)
-		h5file.createArray(dataSetPath, "Eigenvalues", E)
-		h5file.setNodeAttr(dataSetPath, "NumberOfIterations", numIter)
-		h5file.setNodeAttr(dataSetPath, "NumberOfConvergedEigs", numConv)
-	except:
-		pass
+		myGroup = h5file.createGroup("/", "Eig")
+		h5file.createArray(myGroup, "Eigenvectors", V)
+		h5file.createArray(myGroup, "Eigenvalues", E)
+		myGroup._v_attrs.NumberOfIterations = numIter
+		myGroup._v_attrs.NumberOfInnerIterations = numIterInner
+		myGroup._v_attrs.NumberOfConvergedEigs = numConv
+		myGroup._v_attrs.configObject = prop.Config.cfgObj
 	finally:
 		h5file.close()
 
