@@ -682,3 +682,58 @@ def CalculatePolarizabilityGroundState(fieldRange = linspace(0.001,0.01,10), **a
 
 	return fieldRange, polarizabilities, energies
 
+#------------------------------------------------------------------------------------
+#                      Matrix Conversion Function
+#------------------------------------------------------------------------------------
+
+def GetRadialMatrices(pot, psi):
+	localShape = psi.GetData().shape
+
+	#do parallelizaion on angular rank
+	repr = psi.GetRepresentation()
+	if repr.GetDistributedModel().IsDistributedRank(1) or repr.GetDistributedModel().IsDistributedRank(2):
+		raise Exception("Only angular rank can be distributed")
+
+	#Check that the angular basis pairs is diagonal
+	for row, col in zip(pot.BasisPairs[0][:,0], pot.BasisPairs[0][:,1]):
+		if row != col:
+			raise Exception("%i != %i, angular rank must be diagonal for potential %s" % (row, col, pot.Name))
+
+	#Create a radial matrix in compressed row format
+	radialMatrices = []
+	localAngularCount = localShape[0]
+	for curAngularIndex in range(localAngularCount):
+		potentialSlice = pot.PotentialData[curAngularIndex, :, :]
+
+		nonzeroCount = potentialSlice.size
+		matrixSize = localShape[1] * localShape[2]
+
+		rowStartIndices = zeros(matrixSize, dtype=int32)
+		colIndices = zeros(nonzeroCount, dtype=int32)
+
+		#Create a list of index pairs in the full matrix
+		matrixPairs = zeros((nonzeroCount, 2), dtype=int)
+		matrixIndex = 0
+		for i, (row0, col0) in enumerate(pot.BasisPairs[1]):
+			rowIndex0 = (row0 * localShape[2])
+			colIndex0 = (col0 * localShape[2]) 
+			for j, (row1, col1) in enumerate(pot.BasisPairs[2]):
+				rowIndex = rowIndex0 + row1
+				colIndex = colIndex0 + col1
+
+				matrixPairs[matrixIndex, 0] = rowIndex
+				matrixPairs[matrixIndex, 1] = colIndex
+				matrixIndex += 1
+
+		#Sort indexpairs by column
+		sortIndices = argsort(matrixPairs[:,1])
+
+
+
+
+		radialMatrices.append( (potentialSlice, rowStartIndices, colIndices) )
+
+	return radialMatrices
+
+				
+
