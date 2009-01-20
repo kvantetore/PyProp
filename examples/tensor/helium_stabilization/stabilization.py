@@ -82,6 +82,8 @@ def RunStabilization(**args):
 		curTime = time.time() - startTime
 		totalTime = (curTime / t) * prop.Duration
 		eta = totalTime - curTime
+
+		print prop.Propagator.Solver.GetErrorEstimateList()
 	
 		#Print stats
 		PrintOut("t = %.2f; N = %.15f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))

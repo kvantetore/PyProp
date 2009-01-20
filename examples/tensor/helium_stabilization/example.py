@@ -20,6 +20,15 @@ from libpotential import *
 from pyprop import PrintOut
 
 execfile("stabilization.py")
+execfile("twoelectron_test.py")
+
+try:
+	import scipy
+	import scipy.sparse
+	import scipy.linsolve
+	scipy.linsolve.use_solver(useUmfpack=False)
+except:
+	pyprop.PrintOut("Could not load scipy")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -75,7 +84,7 @@ def SetupProblem(**args):
 
 def FindGroundstate(**args):
 	prop = SetupProblem(imtime=True, **args)
-	for t in prop.Advance(10):
+	for t in prop.Advance(True):
 		E = prop.GetEnergy()
 		if pyprop.ProcId == 0:
 			print "t = %02.2f, E = %2.8f" % (t, E)
@@ -686,7 +695,7 @@ def CalculatePolarizabilityGroundState(fieldRange = linspace(0.001,0.01,10), **a
 #                      Matrix Conversion Function
 #------------------------------------------------------------------------------------
 
-def GetRadialMatrices(pot, psi):
+def GetRadialMatricesCompressedCol(pot, psi):
 	localShape = psi.GetData().shape
 
 	#do parallelizaion on angular rank
@@ -699,41 +708,113 @@ def GetRadialMatrices(pot, psi):
 		if row != col:
 			raise Exception("%i != %i, angular rank must be diagonal for potential %s" % (row, col, pot.Name))
 
-	#Create a radial matrix in compressed row format
+	#stats for each radial matrix
+	matrixSize = localShape[1] * localShape[2]
+	nonzeroCount = pot.BasisPairs[1].shape[0] * pot.BasisPairs[2].shape[0]
+
+	#Create a list of radial index pairs in the full matrix
+	matrixPairs = zeros((nonzeroCount, 2), dtype=int)
+	matrixIndex = 0
+	for i, (row0, col0) in enumerate(pot.BasisPairs[1]):
+		rowIndex0 = (row0 * localShape[2])
+		colIndex0 = (col0 * localShape[2]) 
+		for j, (row1, col1) in enumerate(pot.BasisPairs[2]):
+			rowIndex = rowIndex0 + row1
+			colIndex = colIndex0 + col1
+
+			matrixPairs[matrixIndex, 0] = rowIndex
+			matrixPairs[matrixIndex, 1] = colIndex
+			matrixIndex += 1
+
+	#Sort indexpairs by column
+	sortIndices = argsort(matrixPairs[:,1])
+
+	#create colStart- and row-indices required by the col-compressed format
+	# colStartIndices is the indices in the compressed matrix where a col starts
+	# rowIndices is the row of every element in the compressed matrix
+	colStartIndices = zeros(matrixSize+1, dtype=int32)
+	rowIndices = zeros(nonzeroCount, dtype=int32)
+	prevCol = -1
+	for i, sortIdx in enumerate(sortIndices):
+		row, col = matrixPairs[sortIdx, :]
+		rowIndices[i] = row
+
+		if prevCol != col:
+			if prevCol != col -1:
+				raise Exception("What? Not a col-compressed format?")
+			colStartIndices[col] = i
+			prevCol = col
+	colStartIndices[-1] = nonzeroCount
+
+	#Create a radial matrix in compressed col format for each angular index
 	radialMatrices = []
 	localAngularCount = localShape[0]
 	for curAngularIndex in range(localAngularCount):
-		potentialSlice = pot.PotentialData[curAngularIndex, :, :]
+		potentialSlice = pot.PotentialData[curAngularIndex, :, :].flat
+		radialMatrix = zeros(nonzeroCount, dtype=complex)
+		
+		for i, sortIdx in enumerate(sortIndices):
+			radialMatrix[i] = potentialSlice[sortIdx]
 
-		nonzeroCount = potentialSlice.size
-		matrixSize = localShape[1] * localShape[2]
+		radialMatrices.append( radialMatrix )
 
-		rowStartIndices = zeros(matrixSize, dtype=int32)
-		colIndices = zeros(nonzeroCount, dtype=int32)
-
-		#Create a list of index pairs in the full matrix
-		matrixPairs = zeros((nonzeroCount, 2), dtype=int)
-		matrixIndex = 0
-		for i, (row0, col0) in enumerate(pot.BasisPairs[1]):
-			rowIndex0 = (row0 * localShape[2])
-			colIndex0 = (col0 * localShape[2]) 
-			for j, (row1, col1) in enumerate(pot.BasisPairs[2]):
-				rowIndex = rowIndex0 + row1
-				colIndex = colIndex0 + col1
-
-				matrixPairs[matrixIndex, 0] = rowIndex
-				matrixPairs[matrixIndex, 1] = colIndex
-				matrixIndex += 1
-
-		#Sort indexpairs by column
-		sortIndices = argsort(matrixPairs[:,1])
-
-
-
-
-		radialMatrices.append( (potentialSlice, rowStartIndices, colIndices) )
-
-	return radialMatrices
+	return rowIndices, colStartIndices, radialMatrices
 
 				
+class RadialTwoElectronPreconditioner:
+	def __init__(self, psi):
+		self.Rank = psi.GetRank()
+		self.psi = psi
+
+	def ApplyConfigSection(self, conf):
+		self.OverlapSection = conf.Config.GetSection("OverlapPotential")
+		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
+
+	def Setup(self, prop, dt):
+		"""
+		Set up a tensor potential for overlap potential and all other potentials
+		and add them together, assuming they have the same layout
+		ending up with a potential containing S + scalingH * (P1 + P2 + ...)
+
+		The radial part of this potential is then converted to compressed col storage
+		and factorized.
+		"""
+
+		#Setup overlap potential
+		tensorPotential = prop.BasePropagator.GeneratePotential(self.OverlapSection)
+
+		#Add all potentials to solver
+		scalingH = (1.0j*dt/2.)
+		for conf in self.PotentialSections:
+			#Setup potential in basis
+			potential = prop.BasePropagator.GeneratePotential(conf)
+			if not tensorPotential.CanConsolidate(potential):
+				raise Exception("Cannot consolidate potential %s with overlap-potential" % (potential.Name))
+		
+			#Add potential
+			tensorPotential.PotentialData += scalingH * potential.PotentialData
+
+	
+		#Setup radial matrices in CSC format
+		tensorPotential.SetupStep(dt)
+		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
+
+		#factorize each matrix
+		radialSolvers = []
+		for mat in radialMatrices:
+			M = scipy.sparse.csc_matrix((mat, row, colStart))
+			solve = scipy.linsolve.factorized(M)
+			radialSolvers.append(solve)
+		self.RadialSolvers = radialSolvers
+
+	def Solve(self, psi):
+		data = psi.GetData()
+		
+		angularCount = data.shape[0]
+		if angularCount != len(self.RadialSolvers):
+			raise Exception("Invalid Angular Count")
+
+		for angularIndex, solve in enumerate(self.RadialSolvers):
+			data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
+		
 

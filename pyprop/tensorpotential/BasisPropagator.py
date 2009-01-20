@@ -92,38 +92,8 @@ class BasisPropagator(PropagatorBase):
 
 			#Loop over all potentials after curPot
 			for otherPot in list(potentials[i+1:]):
-				#We can consolidate curPot and otherPot if all the index pairs are the same,
-				#And curPot and otherPot has the same time dependency
-				canConsolidate = True
-
-				#If one of the potentials is time dependent the other must also be
-				if canConsolidate and curPot.IsTimeDependent != otherPot.IsTimeDependent:
-					canConsolidate = False
-
-				#If they are both time dependent, they must have the same time function
-				if canConsolidate and curPot.IsTimeDependent and otherPot.IsTimeDependent:
-					if otherPot.OriginalTimeFunction != curPot.OriginalTimeFunction:
-						canConsolidate = False
-
-				#don't consolidate debug potentials
-				if canConsolidate and (curPot.DebugPotential or otherPot.DebugPotential):
-					canConsolidate = False
-					
-				#Both potentials must have the same storage 
-				if canConsolidate:
-					for rank in range(self.Rank):
-						if curPot.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
-							canConsolidate = False
-							break
-
-				if canConsolidate:
-					for rank in range(self.Rank):
-						if any(curPot.GeometryList[rank].GetBasisPairs() != otherPot.GeometryList[rank].GetBasisPairs()):
-							canConsolidate = False
-							break
-					
-				#Add otherPot to curPot
-				if canConsolidate:
+				#Add otherPot to curPot if they can be consolidate
+				if curPot.CanConsolidate(otherPot):
 					curPot.PotentialData[:] += otherPot.PotentialData
 					curPot.Name += "+" + otherPot.Name
 					potentials.remove(otherPot)

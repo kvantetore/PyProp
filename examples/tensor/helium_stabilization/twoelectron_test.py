@@ -61,6 +61,35 @@ def SetupBigMatrix(prop, whichPotentials):
 	return BigMatrix
 
 
+def SetupBigMatrix2(potential, psi):
+	print "Setting up potential matrix..."
+	matrixSize = psi.GetData().size
+	
+	#Allocate the hamilton matrix
+	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" % (matrixSize, matrixSize, matrixSize**2 * 16 / 1024.**2)
+	BigMatrix = zeros((matrixSize, matrixSize), dtype="complex")
+
+	print "    Processing potential %s" % (potential.Name)
+
+	basisPairs0 = potential.BasisPairs[0]
+	basisPairs1 = potential.BasisPairs[1]
+	basisPairs2 = potential.BasisPairs[2]
+	
+	Count0 = psi.GetData().shape[0]
+	Count1 = psi.GetData().shape[1]
+	Count2 = psi.GetData().shape[2]
+
+	for i, (x0,x0p) in enumerate(basisPairs0):
+		for j, (x1,x1p) in enumerate(basisPairs1):
+			for k, (x2,x2p) in enumerate(basisPairs2):
+				indexLeft = x2 + (x1 * Count2) + (x0 * Count1 * Count2) 
+				indexRight = x2p + (x1p * Count2) + (x0p * Count1 * Count2) 
+				BigMatrix[indexLeft, indexRight] = potential.PotentialData[i, j, k]
+
+	return BigMatrix
+
+
+
 def CheckSymmetryFieldMatrix(whichPotential):
 	prop = SetupProblem(configFile="config_helium.ini")
 	BigMatrix = SetupBigMatrix(prop, whichPotential)
