@@ -1,0 +1,55 @@
+\documentclass[a4paper,12pt]{paper}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{url}
+ 
+\title{Two Electron Matrix Elements in Coupled Spherical Harmonics}
+\author{Tore Birkeland and Raymond Nepstad}
+
+\newcommand{\bra}[1]{\ensuremath{\langle #1 |}}
+\newcommand{\ket}[1]{\ensuremath{| #1 \rangle}}
+\newcommand{\innerprod}[2]{\langle #1 | #2 \rangle}
+\newcommand{\matelem}[3]{\langle #1 | #2 | #3 \rangle}
+\newcommand{\cg}[6]{\innerprod{#1 #2 #3 #4}{#5 #6}}
+\renewcommand{\imath}{{\mathrm i}}
+\newcommand{\partialdiff}[2]{\frac{\partial #1}{\partial #2}}
+\renewcommand{\vec}[1]{\ensuremath{\textbf{#1}}}
+
+
+\begin{document}
+
+\section{Testing the e-e term}
+Calculation of bound state energies is a good test of the correctness and accuracy of the electron-electron interaction term.
+
+\begin{itemize}
+	\item $r_{max}$ = 200
+	\item Number of breakpoints: 30
+	\item Exponential breakpoint sequence, $\gamma = 7.0$
+	\item $l_{max} = 5$, all terms for given $L$ and $M$ are included
+	\item Extra integration points: 20
+\end{itemize}
+
+\begin{table}
+\centering
+\begin{tabular}{lccc}
+	\hline\\
+	Helium state & Our & Hasbani \textit{et. al.} & Other\\
+	\hline\\
+	$^1S^e(1)$ & -2.903\ 586 & -2.903\ 531 & -2.903\ 724\\
+	$^1S^e(2)$ & -2.145\ 965 & -2.145\ 961 & -2.145\ 974\\
+	$^1S^e(3)$ & -2.061\ 270, & -2.061\ 268 & -2.061\ 272\\
+	$^1S^e(4)$ & -2.033\ 586 & -2.033\ 585 & -2.033\ 586\\
+	\\
+	$^1P^o(1)$ & - & -2.123\ 832 & -2.123\ 843\\
+	$^1P^o(2)$ & - & -2.055\ 143 & -2.055\ 146\\
+	\\
+	$^1F^o(1)$ & -2.031\ 255 & -2.031\ 255 & -2.031\ 255\\
+	$^1F^o(2)$ & -2.020\ 003 & -2.020\ 003 & -2.020\ 033\\
+	$^1F^o(3)$ & -2.013\ 891 & -2.013\ 891 & -2.013\ 891\\
+	$^1F^o(4)$ & -2.010\ 205 & -2.010\ 205 & -2.010\ 205\\
+\end{tabular}
+\caption{Helium bound state energies (a.u.)}
+\label{tab:}
+\end{table}
+
+\end{document}
