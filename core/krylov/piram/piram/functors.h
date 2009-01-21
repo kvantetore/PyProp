@@ -101,6 +101,21 @@ public:
 	}
 };
 
+
+/* 
+ *   Compare functor for the ShiftFunctorSelectRitzValues which chooses the 
+ *   lowest absolute valued ritz values as shifts. This makes the ritz values
+ *   converge towards the largest magnitude eigenvalues of the system
+ */
+class CompareComplexGreaterAbs : public CompareType<cplx>
+{
+public:
+	virtual bool operator()(cplx a, cplx b)
+	{
+		return std::abs(a) > std::abs(b);
+	}
+};
+
 /*
  * Compare functor for converging towards the eigenvalues close to Shift
  */

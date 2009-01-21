@@ -74,6 +74,21 @@ void PiramSolver<Rank>::ApplyConfigSection(const ConfigSection &config)
 		compareType compare(shift);
 		Solver.CalculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
 	}
+
+	if (config.HasValue("inverse_iterations"))
+	{
+		cout << "PIRAM: Using inverse iterations" << endl;
+		bool inverseIt;
+		config.Get("inverse_iterations", inverseIt);
+
+		if (inverseIt)
+		{
+			typedef piram::CompareComplexGreaterAbs compareType;
+			typedef piram::ShiftFunctorSelectRitzValues< cplx, compareType > shiftFunctorType;
+			compareType compare;
+			Solver.CalculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
+		}
+	}
 }
 
 
