@@ -94,7 +94,8 @@ def RunStabilization(**args):
 	PrintOut("t = %.2f; N = %.10f; Corr = %.10f" % (t, norm, corr))
 
 	PrintOut("")
-	prop.Propagator.PampWrapper.PrintStatistics()
+	#prop.Propagator.PampWrapper.PrintStatistics()
+	prop.Propagator.Solver.PrintStatistics()
 
 	#Saving final wavefunction
 	outputFilename = args.get("outputFilename", "final.h5")

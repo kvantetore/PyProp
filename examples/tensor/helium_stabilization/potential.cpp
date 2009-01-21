@@ -179,3 +179,176 @@ public:
         }
 };
 
+#include <slu_zdefs.h>
+template<int Rank>
+class SuperLUSolver
+{
+public:
+	typedef blitz::Array<cplx, 1> VectorType;
+	typedef blitz::Array<int, 1> VectorTypeInt;
+	typedef blitz::Array<double, 1> VectorTypeReal;
+
+	bool Initialized;
+	VectorType MatrixData;
+	blitz::Array<cplx, Rank> TempData;
+	VectorTypeInt RowIndices;
+	VectorTypeInt ColStartIndices;
+	VectorTypeInt PermutationRow;
+	VectorTypeInt PermutationCol;
+	
+	SuperMatrix A;
+	SuperMatrix L; 
+	SuperMatrix U;
+	VectorTypeReal R;
+	VectorTypeReal C;
+	VectorTypeInt ETree;
+	superlu_options_t Options;
+    SuperLUStat_t Statistics;
+	char Equed[2];
+	
+
+	SuperLUSolver()
+	{
+		Initialized = false;
+	}
+
+	~SuperLUSolver()
+	{
+		if (Initialized)
+		{
+			SUPERLU_FREE(A.Store);
+			SUPERLU_FREE(L.Store);
+			SUPERLU_FREE(U.Store);
+		}
+	}
+
+	void Setup(int matrixSize, VectorType matrixData, VectorTypeInt rowIndices, VectorTypeInt colStartIndices)
+	{
+		/* Set the default input options:
+		options.Fact = DOFACT;
+		options.Equil = YES;
+		options.ColPerm = COLAMD;
+		options.DiagPivotThresh = 1.0;
+		options.Trans = NOTRANS;
+		options.IterRefine = NOREFINE;
+		options.SymmetricMode = NO;
+		options.PivotGrowth = NO;
+		options.ConditionNumber = NO;
+		options.PrintStat = YES;
+		*/
+		//Options.ColPerm = NATURAL;
+		//Options.DiagPivotThresh = 0.1;
+		//Options.SymmetricMode = YES;
+
+		cout << "Starting SuperLU Setup" << endl;
+		set_default_options(&Options);
+
+		//Copy matrix data so it won't go out of scope
+		MatrixData.reference( matrixData.copy() );
+		RowIndices.reference( rowIndices.copy() );
+		ColStartIndices.reference( colStartIndices.copy() );
+		//We need permutations of rows and cols
+		PermutationRow.resize( matrixSize*2 );
+		PermutationCol.resize( matrixSize*2 );
+		R.resize( matrixSize );
+		C.resize( matrixSize );
+		ETree.resize( matrixSize );
+
+		int N = matrixSize;
+		int nnz = MatrixData.size();
+
+		//Create compressed col matrix from matrix data
+		doublecomplex* data = (doublecomplex*) MatrixData.data();
+    	zCreate_CompCol_Matrix(&A, N, N, nnz, data, RowIndices.data(), ColStartIndices.data(), SLU_NC, SLU_Z, SLU_GE);
+
+   		//Create an empty right hand side to create factorization without solving anything
+		int nrhs = 0;
+		doublecomplex* rhs = 0;
+		SuperMatrix B, X;
+    	zCreate_Dense_Matrix(&B, N, nrhs, rhs, N, SLU_DN, SLU_Z, SLU_GE);
+    	zCreate_Dense_Matrix(&X, N, nrhs, rhs, N, SLU_DN, SLU_Z, SLU_GE);
+
+		//Factorize A
+		int lwork = 0;
+		doublecomplex *work = 0;
+
+		double rpg; //reciprocal growth
+		double ferr; //err[nrhs]
+		double berr; //err[nrhs]
+		double rcond;
+		mem_usage_t memUsage;
+
+		int info;
+    	StatInit(&Statistics);
+		Options.Fact = DOFACT;
+		zgssvx(&Options, &A, PermutationCol.data(), PermutationRow.data(), ETree.data(), Equed, 
+			R.data(), C.data(), &L, &U, work, lwork, &B, &X, &rpg, &rcond, &ferr, &berr,
+           &memUsage, &Statistics, &info);
+
+		if (info != 0)
+		{
+			cout << "Error from SuperLU: " << info << endl;
+			throw std::runtime_error("Could not factorize matrix with superlu");
+		}
+
+		SCformat* Lstore = (SCformat *) L.Store;
+		NCformat* Ustore = (NCformat *) U.Store;
+		cout << "SuperLU-factorization of matrix returned " << info << endl;
+		cout << "    Nonzero elemts in L = " << Lstore->nnz << endl;
+		cout << "    Nonzero elemts in U = " << Ustore->nnz << endl;
+		cout << "    Fill factor         = " << (double)(Lstore->nnz + Ustore->nnz - N) / (double) nnz << endl;
+
+    	//Destroy temporary matrix B
+		SUPERLU_FREE(B.Store);
+		SUPERLU_FREE(X.Store);
+
+		cout << "Finishing SuperLU Setup" << endl;
+
+		Initialized = true;
+	}
+
+	void Solve(blitz::Array<cplx, Rank> rhs)
+	{
+		//allocate Temp-array if we don't already have it
+		if (rhs.size() != TempData.size())
+		{
+			TempData.resize(rhs.shape());
+		}
+
+		//Setup right hand side in correct format
+   		int nrhs = 1;
+		doublecomplex* rhsData = (doublecomplex*)rhs.data();
+		doublecomplex* tempData = (doublecomplex*)TempData.data();
+		SuperMatrix B, X;
+	 	zCreate_Dense_Matrix(&B, rhs.size(), nrhs, rhsData, rhs.size(), SLU_DN, SLU_Z, SLU_GE);
+	 	zCreate_Dense_Matrix(&X, rhs.size(), nrhs, tempData, rhs.size(), SLU_DN, SLU_Z, SLU_GE);
+
+		//Solve
+		int lwork = 0;
+		doublecomplex *work = 0;
+		double rpg; //reciprocal growth
+		double ferr; //err[nrhs]
+		double berr; //err[nrhs]
+		double rcond;
+		mem_usage_t memUsage;
+
+		int info;
+		Options.Fact = FACTORED;
+		zgssvx(&Options, &A, PermutationCol.data(), PermutationRow.data(), ETree.data(), Equed, 
+			R.data(), C.data(), &L, &U, work, lwork, &B, &X, &rpg, &rcond, &ferr, &berr,
+           &memUsage, &Statistics, &info);
+
+
+		if (info != 0)
+		{
+			cout << "Error from SuperLU: " << info << endl;
+			throw std::runtime_error("Could not factorize matrix with superlu");
+		}
+
+		//Copy data from temp data storage to overwrite input data
+		rhs = TempData;
+
+		//free temp datastructures
+		SUPERLU_FREE(B.Store);
+	}
+};

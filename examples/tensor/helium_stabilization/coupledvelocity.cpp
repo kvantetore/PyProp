@@ -257,7 +257,7 @@ public:
 			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
 
 			double coupling1 = 0;
-			double coupling2 = 0;
+			//double coupling2 = 0;
 
 			for (int m=-lStop; m<=lStop; m++)
 			{
@@ -278,12 +278,12 @@ public:
 			for (int ri1=0; ri1<r1Count; ri1++)
 			{
 				index(RadialRank1) = ri1;
-				double r1 = localr1(ri1);
+				//double r1 = localr1(ri1);
 
 				for (int ri2=0; ri2<r2Count; ri2++)
 				{
 					index(RadialRank2) = ri2;
-					double r2 = localr2(ri2);
+					//double r2 = localr2(ri2);
 				
 					data(index) = - IM * (coupling1);
 				}
@@ -412,12 +412,12 @@ public:
 			for (int ri1=0; ri1<r1Count; ri1++)
 			{
 				index(RadialRank1) = ri1;
-				double r1 = localr1(ri1);
+				//double r1 = localr1(ri1);
 
 				for (int ri2=0; ri2<r2Count; ri2++)
 				{
 					index(RadialRank2) = ri2;
-					double r2 = localr2(ri2);
+					//double r2 = localr2(ri2);
 				
 					data(index) = - IM * (coupling2);
 				}

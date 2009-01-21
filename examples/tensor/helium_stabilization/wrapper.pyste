@@ -1,3 +1,7 @@
+#SuperLU Solver
+Solver = Template("SuperLUSolver", "potential.cpp")
+Solver("2")
+
 #Laser Potentials (Velocity Gauge)
 CustomPotential = Template("CustomPotential_LaserVelocityDerivativeR1", "coupledvelocity.cpp")
 CustomPotential("3")
