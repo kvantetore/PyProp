@@ -36,8 +36,8 @@ def SetupBigMatrix(prop, whichPotentials):
 	matrixSize = prop.psi.GetData().size
 	
 	#Allocate the hamilton matrix
-	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" % (matrixSize, matrixSize, matrixSize**2 * 16 / 1024.**2)
-	BigMatrix = zeros((matrixSize, matrixSize), dtype="complex")
+	print "    Allocating potential matrix of size [%i, %i]  ~%.0f MB" % (matrixSize, matrixSize, matrixSize**2 * 8 / 1024.**2)
+	BigMatrix = zeros((matrixSize, matrixSize), dtype="double")
 
 	for potNum in whichPotentials:
 		potential = prop.Propagator.BasePropagator.PotentialList[potNum]
@@ -56,7 +56,7 @@ def SetupBigMatrix(prop, whichPotentials):
 				for k, (x2,x2p) in enumerate(basisPairs2):
 					indexLeft = x2 + (x1 * Count2) + (x0 * Count1 * Count2) 
 					indexRight = x2p + (x1p * Count2) + (x0p * Count1 * Count2) 
-					BigMatrix[indexLeft, indexRight] += potential.PotentialData[i, j, k]
+					BigMatrix[indexLeft, indexRight] += potential.PotentialData[i, j, k].real
 
 	return BigMatrix
 
@@ -110,7 +110,7 @@ def GetTwoElectronEnergies(L=0, lmax=3):
 	index_iterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
 	
 	#Set up problem
-	prop = SetupProblem(configFile="config_helium_local.ini", index_iterator=index_iterator)
+	prop = SetupProblem(config="config_eigenvalues.ini", index_iterator=index_iterator)
 
 	#Set up hamilton and overlap matrices
 	HamiltonMatrix = SetupBigMatrix(prop, [0,1])
