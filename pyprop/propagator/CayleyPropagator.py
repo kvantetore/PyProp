@@ -72,14 +72,14 @@ class CayleyPropagator(PropagatorBase):
 
 		#construct tempPsi = (S + i dt H) psi(t)
 		self.TempPsi.Clear()
-		self.MultiplySpH(self.psi, self.TempPsi, -1.0j*dt/2, t, dt)
+		self.MultiplySpH(self.psi, self.TempPsi, -1.0j*dt/2, t + abs(dt/2.), dt)
 		
 		#plot(abs(self.TempPsi.GetData()), "g--")
 
 		#solve (S - i dt H) psi(t+dt)
 		if self.Preconditioner:
 			self.Preconditioner.Solve(self.TempPsi)
-		callback = lambda srcPsi, dstPsi: self.SolverCallback(srcPsi, dstPsi, t+abs(dt), dt)
+		callback = lambda srcPsi, dstPsi: self.SolverCallback(srcPsi, dstPsi, t+abs(dt/2.), dt)
 		#self.psi.GetData()[:] = 0
 		self.Solver.Solve(callback, self.TempPsi, self.psi, False)
 
