@@ -864,13 +864,13 @@ class RadialTwoElectronPreconditioner:
 		#factorize each matrix
 		radialSolvers = []
 		for mat in radialMatrices:
-			#M = scipy.sparse.csc_matrix((mat, row, colStart))
-			#solve = scipy.linsolve.factorized(M)
-			#radialSolvers.append(solve)
-
-			solve = SuperLUSolver_2()
-			solve.Setup(int(matrixSize), mat, row, colStart)
+			M = scipy.sparse.csc_matrix((mat, row, colStart))
+			solve = scipy.linsolve.factorized(M)
 			radialSolvers.append(solve)
+
+			#solve = SuperLUSolver_2()
+			#solve.Setup(int(matrixSize), mat, row, colStart)
+			#radialSolvers.append(solve)
 
 		self.RadialSolvers = radialSolvers
 
@@ -882,8 +882,8 @@ class RadialTwoElectronPreconditioner:
 			raise Exception("Invalid Angular Count")
 
 		for angularIndex, solve in enumerate(self.RadialSolvers):
-			#data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
-			solve.Solve(data[angularIndex, :, :])
+			data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
+			#solve.Solve(data[angularIndex, :, :])
 		
 
 class RadialTwoElectronPreconditionerInverseIterations:

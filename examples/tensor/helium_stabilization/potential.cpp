@@ -188,6 +188,7 @@ public:
 	typedef blitz::Array<int, 1> VectorTypeInt;
 	typedef blitz::Array<double, 1> VectorTypeReal;
 
+private:
 	bool Initialized;
 	VectorType MatrixData;
 	blitz::Array<cplx, Rank> TempData;
@@ -206,7 +207,7 @@ public:
     SuperLUStat_t Statistics;
 	char Equed[2];
 	
-
+public:
 	SuperLUSolver()
 	{
 		Initialized = false;
@@ -236,12 +237,14 @@ public:
 		options.ConditionNumber = NO;
 		options.PrintStat = YES;
 		*/
-		//Options.ColPerm = NATURAL;
-		//Options.DiagPivotThresh = 0.1;
-		//Options.SymmetricMode = YES;
-
 		cout << "Starting SuperLU Setup" << endl;
 		set_default_options(&Options);
+
+		Options.ColPerm = NATURAL;
+		//Options.ColPerm = MMD_ATA;
+		Options.DiagPivotThresh = 0.1;
+		Options.SymmetricMode = YES;
+
 
 		//Copy matrix data so it won't go out of scope
 		MatrixData.reference( matrixData.copy() );

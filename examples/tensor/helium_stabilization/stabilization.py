@@ -45,7 +45,7 @@ def RunStabilization(**args):
 		
 		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
+	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"] #, "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	
 	#Setup initial state
