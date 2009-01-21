@@ -19,7 +19,7 @@ class PiramSolver:
 
 	"""
 
-	def __init__(self, prop, ):
+	def __init__(self, prop):
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
 
@@ -57,7 +57,7 @@ class PiramSolver:
 		self.ApplyMatrix = self.BaseProblem.Propagator.MultiplyHamiltonian
 		if hasattr(configSection, "matrix_vector_func"):
 			if configSection.matrix_vector_func:
-				self.ApplyMatrix = configSection.solver
+				self.ApplyMatrix = configSection.matrix_vector_func
 
 	def Solve(self):
 		psi = self.BaseProblem.psi;
