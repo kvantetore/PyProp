@@ -19,7 +19,7 @@ class PiramSolver:
 
 	"""
 
-	def __init__(self, prop):
+	def __init__(self, prop, ):
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
 
@@ -53,6 +53,11 @@ class PiramSolver:
 		maxIterations = configSection.krylov_max_iteration_count
 		self.TotalMaxIterations = (basisSize - eigenvalueCount) * maxIterations
 				
+		#Check for user-defined matrix-vector product
+		self.ApplyMatrix = self.BaseProblem.Propagator.MultiplyHamiltonian
+		if hasattr(configSection, "matrix_vector_func"):
+			if configSection.matrix_vector_func:
+				self.ApplyMatrix = configSection.solver
 
 	def Solve(self):
 		psi = self.BaseProblem.psi;
@@ -65,7 +70,8 @@ class PiramSolver:
 
 	def __MatVecCallback(self, psi, tempPsi):
 		#self.BaseProblem.Propagator.MultiplyHamiltonianBalancedOverlap(tempPsi, 0, 0)
-		self.BaseProblem.Propagator.MultiplyHamiltonian(psi, tempPsi, 0, 0)
+		#self.BaseProblem.Propagator.MultiplyHamiltonian(psi, tempPsi, 0, 0)
+		self.ApplyMatrix(psi, tempPsi, 0, 0)
 
 		self.Count += 1
 		if self.Debug and ProcId == 0:

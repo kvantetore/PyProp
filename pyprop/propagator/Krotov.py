@@ -1,5 +1,5 @@
 
-class Krotov:
+class OldKrotov:
 	"""
 	This class implements Krotov's method, which is an optimization algorithm for quantum control.
 	The user may specify several control functions which are used to guide the system from a
@@ -130,7 +130,7 @@ class Krotov:
 		self.ControlFunction.ConfigSection.e0 = 1.0
 		self.TempPsi.Clear()
 		self.TempPsi2.Clear()
-		self.ControlFunction.MultiplyPotential(self.TempPsi,0,0)
+		self.ControlFunction.MultiplyPotential(self.BaseProblem.psi,self.TempPsi,0,0)
 		self.TempPsi2.GetData()[:] = self.BackwardSolution[:, timeGridIndex]
 		newControl = self.TempPsi2.InnerProduct(self.TempPsi)
 		fieldValue = -imag(newControl) / (2.0 * self.EnergyPenalty)
@@ -215,20 +215,25 @@ class Krotov:
 		"""
 
 		if direction == Direction.Forward:
-			self.BaseProblem.TimeStep = complex(self.TimeStep)
-			self.BaseProblem.StartTime = 0.0
-			self.BaseProblem.Duration = self.PropagationTime
-			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
-			self.BaseProblem.SetupStep()
+			#self.BaseProblem.TimeStep = complex(self.TimeStep)
+			#self.BaseProblem.StartTime = 0.0
+			#self.BaseProblem.Duration = self.PropagationTime
+			#if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+			#	self.BaseProblem.Propagator.OdeWrapper.SetStartTime(0)
+			#self.BaseProblem.SetupStep()
+			self.BaseProblem.RestartPropagation(complex(self.TimeStep), 0.0, self.PropagationTime)
 
 		elif direction == Direction.Backward:
-			self.BaseProblem.TimeStep = -complex(self.TimeStep)
-			self.BaseProblem.StartTime = self.PropagationTime
-			self.BaseProblem.Duration = 0.0
-			if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
-				self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
-			self.BaseProblem.SetupStep()
+			#self.BaseProblem.TimeStep = -complex(self.TimeStep)
+			#self.BaseProblem.StartTime = self.PropagationTime
+			#self.BaseProblem.Duration = 0.0
+			#if hasattr(self.BaseProblem.Propagator, "OdeWrapper"):
+			#	self.BaseProblem.Propagator.OdeWrapper.SetStartTime(self.PropagationTime)
+			#self.BaseProblem.SetupStep()
+			self.BaseProblem.RestartPropagation(-complex(self.TimeStep), self.PropagationTime, self.PropagationTime)
+
+		#Apply initial condition
+		self.BaseProblem.SetupWavefunction()
 
 	
 	def SetupTargetState(self):
