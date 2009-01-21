@@ -16,6 +16,7 @@
 #
 #  The machine (platform) identifier to append to the library names
 #
+-include ../../../core/makefiles/Makefile.include
 -include ../../../Makefile.platform
 PLAT = _pyprop
 
@@ -36,9 +37,9 @@ ARCHFLAGS    = cr
 RANLIB       = ranlib
 
 CC           = $(MPICXX) -x c
-CFLAGS       = $(CXXFLAGS)
+CFLAGS       = $(CXXFLAGS) $(PIC)
 FORTRAN	     = $(FC)
-FFLAGS       = $(FORTRAN_FLAGS)
+FFLAGS       = $(FORTRAN_FLAGS) $(PIC)
 LOADER       = $(MPICXX)
 LOADOPTS     = $(LDFLAGS)
 NOOPTS       = $(PIC)
