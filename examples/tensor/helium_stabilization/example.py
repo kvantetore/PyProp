@@ -556,8 +556,7 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 def FindEigenvaluesInverseIterations():
 	prop = SetupProblem(silent = True, config="config.ini")
 	invIt = InverseIterator(prop)
-	prop.Config.Arpack.inverse_iterations = True
-	prop.Config.Arpack.solver = invIt.InverseIterations
+	prop.Config.Arpack.matrix_vector_func = invIt.InverseIterations
 
 	#Setup solver
 	solver = pyprop.PiramSolver(prop)
