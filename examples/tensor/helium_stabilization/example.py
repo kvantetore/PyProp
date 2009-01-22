@@ -554,21 +554,45 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 		return prop, HamiltonMatrix, OverlapMatrix, E, V
 
 
-def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", outFileName="out/eig_inverseit.h5"):
+def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
+	outFileName="out/eig_inverseit.h5"):
+			
 	prop = SetupProblem(silent = True, config=config)
 	invIt = InverseIterator(prop)
 	prop.Config.Arpack.matrix_vector_func = invIt.InverseIterations
 
-	#Setup solver
+	#Setup solver & solve
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
+
+	#Get error estimates from GMRES
+	errorEstimatesGMRES = invIt.Solver.GetErrorEstimateList()
+
+	#Get eigenvalue error estimate
+	errorEstimatesPIRAM = solver.Solver.GetErrorEstimates()
+	convergenceEstimatesEig = solver.Solver.GetConvergenceEstimates()
+
+	#Get eigenvalues
+	E = solver.GetEigenvalues()
 
 	#Store eigenvalues and eigenvectors
 	h5file = tables.openFile(outFileName, "w")
 	try:
 		myGroup = h5file.createGroup("/", "Eig")
-		h5file.createArray(myGroup, "Eigenvectors", solver.GetEigenvalues())
-		h5file.createArray(myGroup, "Eigenvalues", solver.GetEigenvectors())
+		h5file.createArray(myGroup, "Eigenvalues", E)
+		for i in range(len(E)):
+			h5file.createArray(myGroup, "Eigenvector%03i" % i, solver.GetEigenvector(i))
+		h5file.createArray(myGroup, "ErrorEstimateListGMRES", errorEstimatesGMRES)
+		h5file.createArray(myGroup, "ErrorEstimateListPIRAM", errorEstimatesPIRAM)
+		h5file.createArray(myGroup, "ConvergenceEstimateEig", convergenceEstimatesEig)
+
+		#Store config
+		myGroup._v_attrs.configObject = prop.Config.cfgObj
+		
+		#PIRAM stats
+		myGroup._v_attrs.opCount = solver.Solver.GetOperatorCount()
+		myGroup._v_attrs.restartCount = solver.Solver.GetRestartCount()
+		myGroup._v_attrs.orthCount = solver.Solver.GetOrthogonalizationCount()
 	finally:
 		h5file.close()
 
