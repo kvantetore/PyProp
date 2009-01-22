@@ -19,7 +19,7 @@
 \begin{document}
 
 \section{Testing the e-e term}
-Calculation of bound state energies is a good test of the correctness and accuracy of the electron-electron interaction term.
+Calculation of bound state energies is a good test of the correctness and accuracy of the electron-electron interaction term. We have tried three different eigenvalue methods: direct (SciPy), Jacobi-Davidson (Pysparse) and preconditioned Arnoldi Shift-Invert iterations (PyProp, PIRAM+GMRES+PRECON).
 
 \begin{itemize}
 	\item $r_{max}$ = 200
@@ -35,20 +35,23 @@ Calculation of bound state energies is a good test of the correctness and accura
 	\hline\\
 	Helium state & Our & Hasbani \textit{et. al.} & Other\\
 	\hline\\
-	$^1S^e(1)$ & -2.903\ 586 & -2.903\ 531 & -2.903\ 724\\
-	$^1S^e(2)$ & -2.145\ 965 & -2.145\ 961 & -2.145\ 974\\
-	$^1S^e(3)$ & -2.061\ 270, & -2.061\ 268 & -2.061\ 272\\
-	$^1S^e(4)$ & -2.033\ 586 & -2.033\ 585 & -2.033\ 586\\
+	$^1S^e(1)$ & -2.903\ 586 (JD) & -2.903\ 531 & -2.903\ 724\\
+	$^1S^e(2)$ & -2.145\ 965 (JD) & -2.145\ 961 & -2.145\ 974\\
+	$^1S^e(3)$ & -2.061\ 270 (JD), & -2.061\ 268 & -2.061\ 272\\
+	$^1S^e(4)$ & -2.033\ 586 (JD) & -2.033\ 585 & -2.033\ 586\\
 	\\
-	$^1P^o(1)$ & - & -2.123\ 832 & -2.123\ 843\\
-	$^1P^o(2)$ & - & -2.055\ 143 & -2.055\ 146\\
+	$^1P^o(1)$ & -2.123\ 829 (JD) & -2.123\ 832 & -2.123\ 843\\
+	$^1P^o(2)$ & -2.055\ 142 (JD) & -2.055\ 143 & -2.055\ 146\\
 	\\
-	$^1F^o(1)$ & -2.031\ 255 & -2.031\ 255 & -2.031\ 255\\
-	$^1F^o(2)$ & -2.020\ 003 & -2.020\ 003 & -2.020\ 033\\
-	$^1F^o(3)$ & -2.013\ 891 & -2.013\ 891 & -2.013\ 891\\
-	$^1F^o(4)$ & -2.010\ 205 & -2.010\ 205 & -2.010\ 205\\
+	$^1D^e(1)$ & -2.055\ 636 (ASI) & -2.055\ 621 & -2.055\ 621\\
+	$^1D^e(2)$ & -2.031\ 280 (ASI) & -2.031\ 280 & -2.021\ 279\\
+	\\
+	$^1F^o(1)$ & -2.031\ 255 (JD) & -2.031\ 255 & -2.031\ 255\\
+	$^1F^o(2)$ & -2.020\ 003 (JD)& -2.020\ 003 & -2.020\ 033\\
+	$^1F^o(3)$ & -2.013\ 891 (JD) & -2.013\ 891 & -2.013\ 891\\
+	$^1F^o(4)$ & -2.010\ 205 (JD) & -2.010\ 205 & -2.010\ 205\\
 \end{tabular}
-\caption{Helium bound state energies (a.u.)}
+\caption{Helium bound state energies (a.u.). JD: Jacobi-Davidson, ASI: Arnoldi Shift-Invert iterations}
 \label{tab:}
 \end{table}
 
