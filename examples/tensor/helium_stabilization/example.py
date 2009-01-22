@@ -513,6 +513,7 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 	V = V[:,sortIdx]
 
 	#Check symmetry of eigenstates
+	print "Checking symmetry of eigenstates..."
 	psiShape = prop.psi.GetData().shape
 	lmax = psiShape[0]
 	eps = 1e-9
@@ -553,14 +554,23 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 		return prop, HamiltonMatrix, OverlapMatrix, E, V
 
 
-def FindEigenvaluesInverseIterations():
-	prop = SetupProblem(silent = True, config="config.ini")
+def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", outFileName="out/eig_inverseit.h5"):
+	prop = SetupProblem(silent = True, config=config)
 	invIt = InverseIterator(prop)
 	prop.Config.Arpack.matrix_vector_func = invIt.InverseIterations
 
 	#Setup solver
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
+
+	#Store eigenvalues and eigenvectors
+	h5file = tables.openFile(outFileName, "w")
+	try:
+		myGroup = h5file.createGroup("/", "Eig")
+		h5file.createArray(myGroup, "Eigenvectors", solver.GetEigenvalues())
+		h5file.createArray(myGroup, "Eigenvalues", solver.GetEigenvectors())
+	finally:
+		h5file.close()
 
 	return solver, invIt
 
@@ -921,6 +931,9 @@ class RadialTwoElectronPreconditionerInverseIterations:
 		#Setup radial matrices in CSC format
 		tensorPotential.SetupStep(0)
 		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
+	
+		shape = self.psi.GetRepresentation().GetFullShape()
+		matrixSize = shape[1] * shape[2]
 
 		#factorize each matrix
 		radialSolvers = []
