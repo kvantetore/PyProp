@@ -79,6 +79,6 @@ execfile(__path__[0] + "/GridGeneration.py")
 
 #Load propagators
 execfile(__path__[0] + "/propagator/init.py")
-
+execfile(__path__[0] + "/solver/init.py")
 execfile(__path__[0] + "/tensorpotential/init.py")
 

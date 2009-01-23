@@ -54,7 +54,9 @@ class CayleyPropagator(PropagatorBase):
 
 		#Setup preconditioner
 		if self.Preconditioner:
-			self.Preconditioner.Setup(self, dt)
+			self.Preconditioner.SetHamiltonianScaling( 1.0j * dt / 2.0 )
+			self.Preconditioner.SetOverlapScaling( 1.0 )
+			self.Preconditioner.Setup(self)
 
 		self.TempPsiMultiply = self.psi.Copy()
 

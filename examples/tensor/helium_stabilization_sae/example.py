@@ -15,6 +15,7 @@ from numpy import *
 from libpotential import *
 
 execfile("stabilization.py")
+execfile("eigenvalues.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -23,39 +24,49 @@ execfile("stabilization.py")
 
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
+	print configFile
 	conf = pyprop.Load(configFile)
 	
 	if "silent" in args:
 		silent = args["silent"]
-		conf.Propagation.silent = silent
+		conf.SetValue("Propagation", "silent", args["silent"])
 
 	if "imtime" in args:
 		imtime = args["imtime"]
 		if imtime:
-			conf.Propagation.timestep = -1.0j * abs(conf.Propagation.timestep)
-			conf.Propagation.renormalization = True
+			conf.SetValue("Propagation", "timestep", 1.0j * abs(conf.Propagation.timestep))
+			conf.SetValue("Propagation", "renormalization", True)
 		else:
-			conf.Propagation.timestep = abs(conf.Propagation.timestep)
-			conf.Propagation.renormalization = False
+			conf.SetValue("Propagation", "timestep", abs(conf.Propagation.timestep))
+			conf.SetValue("Propagation", "renormalization", False)
 
 	if "duration" in args:
 		duration = args["duration"]
-		conf.Propagation.duration = duration
+		conf.SetValue("Propagation", "duration", duration)
 
 	if "eigenvalueCount" in args:
-		conf.Arpack.krylov_eigenvalue_count = args["eigenvalueCount"]
+		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
+
+	if "eigenvalueBasisSize" in args:
+		conf.SetValue("Arpack", "krylov_basis_size", args["eigenvalueBasisSize"])
+
+
+	if "eigenvalueShift" in args:
+		conf.SetValue("GMRES", "shift", args["eigenvalueShift"])
 
 	if "amplitude" in args:
-		amp = args["amplitude"]
-		freq = conf.LaserPotentialVelocity1.frequency
-		conf.LaserPotentialVelocity1.amplitude = amp / freq
-		conf.LaserPotentialVelocity2.amplitude = amp / freq
-		conf.LaserPotentialVelocity3.amplitude = amp / freq
+		conf.SetValue("PulseParameters", "amplitude", args["amplitude"])
+	
+	if "frequency" in args:
+		conf.SetValue("PulseParameters", "frequency", args["frequency"])
 
-	additionalPotentials = args.get("additionalPotentials", [])
-	conf.Propagation.grid_potential_list += additionalPotentials
+	potentials = conf.Propagation.grid_potential_list + args.get("additionalPotentials", [])
+	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
-	return conf
+	#Update config object from possible changed ConfigParser object
+	newConf = pyprop.Config(conf.cfgObj)
+
+	return newConf
 
 
 def SetupProblem(**args):
@@ -126,7 +137,6 @@ def LaserFunctionLength(conf, t):
 #                       Preconditioner for Cayley Propagator
 #------------------------------------------------------------------------------------
 
-
 class BSplinePreconditioner:
 	def __init__(self, psi):
 		self.Rank = psi.GetRank()
@@ -138,7 +148,19 @@ class BSplinePreconditioner:
 		self.PreconditionRank = conf.rank
 		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
 
-	def Setup(self, prop, dt):
+	def SetHamiltonianScaling(self, scalingH):
+		self.HamiltonianScaling = scalingH
+
+	def SetOverlapScaling(self, scalingS):
+		self.OverlapScaling = scalingS
+
+	def GetHamiltonianScaling(self):
+		return self.HamiltonianScaling
+
+	def GetOverlapScaling(self):
+		return self.OverlapScaling
+
+	def Setup(self, prop):
 		#Add all potentials to solver
 		for conf in self.PotentialSections:
 			#Setup potential in basis
@@ -153,10 +175,9 @@ class BSplinePreconditioner:
 			self.Solver.AddTensorPotential(potential.PotentialData)
 
 		#Setup solver
-		scalingS = 1.0
-		scalingH = (1.0j*dt/2.)
+		scalingS = self.GetOverlapScaling()
+		scalingH = self.GetHamiltonianScaling() 
 		self.Solver.Setup(prop.psi, self.PreconditionRank, scalingS, scalingH)
-		print "Setting up!"
 
 	def Solve(self, psi):
 		self.Solver.Solve(psi)

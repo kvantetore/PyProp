@@ -32,6 +32,10 @@ class PiramSolver:
 		configSection = prop.Config.Arpack
 		configSection.Apply(self.Solver)
 
+		useInverseIterations = False
+		if hasattr(configSection, "inverse_iterations"):
+			useInverseIterations = configSection.inverse_iterations
+
 		matrixSize = prop.psi.GetData().size
 		basisSize = configSection.krylov_basis_size
 		memoryUsage = self.Solver.EstimateMemoryUsage(matrixSize, basisSize)
@@ -58,6 +62,9 @@ class PiramSolver:
 		if hasattr(configSection, "matrix_vector_func"):
 			if configSection.matrix_vector_func:
 				self.ApplyMatrix = configSection.matrix_vector_func
+		else:
+			if useInverseIterations:
+				raise Exception("Inverse Iterations must be used together with a userdefined matrix_vector_func")
 
 	def Solve(self):
 		psi = self.BaseProblem.psi;

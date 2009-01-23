@@ -18,12 +18,64 @@ def FormatDuration(duration):
 
 	return " ".join(str)
 
+def RunHasbani(**args):
+	args["silent"] = True
+	if not "config" in args:
+		args["config"] = "config_hasbani.ini"
+
+	#Set up init problem
+	initProp = SetupProblem(**args)
+	tempPsi = initProp.psi
+
+	#Find radial eigenstates
+	E, V = SetupRadialEigenstates(initProp)
+	overlapMatrix = SetupOverlapMatrix(initProp)
+
+	frequencyList = r_[0.2:1.2:0.02]
+	frequencyData = []
+	for frequencyIndex, frequency in enumerate(frequencyList):
+		#setup propagation problem
+		potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
+		prop = SetupProblem(frequency=frequency, additionalPotentials=potList, **args)
+
+		#Setup initial state
+		SetRadialEigenstate(prop.psi, V, n=1, l=0)
+		prop.psi.Normalize()
+		initPsi = prop.psi.Copy()
+
+		#Propagate
+		for t in prop.Advance(False):
+			pass
+
+		data = {}
+		data["frequency"] = frequency
+
+		#calculate values
+		data["norm"] = prop.psi.GetNorm()
+		data["corr"] = abs(initPsi.InnerProduct(prop.psi))**2
+		data["radialDensity"] = numpy.sum(abs(prop.psi.GetData()), axis=0)
+
+		#Calculate l-distribution
+		tempPsi.GetData()[:] = prop.psi.GetData()
+		tempPsi.GetRepresentation().MultiplySqrtOverlap(False, tempPsi)
+		data["angularDensity"] = numpy.sum(abs(tempPsi.GetData())**2, axis=1)
+
+		#Calculate bound state distribution
+		data["boundE"], data["boundV"], data["boundDistr"], data["boundTotal"] = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix)
+
+		data["ionizedE"], data["ionizedDistr"] = CalculateEnergyDistribution(prop.psi, E, V, overlapMatrix)
+
+		frequencyData.append(data)
+		del prop
+
+	return frequencyData
+
 def RunStabilization(**args):
 	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3"] #, "Absorber"]
+	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 
 	#Find radial eigenstates
@@ -31,9 +83,8 @@ def RunStabilization(**args):
 	overlapMatrix = SetupOverlapMatrix(prop)
 		
 	#Setup initial state
-	#SetRadialEigenstate(prop.psi, V, n=1, l=0)
-	#print "Norm = ", prop.psi.Normalize()
-	#PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
+	SetRadialEigenstate(prop.psi, V, n=1, l=0)
+	PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
 	prop.psi.Normalize()
 	initPsi = prop.psi.Copy()
 
@@ -196,7 +247,7 @@ def SetupRadialEigenstates(prop, potentialIndices=[0]):
 
 	return eigenValues, eigenVectors
 
-def SetRadialEigenstate(psi, eigenVectors, n, l):
+def SetRadialEigenstate(psi, eigenVectors, n, l, sourceScaling=0., destScaling=1.0):
 	"""
 	Sets psi to an eigenvector from a list of eigenvectors as calculated by
 	SetupRadialEigenstates()
@@ -205,8 +256,8 @@ def SetRadialEigenstate(psi, eigenVectors, n, l):
 	"""
 	radialIndex = n - l - 1
 	vec = eigenVectors[l][:, radialIndex]
-	psi.Clear()
-	psi.GetData()[l, :] = vec
+	psi.GetData()[:] *= sourceScaling
+	psi.GetData()[l, :] += destScaling * vec
 
 
 def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):

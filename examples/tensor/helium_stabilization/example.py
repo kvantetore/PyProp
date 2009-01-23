@@ -561,15 +561,17 @@ def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	outFileName="out/eig_inverseit.h5"):
 			
 	prop = SetupProblem(silent = True, config=config)
-	invIt = InverseIterator(prop)
-	prop.Config.Arpack.matrix_vector_func = invIt.InverseIterations
 
-	#Setup solver & solve
+	#Setup shift invert solver in order to perform inverse iterations
+	shiftInvertSolver = pyprop.GMRESShiftInvertSolver(prop)
+	prop.Config.Arpack.matrix_vector_func = shiftInvertSolver.InverseIterations
+
+	#Setup eiganvalue solver
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 
 	#Get error estimates from GMRES
-	errorEstimatesGMRES = invIt.Solver.GetErrorEstimateList()
+	errorEstimatesGMRES = shiftInvertSolver.Solver.GetErrorEstimateList()
 
 	#Get eigenvalue error estimate
 	errorEstimatesPIRAM = solver.Solver.GetErrorEstimates()
@@ -599,73 +601,7 @@ def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	finally:
 		h5file.close()
 
-	return solver, invIt
-
-
-class InverseIterator:
-	def __init__(self, prop):
-		self.BaseProblem = prop
-		self.Rank = prop.psi.GetRank()
-		self.Config = self.BaseProblem.Config.GMRES
-		self.psi = prop.psi
-		self.TempPsi = prop.psi.Copy()
-		self.TempPsi2 = prop.psi.Copy()
-		self.Shift = self.Config.shift
-
-		#Set up GMRES
-		self.Solver = pyprop.CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
-		prop.Config.GMRES.Apply(self.Solver)
-		self.Solver.Setup(self.psi)
-
-		#Setup preconditioner
-		config = prop.Config
-		preconditionerName = config.Propagation.preconditioner
-		if preconditionerName:
-			preconditionerSection = config.GetSection(preconditionerName)
-			preconditioner = preconditionerSection.type(self.psi)
-			preconditionerSection.Apply(preconditioner)
-			self.Preconditioner = preconditioner
-			self.Preconditioner.Setup(self.BaseProblem.Propagator, self.Shift)
-		else:
-			self.Preconditioner = None
-
-
-	def __callback(self, srcPsi, dstPsi):
-		# Here we do the following steps:
-		#
-		#    1) dstPsi = (H - shift * S) * srcPsi
-		#    2) dstPsi = M**-1 * dstPsi
-		# 
-		repr = dstPsi.GetRepresentation()
-		self.TempPsi2.GetData()[:] = srcPsi.GetData()[:]
-		
-		#Multiply H * srcPsi, put in dstPsi (dstPsi is zeroed!)
-		multiplyHam = self.BaseProblem.Propagator.BasePropagator.MultiplyHamiltonianNoOverlap
-		multiplyHam(srcPsi, dstPsi, 0, 0)
-
-		#Multiply shift * S * srcPsi
-		repr.MultiplyOverlap(self.TempPsi2)
-		self.TempPsi2.GetData()[:] *= -self.Shift
-		dstPsi.GetData()[:] += self.TempPsi2.GetData()[:]
-
-		#Solve left preconditioner in-place, dstPsi = M**-1 * dstPsi
-		if self.Preconditioner:
-			self.Preconditioner.Solve(dstPsi)
-
-
-	def InverseIterations(self, srcPsi, destPsi, t, dt):
-		repr = destPsi.GetRepresentation()
-
-		#Multiply overlap, c = S * b
-		self.TempPsi.GetData()[:] = srcPsi.GetData()[:]
-		repr.MultiplyOverlap(self.TempPsi)
-
-		#Preconditioner, d = M**-1 * c = M**-1 * S * b
-		if self.Preconditioner:
-			self.Preconditioner.Solve(self.TempPsi)
-
-		#Solve for (H - shift * S)
-		self.Solver.Solve(self.__callback, self.TempPsi, destPsi, False)
+	return solver, shiftInvertSolver
 
 
 class BlockPreconditioner:
@@ -865,7 +801,19 @@ class RadialTwoElectronPreconditioner:
 		self.OverlapSection = conf.Config.GetSection("OverlapPotential")
 		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
 
-	def Setup(self, prop, dt):
+	def SetHamiltonianScaling(self, scalingH):
+		self.HamiltonianScaling = scalingH
+
+	def SetOverlapScaling(self, scalingS):
+		self.OverlapScaling = scalingS
+
+	def GetHamiltonianScaling(self):
+		return self.HamiltonianScaling
+
+	def GetOverlapScaling(self):
+		return self.OverlapScaling
+
+	def Setup(self, prop):
 		"""
 		Set up a tensor potential for overlap potential and all other potentials
 		and add them together, assuming they have the same layout
@@ -877,9 +825,10 @@ class RadialTwoElectronPreconditioner:
 
 		#Setup overlap potential
 		tensorPotential = prop.BasePropagator.GeneratePotential(self.OverlapSection)
+		tensorPotential.PotentialData *= self.GetOverlapScaling()
 
 		#Add all potentials to solver
-		scalingH = (1.0j*dt/2.)
+		scalingH = self.GetHamiltonianScaling()
 		for conf in self.PotentialSections:
 			#Setup potential in basis
 			potential = prop.BasePropagator.GeneratePotential(conf)
@@ -891,7 +840,7 @@ class RadialTwoElectronPreconditioner:
 
 	
 		#Setup radial matrices in CSC format
-		tensorPotential.SetupStep(dt)
+		tensorPotential.SetupStep(0.0)
 		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
 
 		shape = self.psi.GetRepresentation().GetFullShape()
@@ -921,69 +870,4 @@ class RadialTwoElectronPreconditioner:
 			#data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
 			solve.Solve(data[angularIndex, :, :])
 		
-
-class RadialTwoElectronPreconditionerInverseIterations:
-	def __init__(self, psi):
-		self.Rank = psi.GetRank()
-		self.psi = psi
-
-	def ApplyConfigSection(self, conf):
-		self.OverlapSection = conf.Config.GetSection("OverlapPotential")
-		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
-
-	def Setup(self, prop, shift):
-		"""
-		Set up a tensor potential for overlap potential and all other potentials
-		and add them together, assuming they have the same layout
-		ending up with a potential containing (H - shift * S)
-
-		The radial part of this potential is then converted to compressed col storage
-		and factorized.
-		"""
-
-		#Setup overlap potential
-		print "Shift = %s" % shift
-		tensorPotential = prop.BasePropagator.GeneratePotential(self.OverlapSection)
-		tensorPotential.PotentialData *= -shift
-
-		#Add all potentials to solver
-		for conf in self.PotentialSections:
-			#Setup potential in basis
-			potential = prop.BasePropagator.GeneratePotential(conf)
-			if not tensorPotential.CanConsolidate(potential):
-				raise Exception("Cannot consolidate potential %s with overlap-potential" % (potential.Name))
-			#Add potential
-			tensorPotential.PotentialData += potential.PotentialData
-
-		#Setup radial matrices in CSC format
-		tensorPotential.SetupStep(0)
-		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
-	
-		shape = self.psi.GetRepresentation().GetFullShape()
-		matrixSize = shape[1] * shape[2]
-
-		#factorize each matrix
-		radialSolvers = []
-		for mat in radialMatrices:
-			#M = scipy.sparse.csc_matrix((mat, row, colStart))
-			#solve = scipy.linsolve.factorized(M)
-			#radialSolvers.append(solve)
-
-			solve = SuperLUSolver_2()
-			solve.Setup(int(matrixSize), mat, row, colStart)
-			radialSolvers.append(solve)
-
-		self.RadialSolvers = radialSolvers
-
-
-	def Solve(self, psi):
-		data = psi.GetData()
-		angularCount = data.shape[0]
-		if angularCount != len(self.RadialSolvers):
-			raise Exception("Invalid Angular Count")
-
-		for angularIndex, solve in enumerate(self.RadialSolvers):
-			#data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
-			solve.Solve(data[angularIndex, :, :])
-	
 
