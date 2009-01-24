@@ -37,14 +37,15 @@ class BasisPropagator(PropagatorBase):
 
 		#Use TensorPotentialGenerator to construct potential in basis
 		geometryList = generator.GetGeometryList(configSection)
-		potentialData = generator.GeneratePotential(configSection)
+		potentialDataBuffer = generator.GeneratePotential(configSection)
 		originalPotential = getattr(generator, "OriginalPotential", None)
 
 		#Create PotentialWrapper for TensorPotential
 		potential = TensorPotential(self.psi)
 		configSection.Apply(potential)
 		potential.GeometryList = geometryList
-		potential.PotentialData = potentialData
+		potential.PotentialDataBuffer = potentialDataBuffer
+		potential.PotentialData = potentialDataBuffer.GetArray()
 		potential.OriginalPotential = originalPotential
 		potential.Name = configSection.name
 
@@ -66,8 +67,17 @@ class BasisPropagator(PropagatorBase):
 				configSection = config.GetSection(potentialName)
 				#generate potential 
 				pot = self.GeneratePotential(configSection)
+				#check if this potential can be consolidated with an existing one
+				for existingPot in self.PotentialList:
+					if existingPot.CanConsolidate(pot):
+						existingPot.PotentialData[:] += pot.PotentialData
+						existingPot.Name += "+" + pot.Name
+						pot = None
+						break
+						
 				#add to potential list
-				self.PotentialList.append(pot)
+				if pot != None:
+					self.PotentialList.append(pot)
 
 	def ConsolidatePotentials(self):
 		"""

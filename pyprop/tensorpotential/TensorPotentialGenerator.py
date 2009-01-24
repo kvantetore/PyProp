@@ -105,8 +105,9 @@ class TensorPotentialGenerator(object):
 
 
 		#4) Evaluate the potential on the grid
-		potentialData = zeros(potentialShape, dtype=complex)
-		potentialEvaluator.UpdatePotentialData(potentialData, psi, 0, 0)
+		potentialData = CreateInstanceRank("core.DataBuffer", self.Rank)
+		potentialData.ResizeArray(array(potentialShape))
+		potentialEvaluator.UpdatePotentialData(potentialData.GetArray(), psi, 0, 0)
 		
 		# Save a copy of the potential if we're debugging
 		debugPotential = getattr(configSection, "debug_potential", False)
@@ -132,7 +133,10 @@ class TensorPotentialGenerator(object):
 				raise Exception("Distributed Rank %i (%s), has no support for parallel multiplication" % (distribRank, geomInfo.GetStorageId()))
 
 		#5) Represent the potential in the bases
+
 		source = potentialData
+		dest = None
+		del potentialData
 		for rank in reversed(range(self.Rank)):
 			basis = self.BasisList[rank]
 			geometryInfo = geometryList[rank]
@@ -158,29 +162,38 @@ class TensorPotentialGenerator(object):
 
 					#Create shape of transposed function and allocate dest buffer
 					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int32))
-					dest = zeros(transposedShape, dtype=complex)
+					
+					del dest
+					#dest = zeros(transposedshape, dtype=complex)
+					dest = createinstancerank("core.databuffer", self.rank)
+					dest.resizearray(array(transposedshape))
 
 					#Transpose
-					transpose.Transpose(fullShape, source, array(distribution, int), dest, array(newDistribution, int))
+					transpose.Transpose(fullShape, source.GetArray(), array(distribution, int), dest.GetArray(), array(newDistribution, int))
 
 					#Use the new buffer
+					del source
 					source = dest
 					distribution = newDistribution
 
 				#Calculate dest shape
-				destShape = array(source.shape)
+				destShape = array(source.GetArray().shape)
 				destShape[rank] = geometryInfo.GetBasisPairCount()
 
 				#Update full shape
 				fullShape[rank] = geometryInfo.GetBasisPairCount()
 			
 				#Allocate the destination array
-				dest = zeros(destShape, dtype=complex)
+				del dest
+				#dest = zeros(destShape, dtype=complex)
+				dest = CreateInstanceRank("core.DataBuffer", self.Rank)
+				dest.ResizeArray(array(destShape))
 
 				#Represent this rank in the basis
-				basis.RepresentPotentialInBasis(source, dest, rank, geometryInfo, differentiation) 
+				basis.RepresentPotentialInBasis(source.GetArray(), dest.GetArray(), rank, geometryInfo, differentiation) 
 
 				#Use the destination from this rank as the source to the next
+				del source
 				source = dest
 
 		#done!
@@ -189,16 +202,20 @@ class TensorPotentialGenerator(object):
 		if distribution != origDistribution:
 			#Create shape of transposed function and allocate dest buffer
 			transposedShape = transpose.CreateDistributedShape(fullShape, array(origDistribution, dtype=int32))
-			dest = zeros(transposedShape, dtype=complex)
+			del dest
+			#dest = zeros(transposedShape, dtype=complex)
+			dest = CreateInstanceRank("core.DataBuffer", self.Rank)
+			dest.ResizeArray(array(transposedShape))
 
 			#Transpose
 			transpose.Transpose(fullShape, source, array(distribution, int), dest, array(origDistribution, int))
 
 			#Use the new buffer
+			del source
 			source = dest
 			distribution = origDistribution
 
-
+		del dest
 		return source
 
 
