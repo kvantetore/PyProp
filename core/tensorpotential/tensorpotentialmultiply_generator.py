@@ -660,7 +660,9 @@ class SnippetGeneratorBandedNonHermitianBlas(SnippetGeneratorBase):
 	def GetLoopingCodeRecursive(self, conjugate, destName, destIndex, sourceName, sourceIndex, potentialName, potentialIndex):
 		str = ""
 		#If this is the innermost loop, we can optimize it by calling blas
-		if self.InnerGenerator != None or True:
+		#however, if conjugate is true, we should complex conjugate the potential,
+		#and zgbmv cannot conjugate without transposing at the same time.
+		if self.InnerGenerator != None or conjugate:
 			#First loop is for the upper bandCount-by-bandCount submatrix
 			str += """
 				!First loop is for the upper subDiagonals-by-subDiagonals submatrix

@@ -7,6 +7,7 @@ class CayleyPropagator(PropagatorBase):
 		self.Rank = psi.GetRank()
 		
 		self.Solver = CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
+		self.Timers = Timers()
 
 	def ApplyConfig(self, config):
 		self.__Base.ApplyConfig(self, config)
@@ -39,6 +40,7 @@ class CayleyPropagator(PropagatorBase):
 		configSection.Apply(self.Solver)
 	
 	def SetupStep(self, dt):
+		self.Timers["SetupStep"].Start()
 		self.BasePropagator.SetupStep(dt)
 		self.Solver.Setup(self.psi);
 
@@ -54,11 +56,14 @@ class CayleyPropagator(PropagatorBase):
 
 		#Setup preconditioner
 		if self.Preconditioner:
+			self.Timers["PreconditionerSetup"].Start()
 			self.Preconditioner.SetHamiltonianScaling( 1.0j * dt / 2.0 )
 			self.Preconditioner.SetOverlapScaling( 1.0 )
 			self.Preconditioner.Setup(self)
+			self.Timers["PreconditionerSetup"].Stop()
 
 		self.TempPsiMultiply = self.psi.Copy()
+		self.Timers["SetupStep"].Stop()
 
 	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
 		self.BasePropagator.MultiplyHamiltonian(srcPsi, destPsi, t, dt)
@@ -70,20 +75,27 @@ class CayleyPropagator(PropagatorBase):
 		(S + i dt H(t+dt)/2)^-1 psi(t + dt) = (S - i dt H(t)/2) psi(t)
 		"""
 
+		self.Timers["AdvanceStep"].Start()
 		#plot(abs(self.psi.GetData()), "r")
 
 		#construct tempPsi = (S + i dt H) psi(t)
 		self.TempPsi.Clear()
+		self.Timers["ForwardStep"].Start()
 		self.MultiplySpH(self.psi, self.TempPsi, -1.0j*dt/2, t + abs(dt/2.), dt)
+		self.Timers["ForwardStep"].Stop()
 		
 		#plot(abs(self.TempPsi.GetData()), "g--")
 
 		#solve (S - i dt H) psi(t+dt)
+		self.Timers["BackwardStep"].Start()
 		if self.Preconditioner:
+			self.Timers["PreconditionerSolve"].Start()
 			self.Preconditioner.Solve(self.TempPsi)
+			self.Timers["PreconditionerSolve"].Stop()
 		callback = lambda srcPsi, dstPsi: self.SolverCallback(srcPsi, dstPsi, t+abs(dt/2.), dt)
 		#self.psi.GetData()[:] = 0
 		self.Solver.Solve(callback, self.TempPsi, self.psi, False)
+		self.Timers["BackwardStep"].Stop()
 
 		#plot(abs(self.psi.GetData()), "b--")
 
@@ -98,6 +110,8 @@ class CayleyPropagator(PropagatorBase):
 		if err > 1e-4 :
 			print "Error = %s" % (err)
 		#print find(self.Solver.GetErrorEstimateList() == 0)[0]
+
+		self.Timers["AdvanceStep"].Start()
 
 	def MultiplySpH(self, sourcePsi, destPsi, hFactor, t, dt):
 		"""

@@ -31,7 +31,9 @@ class GMRESShiftInvertSolver:
 		self.TempPsi = prop.psi.Copy()
 		self.TempPsi2 = prop.psi.Copy()
 		self.Shift = self.Config.shift
-
+		self.Timers = Timers()
+	
+		self.Timers["Setup"].Start()
 		#Set up GMRES
 		self.Solver = CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
 		prop.Config.GMRES.Apply(self.Solver)
@@ -41,6 +43,7 @@ class GMRESShiftInvertSolver:
 		config = prop.Config
 		preconditionerName = self.Config.preconditioner
 		if preconditionerName:
+			self.Timers["PreconditionerSetup"].Start()
 			preconditionerSection = config.GetSection(preconditionerName)
 			preconditioner = preconditionerSection.type(self.psi)
 			preconditionerSection.Apply(preconditioner)
@@ -48,8 +51,10 @@ class GMRESShiftInvertSolver:
 			self.Preconditioner.SetHamiltonianScaling(1.0)
 			self.Preconditioner.SetOverlapScaling(-self.Shift)
 			self.Preconditioner.Setup(self.BaseProblem.Propagator)
+			self.Timers["PreconditionerSetup"].Stop()
 		else:
 			self.Preconditioner = None
+		self.Timers["Setup"].Stop()
 
 
 	def __callback(self, srcPsi, dstPsi):
@@ -60,13 +65,17 @@ class GMRESShiftInvertSolver:
 		   1) dstPsi = (H - shift * S) * srcPsi
 		   2) dstPsi = M**-1 * dstPsi
 		"""
+	
+		self.Timers["GMRES Callback"].Start()
 
 		repr = dstPsi.GetRepresentation()
 		self.TempPsi2.GetData()[:] = srcPsi.GetData()[:]
 		
 		#Multiply H * srcPsi, put in dstPsi (dstPsi is zeroed!)
+		self.Timers["MultiplyHamiltonian"].Start()
 		multiplyHam = self.BaseProblem.Propagator.BasePropagator.MultiplyHamiltonianNoOverlap
 		multiplyHam(srcPsi, dstPsi, 0, 0)
+		self.Timers["MultiplyHamiltonian"].Stop()
 
 		#Multiply shift * S * srcPsi
 		repr.MultiplyOverlap(self.TempPsi2)
@@ -75,7 +84,11 @@ class GMRESShiftInvertSolver:
 
 		#Solve left preconditioner in-place, dstPsi = M**-1 * dstPsi
 		if self.Preconditioner:
+			self.Timers["PreconditionerSolve"].Start()
 			self.Preconditioner.Solve(dstPsi)
+			self.Timers["PreconditionerSolve"].Stop()
+		
+		self.Timers["GMRES Callback"].Stop()
 
 
 	def InverseIterations(self, srcPsi, destPsi, t, dt):
@@ -85,6 +98,7 @@ class GMRESShiftInvertSolver:
 		the solution of the linear system (1) with srcPsi as 
 		right hand side
 		"""
+		self.Timers["Inverse Iterations"].Start()
 
 		repr = destPsi.GetRepresentation()
 
@@ -94,9 +108,12 @@ class GMRESShiftInvertSolver:
 
 		#Preconditioner, d = M**-1 * c = M**-1 * S * b
 		if self.Preconditioner:
+			self.Timers["PreconditionerSolve"].Start()
 			self.Preconditioner.Solve(self.TempPsi)
+			self.Timers["PreconditionerSolve"].Stop()
 
 		#Solve for (H - shift * S)
 		self.Solver.Solve(self.__callback, self.TempPsi, destPsi, False)
 
+		self.Timers["Inverse Iterations"].Stop()
 

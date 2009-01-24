@@ -140,9 +140,9 @@ class BasisfunctionBSpline(BasisfunctionBase):
 			return GeometryInfoCommonIdentity(True)
 		elif geom == "banded-nonhermitian":
 			return GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
-		elif geom == "banded-old":
+		elif geom == "banded-packed":
 			return GeometryInfoBSplineBanded(self.BSplineObject)
-		elif geom == "banded":
+		elif geom == "banded-hermitian":
 			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
 			return GeometryInfoCommonDense(BasisSize, True)
