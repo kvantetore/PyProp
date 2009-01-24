@@ -237,12 +237,23 @@ def CreateDataset(f, datasetPath, fullShape):
 	Creates a chunked array dataset of shape fullShape at the given path. 
 	"""
 	groupName, datasetName = GetDatasetName(datasetPath)
-	group = "/"
-	if len(groupName) > 1:
-		group = f.createGroup("/", groupName[1:], createparents=True)
+	pathList = groupName.split("/")
+	curPath = ""
+	prevPath = ""
+	for curGroupName in pathList:
+		if len(curGroupName) == 0:
+			continue
+		prevPath = curPath
+		curPath += "/%s" % curGroupName
+		if not f.__contains__(curPath):
+			if prevPath == "":
+				newGroup = f.createGroup("/", curGroupName)
+			else:
+				newGroup = f.createGroup(prevPath, curGroupName)
+
 	atom = tables.ComplexAtom(itemsize=16)
 	filters = tables.Filters(complevel=0)
-	dataset = f.createCArray(group, datasetName, atom, fullShape, filters=filters)
+	dataset = f.createCArray(curPath, datasetName, atom, fullShape, filters=filters)
 
 	return dataset
 
