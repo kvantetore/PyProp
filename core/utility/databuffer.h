@@ -81,6 +81,12 @@ public:
 		return DataArray;
 	}
 
+	ArrayType GetArray2()
+	{
+		return DataArray;
+	}
+
+
 	const ArrayType& GetArray() const
 	{
 		return DataArray;

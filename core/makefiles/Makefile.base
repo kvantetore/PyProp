@@ -49,6 +49,7 @@ PYSTEFILES = \
 	python/coupledsphericalharmonicrepresentation.pyste \
 	python/coupledsphericalselectionrule.pyste \
 	python/tensorpotential_basis.pyste \
+	python/databuffer.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput

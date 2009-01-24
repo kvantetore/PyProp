@@ -14,7 +14,7 @@ endif
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
 #TESTFILES :=  python/tensorpotential.pyste
-TESTFILES :=  python/overlapmatrix.pyste
+TESTFILES :=  python/databuffer.pyste
 
 #TESTFILES :=  python/distributedmodel.pyste
 BSPLINEREPFILES := python/bspline/bsplinerepresentation.pyste

@@ -40,6 +40,7 @@ void Export_python_overlapmatrix();
 void Export_python_coupledsphericalharmonicrepresentation();
 void Export_python_coupledsphericalselectionrule();
 void Export_python_tensorpotential_basis();
+void Export_python_databuffer();
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libcore)
@@ -82,4 +83,5 @@ BOOST_PYTHON_MODULE(libcore)
     Export_python_coupledsphericalharmonicrepresentation();
     Export_python_coupledsphericalselectionrule();
     Export_python_tensorpotential_basis();
+    Export_python_databuffer();
 }
