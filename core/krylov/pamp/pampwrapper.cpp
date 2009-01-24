@@ -104,6 +104,7 @@ void PampWrapper<Rank>::AdvanceStep(object callback, typename Wavefunction<Rank>
 	//Zero the pointers to avoid mishaps
 	this->Psi = typename Wavefunction<Rank>::Ptr();
 	this->TempPsi = typename Wavefunction<Rank>::Ptr();
+	this->Callback = object();
 }
 
 template class PampWrapper<1>;

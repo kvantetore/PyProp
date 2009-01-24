@@ -32,10 +32,9 @@ def RunStabilization(**args):
 		initProp = SetupProblem(eigenvalueCount=1, **args)
 		#solver = pyprop.PiramSolver(initProp)
 		#solver.Solve()
-		initProp.Config.RadialPreconditioner.type = RadialTwoElectronPreconditionerInverseIterations
 
 		#Setup inverse iterator	
-		invIt = InverseIterator(initProp)
+		invIt = pyprop.GMRESShiftInvertSolver(initProp)
 		initProp.Config.Arpack.matrix_vector_func = invIt.InverseIterations
 
 		#Setup solver

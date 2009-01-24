@@ -126,6 +126,7 @@ void PiramSolver<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr 
 	//Zero the pointers to avoid mishaps
 	this->Psi = typename Wavefunction<Rank>::Ptr();
 	this->TempPsi = typename Wavefunction<Rank>::Ptr();
+	this->Callback = object();
 }
 
 template class PiramSolver<1>;

@@ -106,6 +106,7 @@ void GmresWrapper<Rank>::Solve(object callback, typename Wavefunction<Rank>::Ptr
 	//Zero the pointers to avoid mishaps
 	this->Psi = typename Wavefunction<Rank>::Ptr();
 	this->TempPsi = typename Wavefunction<Rank>::Ptr();
+	this->OperatorCallback = object();
 }
 
 template class GmresWrapper<1>;

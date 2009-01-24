@@ -218,8 +218,8 @@ public:
 		if (Initialized)
 		{
 			SUPERLU_FREE(A.Store);
-			SUPERLU_FREE(L.Store);
-			SUPERLU_FREE(U.Store);
+			Destroy_SuperNode_Matrix(&L);
+			Destroy_CompCol_Matrix(&U);
 		}
 	}
 
@@ -353,6 +353,7 @@ public:
 
 		//free temp datastructures
 		SUPERLU_FREE(B.Store);
+		SUPERLU_FREE(X.Store);
 	}
 
 	void PrintStatistics()

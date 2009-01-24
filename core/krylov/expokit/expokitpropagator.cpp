@@ -96,6 +96,10 @@ void ExpokitPropagator<Rank>::AdvanceStep(object callback, typename Wavefunction
 
 	//Copy output data back to wavefunction
 	psi->GetData() = tempPsi->GetData();
+
+	this->Psi = typename Wavefunction<Rank>::Ptr();
+	this->TempPsi = typename Wavefunction<Rank>::Ptr();
+	this->MultiplyCallback = object();
 }
 
 template class ExpokitPropagator<1>;
