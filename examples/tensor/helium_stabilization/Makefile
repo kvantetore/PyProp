@@ -12,7 +12,7 @@ MODULENAME   := libpotential
 
 -include $(PYPROP_ROOT)/core/makefiles/Makefile.extension
 
-SUPERLU_PATH = /opt/superlu_serial
+SUPERLU_PATH = pyprop/extern/superlu_serial
 SUPERLU_LIBS = -L$(SUPERLU_PATH)/lib -lsuperlu_serial
 SUPERLU_INCLUDE = -I$(SUPERLU_PATH)/SRC
 CPPFLAGS := $(CPPFLAGS) $(SUPERLU_INCLUDE)
