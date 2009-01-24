@@ -236,13 +236,20 @@ def CreateDataset(f, datasetPath, fullShape):
 	"""
 	Creates a chunked array dataset of shape fullShape at the given path. 
 	"""
+	#Separate path from node name 
 	groupName, datasetName = GetDatasetName(datasetPath)
+
+	#Iterative over path (for each /), determine if each node
+	#in the path exists, if not, create it
 	pathList = groupName.split("/")
 	curPath = ""
 	prevPath = ""
 	for curGroupName in pathList:
+		#Skip zero-length node names (from the split operation)
 		if len(curGroupName) == 0:
 			continue
+
+		#Create node if it does not exist
 		prevPath = curPath
 		curPath += "/%s" % curGroupName
 		if not f.__contains__(curPath):
@@ -251,11 +258,13 @@ def CreateDataset(f, datasetPath, fullShape):
 			else:
 				newGroup = f.createGroup(prevPath, curGroupName)
 
+	#Finally, save the data set
 	atom = tables.ComplexAtom(itemsize=16)
 	filters = tables.Filters(complevel=0)
 	dataset = f.createCArray(curPath, datasetName, atom, fullShape, filters=filters)
 
 	return dataset
+
 
 def SaveConfigObject(filename, datasetPath, conf):
 	if conf != None:
