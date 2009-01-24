@@ -354,4 +354,9 @@ public:
 		//free temp datastructures
 		SUPERLU_FREE(B.Store);
 	}
+
+	void PrintStatistics()
+	{
+		StatPrint(&Statistics);
+	}
 };
