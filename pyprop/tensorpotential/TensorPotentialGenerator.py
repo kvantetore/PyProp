@@ -165,8 +165,8 @@ class TensorPotentialGenerator(object):
 					
 					del dest
 					#dest = zeros(transposedshape, dtype=complex)
-					dest = CreateInstanceRank("core.databuffer", self.rank)
-					dest.resizearray(array(transposedshape))
+					dest = CreateInstanceRank("core.DataBuffer", self.Rank)
+					dest.ResizeArray(array(transposedShape))
 
 					#Transpose
 					transpose.Transpose(fullShape, source.GetArray(), array(distribution, int), dest.GetArray(), array(newDistribution, int))
