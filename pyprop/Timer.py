@@ -38,7 +38,6 @@ class Timer(object):
 
 
 
-
 class Timers(dict):
 	"""
 	Dictonary of Timer objects. Automatically instantiates new
@@ -67,4 +66,24 @@ class Timers(dict):
 			str += "    %s = %s\n" % (key, timer)
 		return str
 	
+class Counters(dict):
+	"""
+	Dictionary of counters
+	"""
+	def __getitem__(self, ident):
+		if not self.has_key(ident):
+			self[ident] = 0
+		return dict.__getitem__(self, ident)
+
+	def __setitem__(self, ident, value):
+		if not isinstance(value, int):
+			raise ValueError("Only integer-objects are allowed as value in counters")
+		dict.__setitem__(self, ident, value)
+
+	def __str__(self):
+		str =  "Counters:\n"
+		for key, counter in self.iteritems():
+			str += "    %s = %s\n" % (key, counter)
+		return str
 	
+		
