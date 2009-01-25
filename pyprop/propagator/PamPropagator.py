@@ -80,4 +80,4 @@ class PamPropagator(PropagatorBase):
 		Calculate potential expectation value.
 		"""
 
-		return potential.GetExpectationValue(tmpPsi, t, dt)
+		return potential.GetExpectationValue(self.psi, tmpPsi, t, dt)
