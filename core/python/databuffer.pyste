@@ -1,0 +1,10 @@
+
+Include("utility/databuffer.h")
+DataBuffer = Template("DataBuffer", "utility/databuffer.h")
+set_policy(DataBuffer.GetArray, return_value_policy(return_by_value))
+use_shared_ptr(DataBuffer)
+DataBuffer("1")
+DataBuffer("2")
+DataBuffer("3")
+DataBuffer("4")
+
