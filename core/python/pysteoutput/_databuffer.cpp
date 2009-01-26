@@ -9,29 +9,6 @@
 // Using =======================================================================
 using namespace boost::python;
 
-// Declarations ================================================================
-namespace  {
-
-blitz::Array<std::complex<double>,1>& (DataBuffer<1>::*DataBuffer_1___GetArray)()  = &DataBuffer<1>::GetArray;
-
-const blitz::Array<std::complex<double>,1>& (DataBuffer<1>::*DataBuffer_1___GetArray_const)() const = &DataBuffer<1>::GetArray;
-
-blitz::Array<std::complex<double>,2>& (DataBuffer<2>::*DataBuffer_2___GetArray)()  = &DataBuffer<2>::GetArray;
-
-const blitz::Array<std::complex<double>,2>& (DataBuffer<2>::*DataBuffer_2___GetArray_const)() const = &DataBuffer<2>::GetArray;
-
-blitz::Array<std::complex<double>,3>& (DataBuffer<3>::*DataBuffer_3___GetArray)()  = &DataBuffer<3>::GetArray;
-
-const blitz::Array<std::complex<double>,3>& (DataBuffer<3>::*DataBuffer_3___GetArray_const)() const = &DataBuffer<3>::GetArray;
-
-blitz::Array<std::complex<double>,4>& (DataBuffer<4>::*DataBuffer_4___GetArray)()  = &DataBuffer<4>::GetArray;
-
-const blitz::Array<std::complex<double>,4>& (DataBuffer<4>::*DataBuffer_4___GetArray_const)() const = &DataBuffer<4>::GetArray;
-
-
-}// namespace 
-
-
 // Module ======================================================================
 void Export_python_databuffer()
 {
@@ -42,9 +19,7 @@ void Export_python_databuffer()
         .def("IsAvailable", &DataBuffer<1>::IsAvailable)
         .def("Lock", &DataBuffer<1>::Lock)
         .def("UnLock", &DataBuffer<1>::UnLock)
-        .def("GetArray", DataBuffer_1___GetArray, return_value_policy< return_by_value >())
-        .def("GetArray2", &DataBuffer<1>::GetArray2)
-        .def("GetArray", DataBuffer_1___GetArray_const, return_value_policy< return_by_value >())
+        .def("GetArray", &DataBuffer<1>::GetArray2)
         .def("ResizeArray", &DataBuffer<1>::ResizeArray)
         .def("FreeArray", &DataBuffer<1>::FreeArray)
         .def( self == other< blitz::TinyVector<int,1> >() )
@@ -59,9 +34,7 @@ void Export_python_databuffer()
         .def("IsAvailable", &DataBuffer<2>::IsAvailable)
         .def("Lock", &DataBuffer<2>::Lock)
         .def("UnLock", &DataBuffer<2>::UnLock)
-        .def("GetArray", DataBuffer_2___GetArray, return_value_policy< return_by_value >())
-        .def("GetArray2", &DataBuffer<2>::GetArray2)
-        .def("GetArray", DataBuffer_2___GetArray_const, return_value_policy< return_by_value >())
+        .def("GetArray", &DataBuffer<2>::GetArray2)
         .def("ResizeArray", &DataBuffer<2>::ResizeArray)
         .def("FreeArray", &DataBuffer<2>::FreeArray)
         .def( self == other< blitz::TinyVector<int,2> >() )
@@ -76,9 +49,7 @@ void Export_python_databuffer()
         .def("IsAvailable", &DataBuffer<3>::IsAvailable)
         .def("Lock", &DataBuffer<3>::Lock)
         .def("UnLock", &DataBuffer<3>::UnLock)
-        .def("GetArray", DataBuffer_3___GetArray, return_value_policy< return_by_value >())
-        .def("GetArray2", &DataBuffer<3>::GetArray2)
-        .def("GetArray", DataBuffer_3___GetArray_const, return_value_policy< return_by_value >())
+        .def("GetArray", &DataBuffer<3>::GetArray2)
         .def("ResizeArray", &DataBuffer<3>::ResizeArray)
         .def("FreeArray", &DataBuffer<3>::FreeArray)
         .def( self == other< blitz::TinyVector<int,3> >() )
@@ -93,9 +64,7 @@ void Export_python_databuffer()
         .def("IsAvailable", &DataBuffer<4>::IsAvailable)
         .def("Lock", &DataBuffer<4>::Lock)
         .def("UnLock", &DataBuffer<4>::UnLock)
-        .def("GetArray", DataBuffer_4___GetArray, return_value_policy< return_by_value >())
-        .def("GetArray2", &DataBuffer<4>::GetArray2)
-        .def("GetArray", DataBuffer_4___GetArray_const, return_value_policy< return_by_value >())
+        .def("GetArray", &DataBuffer<4>::GetArray2)
         .def("ResizeArray", &DataBuffer<4>::ResizeArray)
         .def("FreeArray", &DataBuffer<4>::FreeArray)
         .def( self == other< blitz::TinyVector<int,4> >() )

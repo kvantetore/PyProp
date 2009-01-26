@@ -1,7 +1,7 @@
 
-Include("utility/databuffer.h")
 DataBuffer = Template("DataBuffer", "utility/databuffer.h")
-set_policy(DataBuffer.GetArray, return_value_policy(return_by_value))
+exclude(DataBuffer.GetArray)
+rename(DataBuffer.GetArray2, "GetArray")
 use_shared_ptr(DataBuffer)
 DataBuffer("1")
 DataBuffer("2")
