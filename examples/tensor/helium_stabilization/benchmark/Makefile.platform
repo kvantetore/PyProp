@@ -1,0 +1,3 @@
+CPPFLAGS := $(CPPFLAGS) -g -I$(HOME)/prog/pyprop/extern/blitz/build/include
+LDFLAGS := $(LDFLAGS) -L$(HOME)/prog/pyprop/extern/blitz/build/lib
+
