@@ -111,7 +111,7 @@ class CayleyPropagator(PropagatorBase):
 			print "Error = %s" % (err)
 		#print find(self.Solver.GetErrorEstimateList() == 0)[0]
 
-		self.Timers["AdvanceStep"].Start()
+		self.Timers["AdvanceStep"].Stop()
 
 	def MultiplySpH(self, sourcePsi, destPsi, hFactor, t, dt):
 		"""

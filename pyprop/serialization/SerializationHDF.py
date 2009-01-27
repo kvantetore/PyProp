@@ -261,7 +261,7 @@ def CreateDataset(f, datasetPath, fullShape):
 	#Finally, save the data set
 	atom = tables.ComplexAtom(itemsize=16)
 	filters = tables.Filters(complevel=0)
-	dataset = f.createCArray(curPath, datasetName, atom, fullShape, filters=filters)
+	dataset = f.createCArray(groupName, datasetName, atom, fullShape, filters=filters)
 
 	return dataset
 

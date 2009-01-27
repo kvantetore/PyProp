@@ -112,7 +112,7 @@ class TensorPotentialGenerator(object):
 		# Save a copy of the potential if we're debugging
 		debugPotential = getattr(configSection, "debug_potential", False)
 		if debugPotential:	
-			self.OriginalPotential = potentialData.copy()
+			self.OriginalPotential = potentialData.GetArray().copy()
 			
 		#for parallelization
 		#We only support the first rank initially distributed
