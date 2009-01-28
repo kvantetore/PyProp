@@ -183,6 +183,9 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     integer :: N2, i2, row2, col2, bsplineCount2, bandCount2
     integer :: subDiagonals2, sourceStride2, destStride2
     complex (kind=dbl) :: alpha2, beta2
+
+	real (kind=dbl) :: timerMatVec=0.0d0, timerWait=0.0d0, timerCopy=0.0d0
+	integer :: callCount = 0
     
     call MPI_Comm_rank(MPI_COMM_WORLD, procId0, error0)
     call MPI_Comm_size(MPI_COMM_WORLD, procCount0, error0)
@@ -220,11 +223,10 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     !Iterate over all rows of the matrix for the columns stored on proc
     do i0 = 0, localMatrixIndex0Extent0-1	
 		!call MPI_Barrier(MPI_COMM_WORLD, error0);
-        write(*,*) "Procid ", procId0, " step ", i0
         !----------------------------------------------------------------------------
         !                         Calculation
         !----------------------------------------------------------------------------
-        
+       	timerMatVec = timerMatVec - MPI_Wtime() 
         !Perform calculation for this step
         curSend0 = 0
         if (localMatrixIndex0(i0) .ne. -1) then
@@ -257,7 +259,7 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
                 enddo
                 
             else
-                sendTemp0(:, :, tempIndex0) = 0
+                sendTemp0(:, :, tempIndex0) = dcmplx(0.d0, 0.0d0)
                 
                 do i1 = 0, N1-1
                     row1 = pair1(0, i1);
@@ -285,6 +287,7 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
                 curSend0 = 1
             endif
         endif
+       	timerMatVec = timerMatVec + MPI_Wtime() 
         
         !----------------------------------------------------------------------------
         !                         Communication
@@ -296,15 +299,22 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
         
         !Wait for previous recv
         do recvIdx0 = 0, waitRecieve0-1
+       		timerWait = timerWait - MPI_Wtime() 
             call MPI_Wait(recvRequest0(recvIdx0), MPI_STATUS_IGNORE, error0)
+       		timerWait = timerWait + MPI_Wtime() 
+       		
+			timerCopy = timerCopy - MPI_Wtime() 
             sourceRow0 = recvLocalRowList0(recvIdx0, i0-1)
             dest(:, :, sourceRow0) = dest(:, :, sourceRow0) + recvTemp0(:, :, recvIdx0)
+       		timerCopy = timerCopy + MPI_Wtime() 
         enddo
         
         !Wait for previous send
+       	timerWait = timerWait - MPI_Wtime() 
         if (waitSend0 .eq. 1) then
             call MPI_Wait(sendRequest0, MPI_STATUS_IGNORE, error0)
         endif
+       	timerWait = timerWait + MPI_Wtime() 
         
         ! Theese are the sends and recvs for the current step. Post them now,
         ! and wait for completion at the next iteration
@@ -328,17 +338,37 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     
     !Wait for last recv
     do recvIdx0 = 0, waitRecieve0-1
+       	timerWait = timerWait - MPI_Wtime() 
         call MPI_Wait(recvRequest0(recvIdx0), MPI_STATUS_IGNORE, error0)
-        sourceRow0 = recvLocalRowList0(recvIdx0, localMatrixIndex0Extent0-1)
+       	timerWait = timerWait + MPI_Wtime() 
+        
+		timerCopy = timerCopy - MPI_Wtime() 
+		sourceRow0 = recvLocalRowList0(recvIdx0, localMatrixIndex0Extent0-1)
         dest(:, :, sourceRow0) = dest(:, :, sourceRow0) + recvTemp0(:, :, recvIdx0)
+		timerCopy = timerCopy + MPI_Wtime() 
     enddo
     
     !Wait for last send
+    timerWait = timerWait - MPI_Wtime() 
     if (waitSend0 .eq. 1) then
         call MPI_Wait(sendRequest0, MPI_STATUS_IGNORE, error0)
     endif
+    timerWait = timerWait + MPI_Wtime() 
     
-    
+	callCount = callCount + 1
+	if (callCount .eq. 1000) then
+		do i0 = 0, procCount0-1
+			call MPI_Barrier(MPI_COMM_WORLD, error0)
+			if (i0 .eq. procId0) then
+				write(*,*) "Proc ", procId0
+				write(*,*) "    wait = ", timerWait
+				write(*,*) "    copy = ", timerCopy
+				write(*,*) "    matv = ", timerMatVec
+			endif
+		enddo
+	endif
+	call MPI_Barrier(MPI_COMM_WORLD, error0)
+
 end subroutine TensorPotentialMultiply_SimpD_Simp_BandNH
 
 

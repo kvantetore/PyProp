@@ -21,6 +21,7 @@ from pyprop import PrintOut
 
 execfile("stabilization.py")
 execfile("twoelectron_test.py")
+execfile("benchmark.py")
 
 try:
 	import scipy

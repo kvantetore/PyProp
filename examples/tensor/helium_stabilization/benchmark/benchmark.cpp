@@ -115,7 +115,15 @@ int main(int argc, char* argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	cout << procId << " says hei" << endl;
 
-	TensorPotentialMultiply_SimpD_Simp_BandNH_Wrapper(potential, scaling, source, dest, globalSize0, localMatrixIndex0, globalRow0, globalCol0, sendProc0, recvProcList0, recvLocalRowList0, recvCount0, recvTemp0, sendTemp0, pair1);
+	if (procId == 0)
+	{
+		cout << "# steps = " << sendProc0.extent(0) << endl;
+	}
+
+	for (int i=0; i<1000; i++)
+	{
+		TensorPotentialMultiply_SimpD_Simp_BandNH_Wrapper(potential, scaling, source, dest, globalSize0, localMatrixIndex0, globalRow0, globalCol0, sendProc0, recvProcList0, recvLocalRowList0, recvCount0, recvTemp0, sendTemp0, pair1);
+	}
 
 	cout << procId << " says på deg" << endl;
 

@@ -8,7 +8,7 @@
 
 #include "h5traits.h"
 
-typedef std::complex<float> cplx;
+typedef std::complex<double> cplx;
 
 template<int Rank> hid_t CreateDataSpace(const blitz::TinyVector<int, Rank> &shape)
 {
@@ -117,7 +117,7 @@ template<class T, int Rank> blitz::Array<T, Rank> ReadArray(hid_t datasetId)
 	H5Sclose(dataspaceId);
 
 	//Allocate and read data
-	blitz::Array<T, Rank> array(dims);
+	blitz::Array<T, Rank> array(maxdims);
 	ReadArray(datasetId, array);
 
 	return array;
