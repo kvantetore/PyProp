@@ -155,10 +155,15 @@ class StaticPotentialWrapper(PotentialWrapper):
 	
 		elif hasattr(self.ConfigSection, "function"):
 			func = self.ConfigSection.function
-			potentialData = self.Potential.GetPotentialData()
-			func(self.psi, self.ConfigSection, potentialData)
-			if self.Storage == self.Potential.StorageModel.StorageExpValue:	
-				potentialData[:] = exp(- 1.0j * timeStep * potentialData)
+			if self.Potential.UseStorageValue():
+				potentialData = self.Potential.GetPotentialData()
+				func(self.psi, self.ConfigSection, potentialData)
+				
+			if self.Potential.UseStorageExpValue():
+				potentialExpData = self.Potential.GetPotentialDataExp()
+				func(self.psi, self.ConfigSection, potentialExpData)
+				potentialExpData[:] = exp(- 1.0j * timeStep * potentialExpData)
+				
 
 		elif hasattr(self.ConfigSection, "classname"):
 			evaluatorPrefix = "core.DynamicPotentialEvaluator"

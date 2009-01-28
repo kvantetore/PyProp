@@ -288,8 +288,8 @@ def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
 		axisHeight = ax.axis()[3]
 	axisWidth = len(corr) + 1
 
-	winWidth = ax.get_window_extent().width()
-	winHeight = ax.get_window_extent().height()
+	winWidth = ax.get_window_extent().width
+	winHeight = ax.get_window_extent().height
 
 	scale = winWidth * axisHeight / (winHeight * axisWidth)
 
@@ -318,7 +318,7 @@ def CorrelationBarPlotPhase(corr, ax=None, axisHeight=None):
 		
 			dx = width/2. * cos(+pi/2 - theta)
 			dy = height/2. * sin(+pi/2 - theta)
-			lin = matplotlib.patches.Line2D(xdata=[xCenter, xCenter+dx], ydata=[yCenter, yCenter+dy])
+			lin = matplotlib.lines.Line2D(xdata=[xCenter, xCenter+dx], ydata=[yCenter, yCenter+dy])
 			ax.add_artist(lin)
 		
 	draw_if_interactive()
@@ -337,11 +337,11 @@ def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
 
 	ax = fig.gca()
 	ax.set_position([0.05,0.05,0.9,0.68])
-	#ax.plot(r, potData)
-	#ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 + potData[:,0], "k")
-	#ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 + potData[:,1], "k")
-	ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 -0.6, "k")
-	ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 -0.2, "k")
+	ax.plot(r, potData)
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 + potData[:,0], "k")
+	ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 + potData[:,1], "k")
+	#ax.plot(r, 0.1*abs(rad[frameIndex,:,0])**2 -0.6, "k")
+	#ax.plot(r, 0.1*abs(rad[frameIndex,:,1])**2 -0.2, "k")
 	ax.axis([0,10,-0.65,-0.1])
 	yticks([])
 
@@ -361,6 +361,7 @@ def MakeMovieFrame(conf, frameIndex, t, corr, r, rad, potData):
 def MakeMovie(**args):
 	conf = SetupConfig(**args)
 	prop = SetupProblem(**args)
+	LoadInitialState(prop, **args)
 	potData = prop.Propagator.PotentialList[0].Potential.GetPotentialData().copy()
 	del prop
 
@@ -391,7 +392,7 @@ def MakeMovie(**args):
 		close()
 
 	if generateMovie:
-		mymovie = myplot.MakeMovie()
+		mymovie = myplot.MovieMaker()
 		conf.Movie.Apply(mymovie)
 		mymovie.CreateMovie()
 
@@ -741,6 +742,7 @@ def Propagate(**args):
 		prop.psi.GetData()[:,0] = dot(conj(boundV.transpose()), proj) / dr
 		prop.PropagatedTime = fastForward
 
+	prop.AdvanceStep()
 	
 	#prop.Duration = fullDuration
 	tPrev = 0

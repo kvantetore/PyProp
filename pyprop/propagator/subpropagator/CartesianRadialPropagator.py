@@ -19,6 +19,7 @@ class CartesianRadialPropagator(FourierPropagatorBase):
 		fourierPotentialConf = self.StaticEnergyConf(PotentialType.Static, "core.RadialKineticEnergyPotential")
 		fourierPotentialConf.mass = self.Mass
 		fourierPotentialConf.radial_rank = self.TransformRank
+		fourierPotentialConf.storage_model = StaticStorageModel.StorageBoth
 		fourierPot = CreatePotentialFromSection(fourierPotentialConf, "RadialKineticEnergy", self.psi)
 
 		return fourierPot

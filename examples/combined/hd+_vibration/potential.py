@@ -64,6 +64,7 @@ def GetElectronicCouplingBates(psi, config):
 
 	Implementation is translated to python from Dohmnalls code
 	"""
+	raise Exception()
 	r = psi.GetRepresentation().GetLocalGrid(0)
 	rho = (1 + abs(r) + r**2/3.) * exp(-abs(r)) 
 

@@ -92,13 +92,14 @@ public:
 	/** Updates a static potential with the expotential of the potential of this dynamic potential. */
 	void UpdateStaticPotential(StaticPotential<Rank> &potential, const Wavefunction<Rank> &psi, const cplx &timeStep, const double &curTime, typename StaticPotential<Rank>::StorageModel storage)
 	{
-		blitz::Array<cplx, Rank> potentialData( potential.GetPotentialData() );
-		if (storage == StaticPotential<Rank>::StorageExpValue)
+		if (potential.UseStorageExpValue())
 		{
-			Update.IterateAction(Potential, psi, potentialData, timeStep, curTime);
+			blitz::Array<cplx, Rank> potentialDataExp( potential.GetPotentialDataExp() );
+			Update.IterateAction(Potential, psi, potentialDataExp, timeStep, curTime);
 		}
-		else
+		if (potential.UseStorageValue())
 		{
+			blitz::Array<cplx, Rank> potentialData( potential.GetPotentialData() );
 			Get.IterateAction(Potential, psi, potentialData, timeStep, curTime);
 		}
 	}
