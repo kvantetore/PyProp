@@ -31,7 +31,7 @@ def RunHasbani(**args):
 	E, V = SetupRadialEigenstates(initProp)
 	overlapMatrix = SetupOverlapMatrix(initProp)
 
-	frequencyList = r_[0.2:1.2:0.02]
+	frequencyList = r_[0.7:0.9:0.02]
 	frequencyData = []
 	for frequencyIndex, frequency in enumerate(frequencyList):
 		#setup propagation problem
@@ -61,7 +61,7 @@ def RunHasbani(**args):
 		data["angularDensity"] = numpy.sum(abs(tempPsi.GetData())**2, axis=1)
 
 		#Calculate bound state distribution
-		data["boundE"], data["boundV"], data["boundDistr"], data["boundTotal"] = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix)
+		data["boundE"], data["boundV"], data["boundDistr"], data["boundTotal"] = CalculateBoundDistribution(prop.psi, E, V, overlapMatrix, boundThreshold=-0.00)
 
 		data["ionizedE"], data["ionizedDistr"] = CalculateEnergyDistribution(prop.psi, E, V, overlapMatrix)
 
@@ -293,14 +293,14 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 
 	return E, energyDistr
 	
-def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap):
+def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap, boundThreshold=0):
 	boundDistr = []
 	boundE = []
 	boundV = []
 	boundTotal = 0
 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
-		boundIdx = where(curE < 0)[0]
+		boundIdx = where(curE < boundThreshold)[0]
 
 		#Get projection on eigenstates
 		psiSlice = psi.GetData()[l, :]
