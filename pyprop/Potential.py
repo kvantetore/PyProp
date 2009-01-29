@@ -105,7 +105,7 @@ class PotentialWrapper:
 		"""
 		raise "MultiplyPotential is not implemented for class %s" % (self.__class__)
 	
-	def GetExpectationValue(self, t, timestep):
+	def GetExpectationValue(self, psi, t, timestep):
 		"""
 		Calculates the expectation value of the wavefunction for the given potential.
 		This can also be done with MultiplyPotential, but by using GetExpectationValue, 
@@ -217,8 +217,8 @@ class StaticPotentialWrapper(PotentialWrapper):
 				scaling = self.TimeFunction(self.ConfigSection, t)
 			self.Potential.MultiplyPotential(srcPsi, destPsi, dt, scaling)
 
-	def GetExpectationValue(self, t, dt):
-		return self.PotentialEvaluator.CalculateExpectationValue(self.psi, dt, t)
+	def GetExpectationValue(self, psi, t, dt):
+		return self.PotentialEvaluator.CalculateExpectationValue(psi, dt, t)
 
 	def GetPotential(self, dt):
 		if self.Potential.UseStorageValue():
@@ -251,8 +251,8 @@ class DynamicPotentialWrapper(PotentialWrapper):
 	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		self.Evaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
 
-	def GetExpectationValue(self, t, dt):
-		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
+	def GetExpectationValue(self, psi, t, dt):
+		return self.Evaluator.CalculateExpectationValue(psi, dt, t)
 
 
 class RankOnePotentialWrapper(PotentialWrapper):
@@ -279,8 +279,8 @@ class RankOnePotentialWrapper(PotentialWrapper):
 	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		self.Evaluator.MultiplyPotential(srcPsi, destPsi, dt, t)
 
-	def GetExpectationValue(self, t, dt):
-		return self.Evaluator.CalculateExpectationValue(self.psi, dt, t)
+	def GetExpectationValue(self, psi, t, dt):
+		return self.Evaluator.CalculateExpectationValue(psi, dt, t)
 
 
 class FiniteDifferencePotentialWrapper(PotentialWrapper):
@@ -414,8 +414,8 @@ class MatrixPotentialWrapper(PotentialWrapper):
 	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
 		self.Potential.MultiplyPotential(srcPsi, destPsi, self.GetTimeValue(t))
 
-	def GetExpectationValue(self, t, dt):
-		return self.GetTimeValue(t) * self.Potential.CalculateExpectationValue(self.psi)
+	def GetExpectationValue(self, psi, t, dt):
+		return self.GetTimeValue(t) * self.Potential.CalculateExpectationValue(psi)
 
 	def GetTimeValue(self, t):
 		return self.TimeFunction(self.ConfigSection, t)

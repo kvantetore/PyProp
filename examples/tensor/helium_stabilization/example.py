@@ -22,6 +22,7 @@ from pyprop import PrintOut
 execfile("stabilization.py")
 execfile("twoelectron_test.py")
 execfile("benchmark.py")
+execfile("eigenvalues.py")
 
 try:
 	import scipy
@@ -66,16 +67,28 @@ def SetupConfig(**args):
 	if "eigenvalueCount" in args:
 		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
 
+	if "eigenvalueBasisSize" in args:
+		conf.SetValue("Arpack", "krylov_basis_size", args["eigenvalueBasisSize"])
+
+	if "eigenvalueShift" in args:
+		conf.SetValue("GMRES", "shift", args["eigenvalueShift"])
+		print "Using shift ", args["eigenvalueShift"]
+
+	if "shift" in args:
+		conf.SetValue("GMRES", "shift", args["shift"])
+		print "Using shift ", args["shift"]
+
 	if "index_iterator" in args:
 		conf.SetValue("AngularRepresentation", "index_iterator", args["index_iterator"])
 
 	if "amplitude" in args:
 		conf.SetValue("PulseParameters", "amplitude", args["amplitude"])
 
-	if "shift" in args:
-		conf.SetValue("GMRES", "shift", args["shift"])
-
-	potentials = conf.Propagation.grid_potential_list + args.get("additionalPotentials", [])
+	if args.get("useDefaultPotentials", True):
+		potentials = conf.Propagation.grid_potential_list 
+	else:
+		potentials = []
+	potentials += args.get("additionalPotentials", [])
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	#Update config object from possible changed ConfigParser object

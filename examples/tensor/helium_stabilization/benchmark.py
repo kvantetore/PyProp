@@ -17,3 +17,19 @@ def SaveTensorPotential(filename, pot):
 
 	finally:
 		f.close()
+
+def GenerateBenchmarkPotential(outputFile=None, potentialList=["ElectronicCouplingPotential"], **args):
+	args["useDefaultPotentials"] = False
+	args["additionalPotentials"] = potentialList
+	args["config"] = "config_benchmark.ini"
+
+	if outputFile == None:
+		outputFile = "benchmark/potential_%i.h5" % pyprop.ProcId
+
+	prop = SetupProblem(**args)
+
+	potList = prop.Propagator.BasePropagator.PotentialList
+	if len(potList) != 1:
+		raise Exception("More than one potential generated, only specify potentials that can be consolidated")
+
+	SaveTensorPotential(outputFile, potList[0])

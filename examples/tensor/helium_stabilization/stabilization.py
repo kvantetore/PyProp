@@ -66,8 +66,7 @@ def RunStabilization(**args):
 		prop.psi.Normalize()
 		initPsi = prop.psi.Copy()
 
-	for pot in prop.Propagator.BasePropagator.PotentialList:
-		PrintOut( "Potential %s: \n %s" % (pot.Name,  pot.MultiplyFunction.__doc__) )
+	distr = prop.psi.GetRepresentation().GetDistributedModel()
 
 	timeList = []
 	normList = []

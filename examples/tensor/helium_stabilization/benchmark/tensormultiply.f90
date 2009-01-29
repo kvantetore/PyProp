@@ -184,7 +184,7 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     integer :: subDiagonals2, sourceStride2, destStride2
     complex (kind=dbl) :: alpha2, beta2
 
-	real (kind=dbl) :: timerMatVec=0.0d0, timerWait=0.0d0, timerCopy=0.0d0
+	real (kind=dbl) :: timerMatVec=0.0d0, timerWait=0.0d0, timerCopy=0.0d0, timerTotal=0.0d0
 	integer :: callCount = 0
     
     call MPI_Comm_rank(MPI_COMM_WORLD, procId0, error0)
@@ -219,7 +219,9 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     waitRecieve0 = 0
     waitSend0 = 0
     tempIndex0 = 1
-    
+   
+   	timerTotal = timerTotal - MPI_Wtime()
+   
     !Iterate over all rows of the matrix for the columns stored on proc
     do i0 = 0, localMatrixIndex0Extent0-1	
 		!call MPI_Barrier(MPI_COMM_WORLD, error0);
@@ -355,15 +357,18 @@ subroutine TensorPotentialMultiply_SimpD_Simp_BandNH(potential, potentialExtent0
     endif
     timerWait = timerWait + MPI_Wtime() 
     
+   	timerTotal = timerTotal + MPI_Wtime()
+
 	callCount = callCount + 1
 	if (callCount .eq. 1000) then
 		do i0 = 0, procCount0-1
 			call MPI_Barrier(MPI_COMM_WORLD, error0)
 			if (i0 .eq. procId0) then
 				write(*,*) "Proc ", procId0
-				write(*,*) "    wait = ", timerWait
-				write(*,*) "    copy = ", timerCopy
-				write(*,*) "    matv = ", timerMatVec
+				write(*,*) "    tot  = ", timerTotal
+				write(*,*) "    wait = ", timerWait, " (", (100 * timerWait / timerTotal), "%)"
+				write(*,*) "    copy = ", timerCopy, " (", (100 * timerCopy / timerTotal), "%)"
+				write(*,*) "    matv = ", timerMatVec, " (", (100 * timerMatVec / timerTotal), "%)"
 			endif
 		enddo
 	endif

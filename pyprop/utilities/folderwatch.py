@@ -1,6 +1,8 @@
 import sys
 import os
 import os.path
+import stat
+import time
 
 CHANGE_NEW = 1
 CHANGE_DELETED = 2
@@ -10,11 +12,13 @@ class FolderWatch(object):
 	
 	def __init__(self, folder, changeThreshold=60):
 		self.Folder = os.path.abspath(folder)
+		self.RelativeFolder = folder
 		self.CurrentFiles = []
 		self.ChangeThreshold = changeThreshold
 	
 	def GetUpdatedFiles(self):
-		files = filter(self.__FileFilter, os.listdir(self.Folder))
+		files = [os.path.join(self.RelativeFolder, f) for f in os.listdir(self.Folder)]
+		files = filter(self.__FileFilter, files)
 		updatedFiles = [(f, self.__LastModified(f)) for f in files]
 		return updatedFiles
 	
@@ -90,7 +94,7 @@ class FolderWatch(object):
 
 
 def TestFolderWatch():
-	watch = FolderWatch(".", changeThreshold=3)
+	watch = FolderWatch("output/messages", changeThreshold=3)
 	while True:
 		#look for changes
 		changes = watch.GetChanges()
