@@ -130,17 +130,19 @@ def SubmitStabilizationRun(workingDir):
 	frequency = 5.0
 	amplitudeList = arange(2.0, 31.0)
 	
-	for I in amplitudeList:
+	#for I in amplitudeList:
+	for I in [2.0]:
 		name = outputDir + "stabilization_I_%i.h5" % I
 		Submit(executable="run_stabilization.py", \
 			runHours=1, \
 			jobname="stabilization", \
 			numProcs=65, \
-			config="config.ini", \
+			config="config_tore.ini", \
 			amplitude=I/frequency, \
 			outputCount=300, \
 			workingDir=workingDir, \
 			outputFilename=name, \
-			findGroundstate = False, \
-			writeScript=False)
+			findGroundstate = True, \
+			writeScript=False, \
+			interconnect="")
 

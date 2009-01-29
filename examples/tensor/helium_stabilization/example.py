@@ -72,6 +72,9 @@ def SetupConfig(**args):
 	if "amplitude" in args:
 		conf.SetValue("PulseParameters", "amplitude", args["amplitude"])
 
+	if "shift" in args:
+		conf.SetValue("GMRES", "shift", args["shift"])
+
 	potentials = conf.Propagation.grid_potential_list + args.get("additionalPotentials", [])
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
@@ -565,17 +568,22 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 
 
 def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
-	outFileName="out/eig_inverseit.h5"):
+	outFileName="out/eig_inverseit.h5", **args):
 			
-	prop = SetupProblem(silent = True, config=config)
+	prop = SetupProblem(silent = True, config=config, **args)
 
 	#Setup shift invert solver in order to perform inverse iterations
 	shiftInvertSolver = pyprop.GMRESShiftInvertSolver(prop)
 	prop.Config.Arpack.matrix_vector_func = shiftInvertSolver.InverseIterations
+	shift = prop.Config.GMRES.shift
 
-	#Setup eiganvalue solver
+	#Setup eiganvalue solver & solve
 	solver = pyprop.PiramSolver(prop)
 	solver.Solve()
+
+	#Print statistics from superLU
+	for solve in shiftInvertSolver.Preconditioner.RadialSolvers:
+		solve.PrintStatistics()
 
 	#Get error estimates from GMRES
 	errorEstimatesGMRES = shiftInvertSolver.Solver.GetErrorEstimateList()
@@ -585,28 +593,33 @@ def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	convergenceEstimatesEig = solver.Solver.GetConvergenceEstimates()
 
 	#Get eigenvalues
-	E = solver.GetEigenvalues()
+	E = 1.0 / array(solver.GetEigenvalues()) + shift
 
 	#Store eigenvalues and eigenvectors
-	h5file = tables.openFile(outFileName, "w")
-	try:
-		myGroup = h5file.createGroup("/", "Eig")
-		h5file.createArray(myGroup, "Eigenvalues", E)
-		for i in range(len(E)):
-			h5file.createArray(myGroup, "Eigenvector%03i" % i, solver.GetEigenvector(i))
-		h5file.createArray(myGroup, "ErrorEstimateListGMRES", errorEstimatesGMRES)
-		h5file.createArray(myGroup, "ErrorEstimateListPIRAM", errorEstimatesPIRAM)
-		h5file.createArray(myGroup, "ConvergenceEstimateEig", convergenceEstimatesEig)
+	PrintOut("Now storing eigenvectors...")
+	for i in range(len(E)):
+		solver.SetEigenvector(prop.psi, i)
+		prop.SaveWavefunctionHDF(outFileName, "/Eig/Eigenvector%03i" % i)
 
-		#Store config
-		myGroup._v_attrs.configObject = prop.Config.cfgObj
-		
-		#PIRAM stats
-		myGroup._v_attrs.opCount = solver.Solver.GetOperatorCount()
-		myGroup._v_attrs.restartCount = solver.Solver.GetRestartCount()
-		myGroup._v_attrs.orthCount = solver.Solver.GetOrthogonalizationCount()
-	finally:
-		h5file.close()
+	if pyprop.ProcId == 0:
+		h5file = tables.openFile(outFileName, "r+")
+		try:
+			#myGroup = h5file.createGroup("/", "Eig")
+			myGroup = h5file.getNode("/Eig")
+			h5file.createArray(myGroup, "Eigenvalues", E)
+			h5file.createArray(myGroup, "ErrorEstimateListGMRES", errorEstimatesGMRES)
+			h5file.createArray(myGroup, "ErrorEstimateListPIRAM", errorEstimatesPIRAM)
+			h5file.createArray(myGroup, "ConvergenceEstimateEig", convergenceEstimatesEig)
+
+			#Store config
+			myGroup._v_attrs.configObject = prop.Config.cfgObj
+			
+			#PIRAM stats
+			myGroup._v_attrs.opCount = solver.Solver.GetOperatorCount()
+			myGroup._v_attrs.restartCount = solver.Solver.GetRestartCount()
+			myGroup._v_attrs.orthCount = solver.Solver.GetOrthogonalizationCount()
+		finally:
+			h5file.close()
 
 	return solver, shiftInvertSolver
 

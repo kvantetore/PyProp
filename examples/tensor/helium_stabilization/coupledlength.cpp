@@ -3,6 +3,8 @@
 /*
  * Potential evaluator for linearly polarized length gauge electric field
  */
+using namespace CoupledSpherical;
+
 template<int Rank>
 class CustomPotential_LaserLength : public CustomPotentialCoupledSphericalBase<Rank>
 {
@@ -15,7 +17,6 @@ public:
 
 	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
 	{
-		using namespace CoupledSpherical;
 
 		typedef CombinedRepresentation<Rank> CmbRepr;
 		typedef CoupledSphericalHarmonicRepresentation CplHarmRepr;

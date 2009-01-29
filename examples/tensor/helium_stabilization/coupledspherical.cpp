@@ -15,10 +15,9 @@ public:
 
 	virtual void UpdatePotentialData(typename blitz::Array<cplx, Rank> data, typename Wavefunction<Rank>::Ptr psi, cplx timeStep, double curTime)
 	{
-		using namespace CoupledSpherical;
 
 		typedef CombinedRepresentation<Rank> CmbRepr;
-		typedef CoupledSphericalHarmonicRepresentation CplHarmRepr;
+		typedef CoupledSpherical::CoupledSphericalHarmonicRepresentation CplHarmRepr;
 
 		typename CmbRepr::Ptr repr = boost::static_pointer_cast< CmbRepr >(psi->GetRepresentation());
 		CplHarmRepr::Ptr angRepr = boost::static_pointer_cast< CplHarmRepr >(repr->GetRepresentation(this->AngularRank));
