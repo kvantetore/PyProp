@@ -31,6 +31,12 @@ try:
 except:
 	pyprop.PrintOut("Could not load scipy")
 
+INSTALLATION = os.environ.get("INSTALLATION", "local")
+if INSTALLATION == "hexagon":
+	import pyprop.utilities.submitpbs_hexagon as submitpbs
+elif INSTALLATION == "stallo":
+	import pyprop.utilities.submitpbs_stallo as submitpbs
+
 #------------------------------------------------------------------------------------
 #                       Setup Functions
 #------------------------------------------------------------------------------------
