@@ -45,7 +45,7 @@ class SubmitScript:
 		minutes = (self.walltime.seconds / 60) % 60
 		seconds = self.walltime.seconds % 60
 		script.append("#PBS -l walltime=" + str(hours) + ":" + str(minutes) + ":" + str(seconds))
-		script.append("#PBS -l mppwidth=" + str(procCount)
+		script.append("#PBS -l mppwidth=" + str(procCount))
 		script.append("#PBS -l mppnppn=" + str(self.ppn))
 		if self.proc_memory != None:
 			script.append("#PBS -l mppmem=" + str(self.proc_memory))
@@ -73,7 +73,7 @@ class SubmitScript:
 			instr = "< " + str(self.stdin)
 
 		#check if user supplied aprun 
-		if not self.executable.tolower().startswith("aprun ")
+		if not self.executable.tolower().startswith("aprun "):
 			memstr = ""
 			if self.proc_memory != None:
 				memstr = "-m %s" % self.proc_memory
