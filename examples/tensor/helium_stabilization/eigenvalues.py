@@ -203,7 +203,6 @@ class SpectrumFinder(object):
 			#Check for finished messages
 			newChanges = lambda change: change[1] == CHANGE_NEW or change[1] == CHANGE_MODIFIED
 			changes = filter(newChanges, self.MessageWatch.GetChanges())
-			print changes
 
 			completedMessages = []
 			for msg in self.ActiveMessages:
@@ -251,7 +250,7 @@ class SpectrumFinder(object):
 			start, end = msg.Interval
 			shift = msg.Shift
 			self.ActiveIntervals.append((start, shift))
-			self.ActiveIntervals.append((shift, start))
+			self.ActiveIntervals.append((shift, end))
 
 	def RunIteration(self):
 		#if this is the first iteration:
@@ -268,7 +267,8 @@ class SpectrumFinder(object):
 			if evStart[-1] < evEnd[0]:
 				shift = (end + start) / 2.
 				self.StartMessage(shift, (start, end), self.GetNextMessageId())
-		
+		self.ActiveIntervals = []
+
 		self.WaitForCompletedMessages()
 
 		
