@@ -18,7 +18,7 @@ class SubmitScript:
 	proc_memory = None 
 	
 	account = None 
-	jobname = "myjob"
+	jobname = "pyprop"
 
 	stdout = None
 	stdin = None

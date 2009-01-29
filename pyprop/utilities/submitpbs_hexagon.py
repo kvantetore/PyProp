@@ -18,7 +18,7 @@ class SubmitScript:
 	proc_memory = None
 	
 	account = None
-	jobname = "myjob"
+	jobname = "pyprop"
 
 	stdout = None
 	stdin = None
@@ -74,7 +74,7 @@ class SubmitScript:
 
 		#check if user supplied aprun 
 		if not self.executable.lower().startswith("aprun "):
-			memstr = ""
+			mem = ""
 			if self.proc_memory != None:
 				memstr = "-m %s" % self.proc_memory
 			self.executable = "aprun -n %i -N %i %s %s" % (procCount, self.ppn, mem, self.executable)
