@@ -73,7 +73,7 @@ class SubmitScript:
 			instr = "< " + str(self.stdin)
 
 		#check if user supplied aprun 
-		if not self.executable.tolower().startswith("aprun "):
+		if not self.executable.lower().startswith("aprun "):
 			memstr = ""
 			if self.proc_memory != None:
 				memstr = "-m %s" % self.proc_memory
