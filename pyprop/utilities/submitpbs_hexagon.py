@@ -35,12 +35,17 @@ class SubmitScript:
 		script.append("#! /bin/bash -")
 		script.append("#PBS -S /bin/bash")
 
+		if hasattr(self, "procs"):
+			procCount = self.procs
+		else:
+			procCount = self.nodes*self.ppn
+
 		#Resources
 		hours = self.walltime.days * 24 + (self.walltime.seconds / 3600)
 		minutes = (self.walltime.seconds / 60) % 60
 		seconds = self.walltime.seconds % 60
 		script.append("#PBS -l walltime=" + str(hours) + ":" + str(minutes) + ":" + str(seconds))
-		script.append("#PBS -l mppwidth=" + str(self.nodes*self.ppn))
+		script.append("#PBS -l mppwidth=" + str(procCount)
 		script.append("#PBS -l mppnppn=" + str(self.ppn))
 		if self.proc_memory != None:
 			script.append("#PBS -l mppmem=" + str(self.proc_memory))
@@ -66,6 +71,13 @@ class SubmitScript:
 		instr = ""
 		if self.stdin != None:
 			instr = "< " + str(self.stdin)
+
+		#check if user supplied aprun 
+		if not self.executable.tolower().startswith("aprun ")
+			memstr = ""
+			if self.proc_memory != None:
+				memstr = "-m %s" % self.proc_memory
+			self.executable = "aprun -n %i -N %i %s %s" % (procCount, self.ppn, mem, self.executable)
 	
 		#Create script line
 		script.append(str(self.executable) + " " + str(self.parameters) + instr)
