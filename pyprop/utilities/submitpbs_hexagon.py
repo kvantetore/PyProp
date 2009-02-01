@@ -110,4 +110,46 @@ class SubmitScript:
 		print jobName + " submitted"
 
 		return jobName
-	
+
+
+def GetJobStatus(jobId):
+	"""
+	Returns a dict containing the info from qstat -f jobid
+	if the job is not found None is returned
+	"""
+	status, output = commands.getstatusoutput("qstat -f %s" % jobName)
+	if status != 0:
+		return None
+
+	statusList = [s.strip() for s in output.split("\n") if not s.startswith("\t")]
+	statusDict = {"job_id": jobId}
+	for curStatus in infoList:
+		info = curStatus.split("=")
+		if len(info) == 2:
+			infoDict[info[0].strip().lower()] = info[1].strip()
+
+	return statusDict
+
+STATE_COMPLETED = "C"
+STATE_EXITING   = "E"
+STATE_HELD      = "H"
+STATE_QUEUED    = "Q"
+STATE_RUNNING   = "R"
+STATE_MOVED     = "M"
+STATE_WAITING   = "W"
+STATE_SUSPENDED = "S"
+
+def CheckJobCompleted(jobId):
+	"""	
+	Check if a job is completed. If the job 
+	does not exist, it is considered to be completed
+	"""
+	status = GetJobStatus(jobId)
+	if status == None:
+		return True
+
+	state = status["job_state"]
+	if state == STATE_COMPLETED or state == STATE_EXITING:
+		return False
+
+	return True

@@ -100,6 +100,7 @@ def RunSubmit(function, procCount=1, procPerNode=4, *arglist, **argdict):
 	arg2 = commands.mkarg(repr(arglist))
 	arg3 = commands.mkarg(repr(argdict))
 
+	jobId = None
 	if INSTALLATION == "hexagon":
 		submit = submitpbs.SubmitScript()
 		submit.procs = procCount
@@ -107,7 +108,7 @@ def RunSubmit(function, procCount=1, procPerNode=4, *arglist, **argdict):
 		submit.executable = "./python-exec run-function.py"
 		submit.parameters = arg1 + arg2 + arg3
 		submit.WriteScript("test.job")
-		submit.Submit()
+		jobId = submit.Submit()
 
 	elif INSTALLATION == "stallo":
 		raise Exception("please to implement")
@@ -117,6 +118,8 @@ def RunSubmit(function, procCount=1, procPerNode=4, *arglist, **argdict):
 	
 	else:
 		raise Exception("Unknown installation '%s'" % INSTALLATION)
+
+	return jobId
 
 class SpectrumFinder(object):
 	"""
@@ -138,9 +141,9 @@ class SpectrumFinder(object):
 	"""
 
 	class Message(object):
-		def __init__(self, shift, interval, messageId, startTime):
-			self.MessagesFolder = "output/messages"
-			self.DataFolder = "output/data"
+		def __init__(self, shift, interval, messageId, startTime, msgFolder, dataFolder):
+			self.MessagesFolder = msgFolder
+			self.DataFolder = dataFolder
 			self.Shift = shift
 			self.MessageId = messageId
 			self.StartTime = startTime
@@ -152,7 +155,7 @@ class SpectrumFinder(object):
 		def GetDataFile(self):
 			return os.path.join(self.DataFolder, "eigenvectors_%s.h5" % (self.MessageId))
 		
-	def __init__(self, startEigenvalue, endEigenvalue, **args):
+	def __init__(self, startEigenvalue, endEigenvalue, folderPrefix, **args):
 		self.MessageTimeout = 3 * 3600 #three hours timeout
 		self.ChangeThreshold = 10
 	
@@ -161,15 +164,25 @@ class SpectrumFinder(object):
 		self.Arguments = args
 
 		#Setup folders
-		self.MessagesFolder = "output/messages"
-		self.DataFolder = "output/data"
-		self.StatusFolder = "output/status"
+		self.MessagesFolder = os.path.join(folderPrefix, "messages")
+		self.DataFolder = os.path.join(folderPrefix, "data")
+		self.StatusFolder = folderPrefix
 		if not os.path.exists(self.MessagesFolder):
 			os.makedirs(self.MessagesFolder)
 		if not os.path.exists(self.DataFolder):
 			os.makedirs(self.DataFolder)
 		if not os.path.exists(self.StatusFolder):
 			os.makedirs(self.StatusFolder)
+
+		procCount = args.get("procCount", None)
+		#if no proccount is specified, use one for each angular basis function
+		if procCount == None:
+			conf = SetupConfig(**args)
+			lcount = len([1 for l in conf.AngularRepresentation.index_iterator])
+			self.ProcCount = lcount
+		else:
+			self.ProcCount = procCount
+		self.ProcPerNode = 4
 
 		#Setup folder watch on the messages folder
 		self.MessageWatch = FolderWatch(self.MessagesFolder, changeThreshold=self.ChangeThreshold)
@@ -188,29 +201,35 @@ class SpectrumFinder(object):
 		return msg
 
 	def StartMessage(self, shift, interval, messageId):
-		message = self.Message(shift, interval, messageId, time.time())
+		#Create message
+		message = self.Message(shift, interval, messageId, time.time(), self.MessagesFolder, self.DataFolder)
 		messageFile = message.GetMessageFile()
 		eigenvectorFile = message.GetDataFile()
-		RunSubmit(FindEigenvaluesNearShift, 4, 4, shift=shift, \
-			messageFile=messageFile, eigenvectorFile=eigenvectorFile, **self.Arguments)
 
+		#Remove files if it exists
+		if os.path.exists(messageFile):
+			os.remove(messageFile)
+		if os.path.exists(eigenvectorFile):
+			os.remove(eigenvectorFile)
+
+		#Start job
+		jobId = RunSubmit(FindEigenvaluesNearShift, self.ProcCount, self.ProcPerNode, shift=shift, \
+			messageFile=messageFile, eigenvectorFile=eigenvectorFile, **self.Arguments)
+		message.JobId = jobId
 		self.ActiveMessages.append(message)
 
 	def WaitForCompletedMessages(self):
 		timeout = False
 		pyprop.PrintOut("Waiting for %i messages to complete" % len(self.ActiveMessages))
 		while len(self.ActiveMessages) > 0 and not timeout:
-			#Check for finished messages
-			newChanges = lambda change: change[1] == CHANGE_NEW or change[1] == CHANGE_MODIFIED
-			changes = filter(newChanges, self.MessageWatch.GetChanges())
-
-			completedMessages = []
+			#check for completed messages
 			for msg in self.ActiveMessages:
-				msgPath = os.path.abspath(msg.GetMessageFile())
-				for file, change in changes:
-					if os.path.abspath(file) == msgPath:
+				if submitpbs.CheckJobCompleted(msg.JobId):
+					msgPath = os.path.abspath(msg.GetMessageFile())
+					if os.path.exists(msgPath):
 						completedMessages.append(msg)
-						break
+					else:
+						raise Exception("Job %s completed without leaving message" % msg.JobId)
 
 			#Get the eigenvalues off the completed messages and process them
 			for msg in completedMessages:
@@ -223,17 +242,10 @@ class SpectrumFinder(object):
 				#Update message lists
 				self.ActiveMessages.remove(msg)
 				self.CompletedMessages.append(msg)
-				#Remove message file
-				os.remove(msg.GetMessageFile())
 				#Notify of completed message
 				self.MessageCompleted(msg, eigenvalues)
 			
-			#Check for timed out messages
-			for msg in self.ActiveMessages:
-				if time.time() > msg.StartTime + self.MessageTimeout:
-					raise Exception("Message %i timed out" % msg.MessageId)
-
-			time.sleep(1.)
+			time.sleep(10)
 
 	def MessageCompleted(self, msg, eigenvalues):
 		pyprop.PrintOut("Found %i eigenvalues around %f" % (len(eigenvalues), msg.Shift))
@@ -271,7 +283,35 @@ class SpectrumFinder(object):
 
 		self.WaitForCompletedMessages()
 
-		
+	def CancelMessage(self, message):
+		if message not in self.ActiveMessages:
+			raise Exception("Message not active")
+		#Put the interval back into active intervals
+		self.ActiveIntervals.append(message.Interval)
+		#Remove message from active messages
+		self.ActiveMessages.remove(message)
+
+	def CancelAllMessages(self):
+		for msg in list(self.ActiveMessages):
+			self.CancelMessage(msg)
+	
+
+def GetSortedEigenvalues(self):
+	eigenvalueList = []
+	overlappingEigenvalues = 0
+	for shift in sorted(self.ShiftMap.keys()):
+		for curE in self.ShiftMap[shift]:
+			if len(eigenvalueList) == 0 or curE > eigenvalueList[-1]:
+				eigenvalueList.append(curE)
+			else:
+				overlappingEigenvalues += 1
+
+	print "Eiganvalues found       = %i" % (len(eigenvalueList))
+	print "Overlapping eigenvalues = %i" % (overlappingEigenvalues)
+
+	return eigenvalueList
+
+	
 def FindEigenvalueSpectrum(startEigenvalue, endEigenvalue, **args):
 	evStart = FindEigenvaluesNearShift(startEigenvalue, **args)	
 	evEnd = FindEigenvaluesNearShift(endEigenvalue, **args)

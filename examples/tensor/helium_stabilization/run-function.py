@@ -1,4 +1,5 @@
 import sys
+import pypar
 execfile("example.py")
 
 pyprop.PrintOut("function = %s" % sys.argv[1])
@@ -12,3 +13,6 @@ argdict = eval(sys.argv[3])
 result = function(*arglist, **argdict)
 
 print result
+
+pypar.barrier()
+pypar.finalize()

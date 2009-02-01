@@ -51,6 +51,12 @@ def SetupConfig(**args):
 		silent = args["silent"]
 		conf.Propagation.silent = silent
 
+	if "lmax" in args or "L" in args:
+		lmax = args["lmax"]
+		L = args["L"]
+		indexIterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
+		conf.SetValue("AngularRepresentation", "index_iterator", indexIterator)
+
 	if "imtime" in args:
 		imtime = args["imtime"]
 		if imtime:

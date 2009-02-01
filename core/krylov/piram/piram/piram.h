@@ -266,6 +266,11 @@ void pIRAM<T>::Setup()
 		CalculateShifts = typename shiftFunctorType::Ptr( new shiftFunctorType(compare) );
 	}
 
+	if (EigenvalueCount*2 > BasisSize)
+	{
+		throw std::runtime_error("Basis size too small. should be at least 2*EigenvalueCount");
+	}
+
 	//Allocate workspace-memory
 	ArnoldiVectors.resize(BasisSize, MatrixSize);
 	Residual.resize(MatrixSize);
