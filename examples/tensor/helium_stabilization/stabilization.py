@@ -1,4 +1,8 @@
 import tables
+import sys
+
+from pyprop.utilities import AngularFrequencyAtomicFromWavelengthSI as freq_from_wavelength
+#pyprop.serialization.DEBUG = True
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions
@@ -44,10 +48,18 @@ def RunStabilization(**args):
 		#Get groundstate wavefunction
 		initPsi = initProp.psi
 		solver.SetEigenvector(initPsi, 0)
+		initPsi.Normalize()
 
+		#Store wavefunction
 		initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 
+		#Print ground state energy
+		energyExpt = initProp.GetEnergyExpectationValue()
+		groundstateEnergy = solver.GetEigenvalues()[0].real
+		PrintOut("Ground state energy = %s (%s)" % (1.0 / groundstateEnergy + initProp.Config.GMRES.shift, energyExpt))
+
 		#free memory
+		initPsi = None
 		del solver
 		del initProp
 		del invIt
@@ -55,16 +67,24 @@ def RunStabilization(**args):
 		
 	#Set up propagation problem
 	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
+	PrintOut("Setting up new problem with laser potentials...")
+	sys.stdout.flush()
 	prop = SetupProblem(additionalPotentials=potList, **args)
+	PrintOut("Done setting up problem! (initPsi = %s)" % initPsi)
+	sys.stdout.flush()
 	
 	#Setup initial state
 	if initPsi == None:
+		PrintOut("Loading wavefunction... (%s,%s,%s)" % prop.psi.GetData().shape)
+		sys.stdout.flush()
 		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 		initPsi = prop.psi.Copy()
 	else:
+		PrintOut("Uh-oh, trying to get data from deleted object!")
+		sys.stdout.flush()
 		prop.psi.GetData()[:] = initPsi.GetData()
 		prop.psi.Normalize()
-		initPsi = prop.psi.Copy()
+		#initPsi = prop.psi.Copy()
 
 	distr = prop.psi.GetRepresentation().GetDistributedModel()
 
@@ -98,6 +118,9 @@ def RunStabilization(**args):
 	#Final output
 	norm = prop.psi.GetNorm()
 	corr = abs(initPsi.InnerProduct(prop.psi))**2
+	timeList.append(t)
+	normList.append(norm)
+	corrList.append(corr)
 	PrintOut("t = %.2f; N = %.10f; Corr = %.10f" % (t, norm, corr))
 
 	PrintOut("")
@@ -125,9 +148,9 @@ def SubmitStabilizationRun(workingDir):
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
-	outputDir = "stabilization_freq_5/"
-	frequency = 5.0
-	amplitudeList = arange(2.0, 31.0)
+	outputDir = "stabilization_freq_3/"
+	frequency = 3.0
+	amplitudeList = arange(2.0, 41.0)
 	
 	#for I in amplitudeList:
 	for I in [2.0]:
@@ -135,7 +158,7 @@ def SubmitStabilizationRun(workingDir):
 		Submit(executable="run_stabilization.py", \
 			runHours=1, \
 			jobname="stabilization", \
-			numProcs=65, \
+			numProcs=111, \
 			config="config_tore.ini", \
 			amplitude=I/frequency, \
 			outputCount=300, \
@@ -144,4 +167,27 @@ def SubmitStabilizationRun(workingDir):
 			findGroundstate = True, \
 			writeScript=False, \
 			interconnect="")
+
+
+def SubmitHasbaniExampleRun(workingDir):
+	"""
+	Calculate total ionization for a range of frequencies
+	"""
+	outputDir = "example_hasbani/"
+	#frequencyList = [.2, .3, .45, .5, .6, .65, .7, .75, .8, .9, 1., 1.1, 1.2]
+	frequencyList = [.34, .36, .38, .41, .43, 0.71, .72, .74, .74]
+	
+	for w in frequencyList:
+		name = outputDir + "example_hasbani_omega_%i.h5" % (w * 100)
+		Submit(executable="run_stabilization.py", \
+			runHours=5, \
+			jobname="helium", \
+			numProcs=111, \
+			frequency=w, \
+			config="config_hasbani.ini", \
+			outputCount=300, \
+			workingDir=workingDir, \
+			outputFilename=name, \
+			findGroundstate = False, \
+			writeScript=False)
 

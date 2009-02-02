@@ -133,7 +133,7 @@ def TestFieldCoupling(config="config_2e_fieldtest.ini", outputs=100):
 
 	solver = FindEigenvalues(config=config)
 
-	prop = SetupProblem(silent=False, imtime=False, additionalPotentials = \
+	prop = SetupProblem(silent=True, imtime=False, additionalPotentials = \
 		["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", \
 		"LaserPotentialVelocity"], config=config)
 	#prop = SetupProblem(silent=False, imtime=False, configFile=config)
@@ -160,9 +160,10 @@ def TestFieldCoupling(config="config_2e_fieldtest.ini", outputs=100):
 	prop.Propagator.PampWrapper.PrintStatistics()
 		
 	c = abs(prop.psi.InnerProduct(initPsi))**2
-	print "Final Correlation = %f" % c
+	if pyprop.ProcId == 0:
+		print "Final Correlation = %f" % c
 
-	outFile = "twoelectron_field_test.h5"
+	outFile = "twoelectron_field_test_2.h5"
 	prop.SaveWavefunctionHDF(outFile, "/wavefunction")
 	if pyprop.ProcId == 0:
 		h5file = tables.openFile(outFile, "r+")

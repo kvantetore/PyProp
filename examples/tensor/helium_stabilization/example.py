@@ -46,6 +46,7 @@ elif INSTALLATION == "stallo":
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
 	conf = pyprop.Load(configFile)
+	PrintOut("Using config file: %s" % configFile)
 	
 	if "silent" in args:
 		silent = args["silent"]
@@ -90,11 +91,16 @@ def SetupConfig(**args):
 	if "amplitude" in args:
 		conf.SetValue("PulseParameters", "amplitude", args["amplitude"])
 
+	if "frequency" in args:
+		conf.SetValue("PulseParameters", "frequency", args["frequency"])
+		PrintOut("    Setting new field frequency: %s" % args["frequency"])
+
 	if args.get("useDefaultPotentials", True):
 		potentials = conf.Propagation.grid_potential_list 
 	else:
 		potentials = []
 	potentials += args.get("additionalPotentials", [])
+
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	#Update config object from possible changed ConfigParser object
