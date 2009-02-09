@@ -482,17 +482,6 @@ void pIRAM<T>::UpdateEigenvalues()
 	HessenbergTriangular = HessenbergMatrix; 
 	lapack.CalculateEigenvectorFactorization(false, true, HessenbergTriangular, Eigenvalues, emtpyMatrix, HessenbergEigenvectors);
 
-	//Sorth the eigenvalues
-	//TODO: don't make a copy here
-	EigenvalueOrdering = blitz::tensor::i;
-	(*CalculateShifts)(Eigenvalues, EigenvalueOrdering);
-
-	//Use the last eigenvalues as shifts (exact shift strategy)
-	Shifts = Eigenvalues(blitz::Range(EigenvalueCount, Eigenvalues.extent(0)-1));
-
-	//cout << "ev = " << Eigenvalues << endl;
-	//cout << "shift = " << Shifts << endl;
-	
 	/*
 	 * Check if solution is converged. See ARPACK Users Guide for information
 	 * about the convergence cirterium
@@ -502,6 +491,11 @@ void pIRAM<T>::UpdateEigenvalues()
 	NormType eps = std::numeric_limits<NormType>::epsilon();
 	NormType eps23 = std::pow(eps, 2.0/3.0);
 
+	//Sort the eigenvalues first by shift criterion
+	//abd use the last eigenvalues as shifts (exact shift strategy)
+	EigenvalueOrdering = blitz::tensor::i;
+	(*CalculateShifts)(Eigenvalues, EigenvalueOrdering);
+
 	//Update Error Bounds
 	for (int i=0; i<BasisSize; i++)
 	{
@@ -509,18 +503,21 @@ void pIRAM<T>::UpdateEigenvalues()
 		ErrorBounds(i) = ritzError * normResidual;
 	}
 
-	//Sort eigenvalues by error bounds
-	/*
-	SortVector(ErrorBounds, EigenvalueOrdering);
-	ErrorBounds = Eigenvalues;
-	for (int i=0; i<BasisSize; i++)
+	//Then sort eigenvalues by error estimate
+	//1) Create views of shifts and related arrays
+	blitz::Range shiftRange(EigenvalueCount, Eigenvalues.extent(0)-1);
+	VectorType shiftValues = Eigenvalues(shiftRange);
+	IntVectorType shiftOrdering = EigenvalueOrdering(shiftRange);
+	VectorType shiftError = ErrorBounds(shiftRange);
+	//2) Short shifts by error estimates
+	shiftOrdering = blitz::tensor::i;
+	SortVector(shiftError, shiftOrdering);
+	for (int i=0; i<Shifts.extent(0); i++)
 	{
-		//ErrorBounds now contains a copy of the eigenvalues
-		Eigenvalues(i) = ErrorBounds(EigenvalueOrdering(i));
+		Shifts(i) = shiftValues(shiftOrdering(i));
 	}
-	*/
 
-
+	//Check if calculations are converged
 	IsConverged = true;
 	for (int i=0; i<EigenvalueCount; i++)
 	{
