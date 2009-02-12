@@ -415,4 +415,26 @@ class SpectrumFinder(object):
 			f.close()
 
 
+def GetEigenstateProjection(psi, eigenstateFile):
+	"""
+	Project psi on all eigenstates in the file eigenstateFile, and 
+	return the energies as well as projection coefficients
+	"""
 
+	f = tables.openFile(eigenstateFile, "r")
+	try:
+		E = f.root.Eig.Eigenvalues[:]
+	finally:
+		f.close()
+
+	projPsi = psi.Copy()
+	proj = []
+	for i, curE in enumerate(E):
+		infoStr =  "Progress: %3i%%" % ((i * 100)/ len(E))
+		sys.stdout.write("\b"*15 + infoStr)
+		sys.stdout.flush()
+
+		pyprop.serialization.LoadWavefunctionHDF(eigenstateFile, "/Eig/Eigenstate_%i" & i, projPsi)
+		proj.append( projPsi.InnerProduct(psi) )
+
+	return E, array(proj)
