@@ -1,7 +1,15 @@
 
 #Import CoupledIndex from core, and add a pretty print to it
+def CoupledIndexIter(self):
+	yield self.l1
+	yield self.l2
+	yield self.L
+	yield self.M
+
 from core import CoupledIndex
 CoupledIndex.__str__ = lambda self: "l1=%i, l2=%i, L=%i, M=%i" % (self.l1, self.l2, self.L, self.M)
+CoupledIndex.__repr__ = lambda self: "sys.modules['pyprop'].CoupledIndex(%i, %i, %i, %i)" % (self.l1, self.l2, self.L, self.M)	
+CoupledIndex.__iter__ = CoupledIndexIter
 
 class DefaultCoupledIndexIterator:
 	"""
@@ -59,5 +67,5 @@ class DefaultCoupledIndexIterator:
 		
 
 	def __repr__(self):
-		return "sys.modules['pyprop'].DefaultCoupledIndexIterator(%s, L=%s, M=%s, fullTensor=%s)" % \
-			(self.lmax, self.L, self.M, self.FullTensor)
+		return "sys.modules['pyprop'].defaultcoupledindexiterator(%s, l=%s, m=%s, fulltensor=%s)" % \
+			(self.lmax, self.l, self.m, self.fulltensor)
