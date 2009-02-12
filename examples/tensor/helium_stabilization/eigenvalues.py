@@ -50,6 +50,8 @@ def FindEigenvaluesNearShift(shift, **args):
 		f.createArray(f.root, "eigenvalues", eigenvalues)
 		f.close()
 
+	return solver, shiftInvertSolver
+
 def SaveEigenvalueSolverShiftInvert(filename, solver, shift):
 
 	#Get eigenvalue error estimate
@@ -363,5 +365,48 @@ class SpectrumFinder(object):
 	
 		return eigenvalueList
 
-	
+	def GetSortedEigenvectors(self):
+		eigenvalues = self.GetSortedEigenvalues()
+		eigenvectorFile = os.path.join(self.StatusFolder, "eigenvectors.h5")
+
+		shiftToMessage = dict([(msg.Shift, msg) for msg in self.CompletedMessages])
+
+		f = tables.openFile(eigenvectorFile, "w")
+		try:
+			eigGroup = f.createGroup(f.root, "Eig")
+		
+			#Store metadata from this spetrum finder
+			attrs = eigGroup._v_attrs
+			attrs.StartEigenvalue = self.StartEigenvalue
+			attrs.EndEigenvalue = self.EndEigenvalue
+			attrs.Arguments = self.Arguments
+			attrs.FolderPrefix = self.StatusFolder
+		
+			index = 0
+			eigenvalueList = []
+			for shift in sorted(self.ShiftMap.keys()):
+				msg = shiftToMessage[shift]
+				curFile = tables.openFile(msg.GetDataFile(), "r")
+				try:
+					curEigenvalues = curFile.Eig.Eigenvalues[:]
+					eigIndex = argsort(curEigenvalues)
+					for curIndex, curE in zip(eigIndex, curEigenvalues[eigIndex]):
+						if index == 0 or curE > eigenvalueList[-1]:
+							infoStr =  "Progress: %3i%% (%i/%i)" % ((index * 100)/ len(eigenvalues))
+							sys.stdout.write("\b"*30 + infoStr)
+							sys.stdout.flush()
+
+							curNode = curFile.getNode("/Eig/Eigenvector%03i" % curIndex)[:]
+							newNode = f.createArray(eigGroup, "Eigenvector_%i" % index, curData)
+							newNode._v_attrs.configObject = curFile.Eig._v_attrs.configObject
+
+							index += 1
+
+				finally:
+					curFile.close()
+						
+		finally:
+			f.close()
+
+
 
