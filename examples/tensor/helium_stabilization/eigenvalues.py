@@ -161,6 +161,7 @@ class SpectrumFinder(object):
 		self.StartEigenvalue = startEigenvalue
 		self.EndEigenvalue = endEigenvalue
 		self.Arguments = args
+		self.DegeneracyTolerance = 1e-9
 
 		#Setup folders
 		self.MessagesFolder = os.path.join(folderPrefix, "messages")
@@ -316,6 +317,9 @@ class SpectrumFinder(object):
 			try:
 				shift = float(f.root.Eig._v_attrs.configObject.get("GMRES", "shift"))
 				eigenvalues = sorted(f.root.Eig.Eigenvalues[:])
+			except:
+				print "Could not load eigenvalues and shift from file %s" % dataFile
+				return None
 			finally:
 				f.close()
 
@@ -324,7 +328,8 @@ class SpectrumFinder(object):
 
 		#Get messages and eigenvalues from datafiles
 		first = lambda x: x[0]
-		messageList, eigenvalueList = zip(*map(lambda x: getMessage(x), dataFiles))
+		notNone = lambda x: not x == None
+		messageList, eigenvalueList = zip(*filter(notNone, map(getMessage, dataFiles)))
 
 		#Setup Completed Messages list
 		self.CompletedMessages += messageList
@@ -355,7 +360,7 @@ class SpectrumFinder(object):
 		overlappingEigenvalues = 0
 		for shift in sorted(self.ShiftMap.keys()):
 			for curE in self.ShiftMap[shift]:
-				if len(eigenvalueList) == 0 or curE > eigenvalueList[-1]:
+				if len(eigenvalueList) == 0 or curE > eigenvalueList[-1] + self.DegeneracyTolerance:
 					eigenvalueList.append(curE)
 				else:
 					overlappingEigenvalues += 1
@@ -388,18 +393,19 @@ class SpectrumFinder(object):
 				msg = shiftToMessage[shift]
 				curFile = tables.openFile(msg.GetDataFile(), "r")
 				try:
-					curEigenvalues = curFile.Eig.Eigenvalues[:]
+					curEigenvalues = curFile.root.Eig.Eigenvalues[:]
 					eigIndex = argsort(curEigenvalues)
 					for curIndex, curE in zip(eigIndex, curEigenvalues[eigIndex]):
-						if index == 0 or curE > eigenvalueList[-1]:
-							infoStr =  "Progress: %3i%% (%i/%i)" % ((index * 100)/ len(eigenvalues))
-							sys.stdout.write("\b"*30 + infoStr)
+						if index == 0 or curE > eigenvalueList[-1] + self.DegeneracyTolerance:
+							infoStr =  "Progress: %3i%%" % ((index * 100)/ len(eigenvalues))
+							sys.stdout.write("\b"*15 + infoStr)
 							sys.stdout.flush()
 
 							curNode = curFile.getNode("/Eig/Eigenvector%03i" % curIndex)[:]
-							newNode = f.createArray(eigGroup, "Eigenvector_%i" % index, curData)
-							newNode._v_attrs.configObject = curFile.Eig._v_attrs.configObject
+							newNode = f.createArray(eigGroup, "Eigenvector_%i" % index, curNode[:])
+							newNode._v_attrs.configObject = curFile.root.Eig._v_attrs.configObject
 
+							eigenvalueList.append(curE)
 							index += 1
 
 				finally:
