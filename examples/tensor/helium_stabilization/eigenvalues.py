@@ -156,9 +156,6 @@ class SpectrumFinder(object):
 			return os.path.join(self.DataFolder, "eigenvectors_%s.h5" % (self.MessageId))
 		
 	def __init__(self, startEigenvalue, endEigenvalue, folderPrefix, **args):
-		self.MessageTimeout = 3 * 3600 #three hours timeout
-		self.ChangeThreshold = 10
-	
 		self.StartEigenvalue = startEigenvalue
 		self.EndEigenvalue = endEigenvalue
 		self.Arguments = args
@@ -184,16 +181,13 @@ class SpectrumFinder(object):
 			self.ProcCount = procCount
 		self.ProcPerNode = 4
 
-		#Setup folder watch on the messages folder
-		self.MessageWatch = FolderWatch(self.MessagesFolder, changeThreshold=self.ChangeThreshold)
-		self.MessageWatch.GetChanges() # ignore the files already in the messages folder
-
 		#Setup maps to keep track of which eigenvalues we have found
 		self.NextMessageId = 0
 		self.ActiveMessages = []  #Messages we are waiting for to arrive
 		self.CompletedMessages = []     #List over completed messages 
 		self.ShiftMap = {}		  #Maps shifts to a list of eigenvalues
 		self.ActiveIntervals = []
+		self.ErrorMessages = []
 	
 	def GetNextMessageId(self):
 		msg = self.NextMessageId
@@ -222,32 +216,39 @@ class SpectrumFinder(object):
 		timeout = False
 		pyprop.PrintOut("Waiting for %i messages to complete" % len(self.ActiveMessages))
 		while len(self.ActiveMessages) > 0 and not timeout:
-			#check for completed messages
-			for msg in self.ActiveMessages:
+			completedMessages = []
+			errorMessages = []
+
+			#check for finished messages
+			for msg in list(self.ActiveMessages):
 				if submitpbs.CheckJobCompleted(msg.JobId):
 					msgPath = os.path.abspath(msg.GetMessageFile())
 					if os.path.exists(msgPath):
 						completedMessages.append(msg)
 					else:
-						raise Exception("Job %s completed without leaving message" % msg.JobId)
+						print "Job Status for error message: "
+						print submitpbs.GetJobStatus(msg.JobId)
+						self.ErrorMessages.append(msg)
+						self.ActiveMessages.remove(msg)
 
-			#Get the eigenvalues off the completed messages and process them
-			for msg in completedMessages:
-				#get eigenvalues
-				f = tables.openFile(msg.GetMessageFile())
-				try:
-					eigenvalues = f.root.eigenvalues[:]
-				finally:
-					f.close()
-				#Update message lists
-				self.ActiveMessages.remove(msg)
-				self.CompletedMessages.append(msg)
-				#Notify of completed message
-				self.MessageCompleted(msg, eigenvalues)
-			
-			time.sleep(10)
+			#process completed messages
+			map(self.MessageCompleted, completedMessages)
+		
+			if len(completedMessages) == 0:
+				time.sleep(10)
 
-	def MessageCompleted(self, msg, eigenvalues):
+	def MessageCompleted(self, msg):
+		#get eigenvalues
+		f = tables.openFile(msg.GetMessageFile())
+		try:
+			eigenvalues = f.root.eigenvalues[:]
+		finally:
+			f.close()
+
+		#Update message lists
+		self.ActiveMessages.remove(msg)
+		self.CompletedMessages.append(msg)
+
 		pyprop.PrintOut("Found %i eigenvalues around %f" % (len(eigenvalues), msg.Shift))
 		self.ShiftMap[msg.Shift] = eigenvalues
 
@@ -278,12 +279,64 @@ class SpectrumFinder(object):
 			#and the smallest eigenvalue of end
 			if evStart[-1] < evEnd[0]:
 				shift = (end + start) / 2.
+				print "Starting message at shift %s" % shift
 				self.StartMessage(shift, (start, end), self.GetNextMessageId())
 		self.ActiveIntervals = []
 
 		self.WaitForCompletedMessages()
+	
+	def FilterActiveIntervals(self):
+		def intervalNeedsSubdivision(interval):
+			start, end = interval
+			evStart = self.ShiftMap[start]
+			evEnd = self.ShiftMap[end]
+		
+			#Check whether there can be a gab between the last eigenvalue of start 
+			#and the smallest eigenvalue of end
+			return evStart[-1] < evEnd[0]
+
+		return filter(intervalNeedsSubdivision, self.ActiveIntervals)
+
+	def RunToEnd(self):
+		self.RunIteration()
+		while len(self.ActiveIntervals) > 0:
+			self.RunIteration()
+
+	def LoadAvailableMessages(self):
+		dataFiles = os.listdir(self.DataFolder)
+		dataFiles = filter(lambda x: x.startswith("eigenvectors_"), dataFiles)
+		dataFiles = map(lambda x: os.path.join(self.DataFolder, x), dataFiles)
+
+		def getMessage(dataFile):
+			messageId = int(os.path.splitext(dataFile)[0].split("_")[1])
+			startTime = os.path.getctime(dataFile)
+			f = tables.openFile(dataFile, "r")
+			try:
+				shift = float(f.root.Eig._v_attrs.configObject.get("GMRES", "shift"))
+				eigenvalues = sorted(f.root.Eig.Eigenvalues[:])
+			finally:
+				f.close()
+
+			message = self.Message(shift, (-Inf, Inf), messageId, startTime, self.MessagesFolder, self.DataFolder)
+			return message, eigenvalues
+
+		#Get messages and eigenvalues from datafiles
+		first = lambda x: x[0]
+		messageList, eigenvalueList = zip(*map(lambda x: getMessage(x), dataFiles))
+
+		#Setup Completed Messages list
+		self.CompletedMessages += messageList
+		#Setup ShiftMap
+		for msg, ev in zip(messageList, eigenvalueList):
+			self.ShiftMap[msg.Shift] = ev
+		#Setup ActiveIntervals
+		shiftList = sorted(self.ShiftMap.keys())
+		self.ActiveIntervals += [(start, end) for start, end in zip(shiftList[0:-1], shiftList[1:])]
+		#next message id
+		self.NextMessageId = 1 + max(map(lambda x: x.MessageId, self.CompletedMessages))
 
 	def CancelMessage(self, message):
+		pyprop.PrintOut("Canceling message for shift = %s" % message.Shift)
 		if message not in self.ActiveMessages:
 			raise Exception("Message not active")
 		#Put the interval back into active intervals
@@ -295,61 +348,20 @@ class SpectrumFinder(object):
 		for msg in list(self.ActiveMessages):
 			self.CancelMessage(msg)
 	
-
-def GetSortedEigenvalues(self):
-	eigenvalueList = []
-	overlappingEigenvalues = 0
-	for shift in sorted(self.ShiftMap.keys()):
-		for curE in self.ShiftMap[shift]:
-			if len(eigenvalueList) == 0 or curE > eigenvalueList[-1]:
-				eigenvalueList.append(curE)
-			else:
-				overlappingEigenvalues += 1
-
-	print "Eiganvalues found       = %i" % (len(eigenvalueList))
-	print "Overlapping eigenvalues = %i" % (overlappingEigenvalues)
-
-	return eigenvalueList
+	def GetSortedEigenvalues(self):
+		eigenvalueList = []
+		overlappingEigenvalues = 0
+		for shift in sorted(self.ShiftMap.keys()):
+			for curE in self.ShiftMap[shift]:
+				if len(eigenvalueList) == 0 or curE > eigenvalueList[-1]:
+					eigenvalueList.append(curE)
+				else:
+					overlappingEigenvalues += 1
+	
+		print "Eiganvalues found       = %i" % (len(eigenvalueList))
+		print "Overlapping eigenvalues = %i" % (overlappingEigenvalues)
+	
+		return eigenvalueList
 
 	
-def FindEigenvalueSpectrum(startEigenvalue, endEigenvalue, **args):
-	evStart = FindEigenvaluesNearShift(startEigenvalue, **args)	
-	evEnd = FindEigenvaluesNearShift(endEigenvalue, **args)
 
-	eigenvalues = {startEigenvalue: evStart, endEigenvalue:evEnd}
-	activeIntervals = [(startEigenvalue, endEigenvalue)]
-
-	while len(activeIntervals) > 0:
-		newIntervals = []
-		for i, (start, end) in enumerate(list(activeIntervals)):
-			evStart = eigenvalues[start]
-			evEnd = eigenvalues[end]
-		
-			#if evStart end evEnd is not overlapping, we should split the interval
-			if real(evStart[-1]) < real(evEnd[0]):
-				midpoint = (start + end) / 2.
-			
-				#Find eigenvalues at midpoint
-				evMidpoint = FindEigenvaluesNearShift(midpoint, **args)
-				eigenvalues[midpoint] = evMidpoint
-
-				#mark subintervals as active
-				newIntervals.append((start, midpoint))
-				newIntervals.append((midpoint, end))
-
-		#the new intervals are now the active ones
-		activeIntervals = newIntervals
-
-	eigenvalueList = []
-	overlappingEigenvalues = 0
-	for ev in sorted(eigenvalues.keys()):
-		for curE in eigenvalues[ev]:
-			if len(eigenvalueList) == 0 or curE > eigenvalueList[-1]:
-				eigenvalueList.append(curE)
-			else:
-				overlappingEigenvalues += 1
-
-	print "Eiganvalues found       = %i" % (len(eigenvalueList))
-	print "Overlapping eigenvalues = %i" % (overlappingEigenvalues)
-
-	return eigenvalueList
