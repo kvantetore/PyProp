@@ -419,6 +419,9 @@ class SpectrumFinder(object):
 		finally:
 			f.close()
 
+#-----------------------------------------------------------------------------
+#             tools for calculating and plotting two-particle dP/dE
+#-----------------------------------------------------------------------------
 
 def GetEigenstateProjection(psi, eigenstateFile, eigenstateL):
 	"""
@@ -467,3 +470,38 @@ def RunEigenstateProjection(wavefunctionFile, eigenstateFile, outputFile, L):
 
 	finally:
 		f.close()
+
+def LoadEigenstateProjection(projectionFile, L):
+	f = tables.openFile(projectionFile, "r")
+	try:
+		E = f.getNode(f.root, "/L%02i/Eigenvalues" % L)[:]
+		proj = f.getNode(f.root, "/L%02i/EigenstateProjection" % L)[:]
+
+	finally:
+		f.close()
+
+	return E, proj	
+	
+
+def CalculateEnergyDistribution(E, projection, bins=50):
+	minE = min(E)
+	maxE = max(E)
+
+	binE, dE = linspace(minE, maxE, bins, endpoint=True, retstep=True)
+	binProj = zeros(len(binE), dtype=double)
+
+	curBin = 0
+	for E, proj in zip(E, projection):
+		while E > binE[curBin+1]:
+			curBin += 1
+		binProj[curBin] += abs(proj)**2
+
+	return binE, binProj/dE
+		
+def PlotEnergyDistribution(bins=50):
+	for L in [0,1,2,3,4,5]:
+		E, projection = LoadEigenstateProjection("projection_L%02i.h5" % L, L)
+		binE, binProj = CalculateEnergyDistribution(E, projection, bins)
+		semilogy(binE, binProj, label="L = %i" % L)
+
+	legend()
