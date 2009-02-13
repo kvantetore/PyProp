@@ -359,8 +359,12 @@ class SpectrumFinder(object):
 		eigenvalueList = []
 		overlappingEigenvalues = 0
 		for shift in sorted(self.ShiftMap.keys()):
-			for curE in self.ShiftMap[shift]:
+			for curIndex, curE in enumerate(self.ShiftMap[shift]):
 				if len(eigenvalueList) == 0 or curE > eigenvalueList[-1] + self.DegeneracyTolerance:
+					if len(eigenvalueList) > 1 and curIndex==0:
+						gap = curE - eigenvalueList[-1]
+						avgDeltaE = average(diff(eigenvalueList[-10:]))
+						print "Possible gap found between eigenvalues %f and %f. Estimated %i missing eigenvalues." % (eigenvalueList[-1], curE, gap/avgDeltaE)
 					eigenvalueList.append(curE)
 				else:
 					overlappingEigenvalues += 1
@@ -379,6 +383,7 @@ class SpectrumFinder(object):
 		f = tables.openFile(eigenvectorFile, "w")
 		try:
 			eigGroup = f.createGroup(f.root, "Eig")
+			f.createArray(eigGroup, "Eigenvalues", eigenvalues)
 		
 			#Store metadata from this spetrum finder
 			attrs = eigGroup._v_attrs
@@ -415,7 +420,7 @@ class SpectrumFinder(object):
 			f.close()
 
 
-def GetEigenstateProjection(psi, eigenstateFile):
+def GetEigenstateProjection(psi, eigenstateFile, eigenstateL):
 	"""
 	Project psi on all eigenstates in the file eigenstateFile, and 
 	return the energies as well as projection coefficients
@@ -427,14 +432,38 @@ def GetEigenstateProjection(psi, eigenstateFile):
 	finally:
 		f.close()
 
-	projPsi = psi.Copy()
+	eigPsi = pyprop.CreateWavefunctionFromFile(eigenstateFile, "/Eig/Eigenvector_0")
+
+	projPsi = eigPsi.Copy()
+
+	#Extract one L from psi - as the projection on all others will be 0
+	angularRank = 0
+	repr = psi.GetRepresentation().GetRepresentation(angularRank)
+	localIndex = repr.GetLocalGrid(angularRank)
+	coupledIndex = [repr.Range.GetCoupledIndex(int(i)) for i in localIndex]
+	indexL = [i for i, (l1, l2, L, M) in enumerate(coupledIndex) if L == eigenstateL]
+	projPsi.GetData()[:] = psi.GetData()[indexL, :, :]
+	
 	proj = []
 	for i, curE in enumerate(E):
 		infoStr =  "Progress: %3i%%" % ((i * 100)/ len(E))
 		sys.stdout.write("\b"*15 + infoStr)
 		sys.stdout.flush()
 
-		pyprop.serialization.LoadWavefunctionHDF(eigenstateFile, "/Eig/Eigenstate_%i" & i, projPsi)
-		proj.append( projPsi.InnerProduct(psi) )
+		pyprop.serialization.LoadWavefunctionHDF(eigenstateFile, "/Eig/Eigenvector_%i" % i, eigPsi)
+		proj.append( eigPsi.InnerProduct(projPsi) )
 
 	return E, array(proj)
+
+def RunEigenstateProjection(wavefunctionFile, eigenstateFile, outputFile, L):
+	psi = pyprop.CreateWavefunctionFromFile(wavefunctionFile)
+	E, proj = GetEigenstateProjection(psi, eigenstateFile, L)
+
+	f = tables.openFile(outputFile, "w")
+	try:
+		group = f.createGroup(f.root, "L%03i" % L)
+		f.createArray(group, "Energies", E)
+		f.createArray(group, "EigenstateProjection", proj)
+
+	finally:
+		f.close()
