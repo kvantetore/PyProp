@@ -46,7 +46,7 @@ elif INSTALLATION == "stallo":
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
 	conf = pyprop.Load(configFile)
-	PrintOut("Using config file: %s" % configFile)
+	#PrintOut("Using config file: %s" % configFile)
 	
 	if "silent" in args:
 		silent = args["silent"]
@@ -109,6 +109,80 @@ def SetupConfig(**args):
 	return newConf
 
 
+def GetRadialGridPostfix(**args):
+	"""
+	Returns "unique" list of strings string identifying the radial grid
+	implied by the specified args
+	"""
+	#if we supply only a config object, use that, 
+	#otherwise construct one using SetupConfig
+	if len(args) == 1 and "conf" in args:
+		conf = args["conf"]
+		if not isinstance(conf, pyprop.Config):
+			conf = pyprop.Config(conf)
+	else:
+		conf = SetupConfig(**args)
+	cfg = conf.RadialRepresentation
+
+	gridType = cfg.bpstype
+	postfix = ["grid", gridType, "xmax%i" % cfg.xmax, "xsize%i" % cfg.xsize, "order%i" % cfg.order]
+	if gridType == "linear":
+		pass
+	elif gridType == "exponentiallinear":
+		postfix.append("xpartition%i" % cfg.xpartition)
+		postfix.append("gamma%i" % cfg.gamma)
+
+	return postfix
+
+def GetAngularGridPostfix(**args):
+	#if we supply only a config object, use that, 
+	#otherwise construct one using SetupConfig
+	if len(args) == 1 and "conf" in args:
+		conf = args["conf"]
+		if not isinstance(conf, pyprop.Config):
+			conf = pyprop.Config(conf)
+	else:
+		conf = SetupConfig(**args)
+	cfg = conf.AngularRepresentation
+
+	lmax = emax([l1 for l1, l2, L, M in cfg.index_iterator])
+	L = unique([L for l1, l2, L, M in cfg.index_iterator])
+	M = unique([M for l1, l2, L, M in cfg.index_iterator])
+
+	def getSortedListString(l):
+		if len(l) == 1:
+			str = "%i" % M[0]
+		else:
+			if (diff(L) == 1).all():
+				str = "%i-%i" % (L[0], L[-1]+1)
+			else:
+				str = "%s" % ("_".join(L))
+
+		return str
+
+	postfix = ["angular"]
+	postfix += [lmax]
+	postfix += ["L%s" % getSortedListString(L)]	
+	postfix += ["M%s" % getSortedListString(M)]	
+
+	return postfix
+
+
+def CheckCompatibleRadialGrid(conf1, conf2):
+	return GetRadialGridPostfix(conf1) == GetRadialGridPostfix(conf2)
+
+def CheckCompatibleAngularGrid(conf1, conf2, check_L=False, check_M=True):
+	postfix1 = GetAngularGridPostfix(conf1)
+	postfix2 = GetAngularGridPostfix(conf2)
+
+	if postfix1[1] != postfix2[1]:
+		return False
+	if check_L and postfix1[2] != postfix2[2]:
+		return False
+	if check_M and postfix1[3] != postfix2[3]:
+		return False
+	return True
+	
 def SetupProblem(**args):
 	conf = SetupConfig(**args)
 	prop = pyprop.Problem(conf)
