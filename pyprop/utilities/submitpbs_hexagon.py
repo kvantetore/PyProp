@@ -117,16 +117,16 @@ def GetJobStatus(jobId):
 	Returns a dict containing the info from qstat -f jobid
 	if the job is not found None is returned
 	"""
-	status, output = commands.getstatusoutput("qstat -f %s" % jobName)
+	status, output = commands.getstatusoutput("qstat -f %s" % jobId)
 	if status != 0:
 		return None
 
 	statusList = [s.strip() for s in output.split("\n") if not s.startswith("\t")]
 	statusDict = {"job_id": jobId}
-	for curStatus in infoList:
+	for curStatus in statusList:
 		info = curStatus.split("=")
 		if len(info) == 2:
-			infoDict[info[0].strip().lower()] = info[1].strip()
+			statusDict[info[0].strip().lower()] = info[1].strip()
 
 	return statusDict
 
@@ -150,6 +150,6 @@ def CheckJobCompleted(jobId):
 
 	state = status["job_state"]
 	if state == STATE_COMPLETED or state == STATE_EXITING:
-		return False
+		return True
 
-	return True
+	return False

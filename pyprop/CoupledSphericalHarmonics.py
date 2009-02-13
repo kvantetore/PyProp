@@ -67,5 +67,5 @@ class DefaultCoupledIndexIterator:
 		
 
 	def __repr__(self):
-		return "sys.modules['pyprop'].defaultcoupledindexiterator(%s, l=%s, m=%s, fulltensor=%s)" % \
-			(self.lmax, self.l, self.m, self.fulltensor)
+		return "sys.modules['pyprop'].DefaultCoupledIndexIterator(%s, L=%s, M=%s, fullTensor=%s)" % \
+			(self.lmax, self.L, self.M, self.FullTensor)

@@ -120,6 +120,8 @@ class GMRESShiftInvertSolver:
 		#Solve for (H - shift * S)
 		self.Solver.Solve(self.__callback, self.TempPsi, destPsi, False)
 
+		#PrintOut("Error = %s" % self.Solver.GetErrorEstimateList())
+
 		self.Timers["Inverse Iterations"].Stop()
 
 	def PrintStatistics(self):
