@@ -23,6 +23,7 @@ execfile("stabilization.py")
 execfile("twoelectron_test.py")
 execfile("benchmark.py")
 execfile("eigenvalues.py")
+execfile("analysis.py")
 
 try:
 	import scipy
@@ -169,11 +170,11 @@ def GetAngularGridPostfix(**args):
 
 
 def CheckCompatibleRadialGrid(conf1, conf2):
-	return GetRadialGridPostfix(conf1) == GetRadialGridPostfix(conf2)
+	return GetRadialGridPostfix(conf=conf1) == GetRadialGridPostfix(conf=conf2)
 
 def CheckCompatibleAngularGrid(conf1, conf2, check_L=False, check_M=True):
-	postfix1 = GetAngularGridPostfix(conf1)
-	postfix2 = GetAngularGridPostfix(conf2)
+	postfix1 = GetAngularGridPostfix(conf=conf1)
+	postfix2 = GetAngularGridPostfix(conf=conf2)
 
 	if postfix1[1] != postfix2[1]:
 		return False

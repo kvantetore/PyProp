@@ -310,12 +310,19 @@ class SpectrumFinder(object):
 		dataFiles = filter(lambda x: x.startswith("eigenvectors_"), dataFiles)
 		dataFiles = map(lambda x: os.path.join(self.DataFolder, x), dataFiles)
 
+		selfConf = SetupConfig(**self.Arguments)
+
 		def getMessage(dataFile):
 			messageId = int(os.path.splitext(dataFile)[0].split("_")[1])
 			startTime = os.path.getctime(dataFile)
 			f = tables.openFile(dataFile, "r")
 			try:
-				shift = float(f.root.Eig._v_attrs.configObject.get("GMRES", "shift"))
+				conf = pyprop.Config(f.root.Eig._v_attrs.configObject)
+				if not CheckCompatibleRadialGrid(selfConf, conf):
+					print "Eigenvalues from file %s are from incompatible grid" % dataFile
+					return None
+
+				shift = float(conf.GMRES.shift)
 				eigenvalues = sorted(f.root.Eig.Eigenvalues[:])
 			except:
 				print "Could not load eigenvalues and shift from file %s" % dataFile
@@ -435,7 +442,7 @@ def GetEigenstateProjection(psi, eigenstateFile, eigenstateL):
 	finally:
 		f.close()
 
-	eigPsi = pyprop.CreateWavefunctionFromFile(eigenstateFile, "/Eig/Eigenvector_0")
+	eigPsi = pyprop.CreateWavefunctionFromFile(eigenstateFile, "/Eig/Eigenvector_10")
 
 	projPsi = eigPsi.Copy()
 
@@ -445,6 +452,8 @@ def GetEigenstateProjection(psi, eigenstateFile, eigenstateL):
 	localIndex = repr.GetLocalGrid(angularRank)
 	coupledIndex = [repr.Range.GetCoupledIndex(int(i)) for i in localIndex]
 	indexL = [i for i, (l1, l2, L, M) in enumerate(coupledIndex) if L == eigenstateL]
+	print "Psi has %i L=%i" % (len(indexL), eigenstateL)
+	print "ProjPsi has %i angular states" % (projPsi.GetData().shape[angularRank])
 	projPsi.GetData()[:] = psi.GetData()[indexL, :, :]
 	
 	proj = []
@@ -464,8 +473,8 @@ def RunEigenstateProjection(wavefunctionFile, eigenstateFile, outputFile, L):
 
 	f = tables.openFile(outputFile, "w")
 	try:
-		group = f.createGroup(f.root, "L%03i" % L)
-		f.createArray(group, "Energies", E)
+		group = f.createGroup(f.root, "L%02i" % L)
+		f.createArray(group, "Eigenvalues", E)
 		f.createArray(group, "EigenstateProjection", proj)
 
 	finally:
