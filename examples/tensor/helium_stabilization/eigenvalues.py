@@ -3,6 +3,17 @@
 #       Eigenvalue Functions using inverse iterations + pIRAM
 #------------------------------------------------------------------------------------
 
+def RunFindBoundstates(**args):
+	radialPostfix = "_".join(GetRadialGridPostfix(**args))
+	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+	outFolder = "output/boundstates"
+	if pyprop.ProcId == 0:
+		if not os.path.exists(outFolder):
+			os.makedirs(outFolder)
+	outFileName = os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
+	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
+			
+
 def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	outFileName="out/eig_inverseit.h5", **args):
 	"""

@@ -44,10 +44,13 @@ def GetEigenstateFileInfo(filename, infoId):
 	return GetConfigInfo(conf, infoId)
 
 
-def RemoveBoundStateProjection(psi, boundStateFiles):
+def RemoveBoundStateProjection(psi, boundstateFiles):
 	assert(pyprop.IsSingleProc())
 
-	for curFilename in boundStateFiles:
+	projectionList = []
+	eigenvaluesList = []
+
+	for curFilename in boundstateFiles:
 		L = GetEigenstateFileInfo(curFileName, INFO_L)
 
 		#Get the local indices corresponding to the local L
@@ -64,14 +67,29 @@ def RemoveBoundStateProjection(psi, boundStateFiles):
 		finally:
 			f.close()
 
+		curProjList = []
+
 		for i, E in enumerate(eigenvalues):
 			#load eigenstate
 			pyprop.serialization.LoadWavefunctionHDF(eigenstateFile, GetEigenvectorDatasetPath(i), eigPsi)
 			#calculate projection
 			proj = eigPsi.InnerProduct(projPsi)
+			curProjList.append(proj)
 			#remove projection
 			psi.GetData()[indexL, :, :] -= proj * eigPsi.GetData()
 
+		projectionList.append(curProjList)
+		eigenvaluesList.append(eigenvalues)
+
+	return projectionList, eigenvaluesList
+
+
+def RunRemoveBoundStateProjection(wavefunctionFile, boundstateFiles):
+	psi = pyprop.CreateWavefunctionFromFile(wavefunctionFile)
+	psi.Normalize()
+	projList, evList = RemoveBoundStateProjection(psi, boundstateFiles)
+	print "Probability not in projected    = %s" % real(psi.InnerProduct(psi))
+	print "Probability in projected states = %s" % (sum([sum(abs(array(p2))**2) for p1 in projList]))
 
 
 #-----------------------------------------------------------------------------
