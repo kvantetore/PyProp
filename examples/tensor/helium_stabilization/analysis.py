@@ -20,10 +20,6 @@ def RunSphericalHarmonicDistribution(wavefunctionFile):
 		pyprop.pypar.barrier()
 
 
-#------------------------------------------------------------------------
-#                        Product State Analysis
-#------------------------------------------------------------------------
-
 def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 	"""
 	Returns the local indices
@@ -50,6 +46,11 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 	localFilteredIndices = map(globalToLocal, globalFilteredIndices)
 
 	return localFilteredIndices
+
+
+#------------------------------------------------------------------------
+#                        Product State Analysis
+#------------------------------------------------------------------------
 
 def GetPopulationSingleParticleStates(psi, singleStates):
 	"""
