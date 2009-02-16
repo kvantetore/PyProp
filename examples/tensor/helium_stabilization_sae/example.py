@@ -10,12 +10,14 @@ from pyprop import PrintOut
 import numpy
 import pylab
 import time
+import tables
 
 from numpy import *
 from libpotential import *
 
 execfile("stabilization.py")
 execfile("eigenvalues.py")
+execfile("analysis.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -24,7 +26,6 @@ execfile("eigenvalues.py")
 
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
-	print configFile
 	conf = pyprop.Load(configFile)
 	
 	if "silent" in args:
@@ -49,6 +50,55 @@ def SetupConfig(**args):
 
 	if "eigenvalueBasisSize" in args:
 		conf.SetValue("Arpack", "krylov_basis_size", args["eigenvalueBasisSize"])
+	
+	if "radialGrid" in args:
+		radialGrid = args["radialGrid"]
+		def setvalue(variable):
+			conf.SetValue("RadialRepresentation", variable, radialGrid[variable])
+		
+		gridType = radialGrid["bpstype"]
+		setvalue("bpstype")
+		setvalue("order")
+		setvalue("xmax")
+		setvalue("xsize")
+
+		if gridType == "linear":
+			pass
+		elif gridType == "exponentiallinear":
+			setvalue("xpartition")
+			setvalue("gamma")
+		else:
+			raise Exception("Invalid Grid Type '%s'" % gridType)
+
+	if "model" in args:
+		model = args["model"].lower()
+		if model == "he+":
+			z = 2.0
+			a1 = a2 = a3 = a4 = a5 = a6 = 0
+
+		elif model == "h":
+			z = 1.0
+			a1 = a2 = a3 = a4 = a5 = a6 = 0
+
+		elif model == "he":
+			z = 1.0
+			a1 = 1.231
+			a2 = 0.662
+			a3 = -1.325
+			a4 = 1.236 
+			a5 = -0.231
+			a6 = 0.480
+
+		else:
+			raise Exception("Unknown model '%s'" % model)
+
+		conf.SetValue("SAEPotential", "z", z)
+		conf.SetValue("SAEPotential", "a1", a1)
+		conf.SetValue("SAEPotential", "a2", a2)
+		conf.SetValue("SAEPotential", "a3", a3)
+		conf.SetValue("SAEPotential", "a4", a4)
+		conf.SetValue("SAEPotential", "a5", a5)
+		conf.SetValue("SAEPotential", "a6", a6)
 
 
 	if "eigenvalueShift" in args:
@@ -67,6 +117,28 @@ def SetupConfig(**args):
 	newConf = pyprop.Config(conf.cfgObj)
 
 	return newConf
+
+
+def GetRadialGridPostfix(**args):
+	"""
+	Returns "unique" list of strings string identifying the radial grid
+	implied by the specified args
+	"""
+	conf = SetupConfig(**args)
+	cfg = conf.RadialRepresentation
+
+	gridType = cfg.bpstype
+	postfix = ["grid", gridType, "xmax%i" % cfg.xmax, "xsize%i" % cfg.xsize, "order%i" % cfg.order]
+	if gridType == "linear":
+		pass
+	elif gridType == "exponentiallinear":
+		postfix.append("xpartition%i" % cfg.xpartition)
+		postfix.append("gamma%i" % cfg.gamma)
+
+	return postfix
+
+def GetModelPostfix(**args):
+	return ["model_%s" % args.get("model", "he")]
 
 
 def SetupProblem(**args):
