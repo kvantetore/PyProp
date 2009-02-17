@@ -1,0 +1,57 @@
+\documentclass[a4paper,12pt]{paper}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{url}
+ 
+\title{Two Electron Analysis in Helium}
+\author{Tore Birkeland and Raymond Nepstad}
+
+\newcommand{\bra}[1]{\ensuremath{\langle #1 |}}
+\newcommand{\ket}[1]{\ensuremath{| #1 \rangle}}
+\newcommand{\innerprod}[2]{\langle #1 | #2 \rangle}
+\newcommand{\matelem}[3]{\langle #1 | #2 | #3 \rangle}
+\newcommand{\cg}[6]{\innerprod{#1 #2 #3 #4}{#5 #6}}
+\renewcommand{\imath}{{\mathrm i}}
+\newcommand{\partialdiff}[2]{\frac{\partial #1}{\partial #2}}
+\renewcommand{\vec}[1]{\ensuremath{\textbf{#1}}}
+
+\newcommand{\Hep}{He$^+$}
+
+\begin{document}
+
+\section{Single Particle State Projection}
+
+Wavefunction is (anti-)symmetric with respect to particle exhange
+\begin{equation}
+	\ket{1,2} = \pm \ket{2,1}
+\end{equation}
+
+Separate two-particle wavefunction in orthogonal bound and ionizing parts
+\begin{equation}
+	\ket{1,2} = \ket{bound(1,2)} \oplus \ket{ion(1,2)}
+\end{equation}
+
+Define a set of (anti-)symmetrized products of \Hep bound states $\ket{bound(1)}$, and a set of arbitrary single particle states\ket{i(2)},
+\begin{equation}
+	\sum_i \frac{1}{\sqrt{2}} \left( \ket{i(1)}\ket{bound(2)} \pm \ket{bound(1)}\ket{i(2)} \right)
+\end{equation}
+Excluding the overlap with these states on the span of $\ket{bound(1,2)}$, these states will be the asymptotic (in $r$ and time) single ionized states, and can be used to approximate single ionization probability.
+
+\begin{equation}
+	P_{SI} \approx \sum_{i,bound} 
+		| \frac{1}{\sqrt{2}} \left( \bra{i(1)}\bra{bound(2)} \pm \bra{bound(1)}\bra{i(2)} \right) 
+		\ket{ion(1,2)} |^2
+\end{equation}
+Which, due to the (anti-)symmetricality of the total wavefunction can be rewritten as
+\begin{eqnarray}
+	P_{SI} &\approx& \sum_{i,bound} 
+		| \frac{1}{\sqrt{2}} \left( \bra{i(1)}\innerprod{bound(2)}{ion(1,2)} + \bra{bound(1)}\innerprod{i(2)}{ion(2,1)} \right) |^2 \\
+		&=& 2 \sum_{i, bound} \bra{i(1)}\innerprod{bound(2)}{ion(1,2)}.
+\end{eqnarray}
+As \{ $\ket{i(1)}$ \} forms a complete single particle set, the above expression can be written as
+\begin{equation}
+	P_{SI} \approx 2 \sum_{bound} \int dr_1 | \int dr_2 \  bound^*(r_2) \psi(r_1, r_2) |^2 
+\end{equation}
+
+\end{document}
+
