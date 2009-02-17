@@ -46,12 +46,13 @@ def RunStabilization(**args):
 		solver.Solve()
 	
 		#Get groundstate wavefunction
-		initPsi = initProp.psi
-		solver.SetEigenvector(initPsi, 0)
-		initPsi.Normalize()
+		#initPsi = initProp.psi
+		solver.SetEigenvector(initProp.psi, 0)
+		initProp.psi.Normalize()
+		initPsi = initProp.psi.CopyDeep()
 
 		#Store wavefunction
-		initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
+		#initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 
 		#Print ground state energy
 		energyExpt = initProp.GetEnergyExpectationValue()
@@ -59,7 +60,7 @@ def RunStabilization(**args):
 		PrintOut("Ground state energy = %s (%s)" % (1.0 / groundstateEnergy + initProp.Config.GMRES.shift, energyExpt))
 
 		#free memory
-		initPsi = None
+		#initPsi = None
 		del solver
 		del initProp
 		del invIt
@@ -80,17 +81,27 @@ def RunStabilization(**args):
 		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 		initPsi = prop.psi.Copy()
 	else:
-		PrintOut("Uh-oh, trying to get data from deleted object!")
+		#PrintOut("Uh-oh, trying to get data from deleted object!")
 		sys.stdout.flush()
 		prop.psi.GetData()[:] = initPsi.GetData()
 		prop.psi.Normalize()
 		#initPsi = prop.psi.Copy()
+
+	#Set up box norm potentials
+	singleIonizationBox = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.SingleIonizationBox)
+	singleIonizationBox.SetupStep(0)
+	doubleIonizationBox = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.DoubleIonizationBox)
+	doubleIonizationBox.SetupStep(0)
+
+	tmpPsi = prop.psi.Copy()
 
 	distr = prop.psi.GetRepresentation().GetDistributedModel()
 
 	timeList = []
 	normList = []
 	corrList = []
+	singleIonization = []
+	doubleIonization = []
 
 	#Propagate
 	PrintOut("Starting propagation")
@@ -106,6 +117,12 @@ def RunStabilization(**args):
 		normList.append(norm)
 		corrList.append(corr)
 
+		#calculate ionization
+		tmpPsi.Clear()
+		singleIonization += [singleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+		tmpPsi.Clear()
+		doubleIonization += [doubleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+		
 		#estimate remaining time
 		curTime = time.time() - startTime
 		totalTime = (curTime / t) * prop.Duration
@@ -140,6 +157,8 @@ def RunStabilization(**args):
 			h5file.createArray("/", "SampleTimes", timeList)
 			h5file.createArray("/", "Norm", normList)
 			h5file.createArray("/", "InitialCorrelation", corrList)
+			h5file.createArray("/", "SingleIonization", singleIonization)
+			h5file.createArray("/", "DoubleIonization", doubleIonization)
 		finally:
 			h5file.close()
 
@@ -148,19 +167,22 @@ def SubmitStabilizationRun(workingDir):
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
-	outputDir = "stabilization_freq_3/"
-	frequency = 3.0
-	amplitudeList = arange(2.0, 41.0)
+	outputDir = "stabilization_freq_6_cycle7/"
+	frequency = 6.0
+	#amplitudeList = arange(1.0, 41.0)
+	amplitudeList = arange(41.0, 61.0)
+	#amplitudeList = [1]
 	
-	#for I in amplitudeList:
-	for I in [2.0]:
-		name = outputDir + "stabilization_I_%i.h5" % I
+	for I in amplitudeList:
+	#for I in [20]:
+		name = outputDir + "stabilization_I_%i_kb20_cycle7.h5" % I
 		Submit(executable="run_stabilization.py", \
-			runHours=1, \
+			runHours=4, \
 			jobname="stabilization", \
 			numProcs=111, \
-			config="config_tore.ini", \
+			config="config.ini", \
 			amplitude=I/frequency, \
+			#amplitude=I, \
 			outputCount=300, \
 			workingDir=workingDir, \
 			outputFilename=name, \
@@ -191,3 +213,24 @@ def SubmitHasbaniExampleRun(workingDir):
 			findGroundstate = False, \
 			writeScript=False)
 
+
+def FindStabilization(runFilePath):
+	#runFilePath = "stabilization_freq_5_cycle4"
+	lmax = 5
+	boundstateFiles = ["eigenstates/eigenvalues_stabilization_L%i_20stk.h5" % l for l in range(lmax+1)]
+
+	runFiles = os.listdir(runFilePath)
+
+	for file in runFiles:
+		if file[-2:] == "h5":
+			dataFile = runFilePath + "/" + file
+			print "Processing file: %s" % file
+			curIonization = FindIonizationProbability(dataFile, boundstateFiles[:], ionizationThreshhold=-2.0)
+			h5file = tables.openFile(dataFile, "r+")
+			try:
+				h5file.createArray("/", "TotalIonization", [curIonization])
+			except:
+				"Could not create array! Moving on..."
+				pass
+			finally:
+				h5file.close()

@@ -179,6 +179,67 @@ public:
         }
 };
 
+template<int Rank>
+class SingleIonizationBox : public PotentialBase<Rank>
+{
+public:
+		int RadialRank1;
+		int RadialRank2;
+		double InnerBoxSize;
+		double Width;
+
+        void ApplyConfigSection(const ConfigSection &config)
+        {
+			config.Get("radial_rank_1", RadialRank1);
+			config.Get("radial_rank_2", RadialRank2);
+			config.Get("inner_box_size", InnerBoxSize);
+			config.Get("width", Width);
+        }
+
+        inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+        {
+			double r1 = pos(RadialRank1);
+			double r2 = pos(RadialRank2);
+
+			if (r1 > InnerBoxSize && r2 < Width)
+				return 1.0;
+			else if (r2 > InnerBoxSize and r1 < Width)
+				return 1.0;
+			else 
+				return 0.0;
+        }
+};
+
+template<int Rank>
+class DoubleIonizationBox : public PotentialBase<Rank>
+{
+public:
+		int RadialRank1;
+		int RadialRank2;
+		double InnerBoxSize;
+		double Width;
+
+        void ApplyConfigSection(const ConfigSection &config)
+        {
+			config.Get("radial_rank_1", RadialRank1);
+			config.Get("radial_rank_2", RadialRank2);
+			config.Get("inner_box_size", InnerBoxSize);
+			config.Get("width", Width);
+        }
+
+        inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+        {
+			double r1 = pos(RadialRank1);
+			double r2 = pos(RadialRank2);
+
+			if (r1 > InnerBoxSize && r2 > InnerBoxSize)
+				return 1.0;
+			else 
+				return 0.0;
+        }
+};
+
+
 #include <slu_zdefs.h>
 template<int Rank>
 class SuperLUSolver

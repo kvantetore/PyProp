@@ -41,3 +41,6 @@ PotentialEvaluator("OverlapPotential<3> 3","OverlapPotential_3")
 #Box norm potential, used to calculate the wavefunction norm for r < r_c
 PotentialEvaluator("BoxNormPotential<3> 3","BoxNormPotential_3")
 
+PotentialEvaluator("SingleIonizationBox<3> 3","SingleIonizationBox_3")
+PotentialEvaluator("DoubleIonizationBox<3> 3","DoubleIonizationBox_3")
+
