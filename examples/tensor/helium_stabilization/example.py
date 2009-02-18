@@ -63,6 +63,8 @@ def SetupConfig(**args):
 	#a config parser object
 	if isinstance(configFile, str):
 		conf = pyprop.Load(configFile)
+	elif isinstance(configFile, pyprop.Config):
+		conf = configFile
 	else:
 		conf = pyprop.Config(configFile)
 	
@@ -160,6 +162,15 @@ def GetRadialGridPostfix(**args):
 	return postfix
 
 
+def GetAngularBasisSize(**args):
+	"""
+	Returns the number of spherical harmonic basis functions for a 
+	given argument list
+	"""
+	conf = SetupConfig(**args)
+	return len([1 for i in conf.AngularRepresentation.index_iterator])
+
+
 def GetAngularGridPostfix(**args):
 	"""
 	Returns a "unique" list of strings string identifying the angular grid
@@ -168,25 +179,25 @@ def GetAngularGridPostfix(**args):
 	conf = SetupConfig(**args)
 	cfg = conf.AngularRepresentation
 
-	lmax = emax([l1 for l1, l2, L, M in cfg.index_iterator])
-	L = unique([L for l1, l2, L, M in cfg.index_iterator])
-	M = unique([M for l1, l2, L, M in cfg.index_iterator])
+	lmax = max([l1 for l1, l2, L, M in cfg.index_iterator])
+	Llist = unique([L for l1, l2, L, M in cfg.index_iterator])
+	Mlist = unique([M for l1, l2, L, M in cfg.index_iterator])
 
 	def getSortedListString(l):
 		if len(l) == 1:
-			str = "%i" % M[0]
+			string = "%i" % l[0]
 		else:
-			if (diff(L) == 1).all():
-				str = "%i-%i" % (L[0], L[-1]+1)
+			if (diff(l) == 1).all():
+				string = "%i-%i" % (l[0], l[-1]+1)
 			else:
-				str = "%s" % ("_".join(L))
+				string = "%s" % ("_".join(map(str, l)))
 
-		return str
+		return string
 
 	postfix = ["angular"]
-	postfix += [lmax]
-	postfix += ["L%s" % getSortedListString(L)]	
-	postfix += ["M%s" % getSortedListString(M)]	
+	postfix += ["lmax%i" % lmax]
+	postfix += ["L%s" % getSortedListString(Llist)]	
+	postfix += ["M%s" % getSortedListString(Mlist)]	
 
 	return postfix
 

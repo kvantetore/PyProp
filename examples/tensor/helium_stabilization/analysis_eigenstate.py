@@ -44,52 +44,93 @@ def GetEigenstateFileInfo(filename, infoId):
 	return GetConfigInfo(conf, infoId)
 
 
-def RemoveBoundStateProjection(psi, boundstateFiles):
-	assert(pyprop.IsSingleProc())
+def GetBoundStateFiles(**args):
+	conf = SetupConfig(**args)
+	lmax = max([l1 for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
+	Llist = unique([L for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
+	getPostfix = lambda L: "_".join(GetRadialGridPostfix(config=conf, lmax=lmax, L=L) + GetAngularGridPostfix(config=conf, lmax=lmax, L=L)) 
+	getFilename = lambda L: "output/boundstates/boundstates_%s.h5" % (getPostfix(L))
 
-	projectionList = []
-	eigenvaluesList = []
+	return map(getFilename, Llist)
 
-	for curFilename in boundstateFiles:
-		L = GetEigenstateFileInfo(curFileName, INFO_L)
 
-		#Get the local indices corresponding to the local L
-		LFilter = lambda idx: idx.L == L
-		indexL = GetLocalCoupledSphericalHarmonicIndices(psi, LFilter)
-	
-		eigPsi = pyprop.CreateWavefunctionFromFile(eigenstateFile, GetEigenvectorDatasetPath(0))
-		projPsi = eigPsi.Copy()
-		projPsi.GetData()[:] = psi.GetData()[indexL, :, :]
+def GetBoundStates(ionizationThreshold=-2.0, **args):
+	boundFiles = GetBoundStateFiles(**args)
+	print boundFiles
 
-		f = tables.openFile(curFilename, "r")
+	def loadStates(filename):
+		L = GetEigenstateFileInfo(filename, INFO_L)
+		eigPsi = pyprop.CreateWavefunctionFromFile(filename, GetEigenvectorDatasetPath(0))
+
+		#Get energies
+		f = tables.openFile(filename, "r")
 		try:
 			eigenvalues = f.root.Eig.Eigenvalues[:]
 		finally:
 			f.close()
 
-		curProjList = []
+		curPsiList = []
+		curEnergyList = []
 
-		for i, E in enumerate(eigenvalues):
-			#load eigenstate
-			pyprop.serialization.LoadWavefunctionHDF(eigenstateFile, GetEigenvectorDatasetPath(i), eigPsi)
-			#calculate projection
-			proj = eigPsi.InnerProduct(projPsi)
-			curProjList.append(proj)
-			#remove projection
-			psi.GetData()[indexL, :, :] -= proj * eigPsi.GetData()
+		boundIdx = filter(lambda i: eigenvalues[i]<ionizationThreshold, r_[:len(eigenvalues)])
+		for i in boundIdx:
+			psi = eigPsi.Copy()
+			pyprop.serialization.LoadWavefunctionHDF(filename, GetEigenvectorDatasetPath(i), psi)
+			curPsiList.append(psi)
+			curEnergyList.append(eigenvalues[i])
 
-		projectionList.append(curProjList)
-		eigenvaluesList.append(eigenvalues)
+		return curEnergyList, (curPsiList, L)
 
-	return projectionList, eigenvaluesList
+	energies, boundStates = zip(*map(loadStates, boundFiles))
+
+	return energies, boundStates
 
 
-def RunRemoveBoundStateProjection(wavefunctionFile, boundstateFiles):
+def RemoveBoundStateProjection(psi, boundStates):
+	assert(pyprop.IsSingleProc())
+
+	projectionList = []
+
+	for curPsiList, L in boundStates:
+		if len(curPsiList) > 0:
+			#Get the local indices corresponding to the local L
+			LFilter = lambda idx: idx.L == L
+			indexL = GetLocalCoupledSphericalHarmonicIndices(psi, LFilter)
+		
+			#Copy the part of psi corresponding to the current L to a 
+			#single-L wavefunction to do projection.
+			projPsi = curPsiList[0].Copy()
+			projPsi.GetData()[:] = psi.GetData()[indexL, :, :]
+		
+			curProjList = []
+			for eigPsi in curPsiList:
+				#calculate projection
+				proj = projPsi.InnerProduct(eigPsi)
+				curProjList.append(proj)
+				#remove projection
+				psi.GetData()[indexL, :, :] -= proj * eigPsi.GetData()
+		
+			projectionList.append(curProjList)
+
+	return projectionList
+
+
+def RunRemoveBoundStateProjection(wavefunctionFile, ionizationThreshold=-2.0):
+	#Get Boundstate Files
+	conf = pyprop.LoadConfigFromFile(wavefunctionFile)
+	boundEnergies, boundStates = GetBoundStates(ionizationThreshold, config=conf)
+
+	#Load Wavefunction
 	psi = pyprop.CreateWavefunctionFromFile(wavefunctionFile)
-	psi.Normalize()
-	projList, evList = RemoveBoundStateProjection(psi, boundstateFiles)
+	
+	absorbedProbability = real(psi.InnerProduct(psi))
+	
+	projList = RemoveBoundStateProjection(psi, boundStates)
+	print "Probability absorbed            = %s" % (absorbedProbability)
 	print "Probability not in projected    = %s" % real(psi.InnerProduct(psi))
-	print "Probability in projected states = %s" % (sum([sum(abs(array(p2))**2) for p1 in projList]))
+	print "Probability in projected states = %s" % (sum([sum(abs(array(p1))**2) for p1 in projList]))
+
+	return psi
 
 
 #-----------------------------------------------------------------------------

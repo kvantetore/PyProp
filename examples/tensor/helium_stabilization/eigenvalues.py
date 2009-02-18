@@ -11,7 +11,7 @@ def RunFindBoundstates(**args):
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
 	outFileName = os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
-	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
+	FindEigenvaluesInverseIterations(outFileName=outFileName, shift=-2.9, **args)
 			
 
 def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
@@ -21,9 +21,17 @@ def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	and pIRAM and saves the result in outFileName
 	"""
 	shift = args.get("shift", -2.9)
-	solver, shiftInvertSolver, eigenvalues = FindEigenvaluesNearShift(shift, config=config, **args)
+	args["shift"] = shift
+	solver, shiftInvertSolver, eigenvalues = FindEigenvaluesNearShift(config=config, **args)
 	SaveEigenvalueSolverShiftInvert(outFileName, solver, shiftInvertSolver, shift)
-	
+
+	#Print Statistics
+	if pyprop.ProcId == 0:
+		shiftInvertSolver.PrintStatistics()
+	PrintOut("SHIFT = %s" % shift)
+	PrintOut("GMRESERRORS = %s" % shiftInvertSolver.Solver.GetErrorEstimateList())
+	PrintOut("EIGENVALUES = %s" % eigenvalues)
+
 	return solver, shiftInvertSolver
 
 
