@@ -14,8 +14,10 @@ from pyprop import PrintOut
 from pyprop.serialization import RemoveExistingDataset
 
 #Import numpy and such
+import numpy
+import pylab
 from numpy import *
-#from pylab import *
+from pylab import *
 from libpotential import *
 import tables
 

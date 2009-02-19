@@ -56,8 +56,29 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 #------------------------------------------------------------------------
 
 def RunSingleIonizationNikolopoulos():
-	filenames = ["raymond/example_nikolopoulos/nikolopoulos_ionization_omega_165.h5_%04i.h5" % i for i in range(300)]
-	absorb, ion, singleIon = RunGetSingleIonizationProbability()
+	filenames = ["raymond/example_nikolopoulos/after_pulse/nikolopoulos_ionization_omega_165_%04i.h5" % i for i in range(0, 300, 10)]
+	absorb, ion, singleIon = RunGetSingleIonizationProbability(filenames)
+
+	absorb = array(absorb)
+	totalIon = array(ion)
+	singleIon = array(singleIon)
+	doubleIon = totalIon - singleIon
+
+	f = tables.openFile("nikolopoulos_ionization_afterpulse.h5", "w")
+	try:
+		f.createArray(f.root, "absorb", absorb)
+		f.createArray(f.root, "totalIon", totalIon)
+		f.createArray(f.root, "singleIon", singleIon)
+		f.createArray(f.root, "doubleIon", doubleIon)
+	finally:
+		f.close()
+
+	pylab.semilogy(1-absorb, label="Absorbed")
+	pylab.semilogy(totalIon, label="Total Ion.")
+	pylab.semilogy(singleIon, label="Single Ion.")
+	pylab.semilogy(doubleIon, label="Double Ion.")
+	pylab.legend(loc="upper left")
+	pylab.savefig("nikolopoulos_ionization_afterpulse.png")
 
 def RunGetSingleIonizationProbability(wavefunctionFile):
 	if isinstance(wavefunctionFile, list):

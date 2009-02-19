@@ -10,7 +10,7 @@ def GetEigenstateFileConfig(filename):
 		conf = pyprop.Config(f.root.Eig._v_attrs.configObject)
 
 		return conf
-	except:
+	finally:
 		f.close()
 
 
