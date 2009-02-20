@@ -100,12 +100,14 @@ public:
 
 	void SetupMPI();
 	blitz::TinyVector<int, Rank> CreateInitialShape(const blitz::TinyVector<int, Rank> &fullShape);
+	blitz::TinyVector<int, Rank> GetGlobalShape(const blitz::TinyVector<int, Rank> localShape);
 	int GetLocalStartIndex(int globalSize, int currentRank);
 	blitz::Range GetLocalIndexRange(int globalSize, int currentRank);
 	void ApplyConfigSection(const ConfigSection &cfg);
 
 	int GetLocalStartIndex(int globalSize, int currentRank, int procId);
 	blitz::Range GetLocalIndexRange(int globalSize, int currentRank, int procId);
+	
 
 	double GetGlobalSum(double localValue);
 	cplx GetGlobalSum(cplx localValue);

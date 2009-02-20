@@ -144,4 +144,9 @@ void DistributedModel<Rank>::GlobalBarrier()
 {
 }
 
+template<int Rank>
+blitz::TinyVector<int, Rank> DistributedModel<Rank>::GetGlobalShape(const blitz::TinyVector<int, Rank> localShape)
+{
+	return localShape;
+}
 

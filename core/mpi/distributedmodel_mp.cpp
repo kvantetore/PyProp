@@ -88,6 +88,25 @@ blitz::TinyVector<int, Rank> DistributedModel<Rank>::CreateInitialShape(const bl
 	return Transpose->CreateDistributedShape(fullShape, CurrentDistribution->GetDistribution());
 }
 
+template<int Rank>
+blitz::TinyVector<int, Rank> DistributedModel<Rank>::GetGlobalShape(const blitz::TinyVector<int, Rank> localShape)
+{
+	if (IsSingleProc())
+	{
+		return localShape;
+	}
+
+	blitz::TinyVector<int, Rank> fullShape = localShape;
+
+	Distribution::DataArray distrib(CurrentDistribution->GetDistribution());
+	for (int procRank=0; procRank<CurrentDistribution->GetProcRank(); procRank++)
+	{
+		int rank = distrib(procRank);
+		fullShape(rank) = Transpose->GetGlobalSum(localShape(rank), procRank);
+	}
+
+	return fullShape;
+}
 
 template<int Rank>
 bool DistributedModel<Rank>::IsDistributedRank(int rank)

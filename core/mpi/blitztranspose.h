@@ -233,6 +233,48 @@ public:
 		return data;
 	}
 
+
+	/*
+	 * Sums local value across procRank
+	 *
+	 * i.e. for a 2d proc array, with the following 
+	 * distribution of localValues
+	 * ( 1    2 )
+	 * ( 3    4 )
+	 *
+	 * GetGlobalSum(localValue, 0) would return 
+	 * 	3 on proc (0,0) and (0,1)
+	 * 	7 on proc (1,0) and (1,1)
+	 *
+	 * 	GetGlobalSum(localValue, 1) would return
+	 * 	4 on proc (0,0) and (1,0)
+	 * 	6 on proc (0,1) and (1,1)
+	 */
+	template<class T>
+	T GetGlobalSumImpl(T localValue, int procRank)
+	{
+		blitz::Array<T, 1> localData(1), globalData(1);
+		localData(1) = localValue;
+		BlitzMPI<T, 1> mpi(localData);
+		mpi.Allreduce(localData, globalData, 0, MPI_SUM, GroupComm(procRank));
+		return globalData(1);
+	}
+
+	double GetGlobalSum(double localValue, int procRank)
+	{
+		return GetGlobalSumImpl(localValue, procRank);
+	}
+
+	cplx GetGlobalSum(cplx localValue, int procRank)
+	{
+		return GetGlobalSumImpl(localValue, procRank);
+	}
+
+	int GetGlobalSum(int localValue, int procRank)
+	{
+		return GetGlobalSumImpl(localValue, procRank);
+	}
+
 };
 
 template<int DataRank>

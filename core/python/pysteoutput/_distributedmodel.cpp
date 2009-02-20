@@ -37,6 +37,12 @@ int (ArrayTranspose<1>::*ArrayTranspose_1___GetLocalStartIndexint_int)(int, int)
 
 blitz::Range (ArrayTranspose<1>::*ArrayTranspose_1___GetLocalRangeint_int)(int, int)  = &ArrayTranspose<1>::GetLocalRange;
 
+double (ArrayTranspose<1>::*ArrayTranspose_1___GetGlobalSumdouble_int)(double, int)  = &ArrayTranspose<1>::GetGlobalSum;
+
+std::complex<double> (ArrayTranspose<1>::*ArrayTranspose_1___GetGlobalSumstd__complex_double__int)(std::complex<double>, int)  = &ArrayTranspose<1>::GetGlobalSum;
+
+int (ArrayTranspose<1>::*ArrayTranspose_1___GetGlobalSumint_int)(int, int)  = &ArrayTranspose<1>::GetGlobalSum;
+
 void (ArrayTranspose<2>::*ArrayTranspose_2___Transposeconstblitz__TinyVector_int_2__blitz__Array_std__complex_double__2__constblitz__Array_int_1__blitz__Array_std__complex_double__2__constblitz__Array_int_1_)(const blitz::TinyVector<int,2>, blitz::Array<std::complex<double>,2>, const blitz::Array<int,1>, blitz::Array<std::complex<double>,2>, const blitz::Array<int,1>)  = &ArrayTranspose<2>::Transpose;
 
 void (ArrayTranspose<2>::*ArrayTranspose_2___Transposeconstblitz__TinyVector_int_2__constblitz__Array_int_1__blitz__Array_std__complex_double__2__int_blitz__Array_std__complex_double__2__int_int)(const blitz::TinyVector<int,2>, const blitz::Array<int,1>, blitz::Array<std::complex<double>,2>, int, blitz::Array<std::complex<double>,2>, int, int)  = &ArrayTranspose<2>::Transpose;
@@ -60,6 +66,12 @@ blitz::Range (ArrayTranspose<2>::*ArrayTranspose_2___GetLocalRangeint_int_int)(i
 int (ArrayTranspose<2>::*ArrayTranspose_2___GetLocalStartIndexint_int)(int, int)  = &ArrayTranspose<2>::GetLocalStartIndex;
 
 blitz::Range (ArrayTranspose<2>::*ArrayTranspose_2___GetLocalRangeint_int)(int, int)  = &ArrayTranspose<2>::GetLocalRange;
+
+double (ArrayTranspose<2>::*ArrayTranspose_2___GetGlobalSumdouble_int)(double, int)  = &ArrayTranspose<2>::GetGlobalSum;
+
+std::complex<double> (ArrayTranspose<2>::*ArrayTranspose_2___GetGlobalSumstd__complex_double__int)(std::complex<double>, int)  = &ArrayTranspose<2>::GetGlobalSum;
+
+int (ArrayTranspose<2>::*ArrayTranspose_2___GetGlobalSumint_int)(int, int)  = &ArrayTranspose<2>::GetGlobalSum;
 
 void (ArrayTranspose<3>::*ArrayTranspose_3___Transposeconstblitz__TinyVector_int_3__blitz__Array_std__complex_double__3__constblitz__Array_int_1__blitz__Array_std__complex_double__3__constblitz__Array_int_1_)(const blitz::TinyVector<int,3>, blitz::Array<std::complex<double>,3>, const blitz::Array<int,1>, blitz::Array<std::complex<double>,3>, const blitz::Array<int,1>)  = &ArrayTranspose<3>::Transpose;
 
@@ -85,6 +97,12 @@ int (ArrayTranspose<3>::*ArrayTranspose_3___GetLocalStartIndexint_int)(int, int)
 
 blitz::Range (ArrayTranspose<3>::*ArrayTranspose_3___GetLocalRangeint_int)(int, int)  = &ArrayTranspose<3>::GetLocalRange;
 
+double (ArrayTranspose<3>::*ArrayTranspose_3___GetGlobalSumdouble_int)(double, int)  = &ArrayTranspose<3>::GetGlobalSum;
+
+std::complex<double> (ArrayTranspose<3>::*ArrayTranspose_3___GetGlobalSumstd__complex_double__int)(std::complex<double>, int)  = &ArrayTranspose<3>::GetGlobalSum;
+
+int (ArrayTranspose<3>::*ArrayTranspose_3___GetGlobalSumint_int)(int, int)  = &ArrayTranspose<3>::GetGlobalSum;
+
 void (ArrayTranspose<4>::*ArrayTranspose_4___Transposeconstblitz__TinyVector_int_4__blitz__Array_std__complex_double__4__constblitz__Array_int_1__blitz__Array_std__complex_double__4__constblitz__Array_int_1_)(const blitz::TinyVector<int,4>, blitz::Array<std::complex<double>,4>, const blitz::Array<int,1>, blitz::Array<std::complex<double>,4>, const blitz::Array<int,1>)  = &ArrayTranspose<4>::Transpose;
 
 void (ArrayTranspose<4>::*ArrayTranspose_4___Transposeconstblitz__TinyVector_int_4__constblitz__Array_int_1__blitz__Array_std__complex_double__4__int_blitz__Array_std__complex_double__4__int_int)(const blitz::TinyVector<int,4>, const blitz::Array<int,1>, blitz::Array<std::complex<double>,4>, int, blitz::Array<std::complex<double>,4>, int, int)  = &ArrayTranspose<4>::Transpose;
@@ -108,6 +126,12 @@ blitz::Range (ArrayTranspose<4>::*ArrayTranspose_4___GetLocalRangeint_int_int)(i
 int (ArrayTranspose<4>::*ArrayTranspose_4___GetLocalStartIndexint_int)(int, int)  = &ArrayTranspose<4>::GetLocalStartIndex;
 
 blitz::Range (ArrayTranspose<4>::*ArrayTranspose_4___GetLocalRangeint_int)(int, int)  = &ArrayTranspose<4>::GetLocalRange;
+
+double (ArrayTranspose<4>::*ArrayTranspose_4___GetGlobalSumdouble_int)(double, int)  = &ArrayTranspose<4>::GetGlobalSum;
+
+std::complex<double> (ArrayTranspose<4>::*ArrayTranspose_4___GetGlobalSumstd__complex_double__int)(std::complex<double>, int)  = &ArrayTranspose<4>::GetGlobalSum;
+
+int (ArrayTranspose<4>::*ArrayTranspose_4___GetGlobalSumint_int)(int, int)  = &ArrayTranspose<4>::GetGlobalSum;
 
 int (DistributedModel<1>::*DistributedModel_1___GetLocalStartIndexint_int)(int, int)  = &DistributedModel<1>::GetLocalStartIndex;
 
@@ -188,6 +212,9 @@ void Export_python_distributedmodel()
         .def("GetLocalStartIndex", ArrayTranspose_1___GetLocalStartIndexint_int)
         .def("GetLocalRange", ArrayTranspose_1___GetLocalRangeint_int)
         .def("CreateReferenceData", &ArrayTranspose<1>::CreateReferenceData)
+        .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumdouble_int)
+        .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumstd__complex_double__int)
+        .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumint_int)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<1> > >();
     delete ArrayTranspose_1_scope;
@@ -208,6 +235,9 @@ void Export_python_distributedmodel()
         .def("GetLocalStartIndex", ArrayTranspose_2___GetLocalStartIndexint_int)
         .def("GetLocalRange", ArrayTranspose_2___GetLocalRangeint_int)
         .def("CreateReferenceData", &ArrayTranspose<2>::CreateReferenceData)
+        .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumdouble_int)
+        .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumstd__complex_double__int)
+        .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumint_int)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<2> > >();
     delete ArrayTranspose_2_scope;
@@ -228,6 +258,9 @@ void Export_python_distributedmodel()
         .def("GetLocalStartIndex", ArrayTranspose_3___GetLocalStartIndexint_int)
         .def("GetLocalRange", ArrayTranspose_3___GetLocalRangeint_int)
         .def("CreateReferenceData", &ArrayTranspose<3>::CreateReferenceData)
+        .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumdouble_int)
+        .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumstd__complex_double__int)
+        .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumint_int)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<3> > >();
     delete ArrayTranspose_3_scope;
@@ -248,6 +281,9 @@ void Export_python_distributedmodel()
         .def("GetLocalStartIndex", ArrayTranspose_4___GetLocalStartIndexint_int)
         .def("GetLocalRange", ArrayTranspose_4___GetLocalRangeint_int)
         .def("CreateReferenceData", &ArrayTranspose<4>::CreateReferenceData)
+        .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumdouble_int)
+        .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumstd__complex_double__int)
+        .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumint_int)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<4> > >();
     delete ArrayTranspose_4_scope;
@@ -268,6 +304,7 @@ void Export_python_distributedmodel()
         .def("ForceSingleProc", &DistributedModel<1>::ForceSingleProc)
         .def("SetupMPI", &DistributedModel<1>::SetupMPI)
         .def("CreateInitialShape", &DistributedModel<1>::CreateInitialShape)
+        .def("GetGlobalShape", &DistributedModel<1>::GetGlobalShape)
         .def("GetLocalStartIndex", DistributedModel_1___GetLocalStartIndexint_int)
         .def("GetLocalIndexRange", DistributedModel_1___GetLocalIndexRangeint_int)
         .def("ApplyConfigSection", &DistributedModel<1>::ApplyConfigSection)
@@ -304,6 +341,7 @@ void Export_python_distributedmodel()
         .def("ForceSingleProc", &DistributedModel<2>::ForceSingleProc)
         .def("SetupMPI", &DistributedModel<2>::SetupMPI)
         .def("CreateInitialShape", &DistributedModel<2>::CreateInitialShape)
+        .def("GetGlobalShape", &DistributedModel<2>::GetGlobalShape)
         .def("GetLocalStartIndex", DistributedModel_2___GetLocalStartIndexint_int)
         .def("GetLocalIndexRange", DistributedModel_2___GetLocalIndexRangeint_int)
         .def("ApplyConfigSection", &DistributedModel<2>::ApplyConfigSection)
@@ -340,6 +378,7 @@ void Export_python_distributedmodel()
         .def("ForceSingleProc", &DistributedModel<3>::ForceSingleProc)
         .def("SetupMPI", &DistributedModel<3>::SetupMPI)
         .def("CreateInitialShape", &DistributedModel<3>::CreateInitialShape)
+        .def("GetGlobalShape", &DistributedModel<3>::GetGlobalShape)
         .def("GetLocalStartIndex", DistributedModel_3___GetLocalStartIndexint_int)
         .def("GetLocalIndexRange", DistributedModel_3___GetLocalIndexRangeint_int)
         .def("ApplyConfigSection", &DistributedModel<3>::ApplyConfigSection)
@@ -376,6 +415,7 @@ void Export_python_distributedmodel()
         .def("ForceSingleProc", &DistributedModel<4>::ForceSingleProc)
         .def("SetupMPI", &DistributedModel<4>::SetupMPI)
         .def("CreateInitialShape", &DistributedModel<4>::CreateInitialShape)
+        .def("GetGlobalShape", &DistributedModel<4>::GetGlobalShape)
         .def("GetLocalStartIndex", DistributedModel_4___GetLocalStartIndexint_int)
         .def("GetLocalIndexRange", DistributedModel_4___GetLocalIndexRangeint_int)
         .def("ApplyConfigSection", &DistributedModel<4>::ApplyConfigSection)
