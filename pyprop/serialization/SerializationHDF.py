@@ -285,12 +285,14 @@ def GetConfigFromHDF5(file, datasetPath = None, confObjName = "configObject"):
 	original config file.
 	"""
 	h5file = tables.openFile(file, "r")
+	cfgObj = None
 	try:
 		if datasetPath == None:
 			for node in h5file.walkNodes():
-				name = node._v_name
-				if name == "wavefunction":
-					cfgObj = node.getAttr(confObjName)
+				#name = node._v_name
+				#if name == "wavefunction":
+				if confObjName in node._v_attrs._v_attrnames:
+					cfgObj = node._f_getAttr(confObjName)
 		else:
 			cfgObj = h5file.getNodeAttr(datasetPath, confObjName)
 
