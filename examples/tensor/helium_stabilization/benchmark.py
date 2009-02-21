@@ -61,17 +61,11 @@ def SaveTensorPotential(filename, datasetPath, potential, distributedModel, conf
 	SaveTensorPotential("myfile.h5", "/mygroup/potential", pot):
 	"""
 
-	def getLocalSlab(geom):
-		basisPairIndices = geom.GetLocalBasisPairIndices()
-		if (diff(basisPairIndices) == 1).all():
-			basisPairIndices = s_[basisPairIndices[0]:basisPairIndices[0]+len(basisPairIndices)]
-		return basisPairIndices
-
 	distr = distributedModel
 	localData = potential.PotentialData
 	localShape = localData.shape
-	localSlab = tuple(map(getLocalSlab, potential.GeometryList))
-	fullShape = distr.GetGlobalShape(array(localShape))
+	localSlab = tuple(map(GetLocalIndices, potential.GeometryList))
+	fullShape = tuple(distr.GetGlobalShape(array(localShape)))
 
 	if distr.IsSingleProc():
 		t = - time.time()
@@ -80,6 +74,7 @@ def SaveTensorPotential(filename, datasetPath, potential, distributedModel, conf
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
 		SaveConfigObject(filename, datasetPath, conf)
+		SaveGeometryInfo(filename, datasetPath, potential.GeometryList)
 
 	else:
 		#let the processors save their part one by one
@@ -106,19 +101,55 @@ def SaveTensorPotential(filename, datasetPath, potential, distributedModel, conf
 		if procId == 0:
 			#config object
 			SaveConfigObject(filename, datasetPath, conf)
-
 			#basis pairs
-			f = tables.openFile(filename, "a+")
-			try:
-				node = GetExistingDataset(datasetPath)
-				for i, geom in enumerate(potential.GeometryList):
-					setattr(node._v_attrs, "basisPairs%i" % i, geom.GetGlobalBasisPairs())
-			finally:
-				f.close()
+			SaveGeometryInfo(filename, datasetPath, potential.GeometryList)
 
 
 		#Make sure everyone is finished
 		distr.GlobalBarrier();
+
+
+def LoadTensorPotential(filename, datasetPath, potential, distributedModel):
+	"""
+	Loads the tensor potential data from a dataset in a HDF file
+	"""
+
+	distr = distributedModel
+	localData = potential.PotentialData
+	localShape = localData.shape
+	localSlab = tuple(map(GetLocalIndices, potential.GeometryList))
+	fullShape = tuple(distr.GetGlobalShape(array(localShape)))
+
+	if not CheckLocalSlab(filename, datasetPath, potential.GeometryList, localSlab):
+		raise Exception("Organization of basis pairs has changed from when this potential was generated. Please regenerate potential")
+
+	if distr.IsSingleProc():
+		t = - time.time()
+		LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+		t += time.time()
+		if DEBUG: print "Duration: %.10fs" % t
+
+	else:
+		#let the processors save their part one by one
+		procCount = distr.ProcCount
+		procId = distr.ProcId
+		localSize = localData.nbytes / 1024.**2
+		distr.GlobalBarrier()
+		if procId==0 and DEBUG: print "Saving %s..." % filename
+		for i in range(procCount):
+			if procId == i:
+				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
+				t = - time.time()
+				LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+				t += time.time()
+				if DEBUG: print "    Duration: %.10fs" % t
+
+			distr.GlobalBarrier();
+		if procId==0 and DEBUG: print "Done."
+
+		#Make sure everyone is finished
+		distr.GlobalBarrier();
+
 
 def SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 	"""
@@ -154,25 +185,75 @@ def SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 		#Make sure file is closed
 		f.close()
 
-
-def GetLocalSlab(localData, distr):
+def LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 	"""
-	Get the local slab for the current processor in the global dataset
+	Loads the local slab of a global dataset from a file
+
+	filename    - the hdf5-file to load from
+	datasetPath - the path in <filename> where the dataset is stored
+	localData   - the n-dimensional array where to store the local data
+	localSlab   - the local slab (n-dimensional tuple containing the local range in
+				  the global dataset
+	fullShape   - shape of the global dataset
+
 	"""
+	#open file
+	f = tables.openFile(filename, "a")
+	try:
+		#get dataset
+		localShape = localData.shape
+		dataset = GetExistingDataset(f, datasetPath)
+		if dataset == None:
+			#create new dataset
+			raise Exception("Dataset '%s' not found in file '%s'" % (datasetPath, filename))
+		else:
+			#check that is has the correct size
+			if not dataset.shape == fullShape:
+				raise Exception("Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape))
+		
+		#write data
+		localData[:] = dataset[localSlab]
 
-	#get shapes
-	localShape = localData.shape
-	fullShape = distr.GetGlobalShape(localShape)
-	localStart = GetLocalStart(localShape, fullShape, distr)
+	finally:
+		#Make sure file is closed
+		f.close()
 
-	#set up hyperslabs
-	fileSlab = []
-	for i in range(rank):
-		start = localStart[i]
-		end = start + localShape[i]
-		fileSlab += [slice(start, end)]
-	fileSlab = tuple(fileSlab)
 
-	return fileSlab
+def GetLocalIndices(geomInfo):
+	"""
+	Gets the local slab of a 
+	"""
+	basisPairIndices = geomInfo.GetLocalBasisPairIndices()
+	if (diff(basisPairIndices) == 1).all():
+		basisPairIndices = s_[basisPairIndices[0]:basisPairIndices[0]+len(basisPairIndices)]
+	return basisPairIndices
+
+
+def CheckLocalSlab(filename, datasetPath, geometryList, localSlab):
+	rank = len(localSlab)
+	f = tables.openFile(filename, "a")
+	try:
+		node = GetExistingDataset(f, datasetPath)
+		globalBasisPairList = map(lambda i: getattr(node._v_attrs, "basisPairs%i" % i), r_[:rank])
+	finally:
+		f.close()
+
+	for origGlobalBasisPairs, localIndices, geomInfo in zip(globalBasisPairList, localSlab, geometryList):
+		newBasisPairs = geomInfo.GetGlobalBasisPairs()[localIndices]
+		origBasisPairs = origGlobalBasisPairs[localIndices]
+		if not (origBasisPairs == newBasisPairs).all():
+			return False
+	return True
+
+	
+def SaveGeometryInfo(filename, datasetPath, geometryList):
+	f = tables.openFile(filename, "a")
+	try:
+		node = GetExistingDataset(f, datasetPath)
+		for i, geom in enumerate(geometryList):
+			setattr(node._v_attrs, "basisPairs%i" % i, geom.GetGlobalBasisPairs())
+	finally:
+		f.close()
+
 
 

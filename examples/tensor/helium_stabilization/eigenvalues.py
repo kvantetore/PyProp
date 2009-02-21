@@ -61,6 +61,7 @@ def FindEigenvaluesNearShift(shift, **args):
 
 	#convert from shift inverted eigenvalues to "actual" eigenvalues
 	eigenvalues = 1.0 / eigenvalues + shift
+	PrintOut("eigenvalues = %s" % eigenvalues)
 
 	return solver, shiftInvertSolver, eigenvalues
 
