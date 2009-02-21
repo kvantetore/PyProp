@@ -1,6 +1,7 @@
 
 
 import tables
+from pyprop.serialization import GetExistingDataset, CreateDataset, SaveConfigObject
 	
 def SaveTensorPotential(filename, pot):
 	f = tables.openFile(filename, "w")
@@ -47,28 +48,35 @@ def SaveTensorPotential(filename, datasetPath, potential, distributedModel, conf
 		may or may not exist. If it exists, no other process my access 
 		the file while this function is called
 	
-	- datasetName is the path to the dataset where the wavefunction data
+	- datasetPath is the path to the dataset where the wavefunction data
 	should be stored.
 
 	- psi is the wavefunction
 
 	- other arguments: conf, a pyprop.Config object, which contains a cofig-
 	                   parser object. The configparser object is stored as
-	                   an attribute on the wavefunction-array.
+	                   an attribute on the potential-array.
 	
 	Example:
-	SaveWavefunctionHDF("myfile.h5", "/mygroup/wavefunction", prop.psi):
+	SaveTensorPotential("myfile.h5", "/mygroup/potential", pot):
 	"""
+
+	def getLocalSlab(geom):
+		basisPairIndices = geom.GetLocalBasisPairIndices()
+		if (diff(basisPairIndices) == 1).all():
+			basisPairIndices = s_[basisPairIndices[0]:basisPairIndices[0]+len(basisPairIndices)]
+		return basisPairIndices
 
 	distr = distributedModel
 	localData = potential.PotentialData
 	localShape = localData.shape
-	localSlab = GetLocalSlab(localShape, distr)
+	localSlab = tuple(map(getLocalSlab, potential.GeometryList))
+	fullShape = distr.GetGlobalShape(array(localShape))
 
 	if distr.IsSingleProc():
 		t = - time.time()
 		RemoveExistingDataset(filename, datasetPath)
-		SaveLocalSlab(filename, datasetPath, localData, distr)
+		SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
 		SaveConfigObject(filename, datasetPath, conf)
@@ -87,17 +95,28 @@ def SaveTensorPotential(filename, datasetPath, potential, distributedModel, conf
 
 				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
-				SaveLocalSlab(filename, datasetPath, localData, distr)
+				SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 				t += time.time()
 				if DEBUG: print "    Duration: %.10fs" % t
 
 			distr.GlobalBarrier();
 		if procId==0 and DEBUG: print "Done."
 
-		#proc 0 save config object
+		#proc 0 save attribs
 		if procId == 0:
+			#config object
 			SaveConfigObject(filename, datasetPath, conf)
-	
+
+			#basis pairs
+			f = tables.openFile(filename, "a+")
+			try:
+				node = GetExistingDataset(datasetPath)
+				for i, geom in enumerate(potential.GeometryList):
+					setattr(node._v_attrs, "basisPairs%i" % i, geom.GetGlobalBasisPairs())
+			finally:
+				f.close()
+
+
 		#Make sure everyone is finished
 		distr.GlobalBarrier();
 
@@ -119,26 +138,21 @@ def SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 		#get dataset
 		localShape = localData.shape
 		dataset = GetExistingDataset(f, datasetPath)
-		try:
-			if dataset == None:
-				#create new dataset
-				dataset = CreateDataset(f, datasetPath, fullShape)
-			else:
-				#check that is has the correct size
-				if not dataset.shape == fullShape:
-					raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
-			
-			#write data
-			dataset[localSlab] = localData
+		if dataset == None:
+			#create new dataset
+			dataset = CreateDataset(f, datasetPath, fullShape)
+		else:
+			#check that is has the correct size
+			if not dataset.shape == fullShape:
+				raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
+		
+		#write data
+		dataset[localSlab] = localData
 
-		finally:		
-			#Make sure dataset is closed
-			dataset.close()
 	
 	finally:
 		#Make sure file is closed
 		f.close()
-
 
 
 def GetLocalSlab(localData, distr):
@@ -148,7 +162,7 @@ def GetLocalSlab(localData, distr):
 
 	#get shapes
 	localShape = localData.shape
-	fullShape = GetGlobalShape(localShape, distr)
+	fullShape = distr.GetGlobalShape(localShape)
 	localStart = GetLocalStart(localShape, fullShape, distr)
 
 	#set up hyperslabs
@@ -161,6 +175,4 @@ def GetLocalSlab(localData, distr):
 
 	return fileSlab
 
-def GetGlobalShape(localShape, distr):
-	raise Exception()
 

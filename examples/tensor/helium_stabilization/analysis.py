@@ -288,12 +288,17 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 				Calculate <v1(1), v2(2) | psi(1,2)> 
 				"""
 				#Sum over all local indices
+
+				#sum coherently over L (product states in pure sph-harm)
 				getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) ) * cgList[angIdx] 
 				popList = map(getRadialProjection, angularIndices)
-
 				pop = abs(sum(popList))**2
+
+				#sum incoherently over L (product states in coupled sph-harm)
+				#getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) )  
+				#popList = map(getRadialProjection, angularIndices)
 				#pop = sum(map(lambda x: abs(x)**2, popList))
-				
+
 				#Sum over all processors
 				pop = 2 * real(distr.GetGlobalSum(pop))
 				return i1, i2, pop
