@@ -46,6 +46,8 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 		self.StepArguments = None
 		self.TempArrays = None
 		self.MultiplyArguments = None
+		self.LocalBasisPairIndices = None
+		self.GlobalIndexPairs = None
 
 	def UseGridRepresentation(self):
 		return False
@@ -57,6 +59,16 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 		if self.LocalIndexPairs == None:
 			self.SetupLocalBasisPairs()
 		return self.LocalIndexPairs
+
+	def GetGlobalBasisPairs(self):
+		if self.GlobalIndexPairs == None:
+			self.SetupLocalBasisPairs()
+		return self.GlobalIndexPairs
+
+	def GetLocalBasisPairIndices(self):
+		if self.LocalBasisPairIndices == None:
+			self.SetupLocalBasisPairs()
+		return self.LocalBasisPairIndices	
 
 	def GetStorageId(self):
 		return "SimpD"
@@ -76,11 +88,13 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 
 	def SetupLocalBasisPairs(self):
 		indexPairs = self.SelectionRule.GetBasisPairs(self.Representation)
+		self.GlobalIndexPairs = array(indexPairs)
 		distrib = self.Representation.GetDistributedModel()
 		rank = self.Representation.GetBaseRank()
 		globalSize = self.Representation.GetFullShape()[0]
 	
 		distribIndexList = SetupDistributedIndexList(globalSize, indexPairs, distrib, rank)
+		self.LocalBasisPairIndices = array(distribIndexList[distrib.ProcId])
 		stepList = SetupStepList(globalSize, indexPairs, distribIndexList, distrib, rank)
 		self.MaxRecvCount = max([len(step.RecvProcList) for step in stepList])
 

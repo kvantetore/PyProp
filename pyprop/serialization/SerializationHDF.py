@@ -97,27 +97,28 @@ def RemoveExistingDataset(filename, datasetPath):
 def SaveLocalSlab(filename, datasetPath, psi):
 	#open file
 	f = tables.openFile(filename, "a")
-
-	#get dataset
-	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	dataset = GetExistingDataset(f, datasetPath)
-	if dataset == None:
-		#create new dataset
-		dataset = CreateDataset(f, datasetPath, fullShape)
-	else:
-		#check that is has the correct size
-		if not dataset.shape == fullShape:
-			raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
-
-	#get hyperslab for this proc
-	fileSlab = GetFileSlab(psi)
-	
-	#write data
-	dataset[fileSlab] = psi.GetData()
-
-	#close file
-	dataset.close()
-	f.close()
+	try:
+		#get dataset
+		fullShape = tuple(psi.GetRepresentation().GetFullShape())
+		dataset = GetExistingDataset(f, datasetPath)
+		if dataset == None:
+			#create new dataset
+			dataset = CreateDataset(f, datasetPath, fullShape)
+		else:
+			#check that is has the correct size
+			if not dataset.shape == fullShape:
+				raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
+		
+		#get hyperslab for this proc
+		fileSlab = GetFileSlab(psi)
+		
+		#write data
+		dataset[fileSlab] = psi.GetData()
+		
+		#close file
+		dataset.close()
+	finally:
+		f.close()
 
 
 def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
@@ -148,30 +149,31 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 def LoadLocalSlab(filename, datasetPath, psi):
 	#open file
 	f = tables.openFile(filename, "r")
-
-	#get dataset
-	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	if not datasetPath.startswith("/"):
-		datasetPath = "/" + datasetPath
-	dataset = f.getNode(datasetPath)
-
-	#check that the dataset has the correct shape
-	if not dataset.shape == fullShape:
-		raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
-
-	#get hyperslab for this proc
-	fileSlab = GetFileSlab(psi)
-	
-	#load data
-	#print "loading data of shape ", dataset.shape, " into wavefunction of shape ", tuple(psi.GetData().shape)
-	#print "current slab = ", fileSlab
-	data = dataset[fileSlab]
-	#print "datashape = ", data.shape
-	psi.GetData()[:] = data
-
-	#close file
-	dataset.close()
-	f.close()
+	try:
+		#get dataset
+		fullShape = tuple(psi.GetRepresentation().GetFullShape())
+		if not datasetPath.startswith("/"):
+			datasetPath = "/" + datasetPath
+		dataset = f.getNode(datasetPath)
+		
+		#check that the dataset has the correct shape
+		if not dataset.shape == fullShape:
+			raise "Invalid shape on existing dataset. Got %s, expected %s" % (dataset.shape, fullShape)
+		
+		#get hyperslab for this proc
+		fileSlab = GetFileSlab(psi)
+		
+		#load data
+		#print "loading data of shape ", dataset.shape, " into wavefunction of shape ", tuple(psi.GetData().shape)
+		#print "current slab = ", fileSlab
+		data = dataset[fileSlab]
+		#print "datashape = ", data.shape
+		psi.GetData()[:] = data
+		
+		#close file
+		dataset.close()
+	finally:	
+		f.close()
 
 
 def GetFileSlab(psi):

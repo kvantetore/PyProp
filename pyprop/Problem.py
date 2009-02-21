@@ -28,13 +28,8 @@ def CreateWavefunction(config):
 
 	return psi
 
-def CreateWavefunctionFromFile(filename, datasetPath="/wavefunction"):
-	"""
-	Loads a wavefunction directly from a HDF5-file. The config object
-	is read from the attribute configObject on the node specified by
-	datasetPath
-	"""
 
+def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
 	f = tables.openFile(filename, "r")
 	try:
 		dataset = serialization.GetExistingDataset(f, datasetPath)
@@ -43,6 +38,16 @@ def CreateWavefunctionFromFile(filename, datasetPath="/wavefunction"):
 	finally:
 		f.close()
 
+	return conf
+	
+
+def CreateWavefunctionFromFile(filename, datasetPath="/wavefunction"):
+	"""
+	Loads a wavefunction directly from a HDF5-file. The config object
+	is read from the attribute configObject on the node specified by
+	datasetPath
+	"""
+	conf = LoadConfigFromFile(filename, datasetPath)
 	psi = CreateWavefunction(conf)
 	serialization.LoadWavefunctionHDF(filename, datasetPath, psi)
 

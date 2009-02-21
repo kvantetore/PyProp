@@ -36,6 +36,28 @@ class GeometryInfoBase(object):
 		"""
 		raise NotImplementedException()
 
+	def GetGlobalBasisPairs(self):
+		"""
+		returns the row-col index pairs as GetBasisPairs,  only this
+		returns the global basis pair list if this rank is 
+		distributed
+		"""
+		if not self.HasParallelMultiply():
+			return self.GetBasisPairs()
+		else:
+			raise NotImplementedException()
+
+	def GetLocalBasisPairIndices(self):
+		"""
+		Returns the local indices into the array returned by
+		GetGlobalBasisPairs() corresponding to the array returned
+		by GetBasisPairs(), 
+		"""
+		if not self.HasParallelMultiply():
+			return r_[:self.GetBasisPairCount()]
+		else:
+			raise NotImplementedException()
+	
 	def GetStorageId(self):
 		"""
 		Returns the string defining how the index pairs are ordered
