@@ -132,6 +132,30 @@ def SetupConfig(**args):
 	precondPotentials += args.get("additionalPreconditionPotentials", [])
 	conf.SetValue("RadialPreconditioner", "potential_evaluation", precondPotentials)
 
+	useStoredPotentials = args.get("useStoredPotentials", False)
+	if useStoredPotentials:
+		postfix = "_".join(GetRadialGridPostfix(config=conf) + GetAngularGridPostfix(config=conf))
+		folder = "output/potentials/%s" % (postfix)
+
+		potentialNames =potentialNames = [\
+			"RadialKineticEnergy1", \
+			"RadialKineticEnergy2", \
+			"AngularKineticEnergy", \
+			"CoulombPotential", \
+			"ElectronicCouplingPotential", \
+			"ElectronicCouplingPotentialMonopoleTerm", \
+			"OverlapPotential", \
+			"Absorber", \
+			"LaserPotentialVelocityDerivativeR1", \
+			"LaserPotentialVelocityDerivativeR2", \
+			"LaserPotentialVelocity", \
+			"DipolePotentialLength", \
+			]
+		for potName in potentialNames:
+			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
+			conf.SetValue(potName, "dataset", "potential")
+ 
+
 	#Update config object from possible changed ConfigParser object
 	newConf = pyprop.Config(conf.cfgObj)
 

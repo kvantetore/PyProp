@@ -28,6 +28,7 @@ class TensorPotential(PotentialWrapper):
 		self.Name = None
 		self.psi = psi
 		self.Rank = psi.GetRank()
+		self.OriginalPotential = None
 
 	def ApplyConfigSection(self, configSection):
 		self.DebugPotential = False
@@ -40,6 +41,36 @@ class TensorPotential(PotentialWrapper):
 			self.IsTimeDependent = True
 			self.TimeFunction = lambda t: configSection.time_function(configSection, t)
 			self.OriginalTimeFunction = configSection.time_function
+
+
+		#Use TensorPotentialGenerator to generate potential data
+		generator = TensorPotentialGenerator(representation=self.psi.GetRepresentation())
+		geometryList = generator.GetGeometryList(configSection)
+		self.GeometryList = geometryList
+		self.Name = configSection.name
+
+		#If filename is specified, load it from disk, otherwise, generate it
+		if hasattr(configSection, "filename"):
+			filename = configSection.filename
+			datasetPath = configSection.dataset
+			distr = self.psi.GetRepresentation().GetDistributedModel()
+
+			#setup data buffer
+			potShape = [geomInfo.GetBasisPairCount() for geomInfo in geometryList]
+			dataBuffer = CreateInstanceRank("core.DataBuffer", self.Rank)
+			dataBuffer.ResizeArray(array(potShape))
+			self.PotentialDataBuffer = dataBuffer
+			self.PotentialData = dataBuffer.GetArray()
+
+			#Load from disk
+			serialization.LoadTensorPotential(filename, datasetPath, self, distr)
+
+		else:
+			potentialDataBuffer = generator.GeneratePotential(configSection)
+			self.PotentialDataBuffer = potentialDataBuffer
+			self.PotentialData = potentialDataBuffer.GetArray()
+			self.OriginalPotential = getattr(generator, "OriginalPotential", None)
+		
 
 	def SetupStep(self, timestep):
 		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]

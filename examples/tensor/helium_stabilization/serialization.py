@@ -87,6 +87,7 @@ def SetupStoredPotentials(potentialNames, **args):
 	"""
 
 	#Setup a problem without potentials
+	args["useStoredPotentials"] = False
 	args["useDefaultPotentials"] = False
 	args["useDefaultPreconditionPotentials"] = False
 	prop = SetupProblem(**args)

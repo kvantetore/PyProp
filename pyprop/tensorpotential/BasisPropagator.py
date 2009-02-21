@@ -18,10 +18,6 @@ class BasisPropagator(PropagatorBase):
 		self.__Base.__init__(self, psi)
 		self.Rank = psi.GetRank()
 
-		#Create a tensor potential generator 		
-		#We will use this to construct tensor potentials from potentials specified on the grid
-		self.TensorPotentialGenerator = TensorPotentialGenerator(representation = psi.GetRepresentation())
-
 		#We need the temp array for solving overlap matrix eqns
 		self.TempPsi2 = self.psi.Copy()
 
@@ -33,21 +29,9 @@ class BasisPropagator(PropagatorBase):
 		self.ConsolidatePotentials()
 
 	def GeneratePotential(self, configSection):
-		generator = self.TensorPotentialGenerator
-
-		#Use TensorPotentialGenerator to construct potential in basis
-		geometryList = generator.GetGeometryList(configSection)
-		potentialDataBuffer = generator.GeneratePotential(configSection)
-		originalPotential = getattr(generator, "OriginalPotential", None)
-
-		#Create PotentialWrapper for TensorPotential
+		#Create TensorPotential
 		potential = TensorPotential(self.psi)
 		configSection.Apply(potential)
-		potential.GeometryList = geometryList
-		potential.PotentialDataBuffer = potentialDataBuffer
-		potential.PotentialData = potentialDataBuffer.GetArray()
-		potential.OriginalPotential = originalPotential
-		potential.Name = configSection.name
 
 		return potential
 
@@ -60,7 +44,6 @@ class BasisPropagator(PropagatorBase):
 		#Potentials we should create on the fly
 		if hasattr(config.Propagation, "grid_potential_list"):
 			potentials = config.Propagation.grid_potential_list
-			generator = self.TensorPotentialGenerator
 
 			for potentialName in potentials:
 				#Find the corresponding config section
