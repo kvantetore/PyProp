@@ -253,11 +253,11 @@ public:
 	template<class T>
 	T GetGlobalSumImpl(T localValue, int procRank)
 	{
-		blitz::Array<T, 1> localData(1), globalData(1);
-		localData(1) = localValue;
-		BlitzMPI<T, 1> mpi(localData);
-		mpi.Allreduce(localData, globalData, 0, MPI_SUM, GroupComm(procRank));
-		return globalData(1);
+		T globalValue;
+		MPI_Datatype type = MPITraits<T>::Type();
+		int count = MPITraits<T>::Length();
+		MPI_Allreduce(&localValue, &globalValue, count, type, MPI_SUM, GroupComm(procRank));
+		return globalValue;
 	}
 
 	double GetGlobalSum(double localValue, int procRank)

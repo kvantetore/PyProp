@@ -48,7 +48,6 @@ public:
 	int Recv(DataArray &data, int dest, int tag, MPI_Comm comm);
 	MPI_Request ISend(const DataArray &data, int dest, int tag, MPI_Comm comm);
 	MPI_Request IRecv(DataArray &data, int dest, int tag, MPI_Comm comm);
-	int Allreduce(DataArray &localValue, DataArray &globalValue, int tag, MPI_Op op, MPI_Comm comm);
 
 	MPI_Datatype GetDatatype()
 	{
@@ -201,11 +200,7 @@ MPI_Request BlitzMPI<T, Rank>::IRecv(DataArray &data, int src, int tag, MPI_Comm
 	return request;
 }
 
-template<class T, int Rank>
-int BlitzMPI<T, Rank>::Allreduce(DataArray &localValue, DataArray &globalValue, int tag, MPI_Op op, MPI_Comm comm)
-{
-	return MPI_Allreduce(localValue.data(), globalValue.data(), tag, Datatype, op, comm);
-}
+
 
 #endif
 
