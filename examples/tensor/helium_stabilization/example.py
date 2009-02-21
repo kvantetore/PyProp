@@ -54,6 +54,7 @@ execfile("preconditioner.py")
 execfile("spectrum_finder.py")
 execfile("analysis_eigenstate.py")
 execfile("submit.py")
+execfile("serialization.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -122,8 +123,14 @@ def SetupConfig(**args):
 	else:
 		potentials = []
 	potentials += args.get("additionalPotentials", [])
-
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
+
+	if args.get("useDefaultPreconditionPotentials", True):
+		precondPotentials = conf.RadialPreconditioner.potential_evaluation 
+	else:
+		precondPotentials = []
+	precondPotentials += args.get("additionalPreconditionPotentials", [])
+	conf.SetValue("RadialPreconditioner", "potential_evaluation", precondPotentials)
 
 	#Update config object from possible changed ConfigParser object
 	newConf = pyprop.Config(conf.cfgObj)

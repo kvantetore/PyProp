@@ -4,7 +4,7 @@
 
 def SaveRadialEigenstates(**args):
 	postfix = "_".join(GetModelPostfix(**args) + GetRadialGridPostfix(**args))
-	outputFile = "eigenstates/eigenstates_sae_%s" % postfix
+	outputFile = "eigenstates/eigenstates_sae_%s.h5" % postfix
 
 	#Setup problem
 	prop = SetupProblem(**args)

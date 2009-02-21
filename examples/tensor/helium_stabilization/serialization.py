@@ -77,4 +77,62 @@ def StoreTensorPotentialMTX(prop, whichPotentials, outFileName, eps = 1e-14):
 	fh.close()
 
 
+def SetupStoredPotentials(potentialNames, **args):
+	"""
+	Sets up a tensor potential for a list of potentials, 
+	and save them to file
 
+	the potentials are saved to the files
+	output/potential/<grid_postfix>/<potentialName>.h5
+	"""
+
+	#Setup a problem without potentials
+	args["useDefaultPotentials"] = False
+	args["useDefaultPreconditionPotentials"] = False
+	prop = SetupProblem(**args)
+	distr = prop.psi.GetRepresentation().GetDistributedModel()
+	conf = prop.Config
+
+	postfix = "_".join(GetRadialGridPostfix(config=conf) + GetAngularGridPostfix(config=conf))
+	folder = "output/potentials/%s" % (postfix)
+	if pyprop.ProcId == 0:
+		if not os.path.exists(folder):
+			os.makedirs(folder)
+
+	propagator = prop.Propagator.BasePropagator
+	for potName in potentialNames:
+		#Generate Potential
+		configSection = prop.Config.GetSection(potName)
+		potential = propagator.GeneratePotential(configSection)
+		#Save to disk
+		filename = os.path.join(folder, "%s.h5" % potName)
+		pyprop.serialization.SaveTensorPotential(filename, "/potential", potential, distr, prop.Config)
+		potential = None
+
+
+def SetupAllStoredPotentials(**args):
+
+	#Check whether this is for a single L-shell or not
+	conf = SetupConfig(**args)
+	cfg = conf.AngularRepresentation
+	Llist = unique([L for l1, l2, L, M in cfg.index_iterator])
+	singleLShell = len(Llist) == 1
+	
+	potentialNames = [\
+		"RadialKineticEnergy1", \
+		"RadialKineticEnergy2", \
+		"AngularKineticEnergy", \
+		"CoulombPotential", \
+		"ElectronicCouplingPotential", \
+		"ElectronicCouplingPotentialMonopoleTerm", \
+		"OverlapPotential", \
+		"Absorber", \
+		]
+	if not singleLShell:
+		potentialNames += [\
+			"LaserPotentialVelocityDerivativeR1", \
+			"LaserPotentialVelocityDerivativeR2", \
+			"LaserPotentialVelocity", \
+			"DipolePotentialLength", \
+			]
+	SetupStoredPotentials(potentialNames, **args)
