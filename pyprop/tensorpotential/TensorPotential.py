@@ -49,6 +49,9 @@ class TensorPotential(PotentialWrapper):
 		self.GeometryList = geometryList
 		self.Name = configSection.name
 
+		totalSize = prod([geom.GetBasisPairCount() for geom in geometryList]) * 16
+		PrintOut("Setting up Tensor Potential of size %.2fMB" % (totalSize / 1024.**2))
+
 		#If filename is specified, load it from disk, otherwise, generate it
 		if hasattr(configSection, "filename"):
 			filename = configSection.filename

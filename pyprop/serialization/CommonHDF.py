@@ -154,7 +154,7 @@ def LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 
 	"""
 	#open file
-	f = tables.openFile(filename, "a")
+	f = tables.openFile(filename, "r")
 	try:
 		#get dataset
 		localShape = localData.shape

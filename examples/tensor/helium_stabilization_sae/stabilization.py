@@ -1,5 +1,8 @@
-import scipy
-import scipy.linalg
+try:
+	import scipy
+	import scipy.linalg
+except:
+	pyprop.PrintOut("Can not load scipy")
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions

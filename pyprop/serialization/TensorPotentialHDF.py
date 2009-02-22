@@ -136,10 +136,13 @@ def CheckLocalSlab(filename, datasetPath, geometryList, localSlab):
 	finally:
 		f.close()
 
-	for origGlobalBasisPairs, localIndices, geomInfo in zip(globalBasisPairList, localSlab, geometryList):
+	for i, (origGlobalBasisPairs, localIndices, geomInfo) in enumerate(zip(globalBasisPairList, localSlab, geometryList)):
 		newBasisPairs = geomInfo.GetGlobalBasisPairs()[localIndices]
 		origBasisPairs = origGlobalBasisPairs[localIndices]
-		if not (origBasisPairs == newBasisPairs).all():
+		if not numpy.all(origBasisPairs == newBasisPairs):
+			newLen = len(geomInfo.GetGlobalBasisPairs())
+			origLen = len(origGlobalBasisPairs)
+			print "BASISPAIRDIFF(%i) (%i, %i) = %s != %s" % (i, newLen, origLen, newBasisPairs, origBasisPairs)
 			return False
 	return True
 
@@ -150,6 +153,7 @@ def SaveGeometryInfo(filename, datasetPath, geometryList):
 		node = GetExistingDataset(f, datasetPath)
 		for i, geom in enumerate(geometryList):
 			setattr(node._v_attrs, "basisPairs%i" % i, geom.GetGlobalBasisPairs())
+			setattr(node._v_attrs, "storageId%i" % i, geom.GetStorageId())
 	finally:
 		f.close()
 

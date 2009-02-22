@@ -6,6 +6,14 @@
 def RunFindBoundstates(**args):
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
 	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+
+	#use default eigenvaluecount and eigenvaluebasissize
+	#if not specified
+	eigenvalueCount = args.get("eigenvalueCount", 30)
+	eigenvalueBasisSize = args.get("eigenvalueBasisSize", 70)
+	args["eigenvalueCount"] = eigenvalueCount
+	args["eigenvalueBasisSize"] = eigenvalueBasisSize
+
 	outFolder = "output/boundstates"
 	if pyprop.ProcId == 0:
 		if not os.path.exists(outFolder):

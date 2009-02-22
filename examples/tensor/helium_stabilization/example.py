@@ -118,6 +118,25 @@ def SetupConfig(**args):
 		conf.SetValue("PulseParameters", "frequency", args["frequency"])
 		PrintOut("    Setting new field frequency: %s" % args["frequency"])
 
+	if "radialGrid" in args:
+		radialGrid = args["radialGrid"]
+		def setvalue(variable):
+			conf.SetValue("RadialRepresentation", variable, radialGrid[variable])
+		
+		gridType = radialGrid["bpstype"]
+		setvalue("bpstype")
+		setvalue("order")
+		setvalue("xmax")
+		setvalue("xsize")
+
+		if gridType == "linear":
+			pass
+		elif gridType == "exponentiallinear":
+			setvalue("xpartition")
+			setvalue("gamma")
+		else:
+			raise Exception("Invalid Grid Type '%s'" % gridType)
+
 	if args.get("useDefaultPotentials", True):
 		potentials = conf.Propagation.grid_potential_list 
 	else:
@@ -190,7 +209,7 @@ def GetRadialGridPostfix(**args):
 		pass
 	elif gridType == "exponentiallinear":
 		postfix.append("xpartition%i" % cfg.xpartition)
-		postfix.append("gamma%i" % cfg.gamma)
+		postfix.append("gamma%.1f" % cfg.gamma)
 
 	return postfix
 
