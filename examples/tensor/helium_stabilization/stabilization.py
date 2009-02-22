@@ -1,6 +1,7 @@
 import tables
 import sys
 
+from pyprop.utilities import ElectricFieldAtomicFromIntensitySI as field_from_intensity
 from pyprop.utilities import AngularFrequencyAtomicFromWavelengthSI as freq_from_wavelength
 #pyprop.serialization.DEBUG = True
 
@@ -25,8 +26,12 @@ def FormatDuration(duration):
 def RunStabilization(**args):
 	if "configFile" not in args: args["configFile"] = "config.ini"
 
-	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
+	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s.h5" % "_".join(GetRadialGridPostfix(**args))
+	groundstateFilename = args.get("groundstateFilename", gsFilenameGenerated)
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
+
+	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
+	storeInitialState = args.get("storeInitialState", False)
 
 	#Find Groundstate
 	findGroundstate = args.get("findGroundstate", True)
@@ -49,10 +54,11 @@ def RunStabilization(**args):
 		#initPsi = initProp.psi
 		solver.SetEigenvector(initProp.psi, 0)
 		initProp.psi.Normalize()
-		initPsi = initProp.psi.CopyDeep()
+		initPsi = initProp.psi.Copy()
 
 		#Store wavefunction
-		#initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
+		if storeInitialState:
+			initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
 
 		#Print ground state energy
 		energyExpt = initProp.GetEnergyExpectationValue()
@@ -93,6 +99,10 @@ def RunStabilization(**args):
 	doubleIonizationBox = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.DoubleIonizationBox)
 	doubleIonizationBox.SetupStep(0)
 
+	#Get electron coupling potential
+	propPotList = prop.Propagator.BasePropagator.PotentialList
+	electronicPotential = propPotList[where([pot.Name == "ElectronicCouplingPotential" for pot in propPotList])[0]]
+
 	tmpPsi = prop.psi.Copy()
 
 	distr = prop.psi.GetRepresentation().GetDistributedModel()
@@ -102,12 +112,13 @@ def RunStabilization(**args):
 	corrList = []
 	singleIonization = []
 	doubleIonization = []
+	r12ExpVal = []
 
 	#Propagate
 	PrintOut("Starting propagation")
 	outputCount = args.get("outputCount", 300)
 	startTime = time.time()
-	for t in prop.Advance(outputCount):
+	for step, t in enumerate(prop.Advance(outputCount)):
 		#calculate values
 		norm = prop.psi.GetNorm()
 		corr = abs(initPsi.InnerProduct(prop.psi))**2
@@ -122,7 +133,17 @@ def RunStabilization(**args):
 		singleIonization += [singleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
 		tmpPsi.Clear()
 		doubleIonization += [doubleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
-		
+
+		#calculate expectation value of 1/r12
+		tmpPsi.Clear()
+		r12ExpVal += [electronicPotential.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+
+		#Save wavefunction
+		if saveWavefunctionDuringPropagation:
+			outputFilename = args.get("outputFilename", "wavefunction") + "_%04i.h5" % step
+			outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
+			prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
+
 		#estimate remaining time
 		curTime = time.time() - startTime
 		totalTime = (curTime / t) * prop.Duration
@@ -138,6 +159,17 @@ def RunStabilization(**args):
 	timeList.append(t)
 	normList.append(norm)
 	corrList.append(corr)
+
+	#calculate ionization
+	tmpPsi.Clear()
+	singleIonization += [singleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+	tmpPsi.Clear()
+	doubleIonization += [doubleIonizationBox.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+
+	#calculate expectation value of 1/r12
+	tmpPsi.Clear()
+	r12ExpVal += [electronicPotential.GetExpectationValue(prop.psi, tmpPsi, 0, 0)]
+
 	PrintOut("t = %.2f; N = %.10f; Corr = %.10f" % (t, norm, corr))
 
 	PrintOut("")
@@ -145,10 +177,9 @@ def RunStabilization(**args):
 	prop.Propagator.Solver.PrintStatistics()
 
 	#Saving final wavefunction
-	outputFilename = args.get("outputFilename", "final.h5")
+	outputFilename = args.get("outputFilename", "final") + ".h5"
 	outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
 	prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
-
 
 	#Save sample times, norm and initial correlation
 	if pyprop.ProcId == 0:
@@ -159,6 +190,7 @@ def RunStabilization(**args):
 			h5file.createArray("/", "InitialCorrelation", corrList)
 			h5file.createArray("/", "SingleIonization", singleIonization)
 			h5file.createArray("/", "DoubleIonization", doubleIonization)
+			h5file.createArray("/", "ElectronicCouplingExpectationValue", r12ExpVal)
 		finally:
 			h5file.close()
 
@@ -167,29 +199,42 @@ def SubmitStabilizationRun(workingDir):
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
-	outputDir = "stabilization_freq_6_cycle7/"
-	frequency = 6.0
+	configFile = "config_stabilization_freq_5.ini"
+	timestep = 0.01
+	frequency = 5.0
+	xsize = 80
+	order = 5
+	xmax = 80
 	#amplitudeList = arange(1.0, 41.0)
 	amplitudeList = arange(41.0, 61.0)
 	#amplitudeList = [1]
 	
-	for I in amplitudeList:
-	#for I in [20]:
-		name = outputDir + "stabilization_I_%i_kb20_cycle7.h5" % I
-		Submit(executable="run_stabilization.py", \
-			runHours=4, \
-			jobname="stabilization", \
-			numProcs=111, \
-			config="config.ini", \
+	outputDir = "stabilization_freq_5_%s/" % "_".join(GetRadialGridPostfix(config=configFile, xsize=xsize, order=order))
+	if not os.path.exists(outputDir):
+		print "Created output dir: %s" % outputDir
+		os.makedirs(outputDir)
+	
+	#for I in amplitudeList:
+	for I in [20]:
+		name = outputDir + "stabilization_I_%i_kb20_cycle7_dt_%1.e_doubleduration" % (I, timestep)
+		#RunSubmitFullProcCount(RunStabilization, \
+		RunSubmitFullProcCount(SetupAllStoredPotentials, \
+			procPerNode=1, \
+			procMemory="4000mb", \
+			walltime=timedelta(hours=4), \
+			config=configFile, \
+			dt=timestep, \
 			amplitude=I/frequency, \
+			xsize=xsize, \
+			xmax=xmax, \
+			order=order, \
 			#amplitude=I, \
 			outputCount=300, \
-			workingDir=workingDir, \
 			outputFilename=name, \
-			findGroundstate = True, \
-			writeScript=False, \
-			interconnect="")
-
+			findGroundstate = False, \
+			storeInitialState=False, \
+			writeScript=False)
+			
 
 def SubmitHasbaniExampleRun(workingDir):
 	"""
@@ -211,6 +256,29 @@ def SubmitHasbaniExampleRun(workingDir):
 			workingDir=workingDir, \
 			outputFilename=name, \
 			findGroundstate = False, \
+			writeScript=False)
+
+
+def SubmitNikolopoulosExampleRun():
+	"""
+	Calculate single and double ionization for a range of intensities
+	"""
+	outputDir = "example_nikolopoulos_intensity_scan/"
+	
+	intensityList = [2e14, 4e14, 8e14, 1e15, 2e15, 4e15, 8e15, 1e16]
+	
+	for I in intensityList:
+		name = outputDir + "example_nikolopoulos_I_%s%s" % tuple(str(I).split("+"))
+		RunSubmitFullProcCount(RunStabilization, \
+			procPerNode=2, \
+			procMemory="2000mb", \
+			walltime=timedelta(hours=6), \
+			frequency=1.65, \
+			amplitude=field_from_intensity(I)/1.65, \
+			config="config_largegrid.ini", \
+			outputCount=300, \
+			outputFilename=name, \
+			findGroundstate = True, \
 			writeScript=False)
 
 

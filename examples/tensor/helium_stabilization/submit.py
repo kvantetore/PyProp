@@ -41,7 +41,7 @@ def RunSubmitFullProcCount(function, procPerNode=4, *arglist, **argdict):
 	angCount = GetAngularBasisSize(**argdict)
 	return RunSubmit(function, angCount, procPerNode, *arglist, **argdict)
 
-def RunSubmit(function, procCount=1, procPerNode=4, walltime=timedelta(minutes=30), *arglist, **argdict):
+def RunSubmit(function, procCount=1, procPerNode=4, procMemory="1000mb", walltime=timedelta(minutes=30), *arglist, **argdict):
 	"""
 	Runs a function on the compute nodes.
 	
@@ -65,6 +65,7 @@ def RunSubmit(function, procCount=1, procPerNode=4, walltime=timedelta(minutes=3
 		submit = submitpbs.SubmitScript()
 		submit.procs = procCount
 		submit.ppn = min(procPerNode, procCount)
+		submit.proc_memory = procMemory
 		submit.executable = "./python-exec run-function.py"
 		submit.parameters = arg1 + arg2 + arg3
 		submit.walltime = walltime

@@ -135,5 +135,23 @@ def SetupAllStoredPotentials(**args):
 			"LaserPotentialVelocityDerivativeR2", \
 			"LaserPotentialVelocity", \
 			"DipolePotentialLength", \
+			"SingleIonizationBox", \
+			"DoubleIonizationBox", \
 			]
+	SetupStoredPotentials(potentialNames, **args)
+
+
+def SetupIonizationBoxStoredPotentials(**args):
+
+	#Check whether this is for a single L-shell or not
+	conf = SetupConfig(**args)
+	cfg = conf.AngularRepresentation
+	Llist = unique([L for l1, l2, L, M in cfg.index_iterator])
+	singleLShell = len(Llist) == 1
+	
+	potentialNames = [\
+		"SingleIonizationBox", \
+		"DoubleIonizationBox", \
+		]
+	
 	SetupStoredPotentials(potentialNames, **args)

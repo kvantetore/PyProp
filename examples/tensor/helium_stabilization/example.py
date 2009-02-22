@@ -93,6 +93,10 @@ def SetupConfig(**args):
 	if "duration" in args:
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
+	
+	if "timestep" in args:
+		dt = args["timestep"]
+		conf.SetValue("Propagation", "timestep", timestep)
 
 	if "eigenvalueCount" in args:
 		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
@@ -116,7 +120,7 @@ def SetupConfig(**args):
 
 	if "frequency" in args:
 		conf.SetValue("PulseParameters", "frequency", args["frequency"])
-		PrintOut("    Setting new field frequency: %s" % args["frequency"])
+		#PrintOut("    Setting new field frequency: %s" % args["frequency"])
 
 	if "radialGrid" in args:
 		radialGrid = args["radialGrid"]
@@ -142,6 +146,15 @@ def SetupConfig(**args):
 	else:
 		potentials = []
 	potentials += args.get("additionalPotentials", [])
+	if "xmax" in args:
+		conf.SetValue("RadialRepresentation", "xmax", args["xmax"])
+	
+	if "xsize" in args:
+		conf.SetValue("RadialRepresentation", "xsize", args["xsize"])
+	
+	if "order" in args:
+		conf.SetValue("RadialRepresentation", "order", args["order"])
+
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	if args.get("useDefaultPreconditionPotentials", True):
@@ -174,6 +187,26 @@ def SetupConfig(**args):
 			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
 			conf.SetValue(potName, "dataset", "potential")
  
+
+	#Update config object from possible changed ConfigParser object
+	newConf = pyprop.Config(conf.cfgObj)
+
+	return newConf
+
+
+def GetRadialGrid(**args):
+	"""
+	returns the radial grid info as a dict
+	"""
+	conf = SetupConfig(**args)
+	cfg = conf.RadialRepresentation
+
+	#Get some of the RadialRepresentation values into a dict
+	names = ["bpstype", "xmax", "xsize", "order", "xpartition", "gamma"]
+	radialGrid = dict(map(lambda name: (name, getattr(cfg, name)), names))
+
+
+	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	#Update config object from possible changed ConfigParser object
 	newConf = pyprop.Config(conf.cfgObj)
