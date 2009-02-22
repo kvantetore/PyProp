@@ -18,6 +18,10 @@ def CreateBasisFromRepresentation(representation):
 	elif representation.__class__ == core.CustomGridRepresentation:
 		basis = BasisfunctionFiniteDifference()
 		basis.SetupBasis(representation)
+	
+	elif representation.__class__ == core.VectorRepresentation:
+		basis = BasisfunctionVector()
+		basis.SetupBasis(representation)
 
 	else:
 		raise NotImplementedException("Unknown representation %s" % representation)

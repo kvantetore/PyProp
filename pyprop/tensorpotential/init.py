@@ -17,4 +17,5 @@ execfile(__path__[0] + "/tensorpotential/basis/BSpline.py")
 execfile(__path__[0] + "/tensorpotential/basis/CoupledSphericalHarmonic.py")
 execfile(__path__[0] + "/tensorpotential/basis/ReducedSphericalHarmonic.py")
 execfile(__path__[0] + "/tensorpotential/basis/FiniteDifference.py")
+execfile(__path__[0] + "/tensorpotential/basis/Vector.py")
 
