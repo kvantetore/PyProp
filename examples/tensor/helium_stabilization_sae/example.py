@@ -133,7 +133,7 @@ def GetRadialGridPostfix(**args):
 		pass
 	elif gridType == "exponentiallinear":
 		postfix.append("xpartition%i" % cfg.xpartition)
-		postfix.append("gamma%i" % cfg.gamma)
+		postfix.append("gamma%.1f" % cfg.gamma)
 
 	return postfix
 
