@@ -102,13 +102,16 @@ def SetupStoredPotentials(potentialNames, **args):
 
 	propagator = prop.Propagator.BasePropagator
 	for potName in potentialNames:
-		#Generate Potential
-		configSection = prop.Config.GetSection(potName)
-		potential = propagator.GeneratePotential(configSection)
-		#Save to disk
-		filename = os.path.join(folder, "%s.h5" % potName)
-		pyprop.serialization.SaveTensorPotential(filename, "/potential", potential, distr, prop.Config)
-		potential = None
+		try:
+			#Generate Potential
+			configSection = prop.Config.GetSection(potName)
+			potential = propagator.GeneratePotential(configSection)
+			#Save to disk
+			filename = os.path.join(folder, "%s.h5" % potName)
+			pyprop.serialization.SaveTensorPotential(filename, "/potential", potential, distr, prop.Config)
+			potential = None
+		except:
+			PrintOut("Could not create potential '%s': %s" % (potName, sys.exc_info()[1]))
 
 
 def SetupAllStoredPotentials(**args):
