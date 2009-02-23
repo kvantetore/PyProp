@@ -22,7 +22,7 @@ def RemoveExistingDataset(filename, datasetPath):
 	try:
 		groupName, datasetName = GetDatasetName(datasetPath)
 		try:
-			f.removeNode(groupName, datasetName)
+			f.removeNode(groupName, datasetName, recursive=True)
 		except tables.NoSuchNodeError:
 			pass
 			
