@@ -131,6 +131,8 @@ def SetupAllStoredPotentials(**args):
 		"ElectronicCouplingPotentialMonopoleTerm", \
 		"OverlapPotential", \
 		"Absorber", \
+		"SingleIonizationBox", \
+		"DoubleIonizationBox", \
 		]
 	if not singleLShell:
 		potentialNames += [\
@@ -138,8 +140,6 @@ def SetupAllStoredPotentials(**args):
 			"LaserPotentialVelocityDerivativeR2", \
 			"LaserPotentialVelocity", \
 			"DipolePotentialLength", \
-			"SingleIonizationBox", \
-			"DoubleIonizationBox", \
 			]
 	SetupStoredPotentials(potentialNames, **args)
 

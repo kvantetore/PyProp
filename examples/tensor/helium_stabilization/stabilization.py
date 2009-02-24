@@ -195,45 +195,46 @@ def RunStabilization(**args):
 			h5file.close()
 
 
-def SubmitStabilizationRun(workingDir):
+def SubmitStabilizationRun():
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
 	configFile = "config_stabilization_freq_5.ini"
 	timestep = 0.01
 	frequency = 5.0
-	xsize = 80
-	order = 5
-	xmax = 80
-	#amplitudeList = arange(1.0, 41.0)
-	amplitudeList = arange(41.0, 61.0)
+
+	gridArgs = {\
+	'xsize' : 80, \
+	'xmax' : 80, \
+	'order' : 5}
+
+	amplitudeList = arange(1.0, 41.0)
+	#amplitudeList = arange(41.0, 61.0)
 	#amplitudeList = [1]
 	
-	outputDir = "stabilization_freq_5_%s/" % "_".join(GetRadialGridPostfix(config=configFile, xsize=xsize, order=order))
+	outputDir = "stabilization_freq_5_scan_%s/" % "_".join(GetRadialGridPostfix(config=configFile, **gridArgs))
 	if not os.path.exists(outputDir):
 		print "Created output dir: %s" % outputDir
 		os.makedirs(outputDir)
 	
-	#for I in amplitudeList:
-	for I in [20]:
-		name = outputDir + "stabilization_I_%i_kb20_cycle7_dt_%1.e_doubleduration" % (I, timestep)
-		#RunSubmitFullProcCount(RunStabilization, \
-		RunSubmitFullProcCount(SetupAllStoredPotentials, \
+	for I in amplitudeList:
+	#for I in [20]:
+		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e" % (I, timestep)
+		RunSubmitFullProcCount(RunStabilization, \
+		#RunSubmitFullProcCount(SetupAllStoredPotentials, \
 			procPerNode=1, \
 			procMemory="4000mb", \
-			walltime=timedelta(hours=4), \
+			walltime=timedelta(hours=3), \
 			config=configFile, \
 			dt=timestep, \
 			amplitude=I/frequency, \
-			xsize=xsize, \
-			xmax=xmax, \
-			order=order, \
-			#amplitude=I, \
 			outputCount=300, \
 			outputFilename=name, \
-			findGroundstate = False, \
+			findGroundstate=False, \
 			storeInitialState=False, \
-			writeScript=False)
+			saveWavefunctionDuringPropagation=False, \
+			writeScript=False, \
+			**gridArgs)
 			
 
 def SubmitHasbaniExampleRun(workingDir):

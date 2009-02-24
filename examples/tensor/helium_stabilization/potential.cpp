@@ -469,8 +469,6 @@ int sp_ienv(int ispec)
 {
     int i;
 	
-	printf("ispec = %i", i);
-	
     switch (ispec) {
 	case 1: return (10);
 	case 2: return (5);

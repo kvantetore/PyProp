@@ -146,6 +146,8 @@ def SetupConfig(**args):
 	else:
 		potentials = []
 	potentials += args.get("additionalPotentials", [])
+	conf.SetValue("Propagation", "grid_potential_list", potentials)
+
 	if "xmax" in args:
 		conf.SetValue("RadialRepresentation", "xmax", args["xmax"])
 	
@@ -155,7 +157,6 @@ def SetupConfig(**args):
 	if "order" in args:
 		conf.SetValue("RadialRepresentation", "order", args["order"])
 
-	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	if args.get("useDefaultPreconditionPotentials", True):
 		precondPotentials = conf.RadialPreconditioner.potential_evaluation 
@@ -182,6 +183,8 @@ def SetupConfig(**args):
 			"LaserPotentialVelocityDerivativeR2", \
 			"LaserPotentialVelocity", \
 			"DipolePotentialLength", \
+			"SingleIonizationBox", \
+			"DoubleIonizationBox", \
 			]
 		for potName in potentialNames:
 			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
