@@ -150,6 +150,7 @@ def SetupConfig(**args):
 
 	if "xmax" in args:
 		conf.SetValue("RadialRepresentation", "xmax", args["xmax"])
+		conf.SetValue("Absorber", "absorber_start", float(args["xmax"]) - conf.Absorber.absorber_length)
 	
 	if "xsize" in args:
 		conf.SetValue("RadialRepresentation", "xsize", args["xsize"])
