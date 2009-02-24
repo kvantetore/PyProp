@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 #------------------------------------------------------------------------------------
 #                       Serialization Functions
@@ -158,3 +159,16 @@ def SetupIonizationBoxStoredPotentials(**args):
 		]
 	
 	SetupStoredPotentials(potentialNames, **args)
+
+
+def GetPropagationDataFromFiles(filesLocation):
+	SingleIonization = []
+	DoubleIonization = []
+	Norm = []
+	for fname in os.listdir(filesLocation):
+		with tables.openFile("%s/%s" % (filesLocation, fname)) as f:
+			SingleIonization += [f.root.SingleIonization[-1].real]
+			DoubleIonization += [f.root.DoubleIonization[-1].real]
+			Norm +=  [f.root.Norm[-1]]
+
+	return SingleIonization, DoubleIonization, Norm
