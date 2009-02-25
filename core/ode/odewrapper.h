@@ -13,6 +13,9 @@ template<int Rank>
 class OdeWrapper
 {
 public:	
+	OdeWrapper() {}
+	virtual ~OdeWrapper() {}
+	
 	typedef blitz::Array<cplx, 1> DataArray1D;
 
 	typename Wavefunction<Rank>::Ptr Psi;

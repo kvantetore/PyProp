@@ -14,6 +14,9 @@ template<int Rank>
 class RungeKuttaWrapper
 {
 public:
+
+	RungeKuttaWrapper() {}
+	virtual ~RungeKuttaWrapper() {}
 	
 	enum IntegratorTypes
 	{
