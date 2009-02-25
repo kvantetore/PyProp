@@ -139,17 +139,17 @@ def GetLocalBasisPairSlice(geomInfo):
 
 def CheckLocalSlab(filename, groupPath, geometryList, localSlab):
 	rank = len(localSlab)
-	f = tables.openFile(filename, "a")
+	f = tables.openFile(filename, "r")
 	try:
 		node = GetExistingDataset(f, groupPath)
-		globalBasisPairList = map(lambda i: array(GetExistingDataset(f, groupPath + "/basisPairs%i" % i)), r_[:rank])
+		globalBasisPairList = map(lambda i: GetExistingDataset(f, groupPath + "/basisPairs%i" % i)[:], r_[:rank])
 	finally:
 		f.close()
 
 	for i, (origGlobalBasisPairs, localIndices, geomInfo) in enumerate(zip(globalBasisPairList, localSlab, geometryList)):
-		#newBasisPairs = geomInfo.GetGlobalBasisPairs()[localIndices]
-		#origBasisPairs = origGlobalBasisPairs[localIndices]
-		if not numpy.all(geomInfo.GetGlobalBasisPairs() == origGlobalBasisPairs):
+		newBasisPairs = geomInfo.GetGlobalBasisPairs()[localIndices]
+		origBasisPairs = origGlobalBasisPairs[localIndices]
+		if not numpy.all(newBasisPairs == origBasisPairs):
 			newLen = len(geomInfo.GetGlobalBasisPairs())
 			origLen = len(origGlobalBasisPairs)
 			print "BASISPAIRDIFF(%i) (%i, %i) = %s != %s" % (i, newLen, origLen, newBasisPairs, origBasisPairs)

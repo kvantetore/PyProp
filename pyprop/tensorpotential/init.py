@@ -7,6 +7,7 @@ import re
 
 #General tensor potential and tensor generator stuff
 execfile(__path__[0] + "/tensorpotential/BasisPropagator.py")
+execfile(__path__[0] + "/tensorpotential/BasisPropagatorInteractionPicture.py")
 execfile(__path__[0] + "/tensorpotential/GeometryInfo.py")
 execfile(__path__[0] + "/tensorpotential/SimpleDistributed.py")
 execfile(__path__[0] + "/tensorpotential/TensorPotentialGenerator.py")
