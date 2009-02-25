@@ -165,10 +165,18 @@ def GetPropagationDataFromFiles(filesLocation):
 	SingleIonization = []
 	DoubleIonization = []
 	Norm = []
+	I = []
 	for fname in os.listdir(filesLocation):
 		with tables.openFile("%s/%s" % (filesLocation, fname)) as f:
 			SingleIonization += [f.root.SingleIonization[-1].real]
 			DoubleIonization += [f.root.DoubleIonization[-1].real]
 			Norm +=  [f.root.Norm[-1]]
+			I +=  [f.root.wavefunction._v_attrs.configObject.get("PulseParameters","amplitude")]
+			
+	sortIdx = argsort(I)
+	I = [I[i] for i in sortIdx]
+	SingleIonization = [SingleIonization[i] for i in sortIdx]
+	DoubleIonization = [DoubleIonization[i] for i in sortIdx]
+	Norm = [Norm[i] for i in sortIdx]
 
-	return SingleIonization, DoubleIonization, Norm
+	return I, SingleIonization, DoubleIonization, Norm
