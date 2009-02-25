@@ -171,7 +171,9 @@ def GetPropagationDataFromFiles(filesLocation):
 			SingleIonization += [f.root.SingleIonization[-1].real]
 			DoubleIonization += [f.root.DoubleIonization[-1].real]
 			Norm +=  [f.root.Norm[-1]]
-			I +=  [f.root.wavefunction._v_attrs.configObject.get("PulseParameters","amplitude")]
+			curFieldVG = f.root.wavefunction._v_attrs.configObject.get("PulseParameters","amplitude")
+			curFreq = f.root.wavefunction._v_attrs.configObject.get("PulseParameters","frequency")
+			I +=  [float(curFieldVG) * float(curFreq)]
 			
 	sortIdx = argsort(I)
 	I = [I[i] for i in sortIdx]

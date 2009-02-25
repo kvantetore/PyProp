@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{color}
 \usepackage{url}
+\usepackage{graphicx}
  
 \title{Two Electron Matrix Elements in Coupled Spherical Harmonics}
 \author{Tore Birkeland and Raymond Nepstad}
@@ -19,7 +20,7 @@
 \begin{document}
 
 \section{Testing the e-e term}
-Calculation of bound state energies is a good test of the correctness and accuracy of the electron-electron interaction term. We have tried three different eigenvalue methods: direct (SciPy), Jacobi-Davidson (Pysparse) and preconditioned Arnoldi Shift-Invert iterations (PyProp, PIRAM+GMRES+PRECON).
+Calculation of bound state energies is a good test of the correctness and accuracy of the electron-electron interaction term. We have tried three different eigenvalue methods: direct (SciPy), Jacobi-Davidson (Pysparse) and preconditioned Arnoldi Shift-Invert iterations (PyProp, PIRAM+GMRES+PRECON). We have tested all three for $L=0$, and they gave the same results (to requested precision).
 
 \begin{itemize}
 	\item $r_{max}$ = 200
@@ -54,5 +55,41 @@ Calculation of bound state energies is a good test of the correctness and accura
 \caption{Helium bound state energies (a.u.). JD: Jacobi-Davidson, ASI: Arnoldi Shift-Invert iterations}
 \label{tab:}
 \end{table}
+
+\section{Testing the laser potential term}
+It is not so easy to verify correctness for time-dependent potential terms. The best we can do is to compare with a test case from the litterature. We have selected some results from Hasbani \textit{et. al.} [ref], which we will attempt to reproduce.
+%
+B-spline parameters
+\begin{itemize}
+	\item $r_{max}$ = 100
+	\item Number of breakpoints: 65
+	\item Exponential-linear breakpoint sequence, $\gamma = 3.0$ and $r_c = 20$.
+	\item $l_{max} = 5$, $L_{max} = 5$, $M = 0$.
+\end{itemize}
+%
+Pulse parameters
+\begin{itemize}
+	\item $T_{pulse}$ = 3.8 fs
+	\item Peak intensity = 2.96 W/cm$^2$
+	\item cos$^2$ envelope
+	\item Frequency range: 0.2 - 1.2
+\end{itemize}
+
+To calculate ionization+excitation, we simply project on the intial state. Ionization is determined by removing from the final wavefunction population in all states of energy less the the single ionization threshold (-2.0 a.u.). These states were determined from the above-mentioned Arnoldi Shift-Invert method.
+
+\begin{figure}[ht]
+\begin{center}
+	\includegraphics[width=\textwidth]{hasbani_pyprop2e_ionization_excitation.png}
+\end{center}
+\caption{Ionization+excitation.}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{center}
+	\includegraphics[width=\textwidth]{hasbani_pyprop2e_ionization.png}
+\end{center}
+\caption{Ionization.}
+\end{figure}
+
 
 \end{document}
