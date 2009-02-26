@@ -199,32 +199,35 @@ def SubmitStabilizationRun():
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
-	configFile = "config_stabilization_freq_5.ini"
+	configFile = "config.ini"
 	timestep = 0.01
 	frequency = 5.0
 
-	gridArgs = {\
+	radialGrid = {\
 	'xsize' : 80, \
 	'xmax' : 80, \
-	'order' : 5}
+	'order' : 5, \
+	'bpstype' : 'exponentiallinear', \
+	'xpartition' : 20, \
+	'gamma' : 2.0}
 
 	amplitudeList = arange(1.0, 41.0)
 	#amplitudeList = arange(41.0, 61.0)
 	#amplitudeList = [1]
 	
-	outputDir = "stabilization_freq_5_scan_%s/" % "_".join(GetRadialGridPostfix(config=configFile, **gridArgs))
+	outputDir = "stabilization_freq_5_scan_%s/" % "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid))
 	if not os.path.exists(outputDir):
 		print "Created output dir: %s" % outputDir
 		os.makedirs(outputDir)
 	
-	for I in amplitudeList:
-	#for I in [20]:
+	#for I in amplitudeList:
+	for I in [20]:
 		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e" % (I, timestep)
-		RunSubmitFullProcCount(RunStabilization, \
-		#RunSubmitFullProcCount(SetupAllStoredPotentials, \
-			procPerNode=1, \
-			procMemory="4000mb", \
-			walltime=timedelta(hours=3), \
+		#RunSubmitFullProcCount(RunStabilization, \
+		RunSubmitFullProcCount(SetupAllStoredPotentials, \
+			procPerNode=8, \
+			procMemory="2000mb", \
+			walltime=timedelta(minutes=30), \
 			config=configFile, \
 			dt=timestep, \
 			amplitude=I/frequency, \
@@ -233,8 +236,9 @@ def SubmitStabilizationRun():
 			findGroundstate=False, \
 			storeInitialState=False, \
 			saveWavefunctionDuringPropagation=False, \
+			useStoredPotentials=False, \
 			writeScript=False, \
-			**gridArgs)
+			radialGrid=radialGrid)
 			
 
 def SubmitHasbaniExampleRun(workingDir):
@@ -282,6 +286,32 @@ def SubmitNikolopoulosExampleRun():
 			findGroundstate = True, \
 			writeScript=False)
 
+def SubmitStabilizationEigenvaluesJob(workingDir):
+	"""
+	Calculate a number of the lowest eigenvalues of Helium for a range of L's
+	"""
+	outputDir = "out/"
+	lmax = 5
+	
+	#for L in range(lmax+1):
+	for L in [1,2]:
+		idxIt = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
+		numProcs = len([i for i in idxIt])
+		name = outputDir + "eigenvalues_stabilization_L%i_20stk.h5" % L
+		Submit(executable="run_eigenvalues.py", \
+			runHours=3, \
+			jobname="stabilization-eig-L%i" % L, \
+			numProcs=numProcs, \
+			writeScript=False, \
+			ppn=8, \
+			proc_memory="2000mb",\
+			interconnect="", \
+			account="nn2700k", \
+			config="config_stabilization.ini", \
+			workingDir=workingDir, \
+			outFileName=name, \
+			index_iterator = idxIt, \
+			shift = L == 0 and -2.9 or -2.1)
 
 def FindStabilization(runFilePath):
 	#runFilePath = "stabilization_freq_5_cycle4"

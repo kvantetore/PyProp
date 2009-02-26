@@ -1,3 +1,4 @@
+from math import ceil
 
 #------------------------------------------------------------------------------------
 #                       Job Submit Functions
@@ -72,9 +73,19 @@ def RunSubmit(function, procCount=1, procPerNode=4, procMemory="1000mb", walltim
 		submit.WriteScript("test.job")
 		jobId = submit.Submit()
 
+
 	elif INSTALLATION == "stallo":
-		raise Exception("please to implement")
-	
+		submit = submitpbs.SubmitScript()
+		submit.procs = procCount
+		submit.ppn = min(procPerNode, procCount)
+		submit.proc_memory = procMemory
+		submit.executable = "python run-function.py"
+		submit.parameters = arg1 + arg2 + arg3
+		submit.walltime = walltime
+		submit.interconnect = ""
+		submit.WriteScript("test.job")
+		jobId = submit.Submit()
+
 	elif INSTALLATION == "local":
 		raise Exception("please to implement")
 	

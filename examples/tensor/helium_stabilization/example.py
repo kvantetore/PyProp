@@ -142,16 +142,15 @@ def SetupConfig(**args):
 		else:
 			raise Exception("Invalid Grid Type '%s'" % gridType)
 
+		conf.SetValue("Absorber", "absorber_start", float(radialGrid["xmax"]) - conf.Absorber.absorber_length)
+
 	if args.get("useDefaultPotentials", True):
 		potentials = conf.Propagation.grid_potential_list 
 	else:
 		potentials = []
 	potentials += args.get("additionalPotentials", [])
-	conf.SetValue("Propagation", "grid_potential_list", potentials)
-
 	if "xmax" in args:
 		conf.SetValue("RadialRepresentation", "xmax", args["xmax"])
-		conf.SetValue("Absorber", "absorber_start", float(args["xmax"]) - conf.Absorber.absorber_length)
 	
 	if "xsize" in args:
 		conf.SetValue("RadialRepresentation", "xsize", args["xsize"])
@@ -159,6 +158,7 @@ def SetupConfig(**args):
 	if "order" in args:
 		conf.SetValue("RadialRepresentation", "order", args["order"])
 
+	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
 	if args.get("useDefaultPreconditionPotentials", True):
 		precondPotentials = conf.RadialPreconditioner.potential_evaluation 
@@ -185,8 +185,6 @@ def SetupConfig(**args):
 			"LaserPotentialVelocityDerivativeR2", \
 			"LaserPotentialVelocity", \
 			"DipolePotentialLength", \
-			"SingleIonizationBox", \
-			"DoubleIonizationBox", \
 			]
 		for potName in potentialNames:
 			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
