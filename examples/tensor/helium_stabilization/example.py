@@ -1,4 +1,5 @@
 #System Modules
+from __future__ import with_statement
 import sys
 import os
 import time
@@ -545,3 +546,54 @@ def FindIonizationProbability(datafile, boundstateFiles, ionizationThreshhold=-2
 
 	return ionizationProbability
 
+
+def ReconstructRadialDensityOnGrid(datafileName, radialGrid):
+	"""
+	Construct grid radial density for a two-electron wavefunction.
+	"""
+
+	#Get config from data file
+	conf = pyprop.serialization.GetConfigFromHDF5(datafileName)
+	indexIt = conf.get("AngularRepresentation", "index_iterator")
+
+	#Set up radial problem w/o potential
+	conf.set("Propagation", "preconditioner", 'None')
+	conf.set("InitialCondition", "type", 'None')
+	conf.set("Representation", "rank", "1")
+	conf.set("Representation", "representation0", "'RadialRepresentation'")
+	conf.set("Representation", "type", "core.CombinedRepresentation_1")
+	conf.set("GMRES", "preconditioner", "None")
+	prop = SetupProblem(config = conf, useDefaultPotentials = False, silent = False)
+
+	#Get bspline object
+	bspline = prop.psi.GetRepresentation().GetRepresentation(0).GetBSplineObject()
+	numBsplines = prop.psi.GetData().shape[0]
+
+	#Array for final radial density
+	radialDensity = zeros((radialGrid.size, radialGrid.size), dtype=double)
+
+	#A buffer for reconstructing 
+	buffer1D = zeros(radialGrid.size, dtype=complex)
+	buffer2D = zeros((numBsplines, radialGrid.size), dtype=complex)
+	psiSliceGrid = zeros(radialGrid.size, dtype=complex)
+	psiSlice = zeros(numBsplines, dtype=complex)
+
+	#Calculate radial density
+	with tables.openFile(datafileName) as f:
+		for lIdx, st in enumerate(indexIt):
+			for i in range(numBsplines):
+				psiSlice[:] = f.root.wavefunction[lIdx, i, :]
+				buffer1D[:] = 0.0
+				bspline.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
+				buffer2D[i,:] = buffer1D[:]
+
+			for j in range(radialGrid.size):
+				psiSlice[:] = buffer2D[:,j]
+				buffer1D[:] = 0.0
+				bspline.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
+
+				#Incoherent sum over partial waves (but coherent over b-spline coefficients)
+				radialDensity[:,j] += abs(buffer1D[:])**2
+
+	return radialDensity
+				
