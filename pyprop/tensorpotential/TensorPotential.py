@@ -54,6 +54,7 @@ class TensorPotential(PotentialWrapper):
 
 		#If filename is specified, load it from disk, otherwise, generate it
 		if hasattr(configSection, "filename"):
+			PrintOut("Loading tensor potential (%s) from file..." % configSection.name)
 			filename = configSection.filename
 			datasetPath = configSection.dataset
 			distr = self.psi.GetRepresentation().GetDistributedModel()
