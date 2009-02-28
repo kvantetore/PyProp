@@ -1,3 +1,4 @@
+Function("SetRadialCoulombWave", "potential.cpp")
 
 #declare potential evaluator for cartesian-like potentials
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
@@ -27,6 +28,5 @@ CustomPotential("2")
 
 CustomPotential = Template("CustomPotential_LaserVelocity2_ReducedSpherical", "potential.cpp")
 CustomPotential("2")
-
 
 

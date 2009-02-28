@@ -187,4 +187,38 @@ def SetupOverlapMatrix(prop):
 	return matrix
 	
 
+#---------------------------------------------------------------------------------------
+#            Coulomb Wave Analysis
+#---------------------------------------------------------------------------------------
 
+def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj, S):
+	#Get the Coulomb function in grid space
+	r = bsplineObj.GetQuadratureGridGlobal()
+	wav = zeros(len(r), dtype=double)
+	SetRadialCoulombWave(Z, l, k, r, wav)
+	cplxWav = array(wav, dtype=complex)
+
+	#get bspline coeffs
+	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
+	bsplineObj.ExpandFunctionInBSplines(cplxWav, coeff)
+
+	#normalize
+	n = real(dot(conj(coeff), dot(S, coeff)))
+	coeff /= sqrt(n)
+
+	return coeff
+
+def CalculateDpDk(Z, k, psi, S):
+	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+	
+	#Setup Radial Waves
+	coulWaves = map(lambda curL: map(lambda curK: GetRadialCoulombWaveBSplines(Z, int(curL), curK, bspline, S), k), l)
+
+	#calculate dpdk
+	dpdk = zeros(len(k), dtype=double)
+	for lIdx, (curL, wavList) in enumerate(zip(l, coulWaves)):
+		for kIdx, (curK, wav) in enumerate(zip(k, wavList)):
+			dpdk[kIdx] += abs(dot(conj(wav), dot(S, psi.GetData()[lIdx, :])))**2
+
+	return dpdk
