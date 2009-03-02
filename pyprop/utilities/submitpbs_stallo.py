@@ -3,6 +3,7 @@ import sys
 import commands
 
 from datetime import timedelta
+from math import ceil
 
 """
 Utilities for submitting jobs to the PBS scheduling system used
@@ -45,16 +46,22 @@ class SubmitScript:
 		seconds = self.walltime.seconds % 60
 		script.append("#PBS -l walltime=%i:%i:%i" % (hours, minutes, seconds))
 
+		if hasattr(self, "procs"):
+			procCount = self.procs
+			self.nodes = int(ceil(procCount / float(self.ppn)))
+		else:
+			procCount = self.nodes*self.ppn
+
 		#procs
 		if self.interconnect == "ib":
 			interconnect = ":ib"
 		else:
-			interconnect = ""
+			interconnect = ":gige"
 		script.append("#PBS -l nodes=%i:ppn=%i%s" % (self.nodes, self.ppn, interconnect))
 
 		#mem
 		if self.proc_memory != None:
-			script.append("#PBS -l pvmem=" + str(self.proc_memory))
+			script.append("#PBS -l pmem=" + str(self.proc_memory))
 
 		#Administrative
 		script.append('#PBS -N "%s"' % (self.jobname,))
@@ -78,7 +85,7 @@ class SubmitScript:
 			instr = "< " + str(self.stdin)
 	
 		#Create script line
-		script.append(str(self.executable) + " " + str(self.parameters) + instr)
+		script.append("mpirun -np %s " % procCount + str(self.executable) + " " + str(self.parameters) + instr)
 		
 		#exit stuff
 		script.append("exit $?")
