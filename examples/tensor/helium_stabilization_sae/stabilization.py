@@ -155,7 +155,7 @@ def RunStabilization(**args):
 		eta = totalTime - curTime
 	
 		#Print stats
-		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, outsideAbsorber, FormatDuration(eta)))
+		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, bound = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, boundTotal, outsideAbsorber, FormatDuration(eta)))
 
 	#Save the time-valued variables
 	prop.TimeList = timeList

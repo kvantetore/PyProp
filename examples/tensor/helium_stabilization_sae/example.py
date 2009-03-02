@@ -45,6 +45,9 @@ def SetupConfig(**args):
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
 
+	if "dt" in args:
+		conf.SetValue("Propagation", "timestep", args["dt"])
+
 	if "eigenvalueCount" in args:
 		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
 
@@ -61,6 +64,9 @@ def SetupConfig(**args):
 		setvalue("order")
 		setvalue("xmax")
 		setvalue("xsize")
+
+		#update absorber to be at the end of the grid
+		conf.Absorber.absorber_start = radialGrid["xmax"] - conf.Absorber.absorber_length
 
 		if gridType == "linear":
 			pass

@@ -97,7 +97,9 @@ def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
 
 def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 	dE = min(diff(eigenValues[0]))
-	E = r_[eigenValues[0][0]:eigenValues[0][-1]:dE]
+	minE = 0
+	maxE = eigenValues[0][3*len(eigenValues[0])/4]
+	E = r_[minE:maxE:dE]
 	energyDistr = []
 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
