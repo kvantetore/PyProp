@@ -75,7 +75,11 @@ def IntensitySIFromElectricFieldAtomic(efield):
   """
   Electric field [a.u.] -> Intensity [W/cm**2]
   """
-  return 0.0013*(AtomicToSI(efield,UNIT_FIELD_STRENGTH))**2 
+  #return 0.0013*(AtomicToSI(efield,UNIT_FIELD_STRENGTH))**2 
+  scaling = (constantsAU.electrostatic_constant / (4*pi) * constantsSI.lightSpeed / 2.0)
+  return scaling * AtomicToSI(efield,UNIT_FIELD_STRENGTH)**2
+
+
 
 def EnergyElectronVoltFromAU(energy):
 	"""
