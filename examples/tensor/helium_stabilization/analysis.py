@@ -117,6 +117,17 @@ def RunGetSingleIonizationProbability(wavefunctionFile):
 
 
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
+	"""
+	Calculates the single ionization probability by first projecting 
+	away doubly bound states, then projecting on products of single 
+	particle states, where one particle is bound, and the other is ionized
+
+	returns 
+		- absorbed probabilty: norm when psi enters routine
+		- ionization probability: norm when all doubly bound states are projected away
+		- single ionization probability: projection on single particle states
+	"""
+
 	#get absorbed prob
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
@@ -141,9 +152,40 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	return absorbedProbability, ionizationProbability, singleIonizationProbability
 
 
+def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE):
+	"""
+	Calculates dP/dE for the single ionized part of the wavefunction, by first
+	projecting away doubly bound states, and then projecting on single particle
+	product states, and binning the probability by energy.
+	"""
+
+	#get absorbed prob
+	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
+
+	#remove boundstate projection
+	RemoveBoundStateProjection(psi, boundStates)
+	ionizationProbability = real(psi.InnerProduct(psi))
+
+	#calculate populations in product states containing bound he+ states
+	#populations = GetPopulationSingleParticleStates(psi, singleBoundStates)
+	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+
+	def getProbabilityL(startE, stopE, lPop, lEnergy):
+		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
+
+	def getEnergyGapProbability(startE, stopE):
+		return sum([findProbabilityL(startE, stopE, lPop, lEnergy) for lPop, lEnergy in zip(populations, singleIonEnergies)])
+
+	E = r_[0:maxE:dE]
+	dpde = map(getEnergyGapProbability, E, E+dE)
+
+	return E, dpde
+
+
 def GetSingleStatesFile(**args):
 	radialGridPostfix = "_".join(GetRadialGridPostfix(**args))
-	singleStatesFile = "output/singleelectron/eigenstates_sae_model_he+_%s.h5" % radialGridPostfix
+	model = args.get("model", "he+")
+	singleStatesFile = "output/singleelectron/eigenstates_sae_model_%s_%s.h5" % (model, radialGridPostfix)
 	return singleStatesFile
 
 
@@ -165,72 +207,6 @@ def LoadSingleParticleStates(singleStatesFile):
 		f.close()
 
 	return lList, eigenvalues, eigenvectors	
-
-def GetPopulationSingleParticleStates(psi, singleStates):
-	"""
-	Calculates projection of psi on a set of single electron states,
-	and sums over all possible single particle states for the second electron
-
-	P_i = sum_{j} < SingleState_i(2), j(1) | psi(1,2) >
-
-	singleStates is a list of angular momentum states, containing an array 
-	of radial states for the given angular momentum number such as generated
-	by SetupRadialEigenstates in the Helium SAE example
-	
-	the projection is carried out for every such state, and the result 
-	is returned in a similar structure
-	"""
-
-	raise Exception("This is not correct, we must first multiply S(r2) integrate r2, and then integrate ||. S(r1) .||^2")
-	
-
-	#Make a copy of the wavefunction and multiply 
-	#integration weights and overlap matrix
-	tempPsi = psi.Copy()
-	repr = psi.GetRepresentation()
-	repr.MultiplyIntegrationWeights(tempPsi)
-	distr = psi.GetRepresentation().GetDistributedModel()
-
-	angularRank = 0
-	angRepr = repr.GetRepresentation(0)
-	angIndexGrid = repr.GetLocalGrid(angularRank)
-
-	data = tempPsi.GetData()
-	population = []
-
-	clebschGordan = pyprop.core.ClebschGordan()
-
-	m = 0
-	for l, V in enumerate(singleStates):
-		#filter out coupled spherical harmonic indices corresponding to this l
-		l2filter = lambda coupledIndex: coupledIndex.l2 == l
-		angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, l2filter)
-		
-		def getPopulation(v0):
-			"""
-			gets the population of psi on v0 summed over particle 1
-			"""
-			#Sum over all local indices
-			pop = 0
-			for angIdx in angularIndices:
-				globalAngIdx = int(angIndexGrid[angIdx])
-				l1, l2, L, M = angRepr.Range.GetCoupledIndex(globalAngIdx)
-				cg = clebschGordan(l1, l2, m, M-m, L, M)
-				if abs(cg) > 0:
-					for r1Idx in range(data.shape[1]):
-						pop += real(abs( dot(conj(v0), data[angIdx, r1Idx, :]) * cg )**2)
-			#Sum over all processors
-			pop = real(distr.GetGlobalSum(pop))
-			return pop
-	
-		#Get the population for every state in this l-shell
-		if V.size > 0:
-			projV = map(getPopulation, [V[:, i] for i in range(V.shape[1])])
-		else:	
-			projV = []
-		population.append(projV)
-
-	return population
 
 
 def GetPopulationProductStates(psi, singleStates1, singleStates2):
