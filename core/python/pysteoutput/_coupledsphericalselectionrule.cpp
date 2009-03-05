@@ -29,8 +29,8 @@ struct CoupledSphericalSelectionRule_Wrapper: CoupledSphericalSelectionRule
 
 struct CoupledSphericalSelectionRuleR12_Wrapper: CoupledSphericalSelectionRuleR12
 {
-    CoupledSphericalSelectionRuleR12_Wrapper(PyObject* py_self_):
-        CoupledSphericalSelectionRuleR12(), py_self(py_self_) {}
+    CoupledSphericalSelectionRuleR12_Wrapper(PyObject* py_self_, int p0):
+        CoupledSphericalSelectionRuleR12(p0), py_self(py_self_) {}
 
     bool SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
         return call_method< bool >(py_self, "SelectionRule", p0, p1);
@@ -38,6 +38,22 @@ struct CoupledSphericalSelectionRuleR12_Wrapper: CoupledSphericalSelectionRuleR1
 
     bool default_SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
         return CoupledSphericalSelectionRuleR12::SelectionRule(p0, p1);
+    }
+
+    PyObject* py_self;
+};
+
+struct CoupledSphericalSelectionRuleR12Old_Wrapper: CoupledSphericalSelectionRuleR12Old
+{
+    CoupledSphericalSelectionRuleR12Old_Wrapper(PyObject* py_self_):
+        CoupledSphericalSelectionRuleR12Old(), py_self(py_self_) {}
+
+    bool SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
+        return call_method< bool >(py_self, "SelectionRule", p0, p1);
+    }
+
+    bool default_SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
+        return CoupledSphericalSelectionRuleR12Old::SelectionRule(p0, p1);
     }
 
     PyObject* py_self;
@@ -87,9 +103,14 @@ void Export_python_coupledsphericalselectionrule()
         .def("GetBasisPairs", &CoupledSphericalSelectionRule::GetBasisPairs)
     ;
 
-    class_< CoupledSphericalSelectionRuleR12, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleR12_Wrapper >("CoupledSphericalSelectionRuleR12", init<  >())
+    class_< CoupledSphericalSelectionRuleR12, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleR12_Wrapper >("CoupledSphericalSelectionRuleR12", init< int >())
         .def_readwrite("cg", &CoupledSphericalSelectionRuleR12::cg)
         .def("SelectionRule", (bool (CoupledSphericalSelectionRuleR12::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&) )&CoupledSphericalSelectionRuleR12::SelectionRule, (bool (CoupledSphericalSelectionRuleR12_Wrapper::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&))&CoupledSphericalSelectionRuleR12_Wrapper::default_SelectionRule)
+    ;
+
+    class_< CoupledSphericalSelectionRuleR12Old, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleR12Old_Wrapper >("CoupledSphericalSelectionRuleR12Old", init<  >())
+        .def_readwrite("cg", &CoupledSphericalSelectionRuleR12Old::cg)
+        .def("SelectionRule", (bool (CoupledSphericalSelectionRuleR12Old::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&) )&CoupledSphericalSelectionRuleR12Old::SelectionRule, (bool (CoupledSphericalSelectionRuleR12Old_Wrapper::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&))&CoupledSphericalSelectionRuleR12Old_Wrapper::default_SelectionRule)
     ;
 
     class_< CoupledSphericalSelectionRuleLinearPolarizedField, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleLinearPolarizedField_Wrapper >("CoupledSphericalSelectionRuleLinearPolarizedField", init<  >())

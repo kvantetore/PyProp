@@ -1,6 +1,7 @@
 
 Class("CoupledSphericalSelectionRule", "tensorpotential/coupledsphericalselectionrule.h")
 Class("CoupledSphericalSelectionRuleR12", "tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleR12Old", "tensorpotential/coupledsphericalselectionrule.h")
 Class("CoupledSphericalSelectionRuleLinearPolarizedField", "tensorpotential/coupledsphericalselectionrule.h")
 Class("CoupledSphericalSelectionRuleDiagonal", "tensorpotential/coupledsphericalselectionrule.h")
 

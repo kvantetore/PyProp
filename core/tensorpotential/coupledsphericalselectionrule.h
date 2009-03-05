@@ -56,13 +56,15 @@ public:
 };
 
 
-class CoupledSphericalSelectionRuleR12 : public CoupledSphericalSelectionRule
+class CoupledSphericalSelectionRuleR12Old : public CoupledSphericalSelectionRule
 {
+
 public:
 	CoupledSpherical::ClebschGordan cg;
 
-	CoupledSphericalSelectionRuleR12() {}
-	virtual ~CoupledSphericalSelectionRuleR12() {}
+	CoupledSphericalSelectionRuleR12Old() {}
+
+	virtual ~CoupledSphericalSelectionRuleR12Old() {}
 
 	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
 	{
@@ -79,7 +81,66 @@ public:
 
 		return nonzero;
 	}
+};
+		
 
+class CoupledSphericalSelectionRuleR12 : public CoupledSphericalSelectionRule
+{
+private:
+	int MultipoleCutoff;
+
+public:
+	CoupledSpherical::ClebschGordan cg;
+
+	CoupledSphericalSelectionRuleR12(int multipoleCutoff)
+	{
+		MultipoleCutoff = multipoleCutoff;
+		std::cout << "Multipole cutoff = " << MultipoleCutoff << std::endl;
+	}
+
+	virtual ~CoupledSphericalSelectionRuleR12() {}
+
+	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
+	{
+		int Lp = left.L;
+		int Mp = left.M;
+		int l1p = left.l1;
+		int l2p = left.l2;
+		int L = right.L;
+		int M = right.M;
+		int l1 = right.l1;
+		int l2 = right.l2;
+
+		bool nonzero = (L==Lp) && (M==Mp) && (L<=l1p+l2p) && (std::abs(l1p-l2p)<=L) && (L<=l1+l2) && (std::abs(l1-l2)<=L);
+		
+		int minL3 = std::max(std::abs(l1 - l1p), std::abs(l2 - l2p));
+		int maxL3 = std::min(l1+l1p, l2+l2p);
+		maxL3 = std::min(MultipoleCutoff, maxL3);
+
+		double l3Sum = 0.0;
+		for (int l3=minL3; l3<=maxL3; l3++)
+		{
+			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
+			for (int m1p=-lStop; m1p<=lStop; m1p++)
+			{
+				int m2p = M - m1p;
+				for (int m1=-lStop; m1<=lStop; m1++)
+				{
+					int m2 = M - m1;
+					int m3 = m1 - m1p;
+					double cur = 1.0;
+					cur *= cg(l1p, l2p, m1p, m2p, L, M);
+					cur *= cg(l1, l2, m1, m2, L, M);
+					cur *= cg(l1p, l1, -m1p, m1, l3, m3);
+					cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
+					cur *= std::pow(-1., m1p + m2p + m3);
+					l3Sum += cur;
+				}
+			}
+		}
+
+		return nonzero && (std::abs(l3Sum) > 1e-14);
+	}
 };
 
 
