@@ -158,7 +158,10 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 		elif geom.startswith("selectionrule_"):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "r12":
-				selectionRule = core.CoupledSphericalSelectionRuleR12()
+				selectionRule = core.CoupledSphericalSelectionRuleR12Old()
+			elif selectionRuleName[:3] == "r12":
+				multipoleCutoff = int(selectionRuleName[4:])
+				selectionRule = core.CoupledSphericalSelectionRuleR12(multipoleCutoff)
 			elif selectionRuleName == "linearpolarizedfield":
 				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedField()
 			else:	
@@ -170,6 +173,4 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")
-
-
 

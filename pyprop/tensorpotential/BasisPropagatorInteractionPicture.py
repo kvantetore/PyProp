@@ -1,6 +1,18 @@
 class BasisPropagatorInteractionPicture(BasisPropagator):
 	"""
-	Specialization of BasisPropagator for interaction picture calculations
+	Specialization of BasisPropagator for interaction picture calculations.
+
+	For an hamiltonian which can be written as (Schrodinger picture),
+
+	    H = H0 + H'(t),
+
+	the interaction picture is useful. Applying the unitary transformation,
+
+	    Psi_I = exp(-1j * H0 * t) * Psi_S
+
+	the interaction picture operator becomes
+
+	    F_I = exp(-1j * H0 * t) * H_S * exp(1j * H0 * t)
 	"""
 
 	__Base = BasisPropagator
