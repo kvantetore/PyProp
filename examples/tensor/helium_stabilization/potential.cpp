@@ -251,6 +251,7 @@ public:
 
 private:
 	bool Initialized;
+	bool UseNaturalOrdering;
 	VectorType MatrixData;
 	blitz::Array<cplx, Rank> TempData;
 	VectorTypeInt RowIndices;

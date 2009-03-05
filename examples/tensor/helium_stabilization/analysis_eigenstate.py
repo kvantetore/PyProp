@@ -17,6 +17,7 @@ def GetEigenstateFileConfig(filename):
 INFO_L = "L"
 INFO_lmax = "lmax"
 INFO_RadialGrid = "radial_grid"
+INFO_Eigenvalues = "eigenvalues"
 
 def GetConfigInfo(conf, infoId):
 	if infoId == INFO_L:
@@ -40,8 +41,18 @@ def GetConfigInfo(conf, infoId):
 
 
 def GetEigenstateFileInfo(filename, infoId):
-	conf = GetEigenstateFileConfig(filename)
-	return GetConfigInfo(conf, infoId)
+	if infoId == "eigenvalues":
+		#Get energies
+		f = tables.openFile(filename, "r")
+		try:
+			eigenvalues = f.root.Eig.Eigenvalues[:]
+		finally:
+			f.close()
+		return eigenvalues
+
+	else:
+		conf = GetEigenstateFileConfig(filename)
+		return GetConfigInfo(conf, infoId)
 
 
 def GetBoundStateFiles(**args):
@@ -62,15 +73,10 @@ def GetBoundStates(ionizationThreshold=-2.0, **args):
 		L = GetEigenstateFileInfo(filename, INFO_L)
 		eigPsi = pyprop.CreateWavefunctionFromFile(filename, GetEigenvectorDatasetPath(0))
 
-		#Get energies
-		f = tables.openFile(filename, "r")
-		try:
-			eigenvalues = f.root.Eig.Eigenvalues[:]
-		finally:
-			f.close()
-
 		curPsiList = []
 		curEnergyList = []
+
+		eigenvalues = GetEigenstateFileInfo(filename, INFO_Eigenvalues)
 
 		boundIdx = filter(lambda i: eigenvalues[i]<ionizationThreshold, r_[:len(eigenvalues)])
 		for i in boundIdx:
@@ -132,6 +138,73 @@ def RunRemoveBoundStateProjection(wavefunctionFile, ionizationThreshold=-2.0):
 
 	return psi
 
+
+#-----------------------------------------------------------------------------
+#             tools for testing the eigenstates
+#-----------------------------------------------------------------------------
+
+def RunTestBoundStates(**args):
+	"""
+	Tests the eigenstates corresponding to the problem
+	set up by args
+	"""
+	conf = SetupConfig(**args)
+	prop = SetupProblem(config=conf)
+	
+	boundstateFiles = GetBoundStateFiles(config=conf)
+	if len(boundstateFiles) != 1:
+		raise Exception("GetBoundStateFiles returned more than one file (%s) for arguments '%s'" % (boundstateFiles, args))
+
+	filename = boundstateFiles[0]
+	fileConf = GetEigenstateFileConfig(filename)
+	eigenvalues = GetEigenstateFileInfo(filename, INFO_Eigenvalues)
+
+	if not CheckCompatibleRadialGrid(conf, fileConf):
+		raise Exception("Incompatible radial grids in eigenstatefile %s and args %s" % (filename, args))
+
+	if not CheckCompatibleAngularGrid(conf, fileConf):
+		raise Exception("Incompatible angular grids in eigenstatefile %s and args %s" % (filename, args))
+
+	for i, ev in enumerate(eigenvalues):
+		pyprop.serialization.LoadWavefunctionHDF(filename, GetEigenvectorDatasetPath(i), prop.psi)
+
+		error = TestEigenstate(prop, prop.psi)
+		PrintOut("Eigenvalue %s, Eigenvector Error = %.15f" % (ev, error))
+	
+		
+
+def TestEigenstate(prop, psi):
+	"""
+	Tests to which extent psi is an eigenstate of the 
+	hamiltonian set up by prop. The error calculated by
+
+	error = || (E - H) |psi> ||
+
+	is returned, where E is the eigenvalue approximated 
+	by the rayleigh coefficienct E = <psi | H | psi>
+	
+	On return, |psi> contains the error vector
+	|psi>  <-  (E - H) |psi> 
+
+	"""
+	
+	psi.Normalize()
+
+	#Calculate H|psi>
+	tempPsi = prop.GetTempPsi()
+	tempPsi.Clear()
+	prop.MultiplyHamiltonian(psi, tempPsi)
+
+	#calculate eigenvalue estimate
+	E = tempPsi.InnerProduct(psi)
+
+	#calculate error vector
+	psi.GetData()[:] *= E
+	psi.GetData()[:] -= tempPsi.GetData()
+
+	error = psi.GetNorm()
+
+	return error
 
 #-----------------------------------------------------------------------------
 #             tools for calculating and plotting two-particle dP/dE

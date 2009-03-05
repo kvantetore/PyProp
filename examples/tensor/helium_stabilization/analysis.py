@@ -55,8 +55,47 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 #                        Product State Analysis
 #------------------------------------------------------------------------
 
-def RunSingleIonizationNikolopoulos():
-	filenames = ["raymond/example_nikolopoulos/after_pulse/nikolopoulos_ionization_omega_165_%04i.h5" % i for i in range(0, 300, 10)]
+def RunSingleIonizationStabilizationScan():
+	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02.h5"
+	outputPrefix = "stabilization_scan2"
+	intensity = r_[25:36]
+
+	filenames = [filenameTemplate % i for i in intensity]
+	absorb, totalIon, singleIon, doubleIon = RunSingleIonizationScan(filenames, outputPrefix)
+
+	pylab.plot(intensity, totalIon, "-", label="Total Ion.")
+	pylab.plot(intensity, singleIon, "--", label="Single Ion.")
+	pylab.plot(intensity, doubleIon, ":", label="Double Ion.")
+	xlabel("Intensity")
+	title("Ionization Probability for w=5")
+	ylim(0,1)
+	pylab.legend(loc="lower right")
+	pylab.savefig("%s.png" % outputPrefix)
+
+	f = tables.openFile("%s.h5" % outputPrefix, "a")
+	try:
+		f.createArray(f.root, "intensity", intensity)
+	finally:
+		f.close()
+
+
+def RunSingleIonizationEnergyDistributionScan():
+	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02.h5"
+	outputPrefix = "dpde_scan"
+	intensity = r_[1:37:1]
+
+	filenames = [filenameTemplate % i for i in intensity]
+	E, dpde = RunGetSingleIonizationEnergyDistribution(filenames)
+
+	f = tables.openFile("%s.h5" % outputPrefix, "w")
+	try:
+		f.createArray(f.root, "intensity", intensity)
+		f.createArray(f.root, "energy", E)
+		f.createArray(f.root, "dpde", array(dpde))
+	finally:
+		f.close()
+
+def RunSingleIonizationScan(filenames, outputPrefix):
 	absorb, ion, singleIon = RunGetSingleIonizationProbability(filenames)
 
 	absorb = array(absorb)
@@ -64,7 +103,7 @@ def RunSingleIonizationNikolopoulos():
 	singleIon = array(singleIon)
 	doubleIon = totalIon - singleIon
 
-	f = tables.openFile("nikolopoulos_ionization_afterpulse.h5", "w")
+	f = tables.openFile("%s.h5" % outputPrefix, "w")
 	try:
 		f.createArray(f.root, "absorb", absorb)
 		f.createArray(f.root, "totalIon", totalIon)
@@ -73,12 +112,7 @@ def RunSingleIonizationNikolopoulos():
 	finally:
 		f.close()
 
-	pylab.semilogy(1-absorb, label="Absorbed")
-	pylab.semilogy(totalIon, label="Total Ion.")
-	pylab.semilogy(singleIon, label="Single Ion.")
-	pylab.semilogy(doubleIon, label="Double Ion.")
-	pylab.legend(loc="upper left")
-	pylab.savefig("nikolopoulos_ionization_afterpulse.png")
+	return absorb, totalIon, singleIon, doubleIon
 
 def RunGetSingleIonizationProbability(wavefunctionFile):
 	if isinstance(wavefunctionFile, list):
@@ -105,9 +139,48 @@ def RunGetSingleIonizationProbability(wavefunctionFile):
 	singleBoundStates = map(getBoundStates, singleEnergies, singleStates)
 	singleIonStates = map(getIonStates, singleEnergies, singleStates)
 
-	def getIonProb(filename):
+	def getDpDe(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 		return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
+
+	E, dpde = zip(*map(getDpDe, fileList))
+	return E[0], dpde
+
+
+def RunGetSingleIonizationEnergyDistribution(wavefunctionFile):
+	if isinstance(wavefunctionFile, list):
+		fileList = wavefunctionFile
+	elif isinstance(wavefunctionFile, str):
+		fileList = [wavefunctionFile]
+	else:
+		raise Exception("wavefunctionFile should be list or str")
+
+	maxE = 15.
+	dE = 0.1
+
+	#load wavefunction
+	conf = pyprop.LoadConfigFromFile(fileList[0])
+
+	#load bound states
+	boundEnergies, boundStates = GetBoundStates(config=conf)
+
+	#load single particle states
+	singleStatesFile = GetSingleStatesFile(config=conf)
+	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
+	
+	#filter bound he+ states
+	doubleIonThreshold = 0.0
+	isIonized = lambda E: E > doubleIonThreshold
+	getBoundStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if not isIonized(E[i]) ]))
+	getIonStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if isIonized(E[i]) ]))
+	getIonEnergies = lambda E: filter(isIonized, E)
+	singleBoundStates = map(getBoundStates, singleEnergies, singleStates)
+	singleIonStates = map(getIonStates, singleEnergies, singleStates)
+	singleIonEnergies = map(getIonEnergies, singleEnergies)
+
+	def getIonProb(filename):
+		psi = pyprop.CreateWavefunctionFromFile(filename)
+		return GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE)
 
 	if len(fileList[0]) == 1:
 		return getIonProb(fileList[0])
@@ -174,7 +247,7 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
 
 	def getEnergyGapProbability(startE, stopE):
-		return sum([findProbabilityL(startE, stopE, lPop, lEnergy) for lPop, lEnergy in zip(populations, singleIonEnergies)])
+		return sum([getProbabilityL(startE, stopE, lPop, lEnergy) for lPop, lEnergy in zip(populations, singleIonEnergies)])
 
 	E = r_[0:maxE:dE]
 	dpde = map(getEnergyGapProbability, E, E+dE)
@@ -266,14 +339,19 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 				#Sum over all local indices
 
 				#sum coherently over L (product states in pure sph-harm)
-				getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) ) * cgList[angIdx] 
-				popList = map(getRadialProjection, angularIndices)
-				pop = abs(sum(popList))**2
+				#getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) ) * cgList[angIdx] 
+				#popList = map(getRadialProjection, angularIndices)
+				#pop = abs(sum(popList))**2
 
-				#sum incoherently over L (product states in coupled sph-harm)
-				#getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) )  
+				##sum incoherently over L (product states in pure sph-harm) (supposedly wrong, but gives convincing results)
+				#getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) ) * cgList[angIdx] 
 				#popList = map(getRadialProjection, angularIndices)
 				#pop = sum(map(lambda x: abs(x)**2, popList))
+
+				#sum incoherently over L (product states in coupled sph-harm)
+				getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) )  
+				popList = map(getRadialProjection, angularIndices)
+				pop = sum(map(lambda x: abs(x)**2, popList))
 
 				#Sum over all processors
 				pop = 2 * real(distr.GetGlobalSum(pop))

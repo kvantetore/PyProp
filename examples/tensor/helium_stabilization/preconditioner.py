@@ -132,7 +132,9 @@ class RadialTwoElectronPreconditioner:
 				raise Exception("Cannot consolidate potential %s with overlap-potential" % (potential.Name))
 		
 			#Add potential
-			tensorPotential.PotentialData += scalingH * potential.PotentialData
+			potential.PotentialData *= scalingH
+			tensorPotential.PotentialData += potential.PotentialData
+			del potential
 
 	
 		#Setup radial matrices in CSC format
