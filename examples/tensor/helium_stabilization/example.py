@@ -123,6 +123,9 @@ def SetupConfig(**args):
 		conf.SetValue("PulseParameters", "frequency", args["frequency"])
 		#PrintOut("    Setting new field frequency: %s" % args["frequency"])
 
+	if "multipoleCutoff" in args:
+		conf.SetValue("ElectronicCouplingPotential", "geometry0", "SelectionRule_R12_%i" % args["multipoleCutoff"])
+
 	if "radialGrid" in args:
 		radialGrid = args["radialGrid"]
 		def setvalue(variable):
@@ -545,7 +548,7 @@ def FindIonizationProbability(datafile, boundstateFiles, ionizationThreshhold=-2
 	return ionizationProbability
 
 
-def ReconstructRadialDensityOnGrid(datafileName, radialGrid):
+def ReconstructRadialDensityOnGrid(datafileName, radialGrid, **args):
 	"""
 	Construct grid radial density for a two-electron wavefunction.
 	"""
@@ -593,5 +596,12 @@ def ReconstructRadialDensityOnGrid(datafileName, radialGrid):
 				#Incoherent sum over partial waves (but coherent over b-spline coefficients)
 				radialDensity[:,j] += abs(buffer1D[:])**2
 
-	return radialDensity
+	#Perform smoothing by a simple running average
+	runAvgNum = args.get("runAvgNum", 1)
+	avgStartIdx = args.get("avgStartIdx", 0)
+	gridSize = radialGrid.size
+	A = array([sum(radialDensity[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+	B = array([sum(A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+
+	return radialDensity, B
 				
