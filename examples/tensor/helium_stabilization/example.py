@@ -548,13 +548,56 @@ def FindIonizationProbability(datafile, boundstateFiles, ionizationThreshhold=-2
 	return ionizationProbability
 
 
-def ReconstructRadialDensityOnGrid(datafileName, radialGrid, **args):
+def ReconstructRadialDensityOnGrid(datafileName, radialGrid, bsplineObject, angularIndexIterator):
 	"""
 	Construct grid radial density for a two-electron wavefunction.
 	"""
 
-	#Get config from data file
-	conf = pyprop.serialization.GetConfigFromHDF5(datafileName)
+	#Total number of B-splines
+	numBsplines = bsplineObject.NumberOfBSplines
+
+	#Array for final radial density
+	radialDensity = zeros((radialGrid.size, radialGrid.size), dtype=double)
+
+	#A buffer for reconstructing 
+	buffer1D = zeros(radialGrid.size, dtype=complex)
+	buffer2D = zeros((numBsplines, radialGrid.size), dtype=complex)
+	psiSliceGrid = zeros(radialGrid.size, dtype=complex)
+	psiSlice = zeros(numBsplines, dtype=complex)
+
+	#Calculate radial density
+	with tables.openFile(datafileName) as f:
+		for lIdx, st in enumerate(angularIndexIterator):
+			for i in range(numBsplines):
+				psiSlice[:] = f.root.wavefunction[lIdx, i, :]
+				buffer1D[:] = 0.0
+				bsplineObject.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
+				buffer2D[i,:] = buffer1D[:]
+
+			for j in range(radialGrid.size):
+				psiSlice[:] = buffer2D[:,j]
+				buffer1D[:] = 0.0
+				bsplineObject.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
+
+				#Incoherent sum over partial waves (but coherent over b-spline coefficients)
+				radialDensity[:,j] += abs(buffer1D[:])**2
+
+	#Perform smoothing by a simple running average
+	runAvgNum = args.get("runAvgNum", 1)
+	avgStartIdx = args.get("avgStartIdx", 0)
+	gridSize = radialGrid.size
+	A = array([sum(radialDensity[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+	B = array([sum(A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+
+	return radialDensity, B
+
+
+def CreateRadialDensitySeries(datafilesPath, radialGrid):
+	#Get file names
+	fileList = sort(["%s/%s" % (datafilesPath, file) for file in os.listdir(datafilesPath) if file.find("doubleduration") == -1 ])
+
+	#Get config from first data file
+	conf = pyprop.serialization.GetConfigFromHDF5(fileList[0])
 	indexIt = conf.get("AngularRepresentation", "index_iterator")
 
 	#Set up radial problem w/o potential
@@ -568,40 +611,26 @@ def ReconstructRadialDensityOnGrid(datafileName, radialGrid, **args):
 
 	#Get bspline object
 	bspline = prop.psi.GetRepresentation().GetRepresentation(0).GetBSplineObject()
-	numBsplines = prop.psi.GetData().shape[0]
 
-	#Array for final radial density
-	radialDensity = zeros((radialGrid.size, radialGrid.size), dtype=double)
+	#Outfile path
+	outfilePath = "out/radial_densities_rmax_%s_rsize_%s" % (radialGrid[-1], len(radialGrid))
+	try:
+		os.makedirs(outfilePath)
+	except:
+		print "Folder already exists!"
+		pass
 
-	#A buffer for reconstructing 
-	buffer1D = zeros(radialGrid.size, dtype=complex)
-	buffer2D = zeros((numBsplines, radialGrid.size), dtype=complex)
-	psiSliceGrid = zeros(radialGrid.size, dtype=complex)
-	psiSlice = zeros(numBsplines, dtype=complex)
+	#Create the frames
+	for file in fileList:
+		print "Now processing: %s" % file.split("/")[-1]
 
-	#Calculate radial density
-	with tables.openFile(datafileName) as f:
-		for lIdx, st in enumerate(indexIt):
-			for i in range(numBsplines):
-				psiSlice[:] = f.root.wavefunction[lIdx, i, :]
-				buffer1D[:] = 0.0
-				bspline.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
-				buffer2D[i,:] = buffer1D[:]
+		#Get radial density
+		radialDensity = ReconstructRadialDensityOnGrid(file, radialGrid, bspline, indexIt)
 
-			for j in range(radialGrid.size):
-				psiSlice[:] = buffer2D[:,j]
-				buffer1D[:] = 0.0
-				bspline.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
-
-				#Incoherent sum over partial waves (but coherent over b-spline coefficients)
-				radialDensity[:,j] += abs(buffer1D[:])**2
-
-	#Perform smoothing by a simple running average
-	runAvgNum = args.get("runAvgNum", 1)
-	avgStartIdx = args.get("avgStartIdx", 0)
-	gridSize = radialGrid.size
-	A = array([sum(radialDensity[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
-	B = array([sum(A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
-
-	return radialDensity, B
-				
+		#Store radial density
+		h5file = tables.openFile("%s/%s" % (outfilePath, file.split("/")[-1]), "w")
+		try:
+			h5file.createArray("/", "RadialDensity", radialDensity)
+			h5file.createArray("/", "RadialGrid", radialGrid)
+		finally:
+			h5file.close()

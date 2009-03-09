@@ -167,6 +167,7 @@ def GetPropagationDataFromFiles(filesLocation):
 	Norm = []
 	I = []
 	for fname in os.listdir(filesLocation):
+		if not fname[-2.] == "h5": continue
 		with tables.openFile("%s/%s" % (filesLocation, fname)) as f:
 			SingleIonization += [f.root.SingleIonization[-1].real]
 			DoubleIonization += [f.root.DoubleIonization[-1].real]
