@@ -33,6 +33,11 @@ public:
 	{
 		Range = LRange(maxL);
 	}
+	
+	void SetupRepresentation(int maxL, int m)
+	{
+		Range = LRange(maxL, m);
+	}
 
 	/* ---------- Implementation of Representation<1> interface ----------- */
 		
@@ -82,8 +87,13 @@ public:
 	virtual void ApplyConfigSection(const ConfigSection &config)
 	{
 		int maxl;
+		int m = 0;
+		if (config.HasValue("m"))
+		{
+			config.Get("m", m);
+		}
 		config.Get("maxl", maxl);
-		Range = LRange(maxl);
+		Range = LRange(maxl, m);
 	}
 
 };

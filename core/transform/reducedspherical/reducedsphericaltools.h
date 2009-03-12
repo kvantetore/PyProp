@@ -32,6 +32,7 @@ private:
 	blitz::Array<cplx, 2> ForwardMatrix;
 										
 	int LMax;
+	int M;
 
 	void SetupQuadrature();					//Sets up the complete quadrature rules for both theta and phi
 	void SetupExpansion();					//Sets up the normalized associated legendre polynomials AssocLegendrePoly
@@ -48,13 +49,15 @@ public:
 	ReducedSphericalTools() : LMax(-1), Algorithm(-1) {}
 
 	int GetLMax() { return LMax; }
+	int GetM() { return M; }
+	int GetSize() {return LMax - std::abs(M); }
 	blitz::Array<double, 1> GetThetaGrid() { return ThetaGrid; }
 	blitz::Array<double, 1> GetWeights() { return Weights; } 
 	blitz::Array<double, 2> GetAssociatedLegendrePolynomial() { return AssocLegendrePoly; }
 	blitz::Array<double, 2> GetAssociatedLegendrePolynomialDerivative() { return AssocLegendrePolyDerivative; }
 
 	void Initialize(int lmax);				//Initializes the transformation to a given lmax. If the transformation
-											//has already been initalized, all allocated memory are freed and the 
+	void Initialize(int lmax, int m);		//has already been initalized, all allocated memory are freed and the 
 											//transformation is reinitialized to the new lmax.
 											
 	template<int Rank> void ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int thetaRank);

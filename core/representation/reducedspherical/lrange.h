@@ -15,15 +15,17 @@ private:
 public:
 	//Public fields
 	int MaxL;
+	int M;
 
 	//Constructors
-	LRange() : MaxL(0) {}
-	LRange(int maxL) : MaxL(maxL) {}
+	LRange() : MaxL(0), M(0) {}
+	LRange(int maxL) : MaxL(maxL), M(0) {}
+	LRange(int maxL, int m) : MaxL(maxL), M(m) {}
 
 	//Returns the number possible lm values
 	inline int Count() const
 	{
-		return MaxL + 1;	
+		return MaxL + 1 - std::abs(M);	
 	}
 
 	const blitz::Array<double, 1> &GetGrid()
@@ -32,6 +34,7 @@ public:
 		{
 			Grid.resize(Count());
 			Grid = blitz::tensor::i;
+			Grid += std::abs(M);
 		}
 		return Grid;
 	}

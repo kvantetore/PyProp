@@ -261,7 +261,17 @@ void ReducedSphericalTools::InverseTransform_Impl(blitz::Array<cplx, 3> &input, 
  */
 void ReducedSphericalTools::Initialize(int lmax)
 {
+	cout << "you should not be here!" << endl;
 	LMax = lmax;
+	M = 0;
+	SetupQuadrature();
+	SetupExpansion();
+}
+
+void ReducedSphericalTools::Initialize(int lmax, int m)
+{
+	LMax = lmax;
+	M = m;
 	SetupQuadrature();
 	SetupExpansion();
 }
@@ -276,6 +286,9 @@ void ReducedSphericalTools::SetupQuadrature()
 	//In order to do integration correct up to l=lmax, we use a grid
 	//of lmax+1 collocation points.
 	int thetaCount = LMax + 1;
+
+	//Number of different l's: m,m+1,...,Lmax
+	int lCount = LMax + 1 - std::abs(M);
 
 	//Resize grid arrays
 	ThetaGrid.resize(thetaCount);
@@ -299,50 +312,54 @@ void ReducedSphericalTools::SetupQuadrature()
 void ReducedSphericalTools::SetupExpansion()
 {
 	//TODO: Add support for different fixed m's
-	std::cout << "Setting up expansion" << std::endl;
+	std::cout << "Setting up expansion (l_max = " << LMax << ", m = " << M  << ")" << std::endl;
 
-	int m = 0; //fixed m
+	//int m = 0; //fixed m
 
 	int thetaCount = ThetaGrid.extent(0);
+	int lCount = thetaCount - std::abs(M);
+
 	//Calculate all assoc legendre poly, even though we only need some of them. and why? because it works!
 	blitz::Array<double, 2> legendre = SphericalTransformTensorGrid::EvaluateAssociatedLegendrePolynomials(LMax, ThetaGrid);
-	AssocLegendrePoly.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
-	AssocLegendrePolyTransposed.resize(thetaCount, thetaCount); //use as many theta points as sph harm basis funcs.
-	AssocLegendrePolyDerivative.resize(thetaCount, thetaCount);
+	AssocLegendrePoly.resize(thetaCount, lCount); //use as many theta points as sph harm basis funcs.
+	AssocLegendrePolyTransposed.resize(lCount, thetaCount); //use as many theta points as sph harm basis funcs.
+	AssocLegendrePolyDerivative.resize(thetaCount, lCount);
 
-	InverseMatrix.resize(thetaCount, thetaCount);
-	ForwardMatrix.resize(thetaCount, thetaCount);
+	InverseMatrix.resize(thetaCount, lCount);
+	ForwardMatrix.resize(lCount, thetaCount);
 
 	blitz::Range all = blitz::Range::all();
 
 	//Normalize associated legendre such that the int(legendre_lm * legendre_lm', omega) = delta_lm_lm'
-	for (int l=0; l<=LMax; l++)
+	for (int l=std::abs(M); l<=LMax; l++)
 	{
+		int lIdx = l - std::abs(M);
+
 		//Calculate norm(l, m)
 	    double norm;
-		double sign = 1 ;// (m > 0) ? pow(-1., m) : 1;
-		norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
-		norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(m))/Factorial(l+abs(m))));
+		//double sign = 1 ;// (m > 0) ? pow(-1., m) : 1;
+		double sign = (M > 0) ? pow(-1., M) : 1;
+		norm = sign * sqrt(((2.0*l+1)/(4*M_PI))*(Factorial(l-abs(M))/Factorial(l+abs(M))));
 		norm = norm * sqrt(2*M_PI);
 
 		//Scale assoc legendre
-		AssocLegendrePoly(all, l) = legendre(all, MapLmIndex(l, m)) *  norm;
-		AssocLegendrePolyTransposed(l, all) = legendre(all, MapLmIndex(l, m)) *  norm;
+		AssocLegendrePoly(all, lIdx) = legendre(all, MapLmIndex(l, M)) *  norm;
+		AssocLegendrePolyTransposed(lIdx, all) = legendre(all, MapLmIndex(l, M)) *  norm;
 
 
-		AssocLegendrePolyDerivative(all, l) = 0;
-		if (l > 0)
+		AssocLegendrePolyDerivative(all, lIdx) = 0;
+		if (lIdx > 0)
 		{
-			double normalization = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(m)) / (double)(l+std::abs(m)));
-			AssocLegendrePolyDerivative(all, l) = l * cos(ThetaGrid) * AssocLegendrePoly(all, l) - (l+m) * normalization * AssocLegendrePoly(all,l-1);
+			double normalization = sqrt( (2*l+1.)/(2*l-1.) * (l-std::abs(M)) / (double)(l+std::abs(M)));
+			AssocLegendrePolyDerivative(all, lIdx) = l * cos(ThetaGrid) * AssocLegendrePoly(all, lIdx) - (l+M) * normalization * AssocLegendrePoly(all,lIdx-1);
 			//AssocLegendrePolyDerivative(all, l) /= sin(ThetaGrid);
 		}
 
 
 		for (int j=0; j<thetaCount; j++)
 		{
-			ForwardMatrix(l, j) = legendre(j, MapLmIndex(l, m)) * norm * Weights(j);
-			InverseMatrix(j, l) = legendre(j, MapLmIndex(l, m)) * norm;
+			ForwardMatrix(lIdx, j) = legendre(j, MapLmIndex(l, M)) * norm * Weights(j);
+			InverseMatrix(j, lIdx) = legendre(j, MapLmIndex(l, M)) * norm;
 		}
 	}
 }

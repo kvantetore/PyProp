@@ -19,7 +19,7 @@ void ReducedSphericalTransform<Rank>::SetupStep(const Wavefunction<Rank> &psi, i
 		std::cout << "Invalid wavefunction representation, must be ReducedSphericalHarmonicRepresentation" << std::endl;
 		throw std::runtime_error("Invalid wavefunction representation");
 	}
-	transform.Initialize(reprAngular->Range.MaxL);
+	transform.Initialize(reprAngular->Range.MaxL, reprAngular->Range.M);
 }
 
 /* 

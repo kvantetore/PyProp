@@ -12,6 +12,17 @@
 // Using =======================================================================
 using namespace boost::python;
 
+// Declarations ================================================================
+namespace  {
+
+void (ReducedSpherical::ReducedSphericalHarmonicRepresentation::*ReducedSpherical__ReducedSphericalHarmonicRepresentation__SetupRepresentationint)(int)  = &ReducedSpherical::ReducedSphericalHarmonicRepresentation::SetupRepresentation;
+
+void (ReducedSpherical::ReducedSphericalHarmonicRepresentation::*ReducedSpherical__ReducedSphericalHarmonicRepresentation__SetupRepresentationint_int)(int, int)  = &ReducedSpherical::ReducedSphericalHarmonicRepresentation::SetupRepresentation;
+
+
+}// namespace 
+
+
 // Module ======================================================================
 void Export_python_reducedsphericalrepresentation()
 {
@@ -20,7 +31,8 @@ void Export_python_reducedsphericalrepresentation()
         .def(init< const ReducedSpherical::ReducedSphericalHarmonicRepresentation& >())
         .def_readwrite("Range", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::Range)
         .def("Copy", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::Copy)
-        .def("SetupRepresentation", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::SetupRepresentation)
+        .def("SetupRepresentation", ReducedSpherical__ReducedSphericalHarmonicRepresentation__SetupRepresentationint)
+        .def("SetupRepresentation", ReducedSpherical__ReducedSphericalHarmonicRepresentation__SetupRepresentationint_int)
         .def("GetFullShape", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::GetFullShape)
         .def("InnerProduct", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::InnerProduct)
         .def("GetGlobalWeights", &ReducedSpherical::ReducedSphericalHarmonicRepresentation::GetGlobalWeights)
@@ -47,8 +59,7 @@ void Export_python_reducedsphericalrepresentation()
     register_ptr_to_python< boost::shared_ptr< ReducedSpherical::ThetaRepresentation > >();
     delete ReducedSpherical_ThetaRepresentation_scope;
 
-    class_< ReducedSpherical::ThetaRange >("ThetaRange", init<  >())
-        .def(init< const ReducedSpherical::ThetaRange& >())
+    class_< ReducedSpherical::ThetaRange, boost::noncopyable >("ThetaRange", init<  >())
         .def_readwrite("MaxL", &ReducedSpherical::ThetaRange::MaxL)
         .def("SetupRange", &ReducedSpherical::ThetaRange::SetupRange)
         .def("Count", &ReducedSpherical::ThetaRange::Count)
@@ -56,10 +67,11 @@ void Export_python_reducedsphericalrepresentation()
         .def("GetWeights", &ReducedSpherical::ThetaRange::GetWeights, return_value_policy< copy_const_reference >())
     ;
 
-    class_< ReducedSpherical::LRange >("LRange", init<  >())
-        .def(init< const ReducedSpherical::LRange& >())
+    class_< ReducedSpherical::LRange, boost::noncopyable >("LRange", init<  >())
         .def(init< int >())
+        .def(init< int, int >())
         .def_readwrite("MaxL", &ReducedSpherical::LRange::MaxL)
+        .def_readwrite("M", &ReducedSpherical::LRange::M)
         .def("Count", &ReducedSpherical::LRange::Count)
         .def("GetGrid", &ReducedSpherical::LRange::GetGrid, return_value_policy< copy_const_reference >())
         .def("GetWeights", &ReducedSpherical::LRange::GetWeights, return_value_policy< copy_const_reference >())
