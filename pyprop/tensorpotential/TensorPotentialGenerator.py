@@ -9,7 +9,7 @@ def CreateBasisFromRepresentation(representation):
 	
 	elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
-		basis.SetupBasis(representation.Range.MaxL)
+		basis.SetupBasis(representation.Range.MaxL, representation.Range.M)
 	
 	elif representation.__class__ == core.CoupledSphericalHarmonicRepresentation:
 		basis = BasisfunctionCoupledSphericalHarmonic()

@@ -17,10 +17,10 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 		return self.UseGrid
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax()*2 
+		return self.SphericalHarmonicObject.GetSize() * 2 
 		
 	def GetBasisPairs(self):
-		count = self.SphericalHarmonicObject.GetLMax()+1
+		count = self.SphericalHarmonicObject.GetSize() + 1
 		
 		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		index = 0
@@ -63,10 +63,10 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 		return True
 	
 	def GetBasisPairCount(self):
-		return self.SphericalHarmonicObject.GetLMax()
+		return self.SphericalHarmonicObject.GetSize()
 		
 	def GetBasisPairs(self):
-		basisSize = self.SphericalHarmonicObject.GetLMax()+1
+		basisSize = self.SphericalHarmonicObject.GetSize() + 1
 		
 		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
 		index = 0
@@ -94,12 +94,14 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 	"""
 
 	def ApplyConfigSection(self, configSection):
-		self.SetupBasis(configSection.lmax)
+		m = configSection.get("m", 0)
+		self.SetupBasis(configSection.lmax, m)
 
-	def SetupBasis(self, lmax):
+	def SetupBasis(self, lmax, m):
 		self.LMax = lmax
+		self.M = m
 		self.SphericalHarmonicObject = core.ReducedSphericalTools()
-		self.SphericalHarmonicObject.Initialize(self.LMax)
+		self.SphericalHarmonicObject.Initialize(self.LMax, self.M)
 
 	def GetGridRepresentation(self):
 		repr = core.ThetaRepresentation()
@@ -108,7 +110,7 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 
 	def GetBasisRepresentation(self):
 		repr = core.ReducedSphericalHarmonicRepresentation()
-		repr.SetupRepresentation(self.LMax)
+		repr.SetupRepresentation(self.LMax, self.M)
 		return repr
 
 	def GetGeometryInfo(self, geometryName):
@@ -125,13 +127,13 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(useGrid)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.LMax+1, False) #diagonal potentials are always in basis repr
+			return GeometryInfoCommonDiagonal(self.LMax+1-self.M, False) #diagonal potentials are always in basis repr
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.LMax+1, useGrid)
+			return GeometryInfoCommonDense(self.LMax+1-self.M, useGrid)
 		elif geom == "dipoleselectionrule":
 			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject, useGrid)
 		elif geom == "bandeddistributed":
-			return GeometryInfoCommonBandedDistributed(self.LMax+1, 1, useGrid)
+			return GeometryInfoCommonBandedDistributed(self.LMax+1-self.M, 1, useGrid)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
