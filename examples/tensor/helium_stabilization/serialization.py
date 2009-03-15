@@ -165,6 +165,7 @@ def GetPropagationDataFromFiles(filesLocation):
 	SingleIonization = []
 	DoubleIonization = []
 	Norm = []
+	InitialCorr = []
 	I = []
 	for fname in os.listdir(filesLocation):
 		if not fname[-2:] == "h5": continue
@@ -172,6 +173,7 @@ def GetPropagationDataFromFiles(filesLocation):
 			SingleIonization += [f.root.SingleIonization[-1].real]
 			DoubleIonization += [f.root.DoubleIonization[-1].real]
 			Norm +=  [f.root.Norm[-1]]
+			InitialCorr += [f.root.InitialCorrelation[-1]]
 			curFieldVG = f.root.wavefunction._v_attrs.configObject.get("PulseParameters","amplitude")
 			curFreq = f.root.wavefunction._v_attrs.configObject.get("PulseParameters","frequency")
 			I +=  [float(curFieldVG) * float(curFreq)]
@@ -181,5 +183,7 @@ def GetPropagationDataFromFiles(filesLocation):
 	SingleIonization = [SingleIonization[i] for i in sortIdx]
 	DoubleIonization = [DoubleIonization[i] for i in sortIdx]
 	Norm = [Norm[i] for i in sortIdx]
+	InitialCorr = [InitialCorr[i] for i in sortIdx]
 
-	return I, SingleIonization, DoubleIonization, Norm
+#	return I, SingleIonization, DoubleIonization, Norm
+	return I, SingleIonization, DoubleIonization, InitialCorr, Norm

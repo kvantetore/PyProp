@@ -583,13 +583,37 @@ def ReconstructRadialDensityOnGrid(datafileName, radialGrid, bsplineObject, angu
 				radialDensity[:,j] += abs(buffer1D[:])**2
 
 	#Perform smoothing by a simple running average
-	runAvgNum = args.get("runAvgNum", 1)
-	avgStartIdx = args.get("avgStartIdx", 0)
-	gridSize = radialGrid.size
-	A = array([sum(radialDensity[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
-	B = array([sum(A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+	#runAvgNum = args.get("runAvgNum", 1)
+	#avgStartIdx = args.get("avgStartIdx", 0)
+	#gridSize = radialGrid.size
+	#A = array([sum(radialDensity[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+	#B = array([sum(A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
 
-	return radialDensity, B
+	#return radialDensity, B
+	return radialDensity
+
+
+def CreateRadialDensityFromFile(datafile, radialGrid):
+	#Get config from first data file
+	conf = pyprop.serialization.GetConfigFromHDF5(datafile)
+	indexIt = conf.get("AngularRepresentation", "index_iterator")
+
+	#Set up radial problem w/o potential
+	conf.set("Propagation", "preconditioner", 'None')
+	conf.set("InitialCondition", "type", 'None')
+	conf.set("Representation", "rank", "1")
+	conf.set("Representation", "representation0", "'RadialRepresentation'")
+	conf.set("Representation", "type", "core.CombinedRepresentation_1")
+	conf.set("GMRES", "preconditioner", "None")
+	prop = SetupProblem(config = conf, useDefaultPotentials = False, silent = False)
+
+	#Get bspline object
+	bspline = prop.psi.GetRepresentation().GetRepresentation(0).GetBSplineObject()
+	
+	#Construct radial density
+	radialDensity = ReconstructRadialDensityOnGrid(datafile, radialGrid, bspline, indexIt)
+
+	return radialDensity
 
 
 def CreateRadialDensitySeries(datafilesPath, radialGrid):
@@ -634,3 +658,33 @@ def CreateRadialDensitySeries(datafilesPath, radialGrid):
 			h5file.createArray("/", "RadialGrid", radialGrid)
 		finally:
 			h5file.close()
+
+
+def RunningAverage2D(data2d, radialGrid, **args):
+	"""
+	Perform a two-dimensional running average
+	"""
+
+	#Number of points to average over
+	runAvgNum = args.get("runAvgNum", 1)
+
+	#Index at which to start averaging
+	avgStartIdx = args.get("avgStartIdx", 0)
+
+	gridSize = radialGrid.size
+
+	#Set up window function
+	windowWidth = args.get("windowWidth", 5.0)
+	gridSlice = linspace(-runAvgNum / 2.0, runAvgNum / 2.0, runAvgNum)
+	windowFunc = outer(ones(gridSize), exp(-gridSlice**2 / windowWidth))
+
+	#Average over first dim
+	A = array([sum(transpose(windowFunc) * data2d[start:start+runAvgNum,:],axis=0)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+
+	#Average over second dim
+	B = array([sum(windowFunc[0:shape(A)[0],:] * A[:, start:start+runAvgNum],axis=1)/runAvgNum for start in range(avgStartIdx, gridSize-runAvgNum)])
+
+	#Normalize
+	B /= linalg.norm(B)
+
+	return B
