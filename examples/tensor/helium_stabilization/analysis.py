@@ -1,3 +1,6 @@
+#------------------------------------------------------------------------
+#                Spherical Harmonics (partial waves) analysis
+#------------------------------------------------------------------------
 
 def RunSphericalHarmonicDistribution(wavefunctionFile):
 	if isinstance(wavefunctionFile, str):
@@ -25,7 +28,8 @@ def RunSphericalHarmonicDistribution(wavefunctionFile):
 
 def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 	"""
-	Returns the local indices
+	Returns the processor local indices which corresponds to a filter on
+	l1, l2, L, M
 	"""
 	angularRank = 0
 
@@ -52,7 +56,7 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 
 
 #------------------------------------------------------------------------
-#                        Product State Analysis
+#                        Product State Analysis (examples)
 #------------------------------------------------------------------------
 
 def RunSingleIonizationStabilizationScan():
@@ -114,13 +118,35 @@ def RunSingleIonizationScan(filenames, outputPrefix):
 
 	return absorb, totalIon, singleIon, doubleIon
 
-def RunGetSingleIonizationProbability(wavefunctionFile):
-	if isinstance(wavefunctionFile, list):
-		fileList = wavefunctionFile
-	elif isinstance(wavefunctionFile, str):
-		fileList = [wavefunctionFile]
-	else:
-		raise Exception("wavefunctionFile should be list or str")
+
+#------------------------------------------------------------------------
+#                        Product State Analysis (implementation)
+#------------------------------------------------------------------------
+
+def GetFilteredSingleParticleStates(model, stateFilter, **args):
+	"""
+	Returns the single particle states and energies corresponding to a SAE model and 
+	an energy filter specified by stateFilter
+	"""
+
+	#load single particle states
+	singleStatesFile = GetSingleStatesFile(model=model, **args)
+	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
+	
+	#filter states 
+	getStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if stateFilter(E[i]) ]))
+	getEnergies = lambda E: filter(stateFilter, E)
+	filteredStates = map(getStates, singleEnergies, singleStates)
+	filteredEnergies = map(getEnergies, singleEnergies)
+
+	return filteredEnergies, filteredStates	
+
+
+def RunGetSingleIonizationProbability(fileList):
+	"""
+	Calculates total and single ionization probability
+	for a list of wavefunction files
+	"""
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -128,33 +154,26 @@ def RunGetSingleIonizationProbability(wavefunctionFile):
 	#load bound states
 	boundEnergies, boundStates = GetBoundStates(config=conf)
 
-	#load single particle states
-	singleStatesFile = GetSingleStatesFile(config=conf)
-	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
-	
-	#filter bound he+ states
-	doubleIonThreshold = 0.0
-	getBoundStates = lambda E, V: transpose(array([V[:, i] for i in range(V.shape[1]) if E[i]<doubleIonThreshold]))
-	getIonStates = lambda E, V: transpose(array([V[:, i] for i in range(V.shape[1]) if E[i]>doubleIonThreshold]))
-	singleBoundStates = map(getBoundStates, singleEnergies, singleStates)
-	singleIonStates = map(getIonStates, singleEnergies, singleStates)
+	#Get single particle states
+	isIonized = lambda E: E > 0.0
+	isBound = lambda E: not isIonized(E)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound)
 
-	def getDpDe(filename):
+	def getIonProb(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 		return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
 
-	E, dpde = zip(*map(getDpDe, fileList))
-	return E[0], dpde
+	return zip(*map(getIonProb, fileList))
 
 
-def RunGetSingleIonizationEnergyDistribution(wavefunctionFile):
-	if isinstance(wavefunctionFile, list):
-		fileList = wavefunctionFile
-	elif isinstance(wavefunctionFile, str):
-		fileList = [wavefunctionFile]
-	else:
-		raise Exception("wavefunctionFile should be list or str")
-
+def RunGetSingleIonizationEnergyDistribution(fileList):
+	"""
+	Calculates the energy distribution (dP/dE) of the 
+	single ionized continuum for a list of wavefunction 
+	files by projecting onto products of single particle states.
+	"""
+	
 	maxE = 15.
 	dE = 0.1
 
@@ -164,29 +183,19 @@ def RunGetSingleIonizationEnergyDistribution(wavefunctionFile):
 	#load bound states
 	boundEnergies, boundStates = GetBoundStates(config=conf)
 
-	#load single particle states
-	singleStatesFile = GetSingleStatesFile(config=conf)
-	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
-	
-	#filter bound he+ states
-	doubleIonThreshold = 0.0
-	isIonized = lambda E: E > doubleIonThreshold
-	getBoundStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if not isIonized(E[i]) ]))
-	getIonStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if isIonized(E[i]) ]))
-	getIonEnergies = lambda E: filter(isIonized, E)
-	singleBoundStates = map(getBoundStates, singleEnergies, singleStates)
-	singleIonStates = map(getIonStates, singleEnergies, singleStates)
-	singleIonEnergies = map(getIonEnergies, singleEnergies)
+	#Get single particle states
+	isIonized = lambda E: E > 0.0
+	isBound = lambda E: not isIonized(E)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound)
 
-	def getIonProb(filename):
+	#Calculate Energy Distribution (dP/dE)
+	def getdPdE(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 		return GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE)
 
-	if len(fileList[0]) == 1:
-		return getIonProb(fileList[0])
-
-	else:
-		return zip(*map(getIonProb, fileList))
+	E, dpde = zip(*map(getdPdE, fileList))
+	return E[0], dpde
 
 
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
@@ -213,7 +222,7 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
 	#Calculate single ionization probability
-	lpop = [sum([p[-1] for p in pop]) for pop in populations]
+	lpop = [sum([p[-1] for p in pop]) for l1, l2, pop in populations]
 	singleIonizationProbability = sum(lpop)
 
 	print "Absorbed Probability     = %s" % (absorbedProbability)
@@ -240,19 +249,46 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
-	#populations = GetPopulationSingleParticleStates(psi, singleBoundStates)
 	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
 	def getProbabilityL(startE, stopE, lPop, lEnergy):
 		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
 
 	def getEnergyGapProbability(startE, stopE):
-		return sum([getProbabilityL(startE, stopE, lPop, lEnergy) for lPop, lEnergy in zip(populations, singleIonEnergies)])
+		return sum([getProbabilityL(startE, stopE, lPop, singleIonEnergies[lIon]) for lBound, lIon, lPop in populations])
 
 	E = r_[0:maxE:dE]
 	dpde = map(getEnergyGapProbability, E, E+dE)
 
 	return E, dpde
+
+def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleStates, singleEnergies, dE, maxE):
+	"""
+	Calculates double differential d^2P/(dE_1 dE_2) by 
+	1) projecting on a set of product of single particle ionized states.
+	2) binning the probability by energy
+
+	"""
+
+	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+
+	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
+		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
+
+	def getEnergyGapProbability(startE1, stopE1, startE2, stopE2):
+		return sum([getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, singleEnergies[l1], singleEnergies[l2]) for l1, l2, lPop in populations])
+
+	E = r_[0:maxE:dE]
+	E1, E2 = meshgrid(E, E)
+	startE1 = E1.flatten()
+	stopE1 = startE1 + dE
+	startE2 = E2.flatten()
+	stopE2 = E2.flatten() + dE
+
+	dpde = array(map(getEnergyGapProbability, startE1, stopE1, startE2, stopE2)).reshape(len(E), len(E))
+
+	return E, dpde
+
 
 
 def GetSingleStatesFile(**args):
@@ -359,7 +395,7 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 		
 			#Get the population for every combination of v1 and v2
 			projV = map(getPopulation, *zip(*[(i1, i2) for i1 in range(V1.shape[1]) for i2 in range(V2.shape[1])]))
-			population.append(projV)
+			population.append((l1, l2, projV))
 
 	return population
 
