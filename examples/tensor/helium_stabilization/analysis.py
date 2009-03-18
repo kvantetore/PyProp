@@ -157,8 +157,8 @@ def RunGetSingleIonizationProbability(fileList):
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
 	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	def getIonProb(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
@@ -186,8 +186,8 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
 	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	#Calculate Energy Distribution (dP/dE)
 	def getdPdE(filename):
@@ -196,6 +196,36 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 
 	E, dpde = zip(*map(getdPdE, fileList))
 	return E[0], dpde
+
+
+def RunGetDoubleIonizationEnergyDistribution(fileList):
+	"""
+	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
+	doubly ionized continuum for a list of wavefunction 
+	files by projecting onto products of single particle states.
+	"""
+	
+	maxE = 15.
+	dE = 0.2
+
+	#load wavefunction
+	conf = pyprop.LoadConfigFromFile(fileList[0])
+
+	#load bound states
+	boundEnergies, boundStates = GetBoundStates(config=conf)
+
+	#Get single particle states
+	isIonized = lambda E: 0.0 < E <= maxE
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+
+	#Calculate Energy Distribution (dP/dE1 dE2)
+	def getdPdE(filename):
+		psi = pyprop.CreateWavefunctionFromFile(filename)
+		return GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleIonEnergies, dE, maxE)
+
+	E, dpde = zip(*map(getdPdE, fileList))
+	return E[0], dpde
+
 
 
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
@@ -262,15 +292,21 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 
 	return E, dpde
 
-def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleStates, singleEnergies, dE, maxE):
+def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
 	"""
 	Calculates double differential d^2P/(dE_1 dE_2) by 
 	1) projecting on a set of product of single particle ionized states.
 	2) binning the probability by energy
 
 	"""
+	#get absorbed prob
+	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	#remove boundstate projection
+	RemoveBoundStateProjection(psi, boundStates)
+	ionizationProbability = real(psi.InnerProduct(psi))
+
+	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
 
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
@@ -283,7 +319,7 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleStates, single
 	startE1 = E1.flatten()
 	stopE1 = startE1 + dE
 	startE2 = E2.flatten()
-	stopE2 = E2.flatten() + dE
+	stopE2 = startE2 + dE
 
 	dpde = array(map(getEnergyGapProbability, startE1, stopE1, startE2, stopE2)).reshape(len(E), len(E))
 
