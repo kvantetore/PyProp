@@ -1,3 +1,5 @@
+Function("CalculatePopulationRadialProductStates", "analysis.cpp")
+
 #SuperLU Solver
 Solver = Template("SuperLUSolver", "potential.cpp")
 Solver("2")

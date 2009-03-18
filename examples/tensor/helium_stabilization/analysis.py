@@ -152,7 +152,7 @@ def RunGetSingleIonizationProbability(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
@@ -181,7 +181,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
@@ -212,7 +212,7 @@ def RunGetDoubleIonizationEnergyDistribution(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: 0.0 < E <= maxE
@@ -244,12 +244,13 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	RemoveBoundStateProjection(psi, boundStates)
+	#RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
 	#populations = GetPopulationSingleParticleStates(psi, singleBoundStates)
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	populations = GetPopulationProductStatesOld(psi, singleBoundStates, singleIonStates)
+	#populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
 	#Calculate single ionization probability
 	lpop = [sum([p[-1] for p in pop]) for l1, l2, pop in populations]
@@ -279,7 +280,7 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	populations = GetPopulationProductStatesOld(psi, singleBoundStates, singleIonStates)
 
 	def getProbabilityL(startE, stopE, lPop, lEnergy):
 		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
@@ -303,10 +304,10 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	RemoveBoundStateProjection(psi, boundStates)
+	#RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
+	populations = GetPopulationProductStatesOld(psi, singleIonStates, singleIonStates)
 
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
@@ -399,7 +400,66 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 				continue
 
 			#filter out coupled spherical harmonic indices corresponding to this l
-			lfilter = lambda coupledIndex: coupledIndex.l2 == l1 and coupledIndex.l2 == l2 
+			lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2 
+			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
+			#filter away all angular indices with zero clebsch-gordan coeff
+			angularIndices = array(filter(lambda idx: abs(cgList[idx])>0, angularIndices), dtype=int32)
+			print angularIndices
+			
+		
+			#Get the population for every combination of v1 and v2
+			projV = CalculatePopulationRadialProductStates(l1, V1, l2, V2, data, angularIndices)
+			population.append((l1, l2, projV))
+
+	return population
+
+
+def GetPopulationProductStatesOld(psi, singleStates1, singleStates2):
+	"""
+	Calculates the population of psi in a set of single electron product states
+
+	P_i =  |< SingleState1_i(1), SingleState2_j(2) | psi(1,2) >|^2
+
+	singleStates 1 and 2 are lists of angular momentum states, containing an array 
+	of radial states for the given angular momentum number such as generated
+	by SetupRadialEigenstates in the Helium SAE example
+	
+	the projection is carried out for every combination of singlestate1 and singlestate2i
+	is returned in a similar structure
+	"""
+
+	#Make a copy of the wavefunction and multiply 
+	#integration weights and overlap matrix
+	tempPsi = psi.Copy()
+	repr = psi.GetRepresentation()
+	repr.MultiplyIntegrationWeights(tempPsi)
+	distr = psi.GetRepresentation().GetDistributedModel()
+
+	angularRank = 0
+	angRepr = repr.GetRepresentation(0)
+	angIndexGrid = repr.GetLocalGrid(angularRank)
+
+	data = tempPsi.GetData()
+	population = []
+
+	m = 0
+	clebschGordan = pyprop.core.ClebschGordan()
+	l1, l2, L, M = zip(*map(lambda idx: angRepr.Range.GetCoupledIndex(int(idx)), angIndexGrid))
+	m1 = (m,)*len(l1)
+	m2 = array(M)-m
+	cgList = map(clebschGordan, l1, l2, m1, m2, L, M)
+
+	for l1, V1 in enumerate(singleStates1):
+		print "%i/%i" % (l1, len(singleStates1))
+		if V1.size == 0:
+			continue
+
+		for l2, V2 in enumerate(singleStates2):
+			if V2.size == 0:
+				continue
+
+			#filter out coupled spherical harmonic indices corresponding to this l
+			lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2 
 			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
 			#filter away all angular indices with zero clebsch-gordan coeff
 			angularIndices = filter(lambda idx: abs(cgList[idx])>0, angularIndices)
@@ -434,6 +494,7 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 			population.append((l1, l2, projV))
 
 	return population
+
 
 
 def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
