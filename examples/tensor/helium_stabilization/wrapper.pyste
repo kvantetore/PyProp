@@ -1,4 +1,5 @@
-Function("CalculatePopulationRadialProductStates", "analysis.cpp")
+Include("analysis.cpp")
+module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulationRadialProductStates);\n')
 
 #SuperLU Solver
 Solver = Template("SuperLUSolver", "potential.cpp")

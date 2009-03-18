@@ -249,16 +249,20 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 
 	#calculate populations in product states containing bound he+ states
 	#populations = GetPopulationSingleParticleStates(psi, singleBoundStates)
-	populations = GetPopulationProductStatesOld(psi, singleBoundStates, singleIonStates)
-	#populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	populationsOld = GetPopulationProductStatesOld(psi, singleBoundStates, singleIonStates)
+	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
 	#Calculate single ionization probability
-	lpop = [sum([p[-1] for p in pop]) for l1, l2, pop in populations]
+	lpop = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populations]
 	singleIonizationProbability = sum(lpop)
+
+	lpopOld = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populationsOld]
+	singleIonizationProbabilityOld = sum(lpopOld)
+
 
 	print "Absorbed Probability     = %s" % (absorbedProbability)
 	print "Ioniziation Probability  = %s" % (ionizationProbability)
-	print "Single Ionization Prob.  = %s" % (singleIonizationProbability)
+	print "Single Ionization Prob.  = %s, %s" % (singleIonizationProbability, singleIonizationProbabilityOld)
 	print "Double Ionization Prob.  = %s" % (ionizationProbability - singleIonizationProbability)
 	print "Single Ionization ratio  = %s" % (singleIonizationProbability/ionizationProbability)
 
@@ -307,7 +311,7 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
+	populations = GetPopulationProductStatesOld(psi, singleIonStates, singleIonStates)
 
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
@@ -404,11 +408,13 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
 			#filter away all angular indices with zero clebsch-gordan coeff
 			angularIndices = array(filter(lambda idx: abs(cgList[idx])>0, angularIndices), dtype=int32)
-			print angularIndices
-			
+			if len(angularIndices) == 0:
+				continue
 		
 			#Get the population for every combination of v1 and v2
 			projV = CalculatePopulationRadialProductStates(l1, V1, l2, V2, data, angularIndices)
+			cursum = sum([p for i1, i2, p in projV])
+			print l1, l2, len(projV), cursum
 			population.append((l1, l2, projV))
 
 	return population
@@ -463,6 +469,8 @@ def GetPopulationProductStatesOld(psi, singleStates1, singleStates2):
 			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
 			#filter away all angular indices with zero clebsch-gordan coeff
 			angularIndices = filter(lambda idx: abs(cgList[idx])>0, angularIndices)
+			if len(angularIndices) == 0:
+				continue
 			
 			def getPopulation(i1, i2):
 				"""
@@ -481,7 +489,7 @@ def GetPopulationProductStatesOld(psi, singleStates1, singleStates2):
 				#pop = sum(map(lambda x: abs(x)**2, popList))
 
 				#sum incoherently over L (product states in coupled sph-harm)
-				getRadialProjection = lambda angIdx: dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) )  
+				getRadialProjection = lambda angIdx: dot(conj(V2[:,i2]), dot(conj(V1[:,i1]), data[angIdx, :, :]) )  
 				popList = map(getRadialProjection, angularIndices)
 				pop = sum(map(lambda x: abs(x)**2, popList))
 
@@ -491,6 +499,8 @@ def GetPopulationProductStatesOld(psi, singleStates1, singleStates2):
 		
 			#Get the population for every combination of v1 and v2
 			projV = map(getPopulation, *zip(*[(i1, i2) for i1 in range(V1.shape[1]) for i2 in range(V2.shape[1])]))
+			cursum = sum([p for i1, i2, p in projV])
+			print l1, l2, len(projV), cursum
 			population.append((l1, l2, projV))
 
 	return population
