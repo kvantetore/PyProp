@@ -152,7 +152,7 @@ def RunGetSingleIonizationProbability(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
+	boundEnergies, boundStates = GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
@@ -181,7 +181,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
+	boundEnergies, boundStates = GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
@@ -212,7 +212,7 @@ def RunGetDoubleIonizationEnergyDistribution(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = None, None #GetBoundStates(config=conf)
+	boundEnergies, boundStates = GetBoundStates(config=conf)
 
 	#Get single particle states
 	isIonized = lambda E: 0.0 < E <= maxE
@@ -244,7 +244,7 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	#RemoveBoundStateProjection(psi, boundStates)
+	RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
@@ -304,10 +304,10 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	#RemoveBoundStateProjection(psi, boundStates)
+	RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStatesOld(psi, singleIonStates, singleIonStates)
+	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
 
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
