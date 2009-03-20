@@ -1,6 +1,6 @@
 Include("analysis.cpp")
+module_code('    def("CalculateProjectionRadialProductStates", CalculateProjectionRadialProductStates);\n')
 module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulationRadialProductStates);\n')
-module_code('    def("SymmetrizeWavefunction", SymmetrizeWavefunction);\n')
 module_code('    def("GetWavefunctionParticleExchange",  GetWavefunctionParticleExchange);\n')
 
 #SuperLU Solver

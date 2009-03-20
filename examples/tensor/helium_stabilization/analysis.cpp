@@ -10,11 +10,27 @@ using namespace blitz;
 typedef Array<cplx, 2> MatrixType;
 typedef Array<cplx, 1> VectorType;
 
-list CalculatePopulationRadialProductStates(int l1, MatrixType V1, int l2, MatrixType V2, Array<cplx, 3> psiData, Array<int, 1> angularIndices)
+/*
+ * Calculate the projection of the wavefunction on a product of single particle
+ * radial wavefunctions for corresponding to a given angular momentum for 
+ * each radial wavefunction. 
+ *
+ *	<r1(1) r2(2) | psi(1,2) >
+ *
+ * It takes in a list of angular indices, corresponding to which
+ * angular momentum indices is corresponding to this l1, l2 pair.
+ *
+ * Remarks:
+ * - No symmetrization is made on either psi or the radial functions
+ * - Integration weights are assumed to have been applied to psi on beforehand
+ *
+ * A 3D array is returned
+ * 		rank0: angular indices
+ * 		rank1: radial function 1 indices
+ * 		rank2: radial function 2 indices
+ */
+Array<cplx, 3> CalculateProjectionRadialProductStates(int l1, MatrixType V1, int l2, MatrixType V2, Array<cplx, 3> psiData, Array<int, 1> angularIndices)
 {
-#ifndef __GCCXML__ //GCCXML does not deal well with boost::python code
-	list popList;
-
 	int count0 = angularIndices.extent(0);
 	int count1 = V1.extent(1);
 	int count2 = V2.extent(1);
@@ -31,32 +47,46 @@ list CalculatePopulationRadialProductStates(int l1, MatrixType V1, int l2, Matri
 		{
 			for (int r2=0; r2<rcount; r2++)
 			{
+				cplx curPsi = psiSlice(r1, r2);
 				for (int i1=0; i1<count1; i1++)
 				{
 					for (int i2=0; i2<count2; i2++)
 					{
-						cplx symFunc = V1(r1, i1) * V2(r2, i2);
-						proj(i0, i1, i2) += conj(symFunc) * psiSlice(r1, r2);
+						proj(i0, i1, i2) += conj(V1(r1, i1) * V2(r2, i2)) * curPsi;
 					}
 				}
 			}
 		}
 	}
 
-	proj *= conj(proj);
+	return proj;
+}
 
+list CalculatePopulationRadialProductStates(int l1, MatrixType V1, int l2, MatrixType V2, Array<cplx, 3> psiData, Array<int, 1> angularIndices)
+{
+	int count1 = V1.extent(1);
+	int count2 = V2.extent(1);
+
+	Array<cplx, 3> proj = CalculateProjectionRadialProductStates(l1, V1, l2, V2, psiData, angularIndices);
+	proj *= conj(proj);
+	
+	list popList;
 	for (int i1=0; i1<count1; i1++)
 	{
 		for (int i2=0; i2<count2; i2++)
 		{
-			double pop = real(sum(proj(Range::all(), i1, i2)));
-			popList.append( make_tuple(i1, i2, pop));
+			double pop = 2 * real(sum(proj(Range::all(), i1, i2)));
+			popList.append(make_tuple(i1, i2, pop));
 		}
 	}
 	return popList;
-#endif //__GCCXML__
+
 }
 
+/*
+ * Maps the given wavefunction to one where the particles are exchanged
+ * psi(1,2) -> psi(2,1)
+ */
 Wavefunction<3>::Ptr GetWavefunctionParticleExchange(Wavefunction<3>::Ptr psi, list angularSymmetrizationPairs)
 {
 	typedef Array<cplx, 3> ArrayType;
@@ -87,12 +117,4 @@ Wavefunction<3>::Ptr GetWavefunctionParticleExchange(Wavefunction<3>::Ptr psi, l
 	return exchgPsi;
 }
 
-void SymmetrizeWavefunction(Wavefunction<3>::Ptr psi, list angularSymmetrizationPairs, bool symmetrize)
-{
-	double symFactor = (symmetrize) ? 1 : -1;
-	double normFactor = 0.5;
 
-	Wavefunction<3>::Ptr exchgPsi = GetWavefunctionParticleExchange(psi, angularSymmetrizationPairs);
-	psi->GetData() += symFactor * exchgPsi->GetData();
-	psi->GetData() *= normFactor;
-}

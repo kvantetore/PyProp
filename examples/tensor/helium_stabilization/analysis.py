@@ -54,19 +54,33 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 
 	return localFilteredIndices
 
+
+def GetCoupledIndexList(psi):
+	"""
+	Returns a list of the coupled indices in psi
+	"""
+	angularRank = 0
+	repr = psi.GetRepresentation().GetRepresentation(angularRank)
+	distr = psi.GetRepresentation().GetDistributedModel()
+	nL = repr.GetFullShape()[0]
+	coupledIndexList = map(repr.Range.GetCoupledIndex, range(nL))
+	return coupledIndexList
+
+
 def GetSymmetrizationIndexPairs(psi):
 	"""
 	Returns index pairs corresponding to symmetrization of the basis:
 
 	L = L' L = L' and l1 = l2' and l2 = ll'
+
+	returns a list of indices (i1, i2) 
+	such that psi[i1, r1, r2] -> psi[i2, r2, r1] is particle exchange
+	psi(1, 2) -> psi(2, 1)
 	"""
 	angularRank = 0
 
-	#Get info about angular representation
-	repr = psi.GetRepresentation().GetRepresentation(angularRank)
-	distr = psi.GetRepresentation().GetDistributedModel()
-	nL = repr.GetFullShape()[0]
-	coupledIndexList = map(repr.Range.GetCoupledIndex, range(nL))
+	coupledIndexList = GetCoupledIndexList(psi)
+	nL = len(coupledIndexList)
 	
 	#construct all possible pairs
 	coupledPairs = [(i1, i2) for i1 in range(nL) for i2 in range(nL)]
@@ -78,6 +92,42 @@ def GetSymmetrizationIndexPairs(psi):
 
 	return symmetryPairs
 
+def GetSymmetrizedWavefunction(psi):
+	"""
+	Symmetrizes and anti-symmetrizes the wavefunction with respect to
+	particle exchange.
+
+	Returns a tuple of the symmetrized and anti-symmetrized wavefunction 
+	(symPsi, antiSymPsi)
+	"""
+
+	sym = GetSymmetrizationIndexPairs(psi)
+	exchgPsi = GetWavefunctionParticleExchange(psi, sym)
+
+	#create symmetrized wavefunction
+	symPsi = psi.Copy()
+	symPsi.GetData()[:] += exchgPsi.GetData()
+	symPsi.GetData()[:] *= 0.5
+	
+	antiSymPsi = exchgPsi
+	antiSymPsi.GetData()[:] -= psi.GetData()
+	antiSymPsi.GetData()[:] *= 0.5
+
+	return symPsi, antiSymPsi
+
+def SymmetrizeWavefunction(psi, symmetrize):
+	if symmetrize:
+		symfactor = 1
+	else:
+		symfactor = -1
+
+	sym = GetSymmetrizationIndexPairs(psi)
+	exchgPsi = GetWavefunctionParticleExchange(psi, sym)
+
+	#create symmetrized wavefunction
+	exchgPsi.GetData()[:] *= symfactor
+	psi.GetData()[:] += exchgPsi.GetData()
+	psi.GetData()[:] *= 0.5
 
 #------------------------------------------------------------------------
 #                        Product State Analysis (examples)
@@ -186,10 +236,7 @@ def RunGetSingleIonizationProbability(fileList):
 
 	def getIonProb(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
-		#Symmetrize wavefunction
-		sym = GetSymmetrizationIndexPairs(psi)
-		SymmetrizeWavefunction(psi, sym, True)
-
+		SymmetrizeWavefunction(psi, True)
 		return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
 
 	return zip(*map(getIonProb, fileList))
