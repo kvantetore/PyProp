@@ -57,46 +57,42 @@ list CalculatePopulationRadialProductStates(int l1, MatrixType V1, int l2, Matri
 #endif //__GCCXML__
 }
 
-void SymmetrizeWavefunction(Wavefunction<3>::Ptr psi, list angularSymmetrizationPairs, bool symmetrize)
+Wavefunction<3>::Ptr GetWavefunctionParticleExchange(Wavefunction<3>::Ptr psi, list angularSymmetrizationPairs)
 {
 	typedef Array<cplx, 3> ArrayType;
 	ArrayType data = psi->GetData();
-
-	double symFactor = (symmetrize) ? 1 : -1;
-	double normFactor = 1./std::sqrt(2.);
-
-	cout << "SymFactor = " << symFactor << endl;
 
 	int countr = data.extent(1);
 	typedef stl_input_iterator<tuple> Iterator;
 	Iterator begin(angularSymmetrizationPairs);
 	Iterator end;
 
-	ArrayType exchgData = data.copy();
-	exchgData = 0;
+	Wavefunction<3>::Ptr exchgPsi = psi->Copy();
+	ArrayType exchgData = exchgPsi->GetData();
 
 	for (Iterator i=begin; i!=end; i++)
 	{
 		int a1 = extract<int>((*i)[0]);
 		int a2 = extract<int>((*i)[1]);
 
-		//cout << "(" << a1 << ", " << a2 << ")" << endl;
-		
 		for (int r1=0; r1<countr; r1++)
 		{
 			for (int r2=0; r2<countr; r2++)
 			{
 				exchgData(a1, r1, r2) = data(a2, r2, r1);
-
-				//cplx temp = data(a1, r1, r2);
-				//data(a1, r1, r2) = normFactor*(data(a1, r1, r2) + symFactor*data(a2, r2, r1));
-				//data(a2, r2, r1) = normFactor*(data(a2, r2, r1) + symFactor*temp);
 			}
 		}
 	}
+	
+	return exchgPsi;
+}
 
-	cplx dataTrace = sum(abs(data));
-	cplx exchgTrace = sum(abs(exchgData));
-	cout << "trace = " << dataTrace << ", " << exchgTrace << endl;
-	data += symFactor * exchgData;
+void SymmetrizeWavefunction(Wavefunction<3>::Ptr psi, list angularSymmetrizationPairs, bool symmetrize)
+{
+	double symFactor = (symmetrize) ? 1 : -1;
+	double normFactor = 0.5;
+
+	Wavefunction<3>::Ptr exchgPsi = GetWavefunctionParticleExchange(psi, angularSymmetrizationPairs);
+	psi->GetData() += symFactor * exchgPsi->GetData();
+	psi->GetData() *= normFactor;
 }

@@ -186,6 +186,10 @@ def RunGetSingleIonizationProbability(fileList):
 
 	def getIonProb(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
+		#Symmetrize wavefunction
+		sym = GetSymmetrizationIndexPairs(psi)
+		SymmetrizeWavefunction(psi, sym, True)
+
 		return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
 
 	return zip(*map(getIonProb, fileList))
