@@ -54,6 +54,30 @@ def GetLocalCoupledSphericalHarmonicIndices(psi, coupledIndexFilter):
 
 	return localFilteredIndices
 
+def GetSymmetrizationIndexPairs(psi):
+	"""
+	Returns index pairs corresponding to symmetrization of the basis:
+
+	L = L' L = L' and l1 = l2' and l2 = ll'
+	"""
+	angularRank = 0
+
+	#Get info about angular representation
+	repr = psi.GetRepresentation().GetRepresentation(angularRank)
+	distr = psi.GetRepresentation().GetDistributedModel()
+	nL = repr.GetFullShape()[0]
+	coupledIndexList = map(repr.Range.GetCoupledIndex, range(nL))
+	
+	#construct all possible pairs
+	coupledPairs = [(i1, i2) for i1 in range(nL) for i2 in range(nL)]
+	#filter out symmetry pairs
+	symmetryFilter = lambda l, r: l.L==r.L and l.M==r.M and l.l1==r.l2 and l.l2==r.l1
+	#symmetryFilter = lambda l, r: l.L==r.L and l.M==r.M and l.l1==r.l1 and l.l2==r.l2
+	symmetryIndexFilter = lambda i: symmetryFilter(coupledIndexList[i[0]], coupledIndexList[i[1]])
+	symmetryPairs = filter(symmetryIndexFilter, coupledPairs)
+
+	return symmetryPairs
+
 
 #------------------------------------------------------------------------
 #                        Product State Analysis (examples)

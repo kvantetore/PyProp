@@ -1,5 +1,6 @@
 Include("analysis.cpp")
 module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulationRadialProductStates);\n')
+module_code('    def("SymmetrizeWavefunction", SymmetrizeWavefunction);\n')
 
 #SuperLU Solver
 Solver = Template("SuperLUSolver", "potential.cpp")
