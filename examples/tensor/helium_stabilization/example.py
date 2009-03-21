@@ -592,6 +592,9 @@ def ReconstructRadialDensityOnGrid(datafileName, radialGrid, bsplineObject, angu
 	#return radialDensity, B
 	return radialDensity
 
+def AssertSingleProc():
+	if not pyprop.IsSingleProc():
+		raise Exception("Method is only supported in single processor mode")
 
 def CreateRadialDensityFromFile(datafile, radialGrid):
 	#Get config from first data file

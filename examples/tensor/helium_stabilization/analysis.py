@@ -100,6 +100,7 @@ def GetSymmetrizedWavefunction(psi):
 	Returns a tuple of the symmetrized and anti-symmetrized wavefunction 
 	(symPsi, antiSymPsi)
 	"""
+	AssertSingleProc()
 
 	sym = GetSymmetrizationIndexPairs(psi)
 	exchgPsi = GetWavefunctionParticleExchange(psi, sym)
@@ -116,6 +117,8 @@ def GetSymmetrizedWavefunction(psi):
 	return symPsi, antiSymPsi
 
 def SymmetrizeWavefunction(psi, symmetrize):
+	AssertSingleProc()
+
 	if symmetrize:
 		symfactor = 1
 	else:
@@ -216,7 +219,7 @@ def GetFilteredSingleParticleStates(model, stateFilter, **args):
 	return filteredEnergies, filteredStates	
 
 
-def RunGetSingleIonizationProbability(fileList):
+def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	"""
 	Calculates total and single ionization probability
 	for a list of wavefunction files
@@ -226,7 +229,10 @@ def RunGetSingleIonizationProbability(fileList):
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	if removeBoundStates:
+		boundEnergies, boundStates = GetBoundStates(config=conf)
+	else:
+		boundEnergies = boundStates = None
 
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
@@ -242,7 +248,7 @@ def RunGetSingleIonizationProbability(fileList):
 	return zip(*map(getIonProb, fileList))
 
 
-def RunGetSingleIonizationEnergyDistribution(fileList):
+def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	"""
 	Calculates the energy distribution (dP/dE) of the 
 	single ionized continuum for a list of wavefunction 
@@ -250,18 +256,22 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 	"""
 	
 	maxE = 15.
-	dE = 0.1
+	dE = 0.3
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	if removeBoundStates:
+		boundEnergies, boundStates = GetBoundStates(config=conf)
+	else:
+		boundEnergies = boundStates = None
+
 
 	#Get single particle states
-	isIonized = lambda E: E > 0.0
-	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	isIonized = lambda E: 0.0 <= E <= maxE
+	isBound = lambda E: E < 0.0
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	#Calculate Energy Distribution (dP/dE)
@@ -273,7 +283,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList):
 	return E[0], dpde
 
 
-def RunGetDoubleIonizationEnergyDistribution(fileList):
+def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
 	doubly ionized continuum for a list of wavefunction 
@@ -281,13 +291,16 @@ def RunGetDoubleIonizationEnergyDistribution(fileList):
 	"""
 	
 	maxE = 15.
-	dE = 0.2
+	dE = 0.5
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
-	boundEnergies, boundStates = GetBoundStates(config=conf)
+	if removeBoundStates:
+		boundEnergies, boundStates = GetBoundStates(config=conf)
+	else:
+		boundEnergies = boundStates = None
 
 	#Get single particle states
 	isIonized = lambda E: 0.0 < E <= maxE
@@ -319,7 +332,8 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	RemoveBoundStateProjection(psi, boundStates)
+	if boundStates != None:
+		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
@@ -355,17 +369,26 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	RemoveBoundStateProjection(psi, boundStates)
+	if boundStates != None:
+		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
-	populations = GetPopulationProductStatesOld(psi, singleBoundStates, singleIonStates)
+	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
 	def getProbabilityL(startE, stopE, lPop, lEnergy):
 		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
 
 	def getEnergyGapProbability(startE, stopE):
 		return sum([getProbabilityL(startE, stopE, lPop, singleIonEnergies[lIon]) for lBound, lIon, lPop in populations])
+
+	s = []
+	for lBound, lIon, lPop in populations:
+		for boundIndex, ionIndex, rPop in lPop:
+			s.append((singleIonEnergies[lIon][ionIndex], rPop,))
+
+	x,y = zip(*s)
+	pylab.scatter(x, y)
 
 	E = r_[0:maxE:dE]
 	dpde = map(getEnergyGapProbability, E, E+dE)
@@ -383,10 +406,11 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
 
 	#remove boundstate projection
-	RemoveBoundStateProjection(psi, boundStates)
+	if boundStates != None:
+		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStatesOld(psi, singleIonStates, singleIonStates)
+	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
 
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
