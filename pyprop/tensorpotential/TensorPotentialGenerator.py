@@ -212,7 +212,7 @@ class TensorPotentialGenerator(object):
 			dest.ResizeArray(array(transposedShape))
 
 			#Transpose
-			transpose.Transpose(fullShape, source, array(distribution, int), dest, array(origDistribution, int))
+			transpose.Transpose(fullShape, source.GetArray(), array(distribution, int), dest.GetArray(), array(origDistribution, int))
 
 			#Use the new buffer
 			del source
