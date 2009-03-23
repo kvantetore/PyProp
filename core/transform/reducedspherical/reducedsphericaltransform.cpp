@@ -75,7 +75,7 @@ template<int Rank>
 ReducedSphericalHarmonicRepresentationPtr ReducedSphericalTransform<Rank>::CreateSphericalHarmonicRepr()
 {
 	ReducedSphericalHarmonicRepresentationPtr repr(new ReducedSphericalHarmonicRepresentation());
-	repr->SetupRepresentation( transform.GetLMax() );
+	repr->SetupRepresentation( transform.GetLMax(), transform.GetM() );
 	repr->SetBaseRank( GetBaseRank() );
 	return repr;
 }
