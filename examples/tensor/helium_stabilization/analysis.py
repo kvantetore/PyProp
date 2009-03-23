@@ -256,7 +256,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	"""
 	
 	maxE = 15.
-	dE = 0.3
+	dE = 0.1
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -291,7 +291,7 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	"""
 	
 	maxE = 15.
-	dE = 0.5
+	dE = 0.1
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -376,23 +376,25 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 	#calculate populations in product states containing bound he+ states
 	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 
-	def getProbabilityL(startE, stopE, lPop, lEnergy):
-		return sum([rPop for boundIndex, ionIndex, rPop in lPop if startE <= lEnergy[ionIndex] < stopE])
-
-	def getEnergyGapProbability(startE, stopE):
-		return sum([getProbabilityL(startE, stopE, lPop, singleIonEnergies[lIon]) for lBound, lIon, lPop in populations])
-
-	s = []
-	for lBound, lIon, lPop in populations:
-		for boundIndex, ionIndex, rPop in lPop:
-			s.append((singleIonEnergies[lIon][ionIndex], rPop,))
-
-	x,y = zip(*s)
-	pylab.scatter(x, y)
-
+	#Create an array for dpde
 	E = r_[0:maxE:dE]
-	dpde = map(getEnergyGapProbability, E, E+dE)
+	dpde = zeros(len(E), dtype=double)
 
+	#for every l-pair (lBound, lIon) we have a set of (iBound, iIon) states
+	#In order to create an approx to dp/de_ion, we interpolate for each iBound,
+	#and add coherently to the dpde array
+	for lBound, lIon, lPop in populations:
+		#number of states in this l-shell
+		nBound = singleBoundStates[lBound].shape[1]
+		nIon = singleIonStates[lIon].shape[1]
+
+		#iterate over all bound states in this l-shell
+		pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
+		for iBound in range(nBound):
+			#interpolate over ionized populations
+			curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])
+			dpde += interp(E, singleIonEnergies[lIon][:-1], curPop)
+		
 	return E, dpde
 
 def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
@@ -412,6 +414,32 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 
 	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
 
+
+	E = r_[0:maxE:dE]
+	#dpde = zeros((len(E), len(E)), dtype=double)
+	dpde = []
+
+	#for every l-pair (l1, l2) we have a set of (i1, i2) states
+	#In order to create an approx to dp/de_1 de_2, we make a 2d 
+	#interpolation for each l-shell
+	#and add coherently to the dpde array
+	for l1, l2, lPop in populations:
+		#number of states in this l-shell
+		n1 = singleIonStates[l1].shape[1]
+		n2 = singleIonStates[l2].shape[1]
+
+		#scale states with 1/dE_1 dE_2
+		pop = array([d[2] for d in lPop]).reshape(n1, n2)
+		E1 = singleEnergies[l1]
+		E2 = singleEnergies[l2]
+		meshE1, meshE2 = meshgrid(E1[:-1], E2[:-1])
+		pop[:-1,:-1] /= outer(diff(E1), diff(E2))
+		
+		#2d interpolation over all states in this shell
+		interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
+		dpde += [interpolator(E, E)]
+	
+	"""
 	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
 		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
 
@@ -426,6 +454,7 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	stopE2 = startE2 + dE
 
 	dpde = array(map(getEnergyGapProbability, startE1, stopE1, startE2, stopE2)).reshape(len(E), len(E))
+	"""
 
 	return E, dpde
 
