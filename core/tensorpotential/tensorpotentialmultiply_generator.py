@@ -1626,7 +1626,7 @@ def PrintFortranCode(curPart, partCount):
 					firstSmallRank = fullSize / distribPaddedSize
 
 					!round towards zero
-					procId = globalIndex / distribPaddedSize
+					procId = floor(real(globalIndex) / real(distribPaddedSize))
 
 					!The procs after firstSmallRank have one datapoint each
 					if (procId .gt. firstSmallRank) then
