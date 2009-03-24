@@ -59,7 +59,7 @@ def TestPreconditionedCG(blockSize = 11):
 	S = SetupOverlapMatrix(prop).real
 
 	#Random vector
-	b = random.random(S.shape[0])
+	b = random(S.shape[0])
 
 	#Iteration counter callback
 	iterObj = IterCount()
