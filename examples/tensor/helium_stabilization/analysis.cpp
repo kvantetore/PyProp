@@ -37,23 +37,36 @@ Array<cplx, 3> CalculateProjectionRadialProductStates(int l1, MatrixType V1, int
 	int rcount = V1.extent(0);
 
 	blitz::Array<cplx, 3> proj(count0, count1, count2);
+	blitz::Array<cplx, 2> tempProj(rcount, count2);
 
 	for (int i0=0; i0<angularIndices.extent(0); i0++)
 	{
 		int angIdx = angularIndices(i0);
 		MatrixType psiSlice = psiData(angIdx, Range::all(), Range::all());
 
+
+		//project on V2 states
+		tempProj = 0;
 		for (int r1=0; r1<rcount; r1++)
 		{
 			for (int r2=0; r2<rcount; r2++)
 			{
 				cplx curPsi = psiSlice(r1, r2);
-				for (int i1=0; i1<count1; i1++)
+				for (int i2=0; i2<count2; i2++)
 				{
-					for (int i2=0; i2<count2; i2++)
-					{
-						proj(i0, i1, i2) += conj(V1(r1, i1) * V2(r2, i2)) * curPsi;
-					}
+					tempProj(r1, i2) += conj(V2(r2, i2)) * curPsi;
+				}
+			}
+		}
+
+		//project on V1 states
+		for (int r1=0; r1<rcount; r1++)
+		{
+			for (int i1=0; i1<count1; i1++)
+			{
+				for (int i2=0; i2<count2; i2++)
+				{
+					proj(i0, i1, i2) += conj(V1(r1, i1)) * tempProj(r1, i2);
 				}
 			}
 		}
