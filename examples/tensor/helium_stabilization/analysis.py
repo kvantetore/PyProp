@@ -318,7 +318,7 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	return E[0], dpde
 
 
-def RunGetProductStatePopulations(fileList, removeBoundStates=True):
+def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBoundStates=True):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
 	doubly ionized continuum for a list of wavefunction 
@@ -344,27 +344,45 @@ def RunGetProductStatePopulations(fileList, removeBoundStates=True):
 	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
-	#Calculate Energy Distribution (dP/dE1 dE2)
-	def getPop(filename):
-		psi = pyprop.CreateWavefunctionFromFile(filename)
-	
-		#get absorbed prob
-		absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
+
+	f = tables.openFile(outputFile, "w")
+	try:
+		f.createArray(f.root, "scanParameter", scanParameter)
+		f.createArray(f.root, "filenames", fileList)
+		f.createVLArray(f.root, "singleBoundEnergies", atom=tables.ObjectAtom()).append(singleBoundEnergies)
+		f.createVLArray(f.root, "singleIonEnergies", atom=tables.ObjectAtom()).append(singleIonEnergies)
+		f.createVLArray(f.root, "doubleIonEnergies", atom=tables.ObjectAtom()).append(doubleIonEnergies)
+
+		#Calculate Energy Distribution (dP/dE1 dE2)
+		for i, filename in enumerate(fileList):
+			psi = pyprop.CreateWavefunctionFromFile(filename)
 		
-		#remove boundstate projection
-		if boundStates != None:
-			RemoveBoundStateProjection(psi, boundStates)
-		ionizationProbability = real(psi.InnerProduct(psi))
-	
-		#Get single ionization populations
-		singleIonPop = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
-		#Get double ionization populations
-		doubleIonPop = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
+			#get absorbed prob
+			absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
+			
+			#remove boundstate projection
+			if boundStates != None:
+				RemoveBoundStateProjection(psi, boundStates)
+			ionizationProbability = real(psi.InnerProduct(psi))
+		
+			#Get single ionization populations
+			singleIonPop = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+			singleIonization = sum([sum([p for i1, i2, p in pop]) for l1, l2, pop in singleIonPop ])
+			#Get double ionization populations
+			doubleIonPop = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
 
-		return absorbedProbability, ionizationProbability, singleIonPop, doubleIonPop
+			#save
+			grp = f.createGroup(f.root, "parameter_%i" % i)
+			grp._v_attrs.AbsorbedProbability = absorbedProbability
+			grp._v_attrs.TotalIonization = ionizationProbability
+			grp._v_attrs.SingleIonization = singleIonization
+			f.createVLArray(grp, "singleIonPop", atom=tables.ObjectAtom()).append(singleIonPop)
+			f.createVLArray(grp, "doubleIonPop", atom=tables.ObjectAtom()).append(doubleIonPop)
+			del grp
+		
+	finally:
+		f.close()
 
-	absorb, totalIon, singleIonPop, doubleIonPop = zip(*map(getPop, fileList))
-	return absorb, totalIon, singleBoundEnergies, singleIonEnergies, singleIonPop, doubleIonEnergies, doubleIonPop
 
 
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
