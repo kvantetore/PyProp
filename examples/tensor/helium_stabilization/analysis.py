@@ -353,9 +353,14 @@ def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBou
 		f.createVLArray(f.root, "singleIonEnergies", atom=tables.ObjectAtom()).append(singleIonEnergies)
 		f.createVLArray(f.root, "doubleIonEnergies", atom=tables.ObjectAtom()).append(doubleIonEnergies)
 
+		f.createVLArray(f.root, "doubleIonStates", atom=tables.ObjectAtom()).append(doubleIonStates)
+		f.createVLArray(f.root, "singleIonStates", atom=tables.ObjectAtom()).append(singleIonStates)
+		f.createVLArray(f.root, "singleBoundStates", atom=tables.ObjectAtom()).append(singleBoundStates)
+
 		#Calculate Energy Distribution (dP/dE1 dE2)
 		for i, filename in enumerate(fileList):
 			psi = pyprop.CreateWavefunctionFromFile(filename)
+			sym, anti = GetSymmetrizedWavefunction(psi)
 		
 			#get absorbed prob
 			absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
@@ -369,13 +374,15 @@ def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBou
 			singleIonPop = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
 			singleIonization = sum([sum([p for i1, i2, p in pop]) for l1, l2, pop in singleIonPop ])
 			#Get double ionization populations
-			doubleIonPop = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
+			doubleIonPop = GetPopulationProductStates(psi, doubleIonStates, doubleIonStates)
 
 			#save
 			grp = f.createGroup(f.root, "parameter_%i" % i)
 			grp._v_attrs.AbsorbedProbability = absorbedProbability
 			grp._v_attrs.TotalIonization = ionizationProbability
 			grp._v_attrs.SingleIonization = singleIonization
+			grp._v_attrs.SymmetrizedProbability = real(sym.InnerProduct(sym))
+			grp._v_attrs.AntiSymmetrizedProbability = real(anti.InnerProduct(anti))
 			f.createVLArray(grp, "singleIonPop", atom=tables.ObjectAtom()).append(singleIonPop)
 			f.createVLArray(grp, "doubleIonPop", atom=tables.ObjectAtom()).append(doubleIonPop)
 			del grp
