@@ -177,23 +177,6 @@ def RunSingleIonizationEnergyDistributionScan():
 	finally:
 		f.close()
 
-def RunSingleIonizationScan(filenames, scanParameter, outputPrefix):
-	absorb, totalIon, singleBoundEnergies, singleIonEnergies, singleIonPop, doubleIonEnergies, doubleIonPop = RunGetProductStatePopulations(filenames)
-
-	f = tables.openFile("%s.h5" % outputPrefix, "w")
-	try:
-		f.createArray(f.root, "scanParameter", scanParameter)
-		f.createArray(f.root, "filenames", filenames)
-		f.createArray(f.root, "absorb", absorb)
-		f.createArray(f.root, "totalIon", totalIon)
-		f.createVLArray(f.root, "singleBoundEnergies", atom=tables.ObjectAtom()).append(singleBoundEnergies)
-		f.createVLArray(f.root, "singleIonEnergies", atom=tables.ObjectAtom()).append(singleIonEnergies)
-		f.createVLArray(f.root, "doubleIonEnergies", atom=tables.ObjectAtom()).append(doubleIonEnergies)
-		f.createVLArray(f.root, "singleIonPop", atom=tables.ObjectAtom()).append(singleIonPop)
-		f.createVLArray(f.root, "doubleIonPop", atom=tables.ObjectAtom()).append(doubleIonPop)
-	finally:
-		f.close()
-
 
 #------------------------------------------------------------------------
 #                        Product State Analysis (implementation)
@@ -391,6 +374,89 @@ def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBou
 		f.close()
 
 
+def FromFileCalculateSingleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.1):
+	E = r_[0:maxE:dE]
+
+	f = tables.openFile(filename, "r")
+	try:
+		singleBoundEnergies = f.root.singleBoundEnergies[0]
+		singleIonEnergies = f.root.singleIonEnergies[0]
+		params = f.root.scanParameter[:]
+
+		def calculateSingleIndex(index):
+			grp = f.getNode("/parameter_%i" % index)
+			singleIonPop = grp.singleIonPop[0]
+
+			#Create an array for dpde
+			dpde = zeros(len(E), dtype=double)
+			
+			#for every l-pair (lBound, lIon) we have a set of (iBound, iIon) states
+			#In order to create an approx to dp/de_ion, we interpolate for each iBound,
+			#and add coherently to the dpde array
+			for lBound, lIon, lPop in singleIonPop:
+				#number of states in this l-shell
+				nBound = len(singleBoundEnergies[lBound])
+				nIon = len(singleIonEnergies[lIon])
+			
+				#iterate over all bound states in this l-shell
+				pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
+				for iBound in range(nBound):
+					#interpolate over ionized singleIonPop
+					curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])
+					dpde += interp(E, singleIonEnergies[lIon][:-1], curPop)
+			
+			return dpde
+
+
+		if scanIndex != -1:
+			return params[scanIndex], E, calculateSingleIndex(scanIndex)
+		else:
+			return params, E, map(calculateSingleIndex, r_[:len(params)])
+
+	finally:
+		f.close()
+
+def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.1):
+	E = r_[0:maxE:dE]
+
+	f = tables.openFile(filename, "r")
+	try:
+		doubleIonEnergies = f.root.singleIonEnergies[0]
+		params = f.root.scanParameter[:]
+
+		def calculateSingleIndex(index):
+			grp = f.getNode("/parameter_%i" % index)
+			doubleIonPop = grp.doubleIonPop[0]
+
+			dpde = zeros((len(E), len(E)), dtype=double)
+			for l1, l2, lPop in doubleIonPop:
+				#number of states in this l-shell
+				n1 = len(doubleIonEnergies[l1])
+				n2 = len(doubleIonEnergies[l2])
+			
+				#scale states with 1/dE_1 dE_2
+				pop = array([d[2] for d in lPop]).reshape(n1, n2)
+				E1 = doubleIonEnergies[l1]
+				E2 = doubleIonEnergies[l2]
+				meshE1, meshE2 = meshgrid(E1[:-1], E2[:-1])
+				pop[:-1,:-1] /= outer(diff(E1), diff(E2))
+				
+				#2d interpolation over all states in this shell
+				interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
+				dpde += interpolator(E, E)
+	
+			return dpde
+
+
+		if scanIndex != -1:
+			return params[scanIndex], E, calculateSingleIndex(scanIndex)
+		else:
+			return params, E, map(calculateSingleIndex, r_[:len(params)])
+
+	finally:
+		f.close()
+
+
 
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
 	"""
@@ -467,6 +533,7 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 		
 	return E, dpde
 
+
 def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
 	"""
 	Calculates double differential d^2P/(dE_1 dE_2) by 
@@ -509,23 +576,6 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 		interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
 		dpde += [interpolator(E, E)]
 	
-	"""
-	def getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, lEnergy1, lEnergy2):
-		return sum([rPop for i1, i2, rPop in lPop if (startE1 <= lEnergy1[i1] < stopE1) and (startE2 <= lEnergy2[i2] < stopE2)])
-
-	def getEnergyGapProbability(startE1, stopE1, startE2, stopE2):
-		return sum([getProbabilityL(startE1, stopE1, startE2, stopE2, lPop, singleEnergies[l1], singleEnergies[l2]) for l1, l2, lPop in populations])
-
-	E = r_[0:maxE:dE]
-	E1, E2 = meshgrid(E, E)
-	startE1 = E1.flatten()
-	stopE1 = startE1 + dE
-	startE2 = E2.flatten()
-	stopE2 = startE2 + dE
-
-	dpde = array(map(getEnergyGapProbability, startE1, stopE1, startE2, stopE2)).reshape(len(E), len(E))
-	"""
-
 	return E, dpde
 
 
