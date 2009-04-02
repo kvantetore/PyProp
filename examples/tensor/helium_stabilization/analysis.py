@@ -201,6 +201,44 @@ def GetFilteredSingleParticleStates(model, stateFilter, **args):
 	return filteredEnergies, filteredStates	
 
 
+def GetAssociatedLegendrePoly(lmax, theta):
+	leg = []
+	for l in range(lmax+1):
+		for m in range(-l, l+1):
+			leg.append(scipy.special.sph_harm(m, l, 0, theta))
+	return array(leg)
+
+
+def GetSingleParticleCoulombStates(Z, dk, mink, maxk, lmax, radialRepr):
+	bspl = radialRepr.GetBSplineObject()
+	k = r_[mink:maxk:dk]
+	rcount = radialRepr.GetFullShape()[0]
+	
+	states = []
+	for l in range(lmax+1):
+		V = zeros((rcount, len(k)), dtype=complex)
+		for i, curk in enumerate(k):
+			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspl)
+			V[:,i] = coeff
+		states.append(V)
+
+	return [k]*(lmax+1), states
+
+
+def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj):
+	#Get the Coulomb function in grid space
+	r = bsplineObj.GetQuadratureGridGlobal()
+	wav = zeros(len(r), dtype=double)
+	SetRadialCoulombWave(Z, l, k, r, wav)
+	cplxWav = array(wav, dtype=complex)
+
+	#get bspline coeffs
+	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
+	bsplineObj.ExpandFunctionInBSplines(cplxWav, coeff)
+
+	return coeff
+
+
 def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	"""
 	Calculates total and single ionization probability
@@ -228,8 +266,9 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 		#return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
 		sym, anti = GetSymmetrizedWavefunction(psi)
 		symProb = GetSingleIonizationProbability(sym, boundStates, singleBoundStates, singleIonStates)
-		antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStates, singleIonStates)
-		return (symProb, antiProb)
+		#antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStates, singleIonStates)
+		#return (symProb, antiProb)
+		return (symProb,)
 
 	return zip(*map(getIonProb, fileList))
 
@@ -421,7 +460,7 @@ def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.
 
 	f = tables.openFile(filename, "r")
 	try:
-		doubleIonEnergies = f.root.singleIonEnergies[0]
+		doubleIonEnergies = f.root.doubleIonEnergies[0]
 		params = f.root.scanParameter[:]
 
 		def calculateSingleIndex(index):
@@ -458,6 +497,70 @@ def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.
 
 
 
+def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True):
+	"""
+	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
+	doubly ionized continuum for a list of wavefunction 
+	files by projecting onto products of single particle states.
+	"""
+
+	Z = 2
+	dk = 0.01
+	mink = 0.1
+	maxk = 5
+	lmax = 5
+	theta = array([0., pi/2, pi], dtype=double)
+	#theta = linspace(0, pi, 20)
+
+	#load wavefunction
+	conf = pyprop.LoadConfigFromFile(fileList[0])
+
+	#load bound states
+	if removeBoundStates:
+		boundEnergies, boundStates = GetBoundStates(config=conf)
+	else:
+		boundEnergies = boundStates = None
+
+	#Get single particle states
+	isIonized = lambda E: 0.0 < E
+	isBound = lambda E: E <= 0.
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
+
+	#Get Coulomb states
+	psi = pyprop.CreateWavefunctionFromFile(fileList[0])
+	repr = psi.GetRepresentation().GetRepresentation(1)
+	singleK, coulombStates = GetSingleParticleCoulombStates(Z=Z, dk=dk, mink=mink, maxk=maxk, lmax=lmax, radialRepr=repr)
+	k = singleK[0]
+	del psi
+
+	#Get spherical harmonics
+	assocLegendre = GetAssociatedLegendrePoly(lmax, theta)
+
+	angDistr = []
+	for i, filename in enumerate(fileList):
+		psi = pyprop.CreateWavefunctionFromFile(filename)
+		sym, anti = GetSymmetrizedWavefunction(psi)
+		psi = sym
+	
+		#get absorbed prob
+		absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
+		
+		#remove boundstate projection
+		if boundStates != None:
+			RemoveBoundStateProjection(psi, boundStates)
+		ionizationProbability = real(psi.InnerProduct(psi))
+
+		#remove single ionization
+		RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
+		RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
+
+		#calculate angular distr for double ionized psi
+		angDistr.append(GetDoubleAngularDistribution(psi, Z, k, coulombStates, assocLegendre))
+
+	return k, theta, angDistr
+
+
 def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
 	"""
 	Calculates the single ionization probability by first projecting 
@@ -478,20 +581,27 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	#calculate populations in product states containing bound he+ states
+	##calculate populations in product states containing bound he+ states
 	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+
+	#remove single ion projection
+	#RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
+	#RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
+	#singleIonizationProbability2 = ionizationProbability - real(psi.InnerProduct(psi))
+	singleIonizationProbability2 = 0
 
 	#Calculate single ionization probability
 	lpop = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populations]
 	singleIonizationProbability = sum(lpop)
-
+	
 	print "Absorbed Probability     = %s" % (absorbedProbability)
 	print "Ioniziation Probability  = %s" % (ionizationProbability)
-	print "Single Ionization Prob.  = %s" % (singleIonizationProbability,)
+	print "Single Ionization Prob.  = %s, %s" % (singleIonizationProbability, singleIonizationProbability2)
 	print "Double Ionization Prob.  = %s" % (ionizationProbability - singleIonizationProbability)
 	print "Single Ionization ratio  = %s" % (singleIonizationProbability/ionizationProbability)
 
-	return absorbedProbability, ionizationProbability, singleIonizationProbability
+	#return absorbedProbability, ionizationProbability, singleIonizationProbability
+	return singleIonizationProbability2
 
 
 def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE):
@@ -628,19 +738,8 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 	repr.MultiplyIntegrationWeights(tempPsi)
 	distr = psi.GetRepresentation().GetDistributedModel()
 
-	angularRank = 0
-	angRepr = repr.GetRepresentation(0)
-	angIndexGrid = repr.GetLocalGrid(angularRank)
-
 	data = tempPsi.GetData()
 	population = []
-
-	m = 0
-	clebschGordan = pyprop.core.ClebschGordan()
-	l1, l2, L, M = zip(*map(lambda idx: angRepr.Range.GetCoupledIndex(int(idx)), angIndexGrid))
-	m1 = (m,)*len(l1)
-	m2 = array(M)-m
-	cgList = map(clebschGordan, l1, l2, m1, m2, L, M)
 
 	for l1, V1 in enumerate(singleStates1):
 		print "%i/%i" % (l1, len(singleStates1))
@@ -653,9 +752,7 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 
 			#filter out coupled spherical harmonic indices corresponding to this l
 			lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2 
-			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
-			#filter away all angular indices with zero clebsch-gordan coeff
-			angularIndices = array(filter(lambda idx: abs(cgList[idx])>0, angularIndices), dtype=int32)
+			angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int32)
 			if len(angularIndices) == 0:
 				continue
 		
@@ -690,19 +787,8 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 	repr.MultiplyIntegrationWeights(tempPsi)
 	distr = psi.GetRepresentation().GetDistributedModel()
 
-	angularRank = 0
-	angRepr = repr.GetRepresentation(0)
-	angIndexGrid = repr.GetLocalGrid(angularRank)
-
 	data = tempPsi.GetData()
 	population = []
-
-	m = 0
-	clebschGordan = pyprop.core.ClebschGordan()
-	l1, l2, L, M = zip(*map(lambda idx: angRepr.Range.GetCoupledIndex(int(idx)), angIndexGrid))
-	m1 = (m,)*len(l1)
-	m2 = array(M)-m
-	cgList = map(clebschGordan, l1, l2, m1, m2, L, M)
 
 	for l1, V1 in enumerate(singleStates1):
 		print "%i/%i" % (l1, len(singleStates1))
@@ -710,25 +796,61 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 		for l2, V2 in enumerate(singleStates2):
 
 			#filter out coupled spherical harmonic indices corresponding to this l
-			lfilter = lambda coupledIndex: coupledIndex.l2 == l1 and coupledIndex.l2 == l2
-			angularIndices = GetLocalCoupledSphericalHarmonicIndices(psi, lfilter)
-			
-			def removePopulation(i1, i2):
-				"""
-				Calculate <v1(1), v2(2) | psi(1,2)> 
-				"""
-				#Sum over all local indices
-				pop = 0
-				for angIdx in angularIndices:
-					cg = cgList[angIdx]
-					if abs(cg) > 0:
-						pop += real(abs( dot(conj(V1[:,i1]), dot(conj(V2[:,i2]), data[angIdx, :, :]) ) * cg )**2)
-				#Sum over all processors
-				pop = 2 * real(distr.GetGlobalSum(pop))
-				return i1, i2, pop
+			lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2 
+			angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int32)
+			if len(angularIndices) == 0:
+				continue
 		
-			#Get the population for every combination of v1 and v2
-			projV = map(getPopulation, *zip(*[(i1, i2) for i1 in range(V1.shape[1]) for i2 in range(V2.shape[1])]))
-			population.append(projV)
+			#Remove projection for every combination of v1 and v2
+			projV = RemoveProjectionRadialProductStates(l1, V1, l2, V2, data, angularIndices, psi.GetData())
+
 
 	return population
+
+
+def GetDoubleAngularDistribution(psi, Z, k, coulombStates, assocLegendre):
+	#Make a copy of the wavefunction and multiply 
+	#integration weights and overlap matrix
+	tempPsi = psi.Copy()
+	repr = psi.GetRepresentation()
+	repr.MultiplyIntegrationWeights(tempPsi)
+	distr = psi.GetRepresentation().GetDistributedModel()
+
+	data = tempPsi.GetData()
+	population = []
+
+	angularRank = 0
+	angRepr = repr.GetRepresentation(angularRank)
+
+	thetaCount = assocLegendre.shape[1]
+	stateCount = coulombStates[0].shape[1]
+	angularDistrProj = zeros((thetaCount, thetaCount, stateCount, stateCount), dtype=complex)
+	angularDistr = zeros(angularDistrProj.shape, dtype=double)
+
+	assocLegendre = array(assocLegendre, dtype=complex)
+
+	for m in range(-5,5+1):
+		angularDistrProj = zeros((thetaCount, thetaCount, stateCount, stateCount), dtype=complex)
+		for l1, V1 in enumerate(coulombStates):
+			print "%i/%i" % (l1, len(coulombStates))
+		
+			for l2, V2 in enumerate(coulombStates):
+		
+				#filter out coupled spherical harmonic indices corresponding to this l
+				lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2  and l2>=abs(m) and l1>=abs(m)
+				angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int)
+				coupledIndices = map(angRepr.Range.GetCoupledIndex, angularIndices)
+			
+				#calculate projection on radial states
+				radialProj = CalculateProjectionRadialProductStates(l1, V1, l2, V2, data, angularIndices)
+		
+				#expand spherical harmonics and add to angular distr proj
+				AddAngularProjectionAvgPhi(angularDistrProj, assocLegendre, radialProj, coupledIndices, k, float(Z), m)
+
+		curAngularDistr = real(angularDistrProj * conj(angularDistrProj))
+		print "for m = %i, curAngularDistr = %f" % (m, sum(curAngularDistr))
+		angularDistr += curAngularDistr
+
+	return angularDistr
+
+

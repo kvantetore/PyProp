@@ -186,7 +186,7 @@ def FindEigenvaluesJD(howMany, shift, tol = 1e-10, maxIter = 200, dataSetPath="/
 
 
 def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSymmetry=False, \
-	outFileName = "eig_direct.h5"):
+	outFileName = "eig_direct.h5", config="config_eigenvalues.ini"):
 	"""
 	Get energies and eigenstates by direct diagonalization of L-subspace matrix
 	"""
@@ -194,7 +194,7 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 	index_iterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
 	
 	#Set up problem
-	prop = SetupProblem(config="config_eigenvalues.ini", index_iterator=index_iterator)
+	prop = SetupProblem(config=config, index_iterator=index_iterator)
 
 	#Set up hamilton and overlap matrices
 	HamiltonMatrix = SetupBigMatrixReal(prop, [0,1])

@@ -2,6 +2,10 @@ Include("analysis.cpp")
 module_code('    def("CalculateProjectionRadialProductStates", CalculateProjectionRadialProductStates);\n')
 module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulationRadialProductStates);\n')
 module_code('    def("GetWavefunctionParticleExchange",  GetWavefunctionParticleExchange);\n')
+module_code('    def("AddAngularProjectionAvgPhi",  AddAngularProjectionAvgPhi);\n')
+module_code('    def("GetCoulombPhase",  GetCoulombPhase);\n')
+module_code('    def("RemoveProjectionRadialProductStates",  RemoveProjectionRadialProductStates);\n')
+module_code('    def("SetRadialCoulombWave",  SetRadialCoulombWave);\n')
 
 #SuperLU Solver
 Solver = Template("SuperLUSolver", "potential.cpp")
