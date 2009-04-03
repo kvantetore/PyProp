@@ -35,6 +35,55 @@ def SaveRadialEigenstates(**args):
 			f.close()
 
 
+def SetupRadialBesselStatesEnergyNormalized(prop, Z, Emax, dE):
+	E = r_[dE:Emax:dE]
+	k = sqrt(E*2)
+
+	psi = prop.psi
+	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+
+	
+	#Setup Radial Waves
+	S = SetupOverlapMatrix(prop)
+	coulWaves = map(lambda curL: array(map(lambda curK: sqrt(2*dE/pi/curK)*GetRadialBesselWaveBSplines(Z, int(curL), curK, bspline, S), k)).transpose(), l)
+	energies = [E]*len(l)
+
+	return energies, coulWaves
+
+
+def SetupRadialCoulombStatesMomentumNormalized(prop, Z, kmax, dk):
+	k = r_[dk:kmax:dk]
+	E = k**2 / 2
+
+	psi = prop.psi
+	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+	
+	#Setup Radial Waves
+	S = SetupOverlapMatrix(prop)
+	coulWaves = map(lambda curL: array(map(lambda curK: sqrt(2*dk/pi)*GetRadialCoulombWaveBSplines(Z, int(curL), curK, bspline, S), k)).transpose(), l)
+	energies = [E]*len(l)
+
+	return energies, coulWaves
+
+
+def SetupRadialCoulombStatesEnergyNormalized(prop, Z, Emax, dE):
+	E = r_[dE:Emax:dE]
+	k = sqrt(E*2)
+
+	psi = prop.psi
+	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+	
+	#Setup Radial Waves
+	S = SetupOverlapMatrix(prop)
+	coulWaves = map(lambda curL: array(map(lambda curK: sqrt(2*dE/pi/curK)*GetRadialCoulombWaveBSplines(Z, int(curL), curK, bspline, S), k)).transpose(), l)
+	energies = [E]*len(l)
+
+	return energies, coulWaves
+
+
 def SetupRadialEigenstates(prop, potentialIndices=[0]):
 	"""
 	Finds the eigenvalues and eigenvectors of the first potential
@@ -96,20 +145,26 @@ def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
 	
 
 def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
-	dE = min(diff(eigenValues[0]))
+	dE = min(diff(sorted(eigenValues[0])))
 	minE = 0
 	maxE = eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]
 	energyDistr = []
 
+	totalIon = 0 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
 		idx = where(curE>0)[0]
 		curE = curE[idx]
+		curV = curV[:,idx]
+		idx = argsort(curE)
+		curE = curE[idx]
+		curV = curV[:,idx]
 
 		#Get projection on eigenstates
 		psiSlice = psi.GetData()[l, :]
 		overlapPsi = dot(overlap, psiSlice)
 		proj = abs(dot(conj(curV[:,idx].transpose()), overlapPsi))**2
+		totalIon += sum(proj)
 
 		#Calculate density of states
 		interiorSpacing = list((diff(curE[:-1]) + diff(curE[1:])) / 2.)
@@ -121,8 +176,108 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 		#Interpolate to get equispaced dP/dE
 		energyDistr.append( scipy.interp(E, curE, proj * density, left=0, right=0) )
 
+	totalIon2 = sum(sum(array(energyDistr), axis=0)) * dE
+	print totalIon
+	print totalIon2
+	interpolateError = totalIon - totalIon2 
+
 	return E, energyDistr
-	
+
+def CalculateAngularDistribution(psi, eigenValues, eigenVectors, overlap, interpMethod="polar-square"):
+	dE = min(diff(eigenValues[0])) 
+	minE = dE
+	maxE = eigenValues[0][-1] #eigenValues[0][3*len(eigenValues[0])/4]
+	E = r_[minE:maxE:dE]
+	energyDistr = []
+
+	Z = 1
+	thetaCount = 100
+	lmax = len(eigenValues) -1
+	theta = linspace(0, pi, thetaCount)
+	leg = GetLegendrePoly(lmax, theta)
+
+	angularDistrProj = zeros((thetaCount, len(E)), dtype=complex)
+
+	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
+		idx = where(curE>=0)[0]
+		idx = idx[where(curE[idx]<=maxE)[0]]
+		
+		curE = curE[idx]
+		curk = sqrt(curE/2)
+
+		#Phase for outgoing waves
+		sigma = array([GetCoulombPhase(l, Z / k) for k in curk])
+		phase = (-1.j)**l * exp(1.j * sigma)
+
+		#Get projection on eigenstates
+		psiSlice = psi.GetData()[l, :]
+		overlapPsi = dot(overlap, psiSlice)
+		proj = dot(conj(curV[:,idx].transpose()), overlapPsi)
+
+		#Calculate density of states
+		#interiorSpacing = list((diff(curE[:-1]) + diff(curE[1:])) / 2.)
+		interiorSpacing = list(diff(curE)[1:])
+		leftSpacing = (curE[1] - curE[0])
+		rightSpacing = (curE[-1] - curE[-2])
+		spacing = array([leftSpacing] + interiorSpacing + [rightSpacing])
+		density = 1.0 / sqrt(spacing)
+
+		#Interpolate to get equispaced dP/dE
+		partialProj = phase * proj * density 
+		if interpMethod == "polar-square":
+			#interpolate in complex polar coordinates
+			r = abs(partialProj)**2
+			i = arctan2(imag(partialProj), real(partialProj))
+			argr = cos(i)
+			argi = sin(i)
+			interpr = scipy.interpolate.UnivariateSpline(curE, r, s=0)(E)
+			interpArgR = scipy.interpolate.UnivariateSpline(curE, argr, s=0)(E)
+			interpArgI = scipy.interpolate.UnivariateSpline(curE, argi, s=0)(E)
+			#plot(interpArgR)
+			#plot(interpArgI)
+			interpPhase = (interpArgR + 1.j*interpArgI) / sqrt(interpArgR**2 + interpArgI**2)
+			interpProj = sqrt(maximum(interpr, 0)) * interpPhase
+		elif interpMethod == "polar-square-old":
+			#interpolate in complex polar coordinates
+			r = abs(partialProj)**2
+			i = arctan2(imag(partialProj), real(partialProj))
+			interpr = scipy.interpolate.UnivariateSpline(curE, r, s=0)(E)
+			interpi = scipy.interpolate.UnivariateSpline(curE, i, s=100)(E)
+			plot(curE, i)
+			plot(E, interpi)
+			#interpr = scipy.interp(E, curE, r, right=0, left=0)
+			#interpi = scipy.interp(E, curE, i, right=0, left=0)
+			interpProj = sqrt(maximum(interpr,0)) * exp(1.0j * interpi)
+		elif interpMethod == "polar":
+			r = abs(partialProj)
+			i = arctan2(imag(partialProj), real(partialProj))
+			interpr = scipy.interp(E, curE, r, right=0, left=0)
+			interpi = scipy.interp(E, curE, i, right=0, left=0)
+			interpProj = interpr * exp(1.0j * interpi)
+		elif interpMethod == "cartesian":
+			#interpolate in complex cartesian coordinates
+			r = real(partialProj)
+			i = imag(partialProj)
+			interpr = scipy.interp(E, curE, r, left=0, right=0) 
+			interpi = scipy.interp(E, curE, i, left=0, right=0)
+			interpProj= interpr + 1.j*interpi
+		else:
+			raise Exception("unknown interpMethod %s" % interpMethod)
+
+		print sum(abs(interpProj)**2) * dE, sum(abs(partialProj/density)**2)
+		angularDistrProj += outer(leg[l,:], interpProj)
+
+	return E, theta, abs(angularDistrProj)**2
+
+
+def GetLegendrePoly(lmax, theta):
+	leg = []
+	m = 0
+	for l in range(lmax+1):
+		leg.append(scipy.special.sph_harm(m, l, 0, theta))
+	return array(leg)
+
+
 def CalculateBoundDistribution(psi, eigenValues, eigenVectors, overlap, boundThreshold=0):
 	boundDistr = []
 	boundE = []
@@ -193,6 +348,16 @@ def SetupOverlapMatrix(prop):
 #            Coulomb Wave Analysis
 #---------------------------------------------------------------------------------------
 
+def GetRadialCoulombWave(Z, l, k, rmax=100):
+	#Get the Coulomb function in grid space
+	dr = 0.01
+	r = r_[dr:rmax:dr]
+	wav = zeros(len(r), dtype=double)
+	SetRadialCoulombWave(Z, l, k, r, wav)
+
+	return r, wav	
+
+
 def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj, S):
 	#Get the Coulomb function in grid space
 	r = bsplineObj.GetQuadratureGridGlobal()
@@ -204,11 +369,21 @@ def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj, S):
 	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
 	bsplineObj.ExpandFunctionInBSplines(cplxWav, coeff)
 
-	#normalize
-	n = real(dot(conj(coeff), dot(S, coeff)))
-	coeff /= sqrt(n)
+	return coeff
+
+def GetRadialBesselWaveBSplines(Z, l, k, bsplineObj, S):
+	besselFunc = lambda k, r: sin(k*r + Z/k * log(k*r) - l*pi/2 + GetCoulombPhase(l, Z / k))
+
+	#Get the Coulomb function in grid space
+	r = bsplineObj.GetQuadratureGridGlobal()
+	wav = array(besselFunc(k, r), dtype=complex)
+
+	#get bspline coeffs
+	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
+	bsplineObj.ExpandFunctionInBSplines(wav, coeff)
 
 	return coeff
+
 
 def CalculateDpDk(Z, k, psi, S):
 	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()

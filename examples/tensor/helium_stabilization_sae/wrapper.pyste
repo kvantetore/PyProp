@@ -1,4 +1,6 @@
 Function("SetRadialCoulombWave", "potential.cpp")
+Function("GetCoulombNormalization", "potential.cpp")
+Function("GetCoulombPhase", "potential.cpp")
 
 #declare potential evaluator for cartesian-like potentials
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")

@@ -589,6 +589,7 @@ public:
 
 
 #include <gsl/gsl_sf_coulomb.h>
+#include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_errno.h>
 
 /*
@@ -614,4 +615,26 @@ void SetRadialCoulombWave(int Z, int l, double k, blitz::Array<double, 1> r, bli
 		data(i) = F.val;
 	}
 }
+
+double GetCoulombNormalization(double Z, int l, double k)
+{
+	double eta = Z / k;
+	gsl_sf_result C;
+	int error = gsl_sf_coulomb_CL_e(l, eta, &C);
+	return C.val;
+}
+
+/* 
+ * Gets the Coulomb phase sigma_l = arg(gamma(l + 1 + i*eta))
+ */
+double GetCoulombPhase(int l, double eta)
+{
+	gsl_sf_result absval, argval;
+	if (gsl_sf_lngamma_complex_e(1.0+l, eta, &absval, &argval) == GSL_ELOSS)
+	{
+		cout << "Overflow error in gsl_sf_lngamma_complex_e, l=" << l << ", eta=" << eta << endl;
+	}
+	return argval.val;
+}
+
 

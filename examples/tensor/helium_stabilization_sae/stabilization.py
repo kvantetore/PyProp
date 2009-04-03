@@ -156,6 +156,7 @@ def RunStabilization(**args):
 	
 		#Print stats
 		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, bound = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, boundTotal, outsideAbsorber, FormatDuration(eta)))
+		PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
 
 	#Save the time-valued variables
 	prop.TimeList = timeList
@@ -170,9 +171,9 @@ def RunStabilization(**args):
 	#prop.Propagator.PampWrapper.PrintStatistics()
 
 	#Saving final wavefunction
-	outputFilename = args.get("outputFilename", "final.h5")
-	outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
-	prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
+	#outputFilename = args.get("outputFilename", "final.h5")
+	#outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
+	#prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
 
 	return prop
 

@@ -11,7 +11,10 @@ import numpy
 import pylab
 import time
 import tables
+import scipy.interpolate
+import scipy.special
 
+from pylab import *
 from numpy import *
 from libpotential import *
 
@@ -200,7 +203,6 @@ def LaserFunctionSimpleLength(conf, t):
 	return curField
 
 
-
 def LaserFunctionLength(conf, t):
 	if 0 <= t < conf.pulse_duration:
 		curField = conf.amplitude;
@@ -211,6 +213,24 @@ def LaserFunctionLength(conf, t):
 		curField = 0
 	return curField
 
+
+def LaserFunctionFlatTop(conf, t):
+	curField = 0
+	pulseStart = 0
+	if conf.Exists("pulse_start"):
+		pulseStart = conf.pulse_start
+	curField = conf.amplitude * cos(t * conf.frequency);
+
+	if (t > conf.pulse_duration) or (t < pulseStart):
+		curField = 0
+	elif 0 <= t < conf.ramp_on_time:
+		curField *= sin(t * pi / (2*conf.ramp_on_time))**2;
+	elif t > conf.pulse_duration - conf.ramp_off_time:
+		curField *= sin((conf.pulse_duration - t) * pi / (2*conf.ramp_off_time))**2;
+	else:
+		curField *= 1
+
+	return curField
 #------------------------------------------------------------------------------------
 #                       Preconditioner for Cayley Propagator
 #------------------------------------------------------------------------------------

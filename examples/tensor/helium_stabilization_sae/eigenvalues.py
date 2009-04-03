@@ -1,7 +1,7 @@
 
 
 def FindEigenvaluesNearShift(shift, **args):
-	prop = SetupProblem(silent=True, eigenvalueShift=shift, **args)
+	prop = SetupProblem(silent=False, eigenvalueShift=shift, **args)
 
 	#Setup shift invert solver in order to perform inverse iterations
 	shiftInvertSolver = pyprop.GMRESShiftInvertSolver(prop)
