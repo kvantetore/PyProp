@@ -211,64 +211,16 @@ void SetRadialCoulombWave(int Z, int l, double k, blitz::Array<double, 1> r, bli
  * 		rank3 - i2
  */
 void AddAngularProjectionAvgPhi(Array<cplx, 4> angularData, Array<cplx, 2> sphericalHarmonics, 
-		Array<cplx, 3> radialProj, list coupledIndexList, Array<double, 1> k, double Z, int m)
+		Array<cplx, 2> radialProj, int l1, int l2, int m, int M)
 {
-	CoupledSpherical::ClebschGordan cg;
-
-	typedef stl_input_iterator<CoupledSpherical::CoupledIndex> Iterator;
-	Iterator begin(coupledIndexList);
-	Iterator end;
-
-	Array<cplx, 1> phase1(k.extent(0));
-	Array<cplx, 1> phase2(k.extent(0));
-
-	int prevl1 = -1;
-	int prevl2 = -1;
-
-	int angIdx = 0;
-	for (Iterator i=begin; i!=end; ++i)
-	{
-		CoupledSpherical::CoupledIndex idx = *i;
-		const cplx I(0., 1.);
-
-		//m must be smaller than l1 and l2 for the spherical harmonics to be non-zero
-		if (abs(m) <= idx.l1 && abs(m) <= idx.l2)
-		{
-			//Update phases if necessary
-			if (idx.l1 != prevl1)
-			{
-				for (int ki=0; ki<k.extent(0); ki++)
-				{
-					phase1(ki) = exp( I * GetCoulombPhase(idx.l1, Z/k(ki)) ) ;// / k(ki);
-				}
-				prevl1 = idx.l1;
-			}
-			if (idx.l2 != prevl2)
-			{
-				for (int ki=0; ki<k.extent(0); ki++)
-				{
-					phase2(ki) = exp( I * GetCoulombPhase(idx.l2, Z/k(ki)) ) ;// / k(ki);
-				}
-				prevl2 = idx.l2;
-			}
-			double cgScale = cg(idx.l1, idx.l2, m, idx.M-m, idx.L, idx.M);
-			cplx phase0 = cgScale * exp(- I * cplx(M_PI/2. * (idx.l1 + idx.l2), 0.0) );
-
-			//create a view to the current spherical harmonic and radialProjection arrays
-			Array<cplx, 1> sph1 = sphericalHarmonics( MapLmIndex(idx.l1, m), Range::all());
-			Array<cplx, 1> sph2 = sphericalHarmonics( MapLmIndex(idx.l2, idx.M-m), Range::all());
-			Array<cplx, 2> rad = radialProj(angIdx, Range::all(), Range::all());
-		
-			//Add data
-			angularData +=  phase0 * phase1(tensor::k) * phase2(tensor::l) 
-											* sph1(tensor::i)  * sph2(tensor::j)
-											* rad(tensor::k, tensor::l);
-		}
-
-		++angIdx;
-	}
+	//create a view to the current spherical harmonic and radialProjection arrays
+	Array<cplx, 1> sph1 = sphericalHarmonics( MapLmIndex(l1, m), Range::all());
+	Array<cplx, 1> sph2 = sphericalHarmonics( MapLmIndex(l2, M-m), Range::all());
+	
+	//Add data
+	angularData +=    sph1(tensor::i) * sph2(tensor::j)
+					* radialProj(tensor::k, tensor::l);
 }
-
 
 // ------------------------------------------------------------------------------------------------------- 
 //                                            Symmetrization
