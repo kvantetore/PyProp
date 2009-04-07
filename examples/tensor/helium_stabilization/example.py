@@ -31,6 +31,8 @@ except:
 
 try:
 	import scipy
+	import scipy.interpolate
+	import scipy.special
 	import scipy.sparse
 	import scipy.linsolve
 	scipy.linsolve.use_solver(useUmfpack=False)

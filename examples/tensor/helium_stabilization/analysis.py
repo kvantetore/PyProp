@@ -509,7 +509,7 @@ def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, 
 	#maxk = 5
 	lmax = 5
 	#theta = array([0., pi/2, pi], dtype=double)
-	theta = linspace(0, pi, 40)
+	theta = linspace(0, pi, 10)
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -528,8 +528,8 @@ def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, 
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
 
-	dE = maximum(min(diff(singleIonEnergies[0])), 0.3)
-	interpE = r_[dE:20:dE]
+	dE = maximum(min(diff(singleIonEnergies[0])), 0.1)
+	interpE = r_[dE:15:dE]
 	interpK = sqrt(interpE * 2)
 
 
@@ -950,4 +950,14 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 
 	return angularDistr
 
+def GetParallelMomentumDistribution(energy, th, dp):
+	nE = len(energy)
+	dp2 = zeros((nE*2, nE*2), dtype=double)
+	dp2[nE:, nE:] = dp[0,0,:,:]
+	dp2[:nE, :nE] = fliplr(flipud(dp[-1,-1,:,:]))
+	dp2[:nE, nE:] = fliplr(dp[0,-1,:,:])
+	dp2[nE:, :nE] = flipud(dp[-1,0,:,:])
 
+	e2 = array([-x for x in reversed(energy)] + [x for x in energy]) 
+
+	return e2, dp2
