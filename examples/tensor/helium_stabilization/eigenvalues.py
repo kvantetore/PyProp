@@ -13,13 +13,15 @@ def RunFindBoundstates(**args):
 	eigenvalueBasisSize = args.get("eigenvalueBasisSize", 70)
 	args["eigenvalueCount"] = eigenvalueCount
 	args["eigenvalueBasisSize"] = eigenvalueBasisSize
+	shift = args.get("shift", -2.9)
+	args["shift"] = shift
 
 	outFolder = "output/boundstates"
 	if pyprop.ProcId == 0:
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
 	outFileName = os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
-	FindEigenvaluesInverseIterations(outFileName=outFileName, shift=-2.9, **args)
+	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
 			
 
 def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \

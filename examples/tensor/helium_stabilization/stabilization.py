@@ -26,7 +26,8 @@ def FormatDuration(duration):
 def RunStabilization(**args):
 	if "configFile" not in args: args["configFile"] = "config.ini"
 
-	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s.h5" % "_".join(GetRadialGridPostfix(**args))
+	gsFilenamePostfix = args.get("gsFilenamePostfix", "")
+	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s_%s.h5" % ("_".join(GetRadialGridPostfix(**args)), gsFilenamePostfix)
 	groundstateFilename = args.get("groundstateFilename", gsFilenameGenerated)
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
@@ -52,7 +53,7 @@ def RunStabilization(**args):
 	
 		#Get groundstate wavefunction
 		#initPsi = initProp.psi
-		solver.SetEigenvector(initProp.psi, 0)
+		solver.SetEigenvector(initProp.psi, 2)
 		initProp.psi.Normalize()
 		initPsi = initProp.psi.Copy()
 
@@ -73,8 +74,13 @@ def RunStabilization(**args):
 		
 		
 	#Set up propagation problem
-	potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
-	PrintOut("Setting up new problem with laser potentials...")
+	if args.get("laserOff", False):
+		potList = ["Absorber"]
+		PrintOut("Setting up new problem WITHOUT laser potentials...")
+	else:
+		potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
+		PrintOut("Setting up new problem with laser potentials...")
+
 	sys.stdout.flush()
 	prop = SetupProblem(additionalPotentials=potList, **args)
 	PrintOut("Done setting up problem! (initPsi = %s)" % initPsi)
@@ -199,9 +205,13 @@ def SubmitStabilizationRun():
 	"""
 	Calculate total ionization for a range of intensities to determine stabilization
 	"""
-	configFile = "config.ini"
+	configFile = "config_stabilization_freq_5.ini"
 	timestep = 0.01
-	frequency = 5.0
+	frequency = 3.0
+	cycles = 6
+	pulse_duration = cycles * 2 * pi / frequency
+	#duration = 1 * cycles * 2 * pi / frequency
+	duration = 1.0 * pulse_duration
 
 	radialGrid = {\
 	'xsize' : 80, \
@@ -211,34 +221,46 @@ def SubmitStabilizationRun():
 	'xpartition' : 20, \
 	'gamma' : 2.0}
 
-	amplitudeList = arange(1.0, 41.0)
+	amplitudeList = arange(1.0, 20.0)
+	#amplitudeList = arange(25.0, 31.0)
 	#amplitudeList = arange(41.0, 61.0)
 	#amplitudeList = [1]
 	
-	outputDir = "stabilization_freq_5_scan_%s/" % "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid))
+	#outputDir = "stabilization_freq_%s_scan_1s2p_%s/" % (frequency, "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid)))
+	outputDir = "stabilization_freq_%s_scan_M1_%s/" % (frequency, "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid)))
 	if not os.path.exists(outputDir):
 		print "Created output dir: %s" % outputDir
 		os.makedirs(outputDir)
 	
 	#for I in amplitudeList:
-	for I in [20]:
-		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e" % (I, timestep)
-		#RunSubmitFullProcCount(RunStabilization, \
-		RunSubmitFullProcCount(SetupAllStoredPotentials, \
-			procPerNode=8, \
-			procMemory="2000mb", \
-			walltime=timedelta(minutes=30), \
+	for I in [10]:
+		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e_T_%2.1f" % (I, timestep, duration)
+		RunSubmitFullProcCount(RunStabilization, \
+		#RunSubmitFullProcCount(SetupAllStoredPotentials, \
+		#RunSubmitFullProcCount(SetupIonizationBoxStoredPotentials, \
+			account='fysisk', \
+			procPerNode=1, \
+			procMemory="4000M", \
+			walltime=timedelta(hours=3), \
 			config=configFile, \
-			dt=timestep, \
+			timestep=timestep, \
+			duration=duration,\
+			frequency=frequency, \
 			amplitude=I/frequency, \
+			pulse_duration=pulse_duration, \
 			outputCount=300, \
 			outputFilename=name, \
-			findGroundstate=False, \
-			storeInitialState=False, \
+			findGroundstate=True, \
+			storeInitialState=True, \
 			saveWavefunctionDuringPropagation=False, \
-			useStoredPotentials=False, \
 			writeScript=False, \
-			radialGrid=radialGrid)
+			useStoredPotentials = False, \
+			radialGrid=radialGrid, \
+			#multipoleCutoff = 5, \
+			laserOff = False, \
+			gsFilenamePostfix = "_M1", \
+			shift = -2.1, \
+			)
 			
 
 def SubmitHasbaniExampleRun(workingDir):
@@ -286,32 +308,34 @@ def SubmitNikolopoulosExampleRun():
 			findGroundstate = True, \
 			writeScript=False)
 
-def SubmitStabilizationEigenvaluesJob(workingDir):
+
+def SubmitStabilizationEigenvaluesJob():
 	"""
 	Calculate a number of the lowest eigenvalues of Helium for a range of L's
 	"""
-	outputDir = "out/"
-	lmax = 5
+	lmax = 7
+	radialGrid = {\
+		'xpartition': 20,\
+		'xmax': 200,\
+		'bpstype': 'exponential',\
+		'xsize': 40,\
+		'order': 5,\
+		'gamma': 6.0}
 	
 	#for L in range(lmax+1):
-	for L in [1,2]:
-		idxIt = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
-		numProcs = len([i for i in idxIt])
-		name = outputDir + "eigenvalues_stabilization_L%i_20stk.h5" % L
-		Submit(executable="run_eigenvalues.py", \
-			runHours=3, \
-			jobname="stabilization-eig-L%i" % L, \
-			numProcs=numProcs, \
+	for L in [0,1,2,3]:
+		RunSubmitFullProcCount(RunFindBoundstates, \
+			account='fysisk', \
+			procPerNode=4, \
+			procMemory="1000M", \
+			walltime=timedelta(hours=1, minutes=30), \
+			config="config_stabilization_freq_5.ini", \
 			writeScript=False, \
-			ppn=8, \
-			proc_memory="2000mb",\
-			interconnect="", \
-			account="nn2700k", \
-			config="config_stabilization.ini", \
-			workingDir=workingDir, \
-			outFileName=name, \
-			index_iterator = idxIt, \
+			radialGrid=radialGrid, \
+			L = L, \
+			lmax = lmax, \
 			shift = L == 0 and -2.9 or -2.1)
+
 
 def FindStabilization(runFilePath):
 	#runFilePath = "stabilization_freq_5_cycle4"

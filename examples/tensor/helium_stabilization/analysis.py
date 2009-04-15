@@ -138,9 +138,9 @@ def SymmetrizeWavefunction(psi, symmetrize):
 #------------------------------------------------------------------------
 
 def RunSingleIonizationStabilizationScan():
-	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02.h5"
-	outputPrefix = "stabilization_scan2"
-	intensity = r_[25:36]
+	filenameTemplate = "stabilization_freq_3.0_scan_1s2p_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02_T_12.6.h5"
+	outputPrefix = "stabilization_scan_freq_3.0_1s2p"
+	intensity = r_[1:16]
 
 	filenames = [filenameTemplate % i for i in intensity]
 	absorb, totalIon, singleIon, doubleIon = RunSingleIonizationScan(filenames, outputPrefix)
@@ -149,7 +149,7 @@ def RunSingleIonizationStabilizationScan():
 	pylab.plot(intensity, singleIon, "--", label="Single Ion.")
 	pylab.plot(intensity, doubleIon, ":", label="Double Ion.")
 	xlabel("Intensity")
-	title("Ionization Probability for w=5")
+	title("Ionization Probability (1s2p) for w=3")
 	ylim(0,1)
 	pylab.legend(loc="lower right")
 	pylab.savefig("%s.png" % outputPrefix)

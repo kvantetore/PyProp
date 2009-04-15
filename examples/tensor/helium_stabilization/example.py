@@ -97,9 +97,14 @@ def SetupConfig(**args):
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
 	
+	if "pulse_duration" in args:
+		pulse_duration = args["pulse_duration"]
+		conf.SetValue("PulseParameters", "pulse_duration", pulse_duration)
+		conf.SetValue("PulseParameters", "cycles", None)
+	
 	if "timestep" in args:
 		dt = args["timestep"]
-		conf.SetValue("Propagation", "timestep", timestep)
+		conf.SetValue("Propagation", "timestep", dt)
 
 	if "eigenvalueCount" in args:
 		conf.SetValue("Arpack", "krylov_eigenvalue_count", args["eigenvalueCount"])
@@ -143,6 +148,8 @@ def SetupConfig(**args):
 			pass
 		elif gridType == "exponentiallinear":
 			setvalue("xpartition")
+			setvalue("gamma")
+		elif gridType == "exponential":
 			setvalue("gamma")
 		else:
 			raise Exception("Invalid Grid Type '%s'" % gridType)
@@ -190,6 +197,8 @@ def SetupConfig(**args):
 			"LaserPotentialVelocityDerivativeR2", \
 			"LaserPotentialVelocity", \
 			"DipolePotentialLength", \
+			"SingleIonizationBox", \
+			"DoubleIonizationBox", \
 			]
 		for potName in potentialNames:
 			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
@@ -250,6 +259,8 @@ def GetRadialGridPostfix(**args):
 		pass
 	elif gridType == "exponentiallinear":
 		postfix.append("xpartition%i" % cfg.xpartition)
+		postfix.append("gamma%.1f" % cfg.gamma)
+	elif gridType == "exponential":
 		postfix.append("gamma%.1f" % cfg.gamma)
 
 	return postfix

@@ -38,11 +38,11 @@ def Submit(executable=None, writeScript=False, installation="hexagon", **args):
 	else:
 		jscript.Submit()
 
-def RunSubmitFullProcCount(function, procPerNode=4, *arglist, **argdict):
+def RunSubmitFullProcCount(function, account, procPerNode=4, *arglist, **argdict):
 	angCount = GetAngularBasisSize(**argdict)
-	return RunSubmit(function, angCount, procPerNode, *arglist, **argdict)
+	return RunSubmit(function, account, angCount, procPerNode, *arglist, **argdict)
 
-def RunSubmit(function, procCount=1, procPerNode=4, procMemory="1000mb", walltime=timedelta(minutes=30), *arglist, **argdict):
+def RunSubmit(function, account, procCount=1, procPerNode=4, procMemory="1000M", walltime=timedelta(minutes=30), *arglist, **argdict):
 	"""
 	Runs a function on the compute nodes.
 	
@@ -70,6 +70,7 @@ def RunSubmit(function, procCount=1, procPerNode=4, procMemory="1000mb", walltim
 		submit.executable = "./python-exec run-function.py"
 		submit.parameters = arg1 + arg2 + arg3
 		submit.walltime = walltime
+		submit.account = account
 		submit.WriteScript("test.job")
 		jobId = submit.Submit()
 
