@@ -42,7 +42,7 @@ def RunSubmitFullProcCount(function, account, procPerNode=4, *arglist, **argdict
 	angCount = GetAngularBasisSize(**argdict)
 	return RunSubmit(function, account, angCount, procPerNode, *arglist, **argdict)
 
-def RunSubmit(function, account, procCount=1, procPerNode=4, procMemory="1000M", walltime=timedelta(minutes=30), *arglist, **argdict):
+def RunSubmit(function, account, procCount=1, procPerNode=4, procMemory="1000M", walltime=timedelta(minutes=30), depend=None, writeScript=False, *arglist, **argdict):
 	"""
 	Runs a function on the compute nodes.
 	
@@ -71,10 +71,11 @@ def RunSubmit(function, account, procCount=1, procPerNode=4, procMemory="1000M",
 		submit.parameters = arg1 + arg2 + arg3
 		submit.walltime = walltime
 		submit.account = account
+		submit.depend = depend
 		submit.WriteScript("test.job")
-		jobId = submit.Submit()
-
-
+		if not writeScript:
+			jobId = submit.Submit()
+			
 	elif INSTALLATION == "stallo":
 		submit = submitpbs.SubmitScript()
 		submit.procs = procCount
@@ -85,7 +86,8 @@ def RunSubmit(function, account, procCount=1, procPerNode=4, procMemory="1000M",
 		submit.walltime = walltime
 		submit.interconnect = ""
 		submit.WriteScript("test.job")
-		jobId = submit.Submit()
+		if not writeScript:
+			jobId = submit.Submit()
 
 	elif INSTALLATION == "local":
 		raise Exception("please to implement")

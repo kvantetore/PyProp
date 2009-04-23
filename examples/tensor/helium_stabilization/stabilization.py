@@ -22,56 +22,72 @@ def FormatDuration(duration):
 
 	return " ".join(str)
 
+def GetInitialStateFilename(**args):	
+	radialPostfix = "_".join(GetRadialGridPostfix(**args))
+	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s_%s.h5" % (radialPostfix, angularPostfix)
+	groundstateFilename = args.get("groundstateFilename", gsFilenameGenerated)
+	return groundstateFilename
 
-def RunStabilization(**args):
+def RunStabilizationInputFile(**args):
+	"""
+	Sets up the initial state for a set of arguments
+	"""
+
 	if "configFile" not in args: args["configFile"] = "config.ini"
 
-	gsFilenamePostfix = args.get("gsFilenamePostfix", "")
-	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s_%s.h5" % ("_".join(GetRadialGridPostfix(**args)), gsFilenamePostfix)
-	groundstateFilename = args.get("groundstateFilename", gsFilenameGenerated)
+	groundstateFilename = GetInitialStateFilename(**args)
+	PrintOut("Using Groundstate File %s" % (groundstateFilename,))
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
 	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
 	storeInitialState = args.get("storeInitialState", False)
 
+	#Find Groundstate with piram
+	initProp = SetupProblem(eigenvalueCount=1, **args)
+
+	#Setup inverse iterator	
+	invIt = pyprop.GMRESShiftInvertSolver(initProp)
+	initProp.Config.Arpack.matrix_vector_func = invIt.InverseIterations
+
+	#Setup solver
+	solver = pyprop.PiramSolver(initProp)
+	solver.Solve()
+
+	#Get groundstate wavefunction
+	solver.SetEigenvector(initProp.psi, 2)
+	initProp.psi.Normalize()
+	initPsi = initProp.psi.Copy()
+
+	#Store wavefunction
+	if storeInitialState:
+		initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
+
+	#Print ground state energy
+	energyExpt = initProp.GetEnergyExpectationValue()
+	groundstateEnergy = solver.GetEigenvalues()[0].real
+	PrintOut("Ground state energy = %s (%s)" % (1.0 / groundstateEnergy + initProp.Config.GMRES.shift, energyExpt))
+
+	#free memory
+	del solver
+	del initProp
+	del invIt
+
+	return initPsi
+	
+
+def RunStabilization(**args):
+	if "configFile" not in args: args["configFile"] = "config.ini"
+
+	groundstateFilename = GetInitialStateFilename(**args)
+	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
+	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
+
 	#Find Groundstate
 	findGroundstate = args.get("findGroundstate", True)
 	initPsi = None
 	if findGroundstate:
-		#Find Groundstate with piram
-		initProp = SetupProblem(eigenvalueCount=1, **args)
-		#solver = pyprop.PiramSolver(initProp)
-		#solver.Solve()
-
-		#Setup inverse iterator	
-		invIt = pyprop.GMRESShiftInvertSolver(initProp)
-		initProp.Config.Arpack.matrix_vector_func = invIt.InverseIterations
-
-		#Setup solver
-		solver = pyprop.PiramSolver(initProp)
-		solver.Solve()
-	
-		#Get groundstate wavefunction
-		#initPsi = initProp.psi
-		solver.SetEigenvector(initProp.psi, 2)
-		initProp.psi.Normalize()
-		initPsi = initProp.psi.Copy()
-
-		#Store wavefunction
-		if storeInitialState:
-			initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-
-		#Print ground state energy
-		energyExpt = initProp.GetEnergyExpectationValue()
-		groundstateEnergy = solver.GetEigenvalues()[0].real
-		PrintOut("Ground state energy = %s (%s)" % (1.0 / groundstateEnergy + initProp.Config.GMRES.shift, energyExpt))
-
-		#free memory
-		#initPsi = None
-		del solver
-		del initProp
-		del invIt
-		
+		initPsi = RunStabilizationInputFile(**args)
 		
 	#Set up propagation problem
 	if args.get("laserOff", False):
@@ -207,11 +223,15 @@ def SubmitStabilizationRun():
 	"""
 	configFile = "config_stabilization_freq_5.ini"
 	timestep = 0.01
-	frequency = 3.0
+	frequency = 5.0
 	cycles = 6
 	pulse_duration = cycles * 2 * pi / frequency
-	#duration = 1 * cycles * 2 * pi / frequency
-	duration = 1.0 * pulse_duration
+	#duration = 2. * pulse_duration
+	duration = 1.0
+	lmax = 5
+	L = range(lmax+1)
+	#lmax = 7
+	#L = range(4)
 
 	radialGrid = {\
 	'xsize' : 80, \
@@ -221,47 +241,57 @@ def SubmitStabilizationRun():
 	'xpartition' : 20, \
 	'gamma' : 2.0}
 
-	amplitudeList = arange(1.0, 20.0)
+	#amplitudeList = arange(1.0, 20.0)
 	#amplitudeList = arange(25.0, 31.0)
 	#amplitudeList = arange(41.0, 61.0)
-	#amplitudeList = [1]
+
+	#amplitudeList = [1,15,30]
+	amplitudeList = [0]
+
+
+	args = {
+		'account':'nn2700k', \
+		'procPerNode':1, \
+		'procMemory':"4000M", \
+		'config':configFile, \
+		'storeInitialState':True, \
+		'saveWavefunctionDuringPropagation':True, \
+		'writeScript':False, \
+		'useStoredPotentials': False, \
+		'radialGrid':radialGrid, \
+		#'multipoleCutoff = 5, \
+		'shift':-2.9, \
+		'lmax':lmax, \
+		'L': L, \
+		}
+			
+	radialPostfix = "_".join(GetRadialGridPostfix(**args))
+	angularPostFix = "_".join(GetAngularGridPostfix(**args))
 	
-	#outputDir = "stabilization_freq_%s_scan_1s2p_%s/" % (frequency, "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid)))
-	outputDir = "stabilization_freq_%s_scan_M1_%s/" % (frequency, "_".join(GetRadialGridPostfix(config=configFile, radialGrid=radialGrid)))
+	outputDir = "convergence/freq_%s_%s_%s/" % (frequency, radialPostfix, angularPostFix)
 	if not os.path.exists(outputDir):
 		print "Created output dir: %s" % outputDir
 		os.makedirs(outputDir)
-	
-	#for I in amplitudeList:
-	for I in [10]:
+
+	depend = None
+	if not os.path.exists(GetInitialStateFilename(**args)):
+		dependJob = RunSubmitFullProcCount(RunStabilizationInputFile, walltime=timedelta(hours=0.5), **args)
+		depend = "afterany:%s" % (dependJob,)
+
+	for I in amplitudeList:
 		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e_T_%2.1f" % (I, timestep, duration)
-		RunSubmitFullProcCount(RunStabilization, \
-		#RunSubmitFullProcCount(SetupAllStoredPotentials, \
-		#RunSubmitFullProcCount(SetupIonizationBoxStoredPotentials, \
-			account='fysisk', \
-			procPerNode=1, \
-			procMemory="4000M", \
-			walltime=timedelta(hours=3), \
-			config=configFile, \
-			timestep=timestep, \
-			duration=duration,\
-			frequency=frequency, \
-			amplitude=I/frequency, \
-			pulse_duration=pulse_duration, \
-			outputCount=300, \
-			outputFilename=name, \
-			findGroundstate=True, \
-			storeInitialState=True, \
-			saveWavefunctionDuringPropagation=False, \
-			writeScript=False, \
-			useStoredPotentials = False, \
-			radialGrid=radialGrid, \
-			#multipoleCutoff = 5, \
-			laserOff = False, \
-			gsFilenamePostfix = "_M1", \
-			shift = -2.1, \
-			)
-			
+		args['walltime'] = timedelta(hours=6)
+		args['timestep'] = timestep
+		args['duration'] = duration
+		args['frequency'] = frequency
+		args['amplitude'] = I/frequency
+		args['pulse_duration'] = pulse_duration
+		args['outputCount'] = 30
+		args['outputFilename'] = name
+		args['findGroundstate'] = False
+		args['laserOff'] = False
+		args['depend'] = depend
+		RunSubmitFullProcCount(RunStabilization, **args)
 
 def SubmitHasbaniExampleRun(workingDir):
 	"""
@@ -315,19 +345,19 @@ def SubmitStabilizationEigenvaluesJob():
 	"""
 	lmax = 7
 	radialGrid = {\
-		'xpartition': 20,\
-		'xmax': 200,\
-		'bpstype': 'exponential',\
-		'xsize': 40,\
-		'order': 5,\
-		'gamma': 6.0}
+		'xsize' : 80, \
+		'xmax' : 80, \
+		'order' : 5, \
+		'bpstype' : 'exponentiallinear', \
+		'xpartition' : 20, \
+		'gamma' : 2.0}
 	
 	#for L in range(lmax+1):
 	for L in [0,1,2,3]:
 		RunSubmitFullProcCount(RunFindBoundstates, \
-			account='fysisk', \
-			procPerNode=4, \
-			procMemory="1000M", \
+			account='nn2700k', \
+			procPerNode=1, \
+			procMemory="4000M", \
 			walltime=timedelta(hours=1, minutes=30), \
 			config="config_stabilization_freq_5.ini", \
 			writeScript=False, \
