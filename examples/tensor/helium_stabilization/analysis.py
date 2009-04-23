@@ -177,6 +177,24 @@ def RunSingleIonizationEnergyDistributionScan():
 	finally:
 		f.close()
 
+def RunDoubleIonizationAngularDistributionScan():
+	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/extra_cycles_propagation/stabilization_I_%i_kb20_dt_1e-02.h5"
+	outputPrefix = "stabilization_freq5_angular_distrib_scan"
+	intensity = r_[1:37:1]
+
+	filenames = [filenameTemplate % i for i in intensity]
+	f = tables.openFile("output/%s.h5" % outputPrefix, "w")
+	try:
+		for i, filename in enumerate(filenames):
+			energy, theta, (distribution,) = RunGetDoubleIonizationAngularDistribution([filename])
+			f.createArray(f.root, "distrib_%i" % i, distribution)
+		f.createArray(f.root, "intensity", intensity)
+		f.createArray(f.root, "theta", theta)
+		f.createArray(f.root, "energy", energy)
+		
+	finally:
+		f.close()
+
 
 #------------------------------------------------------------------------
 #                        Product State Analysis (implementation)
@@ -496,7 +514,7 @@ def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.
 
 
 
-def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, removeSingleIonStates=True):
+def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
 	doubly ionized continuum for a list of wavefunction 
@@ -509,7 +527,7 @@ def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, 
 	#maxk = 5
 	lmax = 5
 	#theta = array([0., pi/2, pi], dtype=double)
-	theta = linspace(0, pi, 10)
+	theta = linspace(0, pi, 20)
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -528,7 +546,7 @@ def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, 
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
 
-	dE = maximum(min(diff(singleIonEnergies[0])), 0.1)
+	dE = maximum(min(diff(singleIonEnergies[0])), 0.05)
 	interpE = r_[dE:15:dE]
 	interpK = sqrt(interpE * 2)
 
@@ -900,8 +918,8 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 				stateDensity = outer(GetDensity(E1), GetDensity(E2))
 
 				#coulomb phases (-i)**(l1 + l2) * exp( sigma_l1 * sigma_l2 )
-				phase1 = exp(1.0j * array([GetCoulombPhase(l1, Z/curK) for curK in sqrt(2*E1)]))
-				phase2 = exp(1.0j * array([GetCoulombPhase(l2, Z/curK) for curK in sqrt(2*E2)]))
+				phase1 = exp(-1.0j * array([GetCoulombPhase(l1, Z/curK) for curK in sqrt(2*E1)]))
+				phase2 = exp(-1.0j * array([GetCoulombPhase(l2, Z/curK) for curK in sqrt(2*E2)]))
 				phase = (-1.j)**(l1 + l2) * outer(phase1, phase2)
 
 				#interpolate projection on equidistant energies and sum over L

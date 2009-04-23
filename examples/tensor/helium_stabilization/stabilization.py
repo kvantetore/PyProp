@@ -90,12 +90,18 @@ def RunStabilization(**args):
 		initPsi = RunStabilizationInputFile(**args)
 		
 	#Set up propagation problem
-	if args.get("laserOff", False):
-		potList = ["Absorber"]
-		PrintOut("Setting up new problem WITHOUT laser potentials...")
-	else:
-		potList = ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity", "Absorber"]
+	potList = []
+	if not args.get("laserOff", False):
 		PrintOut("Setting up new problem with laser potentials...")
+		potList += ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"]
+	else:
+		PrintOut("Setting up new problem WITHOUT laser potentials...")
+
+	if not args.get("absorberOff", False):
+		potList += ["Absorber"]
+		PrintOut("Setting up new problem with absorber...")
+	else:
+		PrintOut("Setting up new problem WITHOUT absorber...")
 
 	sys.stdout.flush()
 	prop = SetupProblem(additionalPotentials=potList, **args)
