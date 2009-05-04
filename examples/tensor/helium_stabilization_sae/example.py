@@ -98,6 +98,10 @@ def SetupConfig(**args):
 			a5 = -0.231
 			a6 = 0.480
 
+		elif model == "he2":
+			z = sqrt(2 * 1.45)
+			a1 = a2 = a3 = a4 = a5 = a6 = 0
+
 		else:
 			raise Exception("Unknown model '%s'" % model)
 

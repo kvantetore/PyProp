@@ -101,6 +101,9 @@ def SetupRadialEigenstates(prop, potentialIndices=[0]):
 		raise Exception("Works only on a single processor")
 
 	S = SetupOverlapMatrix(prop)
+	bspl = prop.psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	phaseGrid = array((0, bspl.GetBreakpointSequence()[1]), dtype=double)
+	phaseBuffer = zeros(2, dtype=complex)
 
 	eigenValues = []
 	eigenVectors = []
@@ -115,12 +118,19 @@ def SetupRadialEigenstates(prop, potentialIndices=[0]):
 		E, V = scipy.linalg.eig(a=M, b=S)
 
 		idx = argsort(real(E))
-		eigenValues.append(real(E[idx]))
+		E = real(E[idx])
+		eigenValues.append(E)
 
-		#Sort an normalize eigenvectors
+		#Sort and normalize eigenvectors
 		sNorm = lambda v: sqrt(abs(sum(conj(v) * dot(S, v))))
 		V = array([v/sNorm(v) for v in [V[:,idx[i]] for i in range(V.shape[1])]]).transpose()
 		eigenVectors.append(V)
+
+		#assure correct phase convention (first oscillation should start out real positive)
+		for i, curE in enumerate(E):
+			bspl.ConstructFunctionFromBSplineExpansion(V[:,i].copy(), phaseGrid, phaseBuffer)
+			phase = arctan2(imag(phaseBuffer[1]), real(phaseBuffer[1]))
+			V[:,i] *= exp(-1.0j * phase)
 
 	return eigenValues, eigenVectors
 
@@ -149,7 +159,8 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 	minE = 0
 	maxE = eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]
-	energyDistr = []
+	energyDistr = zeros(len(E), dtype=double)
+	#energyDistr = []
 
 	totalIon = 0 
 	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
@@ -174,7 +185,8 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 		density = 1.0 / spacing
 
 		#Interpolate to get equispaced dP/dE
-		energyDistr.append( scipy.interp(E, curE, proj * density, left=0, right=0) )
+		#energyDistr.append( scipy.interp(E, curE, proj * density, left=0, right=0) )
+		energyDistr +=  scipy.interp(E, curE, proj * density, left=0, right=0) 
 
 	totalIon2 = sum(sum(array(energyDistr), axis=0)) * dE
 	print totalIon
@@ -184,14 +196,14 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
 	return E, energyDistr
 
 def CalculateAngularDistribution(psi, eigenValues, eigenVectors, overlap, interpMethod="polar-square"):
-	dE = min(diff(eigenValues[0])) 
+	dE = maximum(min(diff(eigenValues[0])), 0.1)
 	minE = dE
-	maxE = eigenValues[0][-1] #eigenValues[0][3*len(eigenValues[0])/4]
+	maxE = 16 #eigenValues[0][-1] #eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]
 	energyDistr = []
 
 	Z = 1
-	thetaCount = 100
+	thetaCount = 10
 	lmax = len(eigenValues) -1
 	theta = linspace(0, pi, thetaCount)
 	leg = GetLegendrePoly(lmax, theta)
@@ -399,3 +411,9 @@ def CalculateDpDk(Z, k, psi, S):
 			dpdk[kIdx] += abs(dot(conj(wav), dot(S, psi.GetData()[lIdx, :])))**2
 
 	return dpdk
+
+
+def PlotEnergyDistributionMorten():
+	E0, dpde = numpy.loadtxt("dpde_morten.txt").transpose()
+	plot(E0, dpde, label="morten")
+	return E0, dpde
