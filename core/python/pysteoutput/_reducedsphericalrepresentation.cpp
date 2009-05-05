@@ -59,7 +59,8 @@ void Export_python_reducedsphericalrepresentation()
     register_ptr_to_python< boost::shared_ptr< ReducedSpherical::ThetaRepresentation > >();
     delete ReducedSpherical_ThetaRepresentation_scope;
 
-    class_< ReducedSpherical::ThetaRange, boost::noncopyable >("ThetaRange", init<  >())
+    class_< ReducedSpherical::ThetaRange >("ThetaRange", init<  >())
+        .def(init< const ReducedSpherical::ThetaRange& >())
         .def_readwrite("MaxL", &ReducedSpherical::ThetaRange::MaxL)
         .def("SetupRange", &ReducedSpherical::ThetaRange::SetupRange)
         .def("Count", &ReducedSpherical::ThetaRange::Count)
@@ -67,7 +68,8 @@ void Export_python_reducedsphericalrepresentation()
         .def("GetWeights", &ReducedSpherical::ThetaRange::GetWeights, return_value_policy< copy_const_reference >())
     ;
 
-    class_< ReducedSpherical::LRange, boost::noncopyable >("LRange", init<  >())
+    class_< ReducedSpherical::LRange >("LRange", init<  >())
+        .def(init< const ReducedSpherical::LRange& >())
         .def(init< int >())
         .def(init< int, int >())
         .def_readwrite("MaxL", &ReducedSpherical::LRange::MaxL)
