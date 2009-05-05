@@ -92,6 +92,8 @@ private:
 public:
 	CoupledSpherical::ClebschGordan cg;
 
+	CoupledSphericalSelectionRuleR12(): MultipoleCutoff(std::numeric_limits<int>::max()) {}
+
 	CoupledSphericalSelectionRuleR12(int multipoleCutoff)
 	{
 		MultipoleCutoff = multipoleCutoff;
