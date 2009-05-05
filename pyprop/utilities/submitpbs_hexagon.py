@@ -28,6 +28,8 @@ class SubmitScript:
 	parameters = ""
 	workingdir = None
 
+	depend = None
+
 	def CreateScript(self):
 		script = list()
 
@@ -61,6 +63,10 @@ class SubmitScript:
 			script.append('#PBS -o "' + str(self.stdout) + '"')
 		if self.stderr != None:
 			script.append('#PBS -e "' + str(self.stderr) + '"')
+
+		#Dependency on other jobs	
+		if self.depend != None:
+			script.append("#PBS -W depend=%s" % str(self.depend))
 
 		#Working dir
 		if self.workingdir == None:
