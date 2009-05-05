@@ -60,7 +60,7 @@ def GetBoundStateFiles(**args):
 	lmax = max([l1 for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
 	Llist = unique([L for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
 	getPostfix = lambda L: "_".join(GetRadialGridPostfix(config=conf, lmax=lmax, L=L) + GetAngularGridPostfix(config=conf, lmax=lmax, L=L)) 
-	getFilename = lambda L: "tore/output/boundstates/boundstates_%s.h5" % (getPostfix(L))
+	getFilename = lambda L: "output/boundstates/boundstates_%s.h5" % (getPostfix(L))
 
 	return map(getFilename, Llist)
 

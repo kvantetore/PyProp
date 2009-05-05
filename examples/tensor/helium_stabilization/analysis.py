@@ -177,7 +177,7 @@ def RunSingleIonizationEnergyDistributionScan():
 	finally:
 		f.close()
 
-def RunDoubleIonizationAngularDistributionScan():
+def RunDoubleIonizationAngularDistributionScan(dE=None, dTheta=None):
 	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/extra_cycles_propagation/stabilization_I_%i_kb20_dt_1e-02.h5"
 	outputPrefix = "stabilization_freq5_angular_distrib_scan"
 	intensity = r_[1:37:1]
@@ -186,7 +186,7 @@ def RunDoubleIonizationAngularDistributionScan():
 	f = tables.openFile("output/%s.h5" % outputPrefix, "w")
 	try:
 		for i, filename in enumerate(filenames):
-			energy, theta, (distribution,) = RunGetDoubleIonizationAngularDistribution([filename])
+			energy, theta, (distribution,) = RunGetDoubleIonizationAngularDistribution([filename], dE, dTheta)
 			f.createArray(f.root, "distrib_%i" % i, distribution)
 		f.createArray(f.root, "intensity", intensity)
 		f.createArray(f.root, "theta", theta)
@@ -200,162 +200,83 @@ def RunDoubleIonizationAngularDistributionScan():
 #                        Product State Analysis (implementation)
 #------------------------------------------------------------------------
 
-def GetFilteredSingleParticleStates(model, stateFilter, **args):
+
+#------------------------------------------------------------------------
+#         Run a series of calculations and save the result
+#------------------------------------------------------------------------
+
+def RunFolderUpdateAnalysis(folder):
 	"""
-	Returns the single particle states and energies corresponding to a SAE model and 
-	an energy filter specified by stateFilter
-	"""
+	Checks every folder and subfolder, and updates every h5 file containing a /wavefunction
+	- single ionization dpde, 
+	- double ionization dpde,
+	- double ionization dpdedomega
 
-	#load single particle states
-	singleStatesFile = GetSingleStatesFile(model=model, **args)
-	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
-	
-	#filter states 
-	getStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if stateFilter(E[i]) ]))
-	getEnergies = lambda E: filter(stateFilter, E)
-	filteredStates = map(getStates, singleEnergies, singleStates)
-	filteredEnergies = map(getEnergies, singleEnergies)
-
-	return filteredEnergies, filteredStates	
-
-
-def GetAssociatedLegendrePoly(lmax, theta):
-	leg = []
-	for l in range(lmax+1):
-		for m in range(-l, l+1):
-			leg.append(scipy.special.sph_harm(m, l, 0, theta))
-	return array(leg)
-
-
-def GetSingleParticleCoulombStates(Z, dk, mink, maxk, lmax, radialRepr):
-	bspl = radialRepr.GetBSplineObject()
-	k = r_[mink:maxk:dk]
-	rcount = radialRepr.GetFullShape()[0]
-	
-	states = []
-	for l in range(lmax+1):
-		V = zeros((rcount, len(k)), dtype=complex)
-		for i, curk in enumerate(k):
-			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspl)
-			V[:,i] = coeff
-		states.append(V)
-
-	return [k]*(lmax+1), states
-
-
-def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj):
-	#Get the Coulomb function in grid space
-	r = bsplineObj.GetQuadratureGridGlobal()
-	wav = zeros(len(r), dtype=double)
-	SetRadialCoulombWave(Z, l, k, r, wav)
-	cplxWav = array(wav, dtype=complex)
-
-	#get bspline coeffs
-	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
-	bsplineObj.ExpandFunctionInBSplines(cplxWav, coeff)
-
-	return coeff
-
-
-def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
-	"""
-	Calculates total and single ionization probability
-	for a list of wavefunction files
-	"""
-
-	#load wavefunction
-	conf = pyprop.LoadConfigFromFile(fileList[0])
-
-	#load bound states
-	if removeBoundStates:
-		boundEnergies, boundStates = GetBoundStates(config=conf)
-	else:
-		boundEnergies = boundStates = None
-
-	#Get single particle states
-	isIonized = lambda E: E > 0.0
-	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
-
-	def getIonProb(filename):
-		psi = pyprop.CreateWavefunctionFromFile(filename)
-		#SymmetrizeWavefunction(psi, True)
-		#return GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates)
-		sym, anti = GetSymmetrizedWavefunction(psi)
-		symProb = GetSingleIonizationProbability(sym, boundStates, singleBoundStates, singleIonStates)
-		#antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStates, singleIonStates)
-		#return (symProb, antiProb)
-		return (symProb,)
-
-	return zip(*map(getIonProb, fileList))
-
-
-def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
-	"""
-	Calculates the energy distribution (dP/dE) of the 
-	single ionized continuum for a list of wavefunction 
-	files by projecting onto products of single particle states.
 	"""
 	
-	maxE = 15.
-	dE = 0.01
-
-	#load wavefunction
-	conf = pyprop.LoadConfigFromFile(fileList[0])
-
-	#load bound states
-	if removeBoundStates:
-		boundEnergies, boundStates = GetBoundStates(config=conf)
-	else:
-		boundEnergies = boundStates = None
-
-
-	#Get single particle states
-	isIonized = lambda E: 0.0 <= E <= maxE
-	isBound = lambda E: E < 0.0
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
-
-	#Calculate Energy Distribution (dP/dE)
-	def getdPdE(filename):
-		psi = pyprop.CreateWavefunctionFromFile(filename)
-		return GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE)
-
-	E, dpde = zip(*map(getdPdE, fileList))
-	return E[0], dpde
-
-
-def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
-	"""
-	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
-	doubly ionized continuum for a list of wavefunction 
-	files by projecting onto products of single particle states.
-	"""
+	#walk all h5 files files 
+	for dirpath, subfolders, files in os.walk(folder):
+		for file in filter(lambda s: s.endswith(".h5"), files):
+			filename = os.path.join(dirpath, file)
 	
-	maxE = 15.
-	dE = 0.1
+			#check file contains wavefunction
+			f = tables.openFile(filename)
+			try:
+				if not "/wavefunction" in f:
+					continue
+			finally:
+				f.close()
 
-	#load wavefunction
-	conf = pyprop.LoadConfigFromFile(fileList[0])
+			print "Updating analysis for file %s" % (filename, )
+			print "    ionization prob"
+			pyprop.Redirect.Enable(silent=True)
+			(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
+			pyprop.Redirect.Disable()
+			print "    dP/dOmega"
+			pyprop.Redirect.Enable(silent=True)
+			e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
+			pyprop.Redirect.Disable()
+			print "    dP/dE (double)"
+			pyprop.Redirect.Enable(silent=True)
+			e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename])
+			pyprop.Redirect.Disable()
+			print "    dP/dE (single)"
+			pyprop.Redirect.Enable(silent=True)
+			e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
+			pyprop.Redirect.Disable()
 
-	#load bound states
-	if removeBoundStates:
-		boundEnergies, boundStates = GetBoundStates(config=conf)
-	else:
-		boundEnergies = boundStates = None
+			print "    saving results"
+			f = tables.openFile(filename, "a")
+			try:
+				if "dpdomega" in f.root:
+					f.removeNode(f.root, "dpdomega", recursive=True)
+				f.createArray(f.root, "dpdomega", dp1)
+				f.root.dpdomega._v_attrs.energy = e1
+				f.root.dpdomega._v_attrs.theta = th1
 
-	#Get single particle states
-	isIonized = lambda E: 0.0 < E <= maxE
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+				if "dpde_double" in f.root:
+					f.removeNode(f.root, "dpde_double", recursive=True)
+				f.createArray(f.root, "dpde_double", dp2)
+				f.root.dpde_double._v_attrs.energy = e2
 
-	#Calculate Energy Distribution (dP/dE1 dE2)
-	def getdPdE(filename):
-		psi = pyprop.CreateWavefunctionFromFile(filename)
-		return GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleIonEnergies, dE, maxE)
+				if "dpde_single" in f.root:
+					f.removeNode(f.root, "dpde_single", recursive=True)
+				f.createArray(f.root, "dpde_single", dp3)
+				f.root.dpde_single._v_attrs.energy = e3
 
-	E, dpde = zip(*map(getdPdE, fileList))
-	return E[0], dpde
+				attrs = f.root.wavefunction._v_attrs
+				attrs.Absorbed = symProb[0]
+				attrs.Ionization = symProb[1]
+				attrs.SingleIonization = symProb[2]
+				attrs.DoubleIonization = symProb[3]
+				attrs.AntiAbsorbed = antiProb[0]
+				attrs.AntiIonization = antiProb[1]
+				attrs.AntiSingleIonization = antiProb[2]
+				attrs.AntiDoubleIonization = antiProb[3]
+
+
+			finally:
+				f.close()
 
 
 def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBoundStates=True):
@@ -514,208 +435,9 @@ def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.
 
 
 
-def RunGetDoubleIonizationAngularDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
-	"""
-	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
-	doubly ionized continuum for a list of wavefunction 
-	files by projecting onto products of single particle states.
-	"""
-
-	Z = 2
-	#dk = 0.01
-	#mink = 0.1
-	#maxk = 5
-	lmax = 5
-	#theta = array([0., pi/2, pi], dtype=double)
-	theta = linspace(0, pi, 20)
-
-	#load wavefunction
-	conf = pyprop.LoadConfigFromFile(fileList[0])
-
-	#load bound states
-	if removeBoundStates:
-		boundEnergies, boundStates = GetBoundStates(config=conf)
-	else:
-		boundEnergies = boundStates = None
-
-	#Get single particle states
-	isIonized = lambda E: 0.0 < E
-	isFilteredIonized = lambda E: 0.0 < E < 15
-	isBound = lambda E: E <= 0.
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
-	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
-
-	dE = maximum(min(diff(singleIonEnergies[0])), 0.05)
-	interpE = r_[dE:15:dE]
-	interpK = sqrt(interpE * 2)
-
-
-	#Get Coulomb states
-	#psi = pyprop.CreateWavefunctionFromFile(fileList[0])
-	#repr = psi.GetRepresentation().GetRepresentation(1)
-	#singleK, coulombStates = GetSingleParticleCoulombStates(Z=Z, dk=dk, mink=mink, maxk=maxk, lmax=lmax, radialRepr=repr)
-	#k = singleK[0]
-	#del psi
-
-	#Get spherical harmonics
-	assocLegendre = GetAssociatedLegendrePoly(lmax, theta)
-
-	angDistr = []
-	for i, filename in enumerate(fileList):
-		psi = pyprop.CreateWavefunctionFromFile(filename)
-		sym, anti = GetSymmetrizedWavefunction(psi)
-		psi = sym
-		print "norm = %s" % psi.GetNorm()**2
-	
-		#get absorbed prob
-		absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
-		
-		#remove boundstate projection
-		if boundStates != None:
-			RemoveBoundStateProjection(psi, boundStates)
-		ionizationProbability = real(psi.InnerProduct(psi))
-
-		#remove single ionization
-		if removeSingleIonStates:
-			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
-			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
-
-		doubleIonProb = real(psi.InnerProduct(psi))
-		print "Double Ionization Probability = %s" % (doubleIonProb,)
-
-		#calculate angular distr for double ionized psi
-		angDistr.append(GetDoubleAngularDistribution(psi, Z, interpE, doubleIonEnergies, doubleIonStates, assocLegendre, theta))
-
-	return interpE, theta, angDistr
-
-
-def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
-	"""
-	Calculates the single ionization probability by first projecting 
-	away doubly bound states, then projecting on products of single 
-	particle states, where one particle is bound, and the other is ionized
-
-	returns 
-		- absorbed probabilty: norm when psi enters routine
-		- ionization probability: norm when all doubly bound states are projected away
-		- single ionization probability: projection on single particle states
-	"""
-
-	#get absorbed prob
-	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
-
-	#remove boundstate projection
-	if boundStates != None:
-		RemoveBoundStateProjection(psi, boundStates)
-	ionizationProbability = real(psi.InnerProduct(psi))
-
-	##calculate populations in product states containing bound he+ states
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
-
-	#remove single ion projection
-	#RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
-	#RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
-	#singleIonizationProbability2 = ionizationProbability - real(psi.InnerProduct(psi))
-	singleIonizationProbability2 = 0
-
-	#Calculate single ionization probability
-	lpop = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populations]
-	singleIonizationProbability = sum(lpop)
-	
-	print "Absorbed Probability     = %s" % (absorbedProbability)
-	print "Ioniziation Probability  = %s" % (ionizationProbability)
-	print "Single Ionization Prob.  = %s, %s" % (singleIonizationProbability, singleIonizationProbability2)
-	print "Double Ionization Prob.  = %s" % (ionizationProbability - singleIonizationProbability)
-	print "Single Ionization ratio  = %s" % (singleIonizationProbability/ionizationProbability)
-
-	#return absorbedProbability, ionizationProbability, singleIonizationProbability
-	return singleIonizationProbability2
-
-
-def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE):
-	"""
-	Calculates dP/dE for the single ionized part of the wavefunction, by first
-	projecting away doubly bound states, and then projecting on single particle
-	product states, and binning the probability by energy.
-	"""
-
-	#get absorbed prob
-	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
-
-	#remove boundstate projection
-	if boundStates != None:
-		RemoveBoundStateProjection(psi, boundStates)
-	ionizationProbability = real(psi.InnerProduct(psi))
-
-	#calculate populations in product states containing bound he+ states
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
-
-	#Create an array for dpde
-	E = r_[0:maxE:dE]
-	dpde = zeros(len(E), dtype=double)
-
-	#for every l-pair (lBound, lIon) we have a set of (iBound, iIon) states
-	#In order to create an approx to dp/de_ion, we interpolate for each iBound,
-	#and add coherently to the dpde array
-	for lBound, lIon, lPop in populations:
-		#number of states in this l-shell
-		nBound = singleBoundStates[lBound].shape[1]
-		nIon = singleIonStates[lIon].shape[1]
-
-		#iterate over all bound states in this l-shell
-		pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
-		for iBound in range(nBound):
-			#interpolate over ionized populations
-			curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])
-			dpde += interp(E, singleIonEnergies[lIon][:-1], curPop)
-		
-	return E, dpde
-
-
-def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
-	"""
-	Calculates double differential d^2P/(dE_1 dE_2) by 
-	1) projecting on a set of product of single particle ionized states.
-	2) binning the probability by energy
-
-	"""
-	#get absorbed prob
-	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
-
-	#remove boundstate projection
-	if boundStates != None:
-		RemoveBoundStateProjection(psi, boundStates)
-	ionizationProbability = real(psi.InnerProduct(psi))
-
-	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
-
-
-	E = r_[0:maxE:dE]
-	dpde = zeros((len(E), len(E)), dtype=double)
-
-	#for every l-pair (l1, l2) we have a set of (i1, i2) states
-	#In order to create an approx to dp/de_1 de_2, we make a 2d 
-	#interpolation for each l-shell
-	#and add coherently to the dpde array
-	for l1, l2, lPop in populations:
-		#number of states in this l-shell
-		n1 = singleIonStates[l1].shape[1]
-		n2 = singleIonStates[l2].shape[1]
-
-		#scale states with 1/dE_1 dE_2
-		pop = array([d[2] for d in lPop]).reshape(n1, n2)
-		E1 = singleEnergies[l1]
-		E2 = singleEnergies[l2]
-		meshE1, meshE2 = meshgrid(E1[:-1], E2[:-1])
-		pop[:-1,:-1] /= outer(diff(E1), diff(E2))
-		
-		#2d interpolation over all states in this shell
-		interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
-		dpde += interpolator(E, E)
-	
-	return E, dpde
-
+#------------------------------------------------------------------------
+#        Load Single Particle States
+#------------------------------------------------------------------------
 
 
 def GetSingleStatesFile(**args):
@@ -760,6 +482,81 @@ def LoadSingleParticleStates(singleStatesFile):
 
 	return lList, eigenvalues, eigenvectors	
 
+
+def GetFilteredSingleParticleStates(model, stateFilter, **args):
+	"""
+	Returns the single particle states and energies corresponding to a SAE model and 
+	an energy filter specified by stateFilter
+	"""
+
+	#load single particle states
+	singleStatesFile = GetSingleStatesFile(model=model, **args)
+	lList, singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
+	
+	#filter states 
+	getStates = lambda E, V: transpose(array([ V[:, i] for i in range(V.shape[1]) if stateFilter(E[i]) ]))
+	getEnergies = lambda E: filter(stateFilter, E)
+	filteredStates = map(getStates, singleEnergies, singleStates)
+	filteredEnergies = map(getEnergies, singleEnergies)
+
+	return filteredEnergies, filteredStates	
+
+
+def GetAssociatedLegendrePoly(lmax, theta):
+	"""
+	Gets the associated legendre polynomials
+	for every l and m up to (and including) a given lmax, 
+	evaluated in the given theta coordinates
+	"""
+	leg = []
+	for l in range(lmax+1):
+		for m in range(-l, l+1):
+			leg.append(scipy.special.sph_harm(m, l, 0, theta))
+	return array(leg)
+
+
+def GetSingleParticleCoulombStates(Z, dk, mink, maxk, lmax, radialRepr):
+	"""
+	Gets coulomb wave functions for every k between mink and maxk (in dk steps), 
+	for every l up to (and including) lmax evaluated in bsplines.
+
+	The structure returned is similar to that of LoadSingleParticleStates
+	"""
+	bspl = radialRepr.GetBSplineObject()
+	k = r_[mink:maxk:dk]
+	rcount = radialRepr.GetFullShape()[0]
+	
+	states = []
+	for l in range(lmax+1):
+		V = zeros((rcount, len(k)), dtype=complex)
+		for i, curk in enumerate(k):
+			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspl)
+			V[:,i] = coeff
+		states.append(V)
+
+	return [k]*(lmax+1), states
+
+
+def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj):
+	#Get the Coulomb function in grid space
+	r = bsplineObj.GetQuadratureGridGlobal()
+	wav = zeros(len(r), dtype=double)
+	SetRadialCoulombWave(Z, l, k, r, wav)
+	cplxWav = array(wav, dtype=complex)
+
+	#get bspline coeffs
+	coeff = zeros(bsplineObj.NumberOfBSplines, dtype=complex)
+	bsplineObj.ExpandFunctionInBSplines(cplxWav, coeff)
+
+	return coeff
+
+
+
+
+
+#------------------------------------------------------------------------
+#        Calculations on general product state combinations
+#------------------------------------------------------------------------
 
 def GetPopulationProductStates(psi, singleStates1, singleStates2):
 	"""
@@ -852,130 +649,4 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 	return population
 
 
-def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates, assocLegendre, theta):
-	#Make a copy of the wavefunction and multiply 
-	#integration weights and overlap matrix
-	tempPsi = psi.Copy()
-	repr = psi.GetRepresentation()
-	repr.MultiplyIntegrationWeights(tempPsi)
-	distr = psi.GetRepresentation().GetDistributedModel()
 
-	data = tempPsi.GetData()
-	population = []
-
-	angularRank = 0
-	angRepr = repr.GetRepresentation(angularRank)
-
-	dE = diff(interpEnergies)[0]**2
-	dTh = diff(theta)[0]**2 * outer(sin(theta), sin(theta)) * (2*pi)**2
-
-	cg = pyprop.core.ClebschGordan()
-
-	interpK = sqrt(2 * interpEnergies)
-	interpCount = len(interpEnergies)
-
-	thetaCount = assocLegendre.shape[1]
-	stateCount = ionStates[0].shape[1]
-	angularDistr = zeros((thetaCount, thetaCount, interpCount, interpCount), dtype=double)
-
-	assocLegendre = array(assocLegendre, dtype=complex)
-
-	pop = 0
-	M = 0
-	#for some reason there is no population in m shells != 0. I don't know why, but it saves a lot of comp. work
-	#for m in range(-5,5+1): 
-	for m in [0]:
-		angularDistrProj = zeros(angularDistr.shape, dtype=complex)
-		for l1, V1 in enumerate(ionStates):
-			E1 = array(ionEnergies[l1])
-			print "%i/%i" % (l1, len(ionStates))
-		
-			for l2, V2 in enumerate(ionStates):
-				E2 = array(ionEnergies[l2])
-		
-				#filter out coupled spherical harmonic indices. this gives us a set of L's for the given l1, l2, M
-				lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2  \
-							and l2>=abs(m) and l1>=abs(m) and coupledIndex.M == M
-				angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int)
-				coupledIndices = map(angRepr.Range.GetCoupledIndex, angularIndices)
-
-				if len(angularIndices) == 0:
-					continue
-			
-				#calculate projection on radial states
-				def doProj():
-					radialProj = CalculateProjectionRadialProductStates(l1, V1, l2, V2, data, angularIndices)
-					return radialProj
-				radialProj = doProj()
-
-				#scale states with 1/dE_1 dE_2
-				def GetDensity(curE):
-					interiorSpacing = list(diff(curE)[1:])
-					leftSpacing = (curE[1] - curE[0])
-					rightSpacing = (curE[-1] - curE[-2])
-					spacing = array([leftSpacing] + interiorSpacing + [rightSpacing])
-					return 1.0 / sqrt(spacing)
-				stateDensity = outer(GetDensity(E1), GetDensity(E2))
-
-				#coulomb phases (-i)**(l1 + l2) * exp( sigma_l1 * sigma_l2 )
-				phase1 = exp(-1.0j * array([GetCoulombPhase(l1, Z/curK) for curK in sqrt(2*E1)]))
-				phase2 = exp(-1.0j * array([GetCoulombPhase(l2, Z/curK) for curK in sqrt(2*E2)]))
-				phase = (-1.j)**(l1 + l2) * outer(phase1, phase2)
-
-				#interpolate projection on equidistant energies and sum over L
-				interpProj = zeros((interpCount, interpCount), dtype=complex)
-				proj = zeros((len(E1), len(E2)), dtype=complex)
-				for j in range(radialProj.shape[0]):
-					curRadialProj = phase * stateDensity * radialProj[j,:,:]
-
-					#interpolate in polar complex coordinates
-					def dointerp():
-						r = abs(curRadialProj)**2
-						i = arctan2(imag(curRadialProj), real(curRadialProj))
-						argr = cos(i)
-						argi = sin(i)
-						interpr = scipy.interpolate.RectBivariateSpline(E1, E2, r, kx=1, ky=1)(interpEnergies, interpEnergies)
-						interpArgR = scipy.interpolate.RectBivariateSpline(E1, E2, argr, kx=1, ky=1)(interpEnergies, interpEnergies)
-						interpArgI = scipy.interpolate.RectBivariateSpline(E1, E2, argi, kx=1, ky=1)(interpEnergies, interpEnergies)
-						interpPhase = (interpArgR + 1.j*interpArgI) / sqrt(interpArgR**2 + interpArgI**2)
-						curInterpProj = sqrt(maximum(interpr, 0)) * interpPhase
-						return curInterpProj
-					curInterpProj = dointerp()
-
-					#Sum over L-shells
-					idx = coupledIndices[j]
-					interpProj += curInterpProj * cg(idx.l1, idx.l2, m, 0, idx.L, M)
-					proj += curRadialProj * cg(idx.l1, idx.l2, m, 0, idx.L, M)
-		
-				#sum up over l1, l2, E1, E2 to get total double ion prob
-				pop += sum(abs(proj / stateDensity)**2)
-				#expand spherical harmonics and add to angular distr proj
-				def doSum():
-					AddAngularProjectionAvgPhi(angularDistrProj, assocLegendre, interpProj, l1, l2, m, M)
-				doSum()
-
-		#calculate projection for this m-shell
-		curAngularDistr = real(angularDistrProj * conj(angularDistrProj))
-		curPop = sum(sum(sum(curAngularDistr ,axis=3),axis=2) * dTh ) * dE
-		print "for m = %i, curAngularDistr = %f" % (m, curPop)
-		angularDistr += curAngularDistr
-
-	#estimate total ion prop by integrating over theta1, theta2, E1, E2
-	totalPop = sum(sum(sum(angularDistr ,axis=3),axis=2) * dTh ) * dE
-	print "Double Ionization Probability (integrated) = %s" % (totalPop)
-	print "Double Ionization Probability (summed)     = %s" % (pop)
-
-
-	return angularDistr
-
-def GetParallelMomentumDistribution(energy, th, dp):
-	nE = len(energy)
-	dp2 = zeros((nE*2, nE*2), dtype=double)
-	dp2[nE:, nE:] = dp[0,0,:,:]
-	dp2[:nE, :nE] = fliplr(flipud(dp[-1,-1,:,:]))
-	dp2[:nE, nE:] = fliplr(dp[0,-1,:,:])
-	dp2[nE:, :nE] = flipud(dp[-1,0,:,:])
-
-	e2 = array([-x for x in reversed(energy)] + [x for x in energy]) 
-
-	return e2, dp2
