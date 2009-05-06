@@ -58,6 +58,8 @@ execfile("spectrum_finder.py")
 execfile("analysis_eigenstate.py")
 execfile("submit.py")
 execfile("serialization.py")
+execfile("analysis_single.py")
+execfile("analysis_double.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
