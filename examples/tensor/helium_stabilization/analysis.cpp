@@ -210,7 +210,7 @@ void SetRadialCoulombWave(int Z, int l, double k, blitz::Array<double, 1> r, bli
  * 		rank2 - i1
  * 		rank3 - i2
  */
-void AddAngularProjectionAvgPhi(Array<cplx, 4> angularData, Array<cplx, 2> sphericalHarmonics, 
+void AddDoubleAngularProjectionAvgPhi(Array<cplx, 4> angularData, Array<cplx, 2> sphericalHarmonics, 
 		Array<cplx, 2> radialProj, int l1, int l2, int m, int M)
 {
 	//create a view to the current spherical harmonic and radialProjection arrays
@@ -220,6 +220,18 @@ void AddAngularProjectionAvgPhi(Array<cplx, 4> angularData, Array<cplx, 2> spher
 	//Add data
 	angularData +=    sph1(tensor::i) * sph2(tensor::j)
 					* radialProj(tensor::k, tensor::l);
+}
+
+
+void AddSingleAngularProjectionAvgPhi(Array<cplx, 3> angularData, Array<cplx, 2> sphericalHarmonics,
+		Array<cplx, 2> radialProj, int l2, int m)
+{
+	//create a view to the current spherical harmonic and radialProjection arrays
+	Array<cplx, 1> sph2 = sphericalHarmonics( MapLmIndex(l2, m), Range::all());
+	
+	//Add data
+	angularData +=    sph2(tensor::j)
+					* radialProj(tensor::i, tensor::k);
 }
 
 // ------------------------------------------------------------------------------------------------------- 

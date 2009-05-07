@@ -66,22 +66,16 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 	interpE = r_[dE:15:dE]
 	interpK = sqrt(interpE * 2)
 
-	#Get Coulomb states
-	#psi = pyprop.CreateWavefunctionFromFile(fileList[0])
-	#repr = psi.GetRepresentation().GetRepresentation(1)
-	#singleK, coulombStates = GetSingleParticleCoulombStates(Z=Z, dk=dk, mink=mink, maxk=maxk, lmax=lmax, radialRepr=repr)
-	#k = singleK[0]
-	#del psi
-
 	#Get spherical harmonics
 	assocLegendre = GetAssociatedLegendrePoly(lmax, theta)
 
 	angDistr = []
 	for i, filename in enumerate(fileList):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
-		sym, anti = GetSymmetrizedWavefunction(psi)
-		psi = sym
-		print "norm = %s" % psi.GetNorm()**2
+		#sym, anti = GetSymmetrizedWavefunction(psi)
+		#print "norm_orig = %s" % psi.GetNorm()**2
+		#print "norm_sym  = %s" % sym.GetNorm()**2
+		#psi = sym
 	
 		#get absorbed prob
 		absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
@@ -95,9 +89,6 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 		if removeSingleIonStates:
 			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
 			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
-
-		doubleIonProb = real(psi.InnerProduct(psi))
-		print "Double Ionization Probability = %s" % (doubleIonProb,)
 
 		#calculate angular distr for double ionized psi
 		angDistr.append(GetDoubleAngularDistribution(psi, Z, interpE, doubleIonEnergies, doubleIonStates, assocLegendre, theta))
@@ -179,9 +170,9 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 
 	pop = 0
 	M = 0
-	#for some reason there is no population in m shells != 0. I don't know why, but it saves a lot of comp. work
-	#for m in range(-5,5+1): 
-	for m in [0]:
+	for m in range(-5,5+1): 
+		#if m == 0: continue
+
 		angularDistrProj = zeros(angularDistr.shape, dtype=complex)
 		for l1, V1 in enumerate(ionStates):
 			E1 = array(ionEnergies[l1])
@@ -215,8 +206,8 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 				stateDensity = outer(GetDensity(E1), GetDensity(E2))
 
 				#coulomb phases (-i)**(l1 + l2) * exp( sigma_l1 * sigma_l2 )
-				phase1 = exp(-1.0j * array([GetCoulombPhase(l1, Z/curK) for curK in sqrt(2*E1)]))
-				phase2 = exp(-1.0j * array([GetCoulombPhase(l2, Z/curK) for curK in sqrt(2*E2)]))
+				phase1 = exp(1.0j * array([GetCoulombPhase(l1, -Z/curK) for curK in sqrt(2*E1)]))
+				phase2 = exp(1.0j * array([GetCoulombPhase(l2, -Z/curK) for curK in sqrt(2*E2)]))
 				phase = (-1.j)**(l1 + l2) * outer(phase1, phase2)
 
 				#interpolate projection on equidistant energies and sum over L
@@ -241,14 +232,14 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 
 					#Sum over L-shells
 					idx = coupledIndices[j]
-					interpProj += curInterpProj * cg(idx.l1, idx.l2, m, 0, idx.L, M)
-					proj += curRadialProj * cg(idx.l1, idx.l2, m, 0, idx.L, M)
+					interpProj += curInterpProj * cg(idx.l1, idx.l2, m, M-m, idx.L, M)
+					proj += curRadialProj * cg(idx.l1, idx.l2, m, M-m, idx.L, M)
 		
 				#sum up over l1, l2, E1, E2 to get total double ion prob
 				pop += sum(abs(proj / stateDensity)**2)
 				#expand spherical harmonics and add to angular distr proj
 				def doSum():
-					AddAngularProjectionAvgPhi(angularDistrProj, assocLegendre, interpProj, l1, l2, m, M)
+					AddDoubleAngularProjectionAvgPhi(angularDistrProj, assocLegendre, interpProj, l1, l2, m, M)
 				doSum()
 
 		#calculate projection for this m-shell
@@ -265,7 +256,7 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 
 	return angularDistr
 
-def GetParallelMomentumDistribution(energy, th, dp):
+def GetDoubleParallelMomentumDistribution(energy, th, dp):
 	nE = len(energy)
 	dp2 = zeros((nE*2, nE*2), dtype=double)
 	dp2[nE:, nE:] = dp[0,0,:,:]
