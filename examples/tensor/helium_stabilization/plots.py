@@ -1,3 +1,5 @@
+from scipy import interpolate
+
 
 def TraverseGroups(f):
 	for i, p in enumerate(f.root.scanParameter[:]):
@@ -104,7 +106,10 @@ def GetDpDeSingleFromFile(filename):
 	return e, dp
 
 
-
+def InterpolateDpDe2D(oldEnergies, dpde, newEnergies):
+	interpolator = interpolate.RectBivariateSpline(oldEnergies, oldEnergies, dpde, kx=3, ky=3)
+	dpdeNew = interpolator(newEnergies, newEnergies)
+	return dpdeNew
 
 def MakePlotConvergence():
 	folder = "convergence/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0"
@@ -189,25 +194,36 @@ def MakeDpDePlot(energy_double, dpde_double, energy_single, dpde_single, vmax=No
 	if vmax == None:
 		vmax = numpy.max(dpde_double)
 
+	#load color map
+	#gradientFile = "gradient_uib.txt"
+	gradientFile = "gradient_chessboard.txt"
+	cmap = LoadColormap(gradientFile, reverse=True)
+	#cmap = cm.jet
+
+	#plot double dpde
 	rectMain = (rectBound[0]+singleWidth, rectBound[1]+singleWidth, rectBound[2]-singleWidth, rectBound[3]-singleWidth)
 	axMain = fig.add_axes(rectMain)
-	axMain.pcolormesh(energy_double, energy_double, dpde_double, vmin=0, vmax=vmax)
+	axMain.pcolormesh(energy_double, energy_double, dpde_double, vmin=0, vmax=vmax, cmap=cmap)
 	axMain.set_xticks([])
 	axMain.set_yticks([])
 	axMain.set_xlim(energyLim)
 	axMain.set_ylim(energyLim)
 
+	#plot left single dpde
 	rectLeft = (rectBound[0], rectBound[1]+singleWidth, singleWidth-singleSpacing, rectBound[3]-singleWidth)
 	axLeft = fig.add_axes(rectLeft)
-	axLeft.pcolormesh(array([0,1]), energy_single, array([dpde_single, dpde_single]).transpose(), vmin=0, vmax=vmax)
+	axLeft.pcolormesh(array([0,1]), energy_single, array([dpde_single, dpde_single]).transpose(), vmin=0, vmax=vmax, cmap=cmap)
 	axLeft.set_xticks([])
 	axLeft.set_ylim(energyLim)
+	ylabel("Energy (a.u.)")
 
+	#plot bottom single dpde
 	rectBottom = (rectBound[0]+singleWidth, rectBound[1], rectBound[2]-singleWidth, singleWidth-singleSpacing)
 	axBottom = fig.add_axes(rectBottom)
-	axBottom.pcolormesh(energy_single, array([0,1]), array([dpde_single, dpde_single]), vmin=0, vmax=vmax)
+	axBottom.pcolormesh(energy_single, array([0,1]), array([dpde_single, dpde_single]), vmin=0, vmax=vmax, cmap=cmap)
 	axBottom.set_yticks([])
 	axBottom.set_xlim(energyLim)
+	xlabel("Energy (a.u.)")
 
 	draw()
 
