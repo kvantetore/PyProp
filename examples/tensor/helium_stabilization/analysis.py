@@ -232,7 +232,7 @@ def RunFolderUpdateAnalysis(folder):
 			pyprop.Redirect.Enable(silent=True)
 			(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
 			pyprop.Redirect.Disable()
-			print "    dP/dOmega"
+			print "    dP/dOmega (double)"
 			pyprop.Redirect.Enable(silent=True)
 			e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
 			pyprop.Redirect.Disable()
@@ -244,15 +244,21 @@ def RunFolderUpdateAnalysis(folder):
 			pyprop.Redirect.Enable(silent=True)
 			e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
 			pyprop.Redirect.Disable()
+			print "    dP/dOmega (single)"
+			pyprop.Redirect.Enable(silent=True)
+			e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename])
+			pyprop.Redirect.Disable()
 
 			print "    saving results"
 			f = tables.openFile(filename, "a")
 			try:
 				if "dpdomega" in f.root:
 					f.removeNode(f.root, "dpdomega", recursive=True)
-				f.createArray(f.root, "dpdomega", dp1)
-				f.root.dpdomega._v_attrs.energy = e1
-				f.root.dpdomega._v_attrs.theta = th1
+				if "dpdomega_double" in f.root:
+					f.removeNode(f.root, "dpdomega_double", recursive=True)
+				f.createArray(f.root, "dpdomega_double", dp1)
+				f.root.dpdomega_double._v_attrs.energy = e1
+				f.root.dpdomega_double._v_attrs.theta = th1
 
 				if "dpde_double" in f.root:
 					f.removeNode(f.root, "dpde_double", recursive=True)
@@ -263,6 +269,12 @@ def RunFolderUpdateAnalysis(folder):
 					f.removeNode(f.root, "dpde_single", recursive=True)
 				f.createArray(f.root, "dpde_single", dp3)
 				f.root.dpde_single._v_attrs.energy = e3
+
+				if "dpdomega_single" in f.root:
+					f.removeNode(f.root, "dpdomega_single", recursive=True)
+				f.createArray(f.root, "dpdomega_single", dp4)
+				f.root.dpdomega_single._v_attrs.energy = e4
+				f.root.dpdomega_single._v_attrs.theta = th4
 
 				attrs = f.root.wavefunction._v_attrs
 				attrs.Absorbed = symProb[0]

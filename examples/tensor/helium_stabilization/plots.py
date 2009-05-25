@@ -1,5 +1,8 @@
 from scipy import interpolate
 
+def GetGradientFile():
+	#return "gradient_chessboard.txt"
+	return "gradient_uib.txt"
 
 def TraverseGroups(f):
 	for i, p in enumerate(f.root.scanParameter[:]):
@@ -77,12 +80,22 @@ def MakePlotStabilizationFreq5ScanSingleIonizationDPDE():
 
 
 #convergence
-def GetDpDomegaFromFile(filename):
+def GetDpDomegaDoubleFromFile(filename):
 	f = tables.openFile(filename)
 	try:
-		e = f.root.dpdomega._v_attrs.energy
-		th = f.root.dpdomega._v_attrs.theta
-		dp = f.root.dpdomega[:]
+		e = f.root.dpdomega_double._v_attrs.energy
+		th = f.root.dpdomega_double._v_attrs.theta
+		dp = f.root.dpdomega_double[:]
+	finally:
+		f.close()
+	return e, th, dp
+
+def GetDpDomegaSingleFromFile(filename):
+	f = tables.openFile(filename)
+	try:
+		e = f.root.dpdomega_single._v_attrs.energy
+		th = f.root.dpdomega_single._v_attrs.theta
+		dp = f.root.dpdomega_single[:]
 	finally:
 		f.close()
 	return e, th, dp
@@ -182,52 +195,7 @@ def MakePlotConvergence():
 	#pcolormesh(th, th, dpdomega_ref - dpdomega)
 
 
-def MakeDpDePlot(energy_double, dpde_double, energy_single, dpde_single, vmax=None):
 
-	rectBound = (.12, .10, .80, .80)
-	singleWidth = .025
-	singleSpacing = 0.005
-	energyLim = (0,14.5)
-
-	fig = figure()
-	
-	if vmax == None:
-		vmax = numpy.max(dpde_double)
-
-	#load color map
-	#gradientFile = "gradient_uib.txt"
-	gradientFile = "gradient_chessboard.txt"
-	cmap = LoadColormap(gradientFile, reverse=True)
-	#cmap = cm.jet
-
-	#plot double dpde
-	rectMain = (rectBound[0]+singleWidth, rectBound[1]+singleWidth, rectBound[2]-singleWidth, rectBound[3]-singleWidth)
-	axMain = fig.add_axes(rectMain)
-	axMain.pcolormesh(energy_double, energy_double, dpde_double, vmin=0, vmax=vmax, cmap=cmap)
-	axMain.set_xticks([])
-	axMain.set_yticks([])
-	axMain.set_xlim(energyLim)
-	axMain.set_ylim(energyLim)
-
-	#plot left single dpde
-	rectLeft = (rectBound[0], rectBound[1]+singleWidth, singleWidth-singleSpacing, rectBound[3]-singleWidth)
-	axLeft = fig.add_axes(rectLeft)
-	axLeft.pcolormesh(array([0,1]), energy_single, array([dpde_single, dpde_single]).transpose(), vmin=0, vmax=vmax, cmap=cmap)
-	axLeft.set_xticks([])
-	axLeft.set_ylim(energyLim)
-	ylabel("Energy (a.u.)")
-
-	#plot bottom single dpde
-	rectBottom = (rectBound[0]+singleWidth, rectBound[1], rectBound[2]-singleWidth, singleWidth-singleSpacing)
-	axBottom = fig.add_axes(rectBottom)
-	axBottom.pcolormesh(energy_single, array([0,1]), array([dpde_single, dpde_single]), vmin=0, vmax=vmax, cmap=cmap)
-	axBottom.set_yticks([])
-	axBottom.set_xlim(energyLim)
-	xlabel("Energy (a.u.)")
-
-	draw()
-
-	
 def MakeDpDePlotScan():
 	e0list = [1,5,10,15,30]
 	for e0 in e0list:
@@ -245,7 +213,7 @@ def MakeDpDePlotScan():
 
 		finally:
 			f.close()
-			
+	
 
 def CalculatePartialIonizationProbability(energy_double, dpde_double, minE, maxE, doPlot=False):
 	"""
@@ -277,9 +245,9 @@ def CalculatePartialIonizationProbability(energy_double, dpde_double, minE, maxE
 
 def CalculatePartialIonizationProbabilityScan():
 	#e0list = [1,5,10,15,30]
-	e0list = r_[1:35]
+	e0list = r_[1:37]
 
-	limits = [0, 4, 9.5, 14.5, 19.5]
+	limits = [0, 4.6, 9.6, 14.6, 19.5]
 
 	partialList = []
 	for e0 in e0list:
@@ -299,7 +267,7 @@ def CalculatePartialIonizationProbabilityScan():
 	return limits, e0list, array(partialList)
 
 def GetIonizationProbabilityScan():
-	e0list = r_[1:35]
+	e0list = r_[1:37]
 
 	ionList = []
 	for e0 in e0list:
@@ -314,4 +282,5 @@ def GetIonizationProbabilityScan():
 
 	singleList, doubleList = zip(*ionList)
 	return e0list, array(singleList), array(doubleList)
+
 
