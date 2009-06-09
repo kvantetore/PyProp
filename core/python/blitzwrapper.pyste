@@ -1,6 +1,7 @@
 
 Include("python/array_wrapper.cpp")
 Include("python/tinyvector_wrapper.cpp")
+Include("python/range_wrapper.cpp")
 module_code("import_array();\n")
 module_code("create_array_converter<double, 1>();\n")
 module_code("create_array_converter<double, 2>();\n")
@@ -32,3 +33,4 @@ module_code("create_tinyvector_converter<double, 2>();\n")
 module_code("create_tinyvector_converter<double, 3>();\n")
 module_code("create_tinyvector_converter<double, 4>();\n")
 
+module_code("create_range_converter();\n")
