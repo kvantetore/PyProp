@@ -16,13 +16,13 @@ class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return self.SphericalHarmonicObject.GetSize() * 2 
 		
 	def GetBasisPairs(self):
 		count = self.SphericalHarmonicObject.GetSize() + 1
 		
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		index = 0
 		for i in xrange(count):
 			if i > 0:
@@ -62,13 +62,13 @@ class GeometryInfoReducedSphHarmSelectionRuleHermitian(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return True
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return self.SphericalHarmonicObject.GetSize()
 		
 	def GetBasisPairs(self):
 		basisSize = self.SphericalHarmonicObject.GetSize() + 1
 		
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		index = 0
 		for i in xrange(basisSize-1):
 			pairs[index, 0] = i
@@ -97,9 +97,10 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		m = configSection.get("m", 0)
 		self.SetupBasis(configSection.lmax, m)
 
-	def SetupBasis(self, lmax, m):
-		self.LMax = lmax
-		self.M = m
+	def SetupBasis(self, representation):
+		self.Representation = representation
+		self.LMax = representation.Range.MaxL
+		self.M = representation.Range.M
 		self.SphericalHarmonicObject = core.ReducedSphericalTools()
 		self.SphericalHarmonicObject.Initialize(self.LMax, self.M)
 
@@ -127,18 +128,18 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(useGrid)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.LMax+1-self.M, False) #diagonal potentials are always in basis repr
+			return GeometryInfoCommonDiagonal(self.Representation, False) #diagonal potentials are always in basis repr
 		elif geom == "dense":
 			return GeometryInfoCommonDense(self.LMax+1-self.M, useGrid)
 		elif geom == "dipoleselectionrule":
 			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject, useGrid)
 		elif geom == "bandeddistributed":
-			return GeometryInfoCommonBandedDistributed(self.LMax+1-self.M, 1, useGrid)
+			return GeometryInfoCommonBandedDistributed(self.Representation, 1, useGrid)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
-		pairs = geometryInfo.GetBasisPairs()
+		pairs = geometryInfo.GetGlobalBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 		if (storageId == "Band" or storageId == "Herm") and differentiation % 1 == 1:
 			raise Exception("Cannot use hermitian storage and first order differentiation matrix (antihermitian)")

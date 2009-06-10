@@ -19,18 +19,18 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return True
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 		return 2 * N * k - (k) * (k-1) - N
 
 		
 	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
+		count = self.GetGlobalBasisPairCount()
 
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		pairs[:,0] = 0
 		pairs[:,1] = N-1
 
@@ -67,19 +67,19 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return True
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 		return N * k 
 
 		
 	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
+		count = self.GetGlobalBasisPairCount()
 
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		pairs[:,0] = 0
 		pairs[:,1] = N-1
 
@@ -152,7 +152,7 @@ class BasisfunctionBSpline(BasisfunctionBase):
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
-		pairs = geometryInfo.GetBasisPairs()
+		pairs = geometryInfo.GetGlobalBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 
 		if (storageId == "Band" or storageId == "Herm") and differentiation % 1 == 1:

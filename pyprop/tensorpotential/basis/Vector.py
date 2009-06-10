@@ -27,7 +27,7 @@ class BasisfunctionVector(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.BasisSize, False)
+			return GeometryInfoCommonDiagonal(self.BasisRepresentation, False)
 		elif geom.startswith("banded-nonhermitian"):
 			BandCount = int(geom.split("-")[2])
 			return GeometryInfoCommonBandedNonHermitian(self.BasisSize, BandCount, False)

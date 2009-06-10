@@ -21,11 +21,14 @@ class GeometryInfoBase(object):
 		"""
 		raise NotImplementedException()
 
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		"""
 		Returns the number of stored matrix elements
 		"""
 		raise NotImplementedException()
+
+	def GetLocalBasisPairCount(self):
+		return self.GetGlobalBasisPairCount()
 
 	def GetBasisPairs(self):
 		"""
@@ -54,7 +57,7 @@ class GeometryInfoBase(object):
 		by GetBasisPairs(), 
 		"""
 		if not self.HasParallelMultiply():
-			return r_[:self.GetBasisPairCount()]
+			return r_[:self.GetLocalBasisPairCount()]
 		else:
 			raise NotImplementedException()
 	
@@ -76,6 +79,57 @@ class GeometryInfoBase(object):
 		is distributed
 		"""
 		return False
+
+
+class GeometryInfoDistributedBase(GeometryInfoBase):
+	"""
+	Base Geometry information for Geometry infos 
+	supporting distributed matrix vector multiply.
+
+	Implementing classes must implement
+
+	SetupBasisPairs(), setting
+		self.GlobalIndexPairs		- global basis pairs
+		self.LocalIndexPairs        - basis pairs for the current proc
+		self.LocalBasisPairIndices  - indices of the local basis pairs in the list of 
+		                              global basis pairs
+
+	"""
+	def __init__(self):
+		self.LocalIndexPairs = None
+		self.LocalBasisPairIndices = None
+		self.GlobalIndexPairs = None
+
+	def UseGridRepresentation(self):
+		return False
+	
+	def GetGlobalBasisPairCount(self):
+		return self.GetGlobalBasisPairs().shape[0] 
+
+	def GetLocalBasisPairCount(self):
+		return self.GetBasisPairs().shape[0] 
+			
+	def GetBasisPairs(self):
+		if self.LocalIndexPairs == None:
+			self.SetupBasisPairs()
+		return self.LocalIndexPairs
+
+	def GetGlobalBasisPairs(self):
+		if self.GlobalIndexPairs == None:
+			self.SetupBasisPairs()
+		return self.GlobalIndexPairs
+
+	def GetLocalBasisPairIndices(self):
+		if self.LocalBasisPairIndices == None:
+			self.SetupBasisPairs()
+		return self.LocalBasisPairIndices	
+
+	def HasParallelMultiply(self):
+		return True
+
+	def SetupBasisPairs(self):
+		raise NotImplementedException("SetupBasisPairs is not implemented")
+
 
 
 class BasisfunctionBase(object):
@@ -124,11 +178,11 @@ class GeometryInfoCommonDense(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return self.RankCount**2 
 		
 	def GetBasisPairs(self):
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		index = 0
 		for i in xrange(self.RankCount):
 			for j in xrange(self.RankCount):
@@ -146,6 +200,7 @@ class GeometryInfoCommonDense(GeometryInfoBase):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
 
+
 class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 	"""
 	General geometry information for dense matrices
@@ -158,12 +213,12 @@ class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		N = self.RankCount
 		return N * (N + 1) / 2
 		
 	def GetBasisPairs(self):
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		index = 0
 		for i in xrange(self.RankCount):
 			for j in xrange(i, self.RankCount):
@@ -181,7 +236,8 @@ class GeometryInfoCommonDenseHermitian(GeometryInfoBase):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
 
-class GeometryInfoCommonDiagonal(GeometryInfoBase):
+
+class GeometryInfoCommonDiagonal(GeometryInfoDistributedBase):
 	"""
 	General geometry information for diagonal matrices.
 
@@ -197,26 +253,30 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	V(l, r) =  l*(l+1) / (2 * m * r*r)
 
 	"""
-	def __init__(self, rankCount, useGrid):
+	def __init__(self, repr, useGrid):
+		GeometryInfoDistributedBase.__init__(self)
 		#Set member variables 
-		self.RankCount = rankCount	
+		self.Representation = repr
 		self.UseGrid = useGrid
 
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
-		return self.RankCount 
-		
-	def GetBasisPairs(self):
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
-		index = 0
-		for i in xrange(self.RankCount):
-			pairs[index, 0] = i
-			pairs[index, 1] = i
-			index+=1
+	def SetupBasisPairs(self):
+		distr = self.Representation.GetDistributedModel()
+		rank = self.Representation.GetBaseRank()
+		globalSize = len(self.Representation.GetGlobalGrid(rank))
+		localRange = distr.GetLocalIndexRange(globalSize, rank)
 
-		return pairs
+		#setup global pairs
+		pairs = zeros((globalSize, 2), dtype=int32)
+		for i in xrange(globalSize):
+			pairs[i, 0] = i
+			pairs[i, 1] = i
+	
+		self.GlobalIndexPairs = pairs
+		self.LocalBasisPairIndices = r_[localRange]
+		self.LocalIndexPairs = pairs[localRange]
 
 	def GetStorageId(self):
 		return "Diag"
@@ -224,32 +284,36 @@ class GeometryInfoCommonDiagonal(GeometryInfoBase):
 	def GetMultiplyArguments(self, psi):
 		return []
 
-	def HasParallelMultiply(self):
-		return True
 
 
-class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
+class GeometryInfoCommonBandedDistributed(GeometryInfoDistributedBase):
 	"""
 	Geometry for a banded matrix with support for parallel
 	TensorMultiply
 	"""
-	def __init__(self, rankCount, bandCount, useGrid):
+	def __init__(self, repr, bandCount, useGrid):
+		GeometryInfoDistributedBase.__init__(self)
 		#Set member variables 
-		self.RankCount = rankCount	
 		self.BandCount = bandCount
 		self.UseGrid = useGrid
+		assert(repr.GetBaseRank() == 0)
 		self.BaseRank = 0 #Supports only distributed in the first rank
+		self.Representation = repr
+		self.RankCount = int(repr.GetFullShape()[0])
 		self.TempArrays = None
 		self.MultiplyArguments = None
 
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
-		return self.RankCount * (2 * self.BandCount + 1)
-		
-	def GetBasisPairs(self):
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+	def SetupBasisPairs(self):
+		distr = self.Representation.GetDistributedModel()
+		rank = self.Representation.GetBaseRank()
+		globalBasisPairCount = self.RankCount * (2 * self.BandCount + 1)
+		localRange = distr.GetLocalIndexRange(int(globalBasisPairCount), rank)
+
+		#setup global pairs
+		pairs = zeros((globalBasisPairCount, 2), dtype=int32)
 		index = 0
 		for i in xrange(self.RankCount):
 			for j in xrange(i-self.BandCount, i+self.BandCount+1):
@@ -261,7 +325,10 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 					pairs[index, 0] = i
 					pairs[index, 1] = j
 
-		return pairs
+		#store pairs
+		self.GlobalIndexPairs = pairs
+		self.LocalBasisPairIndices = r_[localRange]
+		self.LocalIndexPairs = pairs[localRange]
 
 	def GetStorageId(self):
 		return "Distr"
@@ -273,9 +340,6 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoBase):
 			self.MultiplyArguments = [self.RankCount, self.BandCount] + self.TempArrays
 
 		return self.MultiplyArguments
-
-	def HasParallelMultiply(self):
-		return True
 
 	def SetupTempArrays(self, psi):
 		dataShape = psi.GetData().shape
@@ -321,7 +385,7 @@ class GeometryInfoCommonIdentity(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return 1 
 		
 	def GetBasisPairs(self):
@@ -361,16 +425,16 @@ class GeometryInfoCommonBandedNonHermitian(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return self.UseGrid
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return self.RankCount * (self.BandCount * 2 + 1) 
 
 	def GetBasisPairs(self):
-		count = self.GetBasisPairCount()
+		count = self.GetGlobalBasisPairCount()
 
 		N = self.RankCount
 		k = self.BandCount
 
-		pairs = zeros((self.GetBasisPairCount(), 2), dtype=int32)
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
 		pairs[:,0] = 0
 		pairs[:,1] = N-1
 

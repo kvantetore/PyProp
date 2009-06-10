@@ -453,12 +453,12 @@ class Problem:
 
 	def SaveWavefunctionAscii(self, filename):
 		psiData = self.psi.GetData()
-		assert(len(psiData.shape) <= 1, "SaveWavefunctionAscii only supports 1D wavefunction data")
+		assert(len(psiData.shape) <= 1)
 		pylab.save(filename, transpose((psiData.real ,psiData.imag)), delimiter=' ')	
 
 	def SaveWavefunctionFortran(self, filename):
 		psiData = self.psi.GetData()
-		assert(len(psiData.shape) <= 1, "SaveWavefunctionFortran only supports 1D wavefunction data")
+		assert(len(psiData.shape) <= 1)
 		fh = open(filename, "w")
 		for i in range(psiData.size):
 			fh.write("(%s, %s) " % (psiData[i].real, psiData[i].imag) )

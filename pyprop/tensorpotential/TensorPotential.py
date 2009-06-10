@@ -49,8 +49,9 @@ class TensorPotential(PotentialWrapper):
 		self.GeometryList = geometryList
 		self.Name = configSection.name
 
-		totalSize = prod([geom.GetBasisPairCount() for geom in geometryList]) * 16
-		PrintOut("Setting up Tensor Potential of size %.2fMB" % (totalSize / 1024.**2))
+		totalSize = prod([geom.GetLocalBasisPairCount() for geom in geometryList]) * 16 / 1024.**2
+		globalSize = prod([geom.GetLocalBasisPairCount() for geom in geometryList]) * 16 / 1024.**2
+		PrintOut("Setting up Tensor Potential of local size %.2fMB (global size %.2fMB)" % (totalSize, globalSize,))
 
 		#If filename is specified, load it from disk, otherwise, generate it
 		if hasattr(configSection, "filename"):
@@ -60,7 +61,7 @@ class TensorPotential(PotentialWrapper):
 			distr = self.psi.GetRepresentation().GetDistributedModel()
 
 			#setup data buffer
-			potShape = [geomInfo.GetBasisPairCount() for geomInfo in geometryList]
+			potShape = [geomInfo.GetLocalBasisPairCount() for geomInfo in geometryList]
 			dataBuffer = CreateInstanceRank("core.DataBuffer", self.Rank)
 			dataBuffer.ResizeArray(array(potShape))
 			self.PotentialDataBuffer = dataBuffer

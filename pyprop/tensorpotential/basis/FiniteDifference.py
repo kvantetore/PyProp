@@ -36,7 +36,7 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(True)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.GridSize, True)
+			return GeometryInfoCommonDiagonal(self.Representation, True)
 		else:
 			diffOrderSearch =  re.search("-\d+", geom)
 			if not diffOrderSearch:
@@ -49,7 +49,7 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 			elif re.search("banded-nonhermitian", geom) or re.search("banded", geom):
 				return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
 			elif re.search("bandeddistributed", geom):
-				return GeometryInfoCommonBandedDistributed(self.GridSize, self.BandCount, True)
+				return GeometryInfoCommonBandedDistributed(self.Representation, self.BandCount, True)
 			else:
 				raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
 
@@ -64,7 +64,7 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 		else:
 			raise Exception("Finite Difference currently only supports diff of order 2")
 
-		indexPairs = geometryInfo.GetBasisPairs()
+		indexPairs = geometryInfo.GetGlobalBasisPairs()
 		core.RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
 
 

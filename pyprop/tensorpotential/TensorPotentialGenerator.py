@@ -9,7 +9,7 @@ def CreateBasisFromRepresentation(representation):
 	
 	elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
-		basis.SetupBasis(representation.Range.MaxL, representation.Range.M)
+		basis.SetupBasis(representation)
 	
 	elif representation.__class__ == core.CoupledSphericalHarmonicRepresentation:
 		basis = BasisfunctionCoupledSphericalHarmonic()
@@ -99,7 +99,7 @@ class TensorPotentialGenerator(object):
 						raise Exception("Representation %i can not be distributed during potential evaluation")
 
 					#Get basis pairs from geometry info, and pass it to the potential
-					potentialShape[rank] = geometryInfo.GetBasisPairCount()
+					potentialShape[rank] = geometryInfo.GetLocalBasisPairCount()
 					try:
 						basisPairs = geometryInfo.GetBasisPairs()
 						potentialEvaluator.SetBasisPairs(rank, basisPairs)
@@ -182,10 +182,10 @@ class TensorPotentialGenerator(object):
 
 				#Calculate dest shape
 				destShape = array(source.GetArray().shape)
-				destShape[rank] = geometryInfo.GetBasisPairCount()
+				destShape[rank] = geometryInfo.GetGlobalBasisPairCount()
 
 				#Update full shape
-				fullShape[rank] = geometryInfo.GetBasisPairCount()
+				fullShape[rank] = geometryInfo.GetGlobalBasisPairCount()
 			
 				#Allocate the destination array
 				del dest

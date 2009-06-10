@@ -17,7 +17,7 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 	def UseGridRepresentation(self):
 		return False
 	
-	def GetBasisPairCount(self):
+	def GetGlobalBasisPairCount(self):
 		return self.GetBasisPairs().shape[0] 
 		
 	def GetBasisPairs(self):
@@ -32,7 +32,7 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 		return [self.GetBasisPairs()]
 
 
-class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
+class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoDistributedBase):
 	"""
 	Geometry information for coupled spherical harmonic geometries using distributed matvec.
 	The CoupledSphericalHarmonicRepresentation and a 
@@ -40,36 +40,17 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 
 	"""
 	def __init__(self, representation, selectionRule):
+		GeometryInfoDistributedBase.__init__(self)
+
 		self.SelectionRule = selectionRule
 		self.Representation = representation
-		self.LocalIndexPairs = None
 		self.StepArguments = None
 		self.TempArrays = None
 		self.MultiplyArguments = None
-		self.LocalBasisPairIndices = None
-		self.GlobalIndexPairs = None
 
 	def UseGridRepresentation(self):
 		return False
 	
-	def GetBasisPairCount(self):
-		return self.GetBasisPairs().shape[0] 
-		
-	def GetBasisPairs(self):
-		if self.LocalIndexPairs == None:
-			self.SetupLocalBasisPairs()
-		return self.LocalIndexPairs
-
-	def GetGlobalBasisPairs(self):
-		if self.GlobalIndexPairs == None:
-			self.SetupLocalBasisPairs()
-		return self.GlobalIndexPairs
-
-	def GetLocalBasisPairIndices(self):
-		if self.LocalBasisPairIndices == None:
-			self.SetupLocalBasisPairs()
-		return self.LocalBasisPairIndices	
-
 	def GetStorageId(self):
 		return "SimpD"
 
@@ -83,10 +64,7 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoBase):
 
 		return self.StepArguments + self.TempArrays
 	
-	def HasParallelMultiply(self):
-		return True
-
-	def SetupLocalBasisPairs(self):
+	def SetupBasisPairs(self):
 		indexPairs = self.SelectionRule.GetBasisPairs(self.Representation)
 		self.GlobalIndexPairs = array(indexPairs)
 		distrib = self.Representation.GetDistributedModel()
