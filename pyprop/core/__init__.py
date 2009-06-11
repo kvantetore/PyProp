@@ -1,4 +1,15 @@
 import sys
+
+try:
+	import ctypes
+	ctypes.CDLL("libepetra.so", ctypes.RTLD_GLOBAL)
+	ctypes.CDLL("libteuchos.so", ctypes.RTLD_GLOBAL)
+	ctypes.CDLL("libifpack.so", ctypes.RTLD_GLOBAL)
+	LOAD_TRILINOS_OK = True
+except:
+	LOAD_TRILINOS_FALSE = True
+
+
 from libcore import *
 from libredirect import *
 
