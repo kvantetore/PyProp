@@ -119,12 +119,19 @@ public:
 		double r2 = pos(radialRank2);
 		double r = std::sqrt(r1*r1 + r2*r2);
 		cplx V = 0;
-		if (r > absorberStart)
+		if (r1 > absorberStart)
 		{
-			double curLength = (r - absorberStart) / absorberLength;
-			double Vr = factorReal * std::pow(curLength, scalingReal);
-			double Vi = factorImag * std::pow(curLength, scalingImag);
-			V = cplx(Vr , Vi);
+			double curLength1 = (r1 - absorberStart) / absorberLength;
+			double Vr1 = factorReal * std::pow(curLength1, scalingReal);
+			double Vi1 = factorImag * std::pow(curLength1, scalingImag);
+			V += cplx(Vr1 , Vi1);
+		}
+		if (r2 > absorberStart)
+		{
+			double curLength2 = (r2 - absorberStart) / absorberLength;
+			double Vr2 = factorReal * std::pow(curLength2, scalingReal);
+			double Vi2 = factorImag * std::pow(curLength2, scalingImag);
+			V += cplx(Vr2 , Vi2);
 		}
 		return V;
 	}
@@ -487,4 +494,6 @@ int sp_ienv(int ispec)
 } /* sp_ienv_ */
 
 }
+
+
 

@@ -1,3 +1,6 @@
+IfpackPreconditioner = Template("IfpackRadialPreconditioner", "ifpackpreconditioner.h")
+IfpackPreconditioner("1")
+
 Function("SetRadialCoulombWave", "potential.cpp")
 Function("GetCoulombNormalization", "potential.cpp")
 Function("GetCoulombPhase", "potential.cpp")

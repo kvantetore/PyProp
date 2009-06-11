@@ -284,3 +284,64 @@ class BSplinePreconditioner:
 	def Solve(self, psi):
 		self.Solver.Solve(psi)
 
+
+class TrilinosPreconditioner:
+	def __init__(self, psi):
+		self.Rank = psi.GetRank()
+		self.psi = psi
+
+	def ApplyConfigSection(self, conf):
+		self.PreconditionRank = conf.rank
+		self.PotentialSections = [conf.Config.GetSection(s) for s in conf.potential_evaluation]
+		self.Cutoff = conf.cutoff
+
+	def SetHamiltonianScaling(self, scalingH):
+		self.HamiltonianScaling = scalingH
+
+	def SetOverlapScaling(self, scalingS):
+		self.OverlapScaling = scalingS
+
+	def GetHamiltonianScaling(self):
+		return self.HamiltonianScaling
+
+	def GetOverlapScaling(self):
+		return self.OverlapScaling
+
+	def Setup(self, prop):
+		#Overlap Matrix
+		class overlapSect(pyprop.Section):
+			def __init__(self):
+				self.name = "OverlapPotential"
+				self.classname = "KineticEnergyPotential"
+				self.geometry0 = "diagonal"
+				self.geometry1 = "banded-nonhermitian"
+				self.mass = -0.5
+		S = prop.BasePropagator.GeneratePotential(overlapSect())
+			
+		#Add all potentials to solver
+		A = S.PotentialData.copy() * self.GetOverlapScaling()
+		for conf in self.PotentialSections:
+			#Setup potential in basis
+			potential = prop.BasePropagator.GeneratePotential(conf)
+			for i, geom in enumerate(potential.GeometryList):
+				if i==self.PreconditionRank and geom.GetStorageId() != "BandNH":
+					raise "Potentials must be banded-nonhermitian in precondition rank"
+				elif i!=self.PreconditionRank and geom.GetStorageId() != "Diag":
+					raise "Potentials must be diagonal in non-precondition ranks"
+		
+			#Add potential to solver
+			A += potential.PotentialData * self.GetHamiltonianScaling()
+
+		solvers = []
+		for i in range(A.shape[0]):
+			solv = IfpackRadialPreconditioner_1()
+			basisPairs = [geom.GetBasisPairs() for geom in S.GeometryList[1:]]
+			solv.Setup(prop.psi.GetData()[i,:], A[i,:], basisPairs, self.Cutoff)
+			solvers.append(solv)
+		self.Solvers = solvers
+
+	def Solve(self, psi):
+		for i, solv in enumerate(self.Solvers):
+			solv.Solve(psi.GetData()[i, :])
+
+

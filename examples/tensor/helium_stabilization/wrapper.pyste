@@ -1,3 +1,7 @@
+IfpackPreconditioner = Template("IfpackRadialPreconditioner", "ifpackpreconditioner.h")
+IfpackPreconditioner("2")
+
+
 Include("analysis.cpp")
 module_code('    def("CalculateProjectionRadialProductStates", CalculateProjectionRadialProductStates);\n')
 module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulationRadialProductStates);\n')

@@ -72,7 +72,8 @@ def GetRadialMatricesCompressedCol(pot, psi):
 
 	return rowIndices, colStartIndices, radialMatrices
 
-				
+
+
 class RadialTwoElectronPreconditioner:
 	"""
 	Preconditioner for GMRES for solving systems of the type
@@ -137,8 +138,29 @@ class RadialTwoElectronPreconditioner:
 			del potential
 
 	
-		#Setup radial matrices in CSC format
+		#Setup solvers
 		tensorPotential.SetupStep(0.0)
+		self.SetupRadialSolvers(tensorPotential)
+
+	def SetupRadialSolvers(self, tensorPotential):
+		raise NotImplementedException("Please Override")
+		
+	def Solve(self, psi):
+		raise NotImplementedException("Please Override")
+
+
+
+class RadialTwoElectronPreconditionerSuperLU(RadialTwoElectronPreconditioner):
+	"""
+	Radial Preconditioner using SuperLU to exactly factorize
+	the radial blocks
+	"""
+
+	def __init__(self, psi):
+		RadialTwoElectronPreconditioner.__init__(self, psi)
+
+	def SetupRadialSolvers(self, tensorPotential):
+		#Setup radial matrices in CSC format
 		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
 
 		shape = self.psi.GetRepresentation().GetFullShape()
@@ -154,6 +176,48 @@ class RadialTwoElectronPreconditioner:
 			solve = SuperLUSolver_2()
 			solve.Setup(int(matrixSize), mat, row, colStart)
 			radialSolvers.append(solve)
+
+		self.RadialSolvers = radialSolvers
+
+	def Solve(self, psi):
+		data = psi.GetData()
+		
+		angularCount = data.shape[0]
+		if angularCount != len(self.RadialSolvers):
+			raise Exception("Invalid Angular Count")
+
+		for angularIndex, solve in enumerate(self.RadialSolvers):
+			#data[angularIndex,:,:].flat[:] = solve(data[angularIndex,:,:].flatten())
+			solve.Solve(data[angularIndex, :, :])
+		
+
+
+class RadialTwoElectronPreconditionerIfpack(RadialTwoElectronPreconditioner):
+	"""
+	RadialPreconditioner using Ifpack (ILU) to 
+	approximately factorize the radial blocks
+	"""
+
+	def __init__(self, psi):
+		RadialTwoElectronPreconditioner.__init__(self, psi)
+
+	def ApplyConfigSection(self, conf):
+		RadialTwoElectronPreconditioner.ApplyConfigSection(self, conf)
+		self.Cutoff = conf.cutoff
+
+	def SetupRadialSolvers(self, tensorPotential):
+		#Setup the ILU preconditioner for each radial rank
+		radialSolvers = []
+		matrixCount = tensorPotential.PotentialData.shape[0]
+		assert(tensorPotential.PotentialData.shape[0] == self.psi.GetData().shape[0])
+		for i in range(matrixCount):
+			vector = self.psi.GetData()[i,:,:]
+			matrix = tensorPotential.PotentialData[i, :, :]
+
+			solver = IfpackRadialPreconditioner_2()
+			basisPairs = tensorPotential.BasisPairs[1:]
+			solver.Setup(vector, matrix, basisPairs, self.Cutoff)
+			radialSolvers.append(solver)
 
 		self.RadialSolvers = radialSolvers
 
