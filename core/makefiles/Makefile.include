@@ -18,15 +18,14 @@ PIC               = -fPIC
 AR				  = ar
 PYSTE_BIN         := pyste.py 
 
-
 #libraries
 LAPACK_LIBS = -llapack_pic -lf77blas -lcblas -latlas
 BOOST_LIBS  = -lboost_python
 LIBS        = $(BOOST_LIBS) -lblitz -lfftw3 $(LAPACK_LIBS) $(FORTRAN_LIBS)
 
 #propgrams
-PYSTE = $(PYSTE_BIN) $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(INCLUDE) 
-CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB $(PIC) 
+PYSTE = $(PYSTE_BIN) $(PYSTE_FLAGS) $(PYSTE_INCLUDE) $(CPPFLAGS) $(TRILINOS_FLAG) $(INCLUDE) 
+CXX	  = $(MPICXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) $(TRILINOS_FLAG) -ftemplate-depth-255 -DBOOST_PYTHON_DYNAMIC_LIB $(PIC) 
 LD	  = $(MPICXX) $(CXXFLAGS) $(LDFLAGS) $(PIC) 
 
 

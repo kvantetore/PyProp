@@ -6,10 +6,16 @@
 using namespace boost::python;
 #else
 //UGLY hack to make pyste parse the header files. 
-struct object
+namespace boost
 {
-//	int a;
+namespace python
+{
+struct object {};
+typedef int list;
 };
+};
+
+using namespace boost::python;
 #endif
 
 #endif

@@ -92,6 +92,7 @@ SOURCES= \
 	tensorpotential/tensorpotentialmultiply_wrapper.cpp \
 	representation/customgridrepresentation.cpp \
 	utility/matrix_conversion.cpp \
+	trilinos/pyprop_epetra.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 
