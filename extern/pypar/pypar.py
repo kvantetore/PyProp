@@ -59,6 +59,10 @@ control_sep = ':'          # Separator for fields in control info (NOT ',')
 control_data_max_size = 64 # Maximal size of string holding control data
 
 
+#hack to get mpi to work
+import ctypes
+ctypes.CDLL("libmpi.so", ctypes.RTLD_GLOBAL)
+
 #---------------------------------------------------------------------------
 # Communication functions
 #--------------------------------------------------------------------------

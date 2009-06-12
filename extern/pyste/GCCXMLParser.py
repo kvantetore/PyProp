@@ -166,7 +166,10 @@ class GCCXMLParser(object):
             outer = self.GetDecl(context)
             if not outer.endswith('::'):
                 outer += '::'
-            namespace = outer + namespace
+            try: 
+                namespace = outer + str(namespace)
+            except: 
+                raise Exception("%s, %s, %s" % (outer, namespace, context))
         if namespace.startswith('::'):
             namespace = namespace[2:]
         self.Update(id, namespace)
