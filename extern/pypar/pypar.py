@@ -761,7 +761,7 @@ else:
     # Determine if MPI program is allowed to run sequentially on current platform
     # Attempting to check this automatically may case some systems to hang.
 
-    if sys.platform in ['linux2', 'sunos5', 'win32', 'darwin']:
+    if sys.platform in ['linux2', 'sunos5', 'win32', 'darwin', 'hexagon']:
         #Linux (LAM,MPICH) or Sun (MPICH)
         error = 0  #Sequential execution of MPI is allowed    
     else:
