@@ -60,6 +60,8 @@ execfile("submit.py")
 execfile("serialization.py")
 execfile("analysis_single.py")
 execfile("analysis_double.py")
+execfile("tpdi.py")
+execfile("constants.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -171,6 +173,15 @@ def SetupConfig(**args):
 	
 	if "order" in args:
 		conf.SetValue("RadialRepresentation", "order", args["order"])
+
+	if "phase" in args:
+		phase = args['phase']
+		if phase == "zero":
+			conf.SetValue("LaserPotentialVelocityBase", "phase", 0.0)
+		elif phase == "pihalf":
+			conf.SetValue("LaserPotentialVelocityBase", "phase", pi/2.0)
+		else:
+			PrintOut("Unknown phase, using the one specified in the config file!")
 
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
 
@@ -368,10 +379,13 @@ def FindEigenvalues(useArpack = False, **args):
 #------------------------------------------------------------------------------------
 
 def LaserFunctionVelocity(conf, t):
+	phase = 0.0
+	if hasattr(conf, "phase"):
+		phase = conf.phase
 	if 0 <= t < conf.pulse_duration:
 		curField = conf.amplitude;
 		curField *= sin(t * pi / conf.pulse_duration)**2;
-		curField *= - cos(t * conf.frequency);
+		curField *= - cos(t * conf.frequency + phase);
 	else:
 		curField = 0
 	return curField
