@@ -138,9 +138,10 @@ def SymmetrizeWavefunction(psi, symmetrize):
 #------------------------------------------------------------------------
 
 def RunSingleIonizationStabilizationScan():
-	filenameTemplate = "stabilization_freq_3.0_scan_1s2p_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02_T_12.6.h5"
-	outputPrefix = "stabilization_scan_freq_3.0_1s2p"
-	intensity = r_[1:16]
+	#filenameTemplate = "stabilization_freq_3.0_scan_1s2p_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02_T_12.6.h5"
+	filenameTemplate = "output/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0/stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5"
+	outputPrefix = "stabilization_scan_freq_5.0_1s2s"
+	intensity = r_[1:4]
 
 	filenames = [filenameTemplate % i for i in intensity]
 	absorb, totalIon, singleIon, doubleIon = RunSingleIonizationScan(filenames, outputPrefix)
@@ -149,7 +150,7 @@ def RunSingleIonizationStabilizationScan():
 	pylab.plot(intensity, singleIon, "--", label="Single Ion.")
 	pylab.plot(intensity, doubleIon, ":", label="Double Ion.")
 	xlabel("Intensity")
-	title("Ionization Probability (1s2p) for w=3")
+	title("Ionization Probability (1s2s) for w=5")
 	ylim(0,1)
 	pylab.legend(loc="lower right")
 	pylab.savefig("%s.png" % outputPrefix)
@@ -205,7 +206,7 @@ def RunDoubleIonizationAngularDistributionScan(dE=None, dTheta=None):
 #         Run a series of calculations and save the result
 #------------------------------------------------------------------------
 
-def RunFolderUpdateAnalysis(folder):
+def RunFolderUpdateAnalysis(folder, noOverwrite=False):
 	"""
 	Checks every folder and subfolder, and updates every h5 file containing a /wavefunction
 	- single ionization dpde, 
@@ -218,77 +219,90 @@ def RunFolderUpdateAnalysis(folder):
 	for dirpath, subfolders, files in os.walk(folder):
 		for file in filter(lambda s: s.endswith(".h5"), files):
 			filename = os.path.join(dirpath, file)
+			RunFileUpdateAnalysis(filename, noOverwrite)
 	
-			#check file contains wavefunction
-			f = tables.openFile(filename)
-			try:
-				if not "/wavefunction" in f:
-					continue
-			finally:
-				f.close()
-
-			print "Updating analysis for file %s" % (filename, )
-			print "    ionization prob"
-			pyprop.Redirect.Enable(silent=True)
-			(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
-			pyprop.Redirect.Disable()
-			print "    dP/dOmega (double)"
-			pyprop.Redirect.Enable(silent=True)
-			e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
-			pyprop.Redirect.Disable()
-			print "    dP/dE (double)"
-			pyprop.Redirect.Enable(silent=True)
-			e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename])
-			pyprop.Redirect.Disable()
-			print "    dP/dE (single)"
-			pyprop.Redirect.Enable(silent=True)
-			e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
-			pyprop.Redirect.Disable()
-			print "    dP/dOmega (single)"
-			pyprop.Redirect.Enable(silent=True)
-			e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename])
-			pyprop.Redirect.Disable()
-
-			print "    saving results"
-			f = tables.openFile(filename, "a")
-			try:
-				if "dpdomega" in f.root:
-					f.removeNode(f.root, "dpdomega", recursive=True)
-				if "dpdomega_double" in f.root:
-					f.removeNode(f.root, "dpdomega_double", recursive=True)
-				f.createArray(f.root, "dpdomega_double", dp1)
-				f.root.dpdomega_double._v_attrs.energy = e1
-				f.root.dpdomega_double._v_attrs.theta = th1
-
-				if "dpde_double" in f.root:
-					f.removeNode(f.root, "dpde_double", recursive=True)
-				f.createArray(f.root, "dpde_double", dp2)
-				f.root.dpde_double._v_attrs.energy = e2
-
-				if "dpde_single" in f.root:
-					f.removeNode(f.root, "dpde_single", recursive=True)
-				f.createArray(f.root, "dpde_single", dp3)
-				f.root.dpde_single._v_attrs.energy = e3
-
-				if "dpdomega_single" in f.root:
-					f.removeNode(f.root, "dpdomega_single", recursive=True)
-				f.createArray(f.root, "dpdomega_single", dp4)
-				f.root.dpdomega_single._v_attrs.energy = e4
-				f.root.dpdomega_single._v_attrs.theta = th4
-
-				attrs = f.root.wavefunction._v_attrs
-				attrs.Absorbed = symProb[0]
-				attrs.Ionization = symProb[1]
-				attrs.SingleIonization = symProb[2]
-				attrs.DoubleIonization = symProb[3]
-				attrs.AntiAbsorbed = antiProb[0]
-				attrs.AntiIonization = antiProb[1]
-				attrs.AntiSingleIonization = antiProb[2]
-				attrs.AntiDoubleIonization = antiProb[3]
 
 
-			finally:
-				f.close()
+def RunFileUpdateAnalysis(filename, noOverwrite=False):
+	"""
+	Updates 'filename' (if it contains a /wavefunction):
+	- single ionization dpde, 
+	- double ionization dpde,
+	- double ionization dpdedomega
+	"""
+
+	#check file contains wavefunction
+	f = tables.openFile(filename)
+	try:
+		if not "/wavefunction" in f:
+			return
+		if "/dpdomega" in f and noOverwrite:
+			return
+	finally:
+		f.close()
+
+	print "Updating analysis for file %s" % (filename, )
+	print "    ionization prob"
+	pyprop.Redirect.Enable(silent=True)
+	(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
+	pyprop.Redirect.Disable()
+	print "    dP/dOmega (double)"
+	pyprop.Redirect.Enable(silent=True)
+	e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
+	pyprop.Redirect.Disable()
+	print "    dP/dE (double)"
+	pyprop.Redirect.Enable(silent=True)
+	e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename])
+	pyprop.Redirect.Disable()
+	print "    dP/dE (single)"
+	pyprop.Redirect.Enable(silent=True)
+	e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
+	pyprop.Redirect.Disable()
+	print "    dP/dOmega (single)"
+	pyprop.Redirect.Enable(silent=True)
+	e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename])
+	pyprop.Redirect.Disable()
+
+	print "    saving results"
+	f = tables.openFile(filename, "a")
+	try:
+		if "dpdomega" in f.root:
+			f.removeNode(f.root, "dpdomega", recursive=True)
+		if "dpdomega_double" in f.root:
+			f.removeNode(f.root, "dpdomega_double", recursive=True)
+		f.createArray(f.root, "dpdomega_double", dp1)
+		f.root.dpdomega_double._v_attrs.energy = e1
+		f.root.dpdomega_double._v_attrs.theta = th1
+
+		if "dpde_double" in f.root:
+			f.removeNode(f.root, "dpde_double", recursive=True)
+		f.createArray(f.root, "dpde_double", dp2)
+		f.root.dpde_double._v_attrs.energy = e2
+
+		if "dpde_single" in f.root:
+			f.removeNode(f.root, "dpde_single", recursive=True)
+		f.createArray(f.root, "dpde_single", dp3)
+		f.root.dpde_single._v_attrs.energy = e3
+
+		if "dpdomega_single" in f.root:
+			f.removeNode(f.root, "dpdomega_single", recursive=True)
+		f.createArray(f.root, "dpdomega_single", dp4)
+		f.root.dpdomega_single._v_attrs.energy = e4
+		f.root.dpdomega_single._v_attrs.theta = th4
+
+		attrs = f.root.wavefunction._v_attrs
+		attrs.Absorbed = symProb[0]
+		attrs.Ionization = symProb[1]
+		attrs.SingleIonization = symProb[2]
+		attrs.DoubleIonization = symProb[3]
+		attrs.AntiAbsorbed = antiProb[0]
+		attrs.AntiIonization = antiProb[1]
+		attrs.AntiSingleIonization = antiProb[2]
+		attrs.AntiDoubleIonization = antiProb[3]
+
+
+	finally:
+		f.close()
 
 
 def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBoundStates=True):
@@ -453,10 +467,13 @@ def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.
 
 
 def GetSingleStatesFile(**args):
+	locations = ["output/singleelectron", "output/singleelectron_mine"]
 	radialGridPostfix = "_".join(GetRadialGridPostfix(**args))
 	model = args.get("model", "he+")
-	singleStatesFile = "output/singleelectron/eigenstates_sae_model_%s_%s.h5" % (model, radialGridPostfix)
-	return singleStatesFile
+	singleStatesFile = filter(os.path.exists, ["%s/eigenstates_sae_model_%s_%s.h5" % (loc, model, radialGridPostfix) for loc in locations])
+	if len(singleStatesFile) == 0:
+		raise Exception("Could not find single-particle data files!")
+	return singleStatesFile[0]
 
 
 def LoadSingleParticleStates(singleStatesFile):
@@ -525,6 +542,26 @@ def GetAssociatedLegendrePoly(lmax, theta):
 		for m in range(-l, l+1):
 			leg.append(scipy.special.sph_harm(m, l, 0, theta))
 	return array(leg)
+
+def SetupRadialCoulombStatesEnergyNormalized(psi, Z, Emax, dE):
+	E = r_[dE:Emax:dE]
+	k = sqrt(E*2)
+
+	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
+	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+	
+	#Setup Radial Waves
+	states = []
+	for l in range(lmax+1):
+		V = zeros((rcount, len(k)), dtype=complex)
+		for i, curk in enumerate(k):
+			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspl)
+			V[:,i] = sqrt(2*dE/pi/curK) * coeff
+		states.append(V)
+	
+	energies = [E]*len(l)
+
+	return energies, coulWaves
 
 
 def GetSingleParticleCoulombStates(Z, dk, mink, maxk, lmax, radialRepr):
@@ -661,4 +698,13 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 	return population
 
 
-
+#------------------------------------------------------------------------
+#                        Product state model ionization probabilities
+#------------------------------------------------------------------------
+def GetProductStateModelIonizationProbabilities(modelFirstElectron, modelSecondElectron):
+	"""
+	Calculate two-electron product state model ionization probabilities
+	from SAE ionization data.
+	"""
+#	if modelFirstElectron == modelSecondElectron:
+#		singleIon, 

@@ -40,7 +40,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	"""
 	
 	maxE = 15.
-	dE = 0.01
+	dE = 0.005
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])

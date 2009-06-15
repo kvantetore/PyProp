@@ -266,21 +266,29 @@ def CalculatePartialIonizationProbabilityScan():
 	
 	return limits, e0list, array(partialList)
 
-def GetIonizationProbabilityScan():
-	e0list = r_[1:37]
-
+def GetIonizationProbabilityScan(fileList, symmetry="sym"):
 	ionList = []
-	for e0 in e0list:
-		f = tables.openFile("output/stabilization_freq5/stabilization_I_%i_kb20_dt_1e-02.h5" % e0)
+	for fileName in fileList:
+		f = tables.openFile(fileName)
 		try:
-			doubleIon = f.root.wavefunction._v_attrs.DoubleIonization
-			singleIon = f.root.wavefunction._v_attrs.SingleIonization
+			if symmetry == "sym":
+				doubleIon = f.root.wavefunction._v_attrs.DoubleIonization
+				singleIon = f.root.wavefunction._v_attrs.SingleIonization
+			elif symmetry == "antisym":
+				doubleIon = f.root.wavefunction._v_attrs.AntiDoubleIonization
+				singleIon = f.root.wavefunction._v_attrs.AntiSingleIonization
+			else:
+				raise Exception("Unknown symmetry (%s), should be either 'sym' or 'antisym'!" % symmetry)
+				
+			a0 = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "amplitude")
+			frequency = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "frequency")
+			e0 = float(a0) * float(frequency)
 			
-			ionList.append([singleIon, doubleIon])
+			ionList.append([e0, singleIon, doubleIon])
 		finally:
 			f.close()
 
-	singleList, doubleList = zip(*ionList)
+	e0list, singleList, doubleList = zip(*ionList)
 	return e0list, array(singleList), array(doubleList)
 
 

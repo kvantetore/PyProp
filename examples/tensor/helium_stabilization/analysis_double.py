@@ -1,12 +1,16 @@
-def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
+maxEnergy = 1.0
+energyRes = 0.01
+
+def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
 	doubly ionized continuum for a list of wavefunction 
 	files by projecting onto products of single particle states.
 	"""
 	
-	maxE = 15.
-	dE = 0.1
+	#maxE = 4.
+	#dE = 0.005
+	lmax = 10
 
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
@@ -18,13 +22,26 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 		boundEnergies = boundStates = None
 
 	#Get single particle states
-	isIonized = lambda E: 0.0 < E <= maxE
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	isIonized = lambda E: 0.0 < E
+	isFilteredIonized = lambda E: 0.0 < E < maxEnergy
+	isBound = lambda E: E <= 0.
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
+	#doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
+
+	#Get energy normalized Coulomb waves
+	psi = pyprop.CreateWavefunctionFromFile(fileList[0])
+	doubleIonEnergies, doubleIonStates = SetupRadialCoulombStatesEnergyNormalized(psi, -2, maxEnergy, energyRes)
 
 	#Calculate Energy Distribution (dP/dE1 dE2)
 	def getdPdE(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
-		return GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleIonEnergies, dE, maxE)
+
+		if removeSingleIonStates:
+			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
+			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
+
+		return GetDoubleIonizationEnergyDistribution(psi, boundStates, doubleIonStates, doubleIonEnergies, energyRes, maxEnergy)
 
 	E, dpde = zip(*map(getdPdE, fileList))
 	return E[0], dpde
@@ -55,15 +72,16 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 
 	#Get single particle states
 	isIonized = lambda E: 0.0 < E
-	isFilteredIonized = lambda E: 0.0 < E < 15
+	isFilteredIonized = lambda E: 0.0 < E < maxEnergy
 	isBound = lambda E: E <= 0.
 	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
 
 	if dE == None:
-		dE = maximum(min(diff(singleIonEnergies[0])), 0.05)
-	interpE = r_[dE:15:dE]
+		#dE = maximum(min(diff(singleIonEnergies[0])), 0.005)
+		dE = energyRes
+	interpE = r_[dE:maxEnergy:dE]
 	interpK = sqrt(interpE * 2)
 
 	#Get spherical harmonics
