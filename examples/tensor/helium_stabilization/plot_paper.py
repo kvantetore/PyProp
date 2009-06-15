@@ -4,7 +4,7 @@ execfile("plots.py")
 execfile("plot.py")
 
 InputFolder_1s1s = "output/stabilization_freq5"
-InputFolder_1s2s = "output/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
+InputFolder_1s2s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
 InputFolder_1s2p = "output/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p"
 
 def GetInputFilename(experiment, e0):
@@ -150,8 +150,8 @@ def PaperMakePlotDpDe(experiment, e0, vmax=None):
 	xlabel("Energy (a.u.)")
 
 	fig.figurePatch.set_alpha(1.0)
-	#PaperUpdateFigure(fig)
-	#RepositionDpDe(fig, axMain, axLeft, axBottom)
+	PaperUpdateFigure(fig)
+	RepositionDpDe(fig, axMain, axLeft, axBottom)
 	draw()
 
 	return fig, axMain, axLeft, axBottom
@@ -294,4 +294,6 @@ def PaperMakePlots():
 	PaperMakePlotDpDeScan()
 	PaperMakePlotIonization()
 	PaperMakePlotPartialIonization()
+
+
 

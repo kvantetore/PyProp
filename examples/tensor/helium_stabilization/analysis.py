@@ -543,25 +543,26 @@ def GetAssociatedLegendrePoly(lmax, theta):
 			leg.append(scipy.special.sph_harm(m, l, 0, theta))
 	return array(leg)
 
-def SetupRadialCoulombStatesEnergyNormalized(psi, Z, Emax, dE):
+def SetupRadialCoulombStatesEnergyNormalized(psi, Z, Emax, dE, lmax):
 	E = r_[dE:Emax:dE]
 	k = sqrt(E*2)
 
 	bspline = psi.GetRepresentation().GetRepresentation(1).GetBSplineObject()
 	l = array(psi.GetRepresentation().GetGlobalGrid(0), dtype=int)
+	rcount = psi.GetRepresentation().GetRepresentation(1).GetFullShape()[0]
 	
 	#Setup Radial Waves
 	states = []
 	for l in range(lmax+1):
 		V = zeros((rcount, len(k)), dtype=complex)
 		for i, curk in enumerate(k):
-			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspl)
-			V[:,i] = sqrt(2*dE/pi/curK) * coeff
+			coeff = GetRadialCoulombWaveBSplines(Z, l, curk, bspline)
+			V[:,i] = sqrt(2*dE/pi/curk) * coeff
 		states.append(V)
 	
-	energies = [E]*len(l)
+	energies = [E]*(lmax+1)
 
-	return energies, coulWaves
+	return energies, states
 
 
 def GetSingleParticleCoulombStates(Z, dk, mink, maxk, lmax, radialRepr):

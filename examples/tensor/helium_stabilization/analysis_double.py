@@ -31,7 +31,7 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, r
 
 	#Get energy normalized Coulomb waves
 	psi = pyprop.CreateWavefunctionFromFile(fileList[0])
-	doubleIonEnergies, doubleIonStates = SetupRadialCoulombStatesEnergyNormalized(psi, -2, maxEnergy, energyRes)
+	doubleIonEnergies, doubleIonStates = SetupRadialCoulombStatesEnergyNormalized(psi, -2, maxEnergy, energyRes, lmax)
 
 	#Calculate Energy Distribution (dP/dE1 dE2)
 	def getdPdE(filename):
