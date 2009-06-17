@@ -27,11 +27,11 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, r
 	isBound = lambda E: E <= 0.
 	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
-	#doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
+	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isFilteredIonized, config=conf)
 
 	#Get energy normalized Coulomb waves
-	psi = pyprop.CreateWavefunctionFromFile(fileList[0])
-	doubleIonEnergies, doubleIonStates = SetupRadialCoulombStatesEnergyNormalized(psi, -2, maxEnergy, energyRes, lmax)
+	#psi = pyprop.CreateWavefunctionFromFile(fileList[0])
+	#doubleIonEnergies, doubleIonStates = SetupRadialCoulombStatesEnergyNormalized(psi, -2, maxEnergy, energyRes, lmax)
 
 	#Calculate Energy Distribution (dP/dE1 dE2)
 	def getdPdE(filename):

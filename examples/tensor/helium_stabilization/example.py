@@ -628,7 +628,7 @@ def AssertSingleProc():
 def CreateRadialDensityFromFile(datafile, radialGrid):
 	#Get config from first data file
 	conf = pyprop.serialization.GetConfigFromHDF5(datafile)
-	indexIt = conf.get("AngularRepresentation", "index_iterator")
+	indexIt = eval(conf.get("AngularRepresentation", "index_iterator"))
 
 	#Set up radial problem w/o potential
 	conf.set("Propagation", "preconditioner", 'None')

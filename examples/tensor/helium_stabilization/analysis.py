@@ -235,8 +235,10 @@ def RunFileUpdateAnalysis(filename, noOverwrite=False):
 	f = tables.openFile(filename)
 	try:
 		if not "/wavefunction" in f:
+			print "Found no /wavefunction, so I skip this file: %s" % file
 			return
-		if "/dpdomega" in f and noOverwrite:
+		if "/dpdomega_double" in f and noOverwrite:
+			print "Skipping this file: %s" % filename
 			return
 	finally:
 		f.close()
