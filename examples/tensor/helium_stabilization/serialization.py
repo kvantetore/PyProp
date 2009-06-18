@@ -34,6 +34,7 @@ def GetWavefunctionFromFile(file, psi, nodeName=None):
 
 
 def GetArrayFromFile(file, nodeName):
+	dataArray = None
 	h5file = tables.openFile(file, "r")
 	try:
 		for node in h5file.walkNodes():

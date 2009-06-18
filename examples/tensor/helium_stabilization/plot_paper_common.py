@@ -1,5 +1,6 @@
 import matplotlib
-matplotlib.use("qtagg")
+#matplotlib.use("qtagg")
+matplotlib.use("agg")
 from matplotlib.transforms import Bbox
 import os
 
