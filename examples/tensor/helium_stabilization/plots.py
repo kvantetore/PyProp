@@ -243,19 +243,20 @@ def CalculatePartialIonizationProbability(energy_double, dpde_double, minE, maxE
 
 	return partialProb
 
-def CalculatePartialIonizationProbabilityScan():
-	#e0list = [1,5,10,15,30]
-	e0list = r_[1:37]
-
-	limits = [0, 4.6, 9.6, 14.6, 19.5]
-
+def CalculatePartialIonizationProbabilityScan(fileList, limits):
 	partialList = []
-	for e0 in e0list:
-		f = tables.openFile("output/stabilization_freq5/stabilization_I_%i_kb20_dt_1e-02.h5" % e0)
+	e0List = []
+	for filename in fileList:
+		f = tables.openFile(filename)
 		try:
 			energy_double = f.root.dpde_double._v_attrs.energy
 			dpde_double = f.root.dpde_double[:]
 			
+			a0 = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "amplitude")
+			frequency = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "frequency")
+			e0 = float(a0) * float(frequency)
+			e0List.append(e0)
+
 			p1 = CalculatePartialIonizationProbability(energy_double, dpde_double, limits[0], limits[1])
 			p2 = CalculatePartialIonizationProbability(energy_double, dpde_double, limits[1], limits[2])
 			p3 = CalculatePartialIonizationProbability(energy_double, dpde_double, limits[2], limits[3])
@@ -264,7 +265,7 @@ def CalculatePartialIonizationProbabilityScan():
 		finally:
 			f.close()
 	
-	return limits, e0list, array(partialList)
+	return array(e0List), array(partialList)
 
 def GetIonizationProbabilityScan(fileList, symmetry="sym"):
 	ionList = []

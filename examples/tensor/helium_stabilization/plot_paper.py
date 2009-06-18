@@ -7,6 +7,13 @@ InputFolder_1s1s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_
 InputFolder_1s2s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
 InputFolder_1s2p = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p"
 
+PlotToScreen = False
+if PlotToScreen:
+	FigWidth *= 2
+	FigWidthLarge *= 2
+	LineWidth = 1
+	GraphLineWidth = 1.5
+
 def GetInputFilename(experiment, e0):
 	if isinstance(e0, str):
 		return e0
@@ -54,8 +61,9 @@ def PaperGetDpDOmegaEnergies(experiment):
 	if experiment == "1s1s":
 		return zip(["1photon", "2photon"], E/2, E/2)
 	elif experiment == "1s2s":
-		#return [("2photon", 3.2, 4.58)]
-		return [("2photon", 4.58, 3.2)]
+		return [("2photon", 4.55, 3.28)]
+	elif experiment == "1s2p":
+		return [("2photon", 4.45, 3.42)]
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
 		
@@ -86,8 +94,8 @@ def PaperMakePlotDpDomega(experiment, e0, energy1, energy2=None, vmin=None, vmax
 
 	ax = gca()
 	ax.pcolorfast(th2/pi, th2/pi, dp2, cmap=cmap, vmin=vmin, vmax=vmax)
-	ax.set_xlabel("$\\theta_1$")
-	ax.set_ylabel("$\\theta_2$")
+	ax.set_xlabel("$\\theta_2$")
+	ax.set_ylabel("$\\theta_1$")
 	ax.set_xticks([0,0.25,0.5,0.75,1])
 	ax.set_xticklabels(("$0$", "$\pi/4$", "$\pi/2$", "$\pi\  3/4$", "$\pi$"))
 	ax.set_yticks([0,0.25,0.5,0.75,1])
@@ -205,6 +213,8 @@ def PaperMakePlotDpDeFixedEnergy(experiment, e0, photon):
 	dpInterp = scipy.interpolate.RectBivariateSpline(en, en, dp)
 	z = array([dpInterp(x1, y1) for x1, y1 in zip(en1, en2)]).flatten()
 	gca().plot(en1/(en1+en2), z)
+	maxIdx = argmax(z)
+	print "Peak at E1, E2 = %f, %f" % (en1[maxIdx], en2[maxIdx], )
 	draw()
 
 #-------------------------------------------------------------------------------------
@@ -258,26 +268,35 @@ def PaperMakePlotIonization(experiment):
 	single = array([0] + list(single) + [0])
 	double = array([0] + list(double) + [0])
 
-	PaperFigureSettings(FigWidthLarge, FigWidthLarge/1.33)
-	fig = figure()
-	ax = fig.gca()
-	ax.fill(e0, single+double, facecolor=UiB_Green, linewidth=LineWidth)
-	ax.fill(e0, single, facecolor=UiB_Red, linewidth=LineWidth)
-	ax.axis([0,35,0,1])
-	ax.set_xlabel("Field Strength (a.u.)")
-	ax.set_ylabel("Ionization Probability")
-
-	PaperUpdateFigure(fig)
-	ax.set_position(GetOptimalAxesPosition(fig, ax))
+	inter = isinteractive()
+	ioff()
+	try:
+		PaperFigureSettings(FigWidthLarge, FigWidthLarge/1.33)
+		fig = figure()
+		ax = fig.gca()
+		ax.fill(e0, single+double, facecolor=UiB_Green, linewidth=LineWidth)
+		ax.fill(e0, single, facecolor=UiB_Red, linewidth=LineWidth)
+		ax.set_xlim(0,35)
+		ax.set_ylim(0,1)
+		ax.set_xlabel("Field Strength (a.u.)")
+		ax.set_ylabel("Ionization Probability")
+	
+		PaperUpdateFigure(fig)
+		ax.set_position(GetOptimalAxesPosition(fig, ax))
+	finally:
+		interactive(inter)
 	draw()
 	folder = PaperGetFolder()
-	savefig(os.path.join(folder, "ionization_probability_%s.eps" % experiment), dpi=300)
-	savefig(os.path.join(folder, "ionization_probability_%s.pdf" % experiment), dpi=300)
+	savefig(os.path.join(folder, "%s_ionization_probability.eps" % experiment), dpi=300)
+	savefig(os.path.join(folder, "%s_ionization_probability.pdf" % experiment), dpi=300)
 
 
-def PaperMakePlotPartialIonization():
-	limits, e0, partial = CalculatePartialIonizationProbabilityScan()
-	
+def PaperMakePlotPartialIonization(experiment):
+	fileList = GetAllExperimentFiles(experiment)
+	limits = [0] + [ 5 * (i+0.5) - PaperGetBaseEnergy(experiment) for i in range(1,5)]
+	print limits
+	e0, partial = CalculatePartialIonizationProbabilityScan(fileList,limits)
+
 	inter = isinteractive()
 	ioff()
 	try:
@@ -302,15 +321,20 @@ def PaperMakePlotPartialIonization():
 	draw()
 
 	folder = PaperGetFolder()
-	savefig(os.path.join(folder, "ionization_partial_probability.eps"), dpi=300)
-	savefig(os.path.join(folder, "ionization_partial_probability.pdf"), dpi=300)
+	savefig(os.path.join(folder, "%s_ionization_partial_probability.eps" % experiment), dpi=300)
+	savefig(os.path.join(folder, "%s_ionization_partial_probability.pdf" % experiment), dpi=300)
+
+def PaperMakePlotsExperiment(experiment):
+	PaperMakePlotDpDomegaScan(experiment)
+	PaperMakePlotDpDeScan(experiment)
+	PaperMakePlotIonization(experiment)
+	PaperMakePlotPartialIonization(experiment)
 
 def PaperMakePlots():
 	"""
 	Make all plots for paper
 	"""
-	PaperMakePlotDpDomegaScan()
-	PaperMakePlotDpDeScan()
-	PaperMakePlotIonization()
-	PaperMakePlotPartialIonization()
+	PaperMakePlotsExperiment("1s1s")
+	PaperMakePlotsExperiment("1s2s")
+	PaperMakePlotsExperiment("1s2p")
 
