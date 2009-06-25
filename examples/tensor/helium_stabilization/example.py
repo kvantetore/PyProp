@@ -14,6 +14,9 @@ pyprop.ProjectNamespace = globals()
 from pyprop import PrintOut
 from pyprop.serialization import RemoveExistingDataset
 
+#disable memory debug
+pyprop.DEBUG_PRINT_MEMORY_USAGE = False
+
 #Import numpy and such
 import numpy
 import pylab
@@ -83,7 +86,10 @@ def SetupConfig(**args):
 		conf.Propagation.silent = silent
 
 	if "lmax" in args or "L" in args:
-		lmax = args["lmax"]
+		if "lmax" in args:
+			lmax = args["lmax"]
+		else:
+			lmax = conf.AngularRepresentation.index_iterator.lmax
 		L = args["L"]
 		indexIterator = pyprop.DefaultCoupledIndexIterator(lmax=lmax, L=L)
 		conf.SetValue("AngularRepresentation", "index_iterator", indexIterator)
@@ -216,7 +222,19 @@ def SetupConfig(**args):
 		for potName in potentialNames:
 			conf.SetValue(potName, "filename", os.path.join(folder, "%s.h5" % potName))
 			conf.SetValue(potName, "dataset", "potential")
- 
+
+	if "preconditionType" in args:
+		preconditionType = args["preconditionType"].lower()
+		if preconditionType == "ifpack":
+			#HACK: set cfgObj directly to overcome serialization problem of classes
+			conf.cfgObj.set("RadialPreconditioner", "type", "RadialTwoElectronPreconditionerIfpack")
+		elif preconditionType == "superlu":
+			#HACK: set cfgObj directly to overcome serialization problem of classes
+			conf.cfgObj.set("RadialPreconditioner", "type", "RadialTwoElectronPreconditionerSuperLU")
+		else:
+			raise Exception("Invalid preconditionType %s" % preconditionType)
+				
+
 
 	#Update config object from possible changed ConfigParser object
 	newConf = pyprop.Config(conf.cfgObj)

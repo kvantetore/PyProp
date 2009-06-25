@@ -3,10 +3,106 @@
 #       Eigenvalue Functions using inverse iterations + pIRAM
 #------------------------------------------------------------------------------------
 
-def RunFindBoundstates(**args):
+def LoadBoundstate(psi, conf, L, eigenvalueIndex):
+	"""
+	Loads the boundstate of a given L-shell, corresponding
+	to a given configuration.
+
+	eigenvalueIndex is the index into the sorted eigenvalue list,
+	such that eigenvalueIndex==0 corresponds to the lowest eigenstate
+	for that L-shell.
+	"""
+
+	#Get boundstates filename	
+	filename = GetBoundstatesFilename(config=conf, L=L)
+
+	#Get sorted index in the eigenvalue list
+	f = tables.openFile(filename, "r")
+	try:
+		eigenvalues = f.root.Eig.Eigenvalues[:]
+		idx = argsort(eigenvalues)[eigenvalueIndex]
+	finally:
+		f.close()
+
+	#Load state
+	return LoadBoundstateIndex(psi, filename, idx)
+	
+
+def LoadBoundstateIndex(psi, filename, eigenvectorIndex):
+	"""
+	Loads an eigenstate from a file <filename> into a wavefunction <psi>. 
+	This function works in parallel.
+
+	Because eigenstates can be found independently for each "L", 
+	the number and order of angular indices are different in the
+	stored eigenstates, from that of the wavefunction to load the 
+	eigenstate into.
+
+	The eigenstate config file is used to create an array of CoupledIndex elements
+	to which the local CoupledIndex elements from the wavefunction are compared
+
+	"""
+	angularRank = 0
+
+	PrintOut("Loading Bound State #%i from %s" % (eigenvectorIndex, filename))
+	
+	f = tables.openFile(filename, "r")
+	try:
+		#Get eigenvector dataset
+		eigVec = f.getNode(GetEigenvectorDatasetPath(eigenvectorIndex))
+
+		#Get corresponding eigenvalue
+		E = f.root.Eig.Eigenvalues[eigenvectorIndex]
+
+		#find angular indices of the saved eigenstate
+		conf = pyprop.LoadConfigFromFile(filename, "/Eig")
+		eigCoupledIndices = array([i for i in conf.AngularRepresentation.index_iterator])
+
+		#find local angular indices of the wavefunction to load into
+		repr = psi.GetRepresentation()
+		angRepr = repr.GetRepresentation(angularRank)
+		localIndices = array(repr.GetLocalGrid(angularRank), dtype=int)
+
+		#Load the local angular indices into the wavefunction
+		psi.Clear()
+		for curLocalIdx, curGlobalIdx in enumerate(localIndices):
+			#Get the CoupledIndex to this angular index
+			curCoupledIndex =  angRepr.Range.GetCoupledIndex(curGlobalIdx)
+
+			#Find out the index in the eigenvector corresponding
+			eigIdx = find(eigCoupledIndices == curCoupledIndex)
+			if len(eigIdx) == 0:
+				continue
+			elif len(eigIdx) > 1:
+				raise Exception("What? %s" % eigIdx)
+			else:
+				eigIdx = eigIdx[0]
+				
+
+			#Slice the wavefunction at the correct angular index
+			psiSlice = [s_[:]]*psi.GetRank()
+			psiSlice[angularRank] = curLocalIdx
+
+			#Slice the eigenstate at the correct angular index
+			eigSlice = [s_[:]]*psi.GetRank()
+			eigSlice[angularRank] = eigIdx
+
+			psi.GetData()[curLocalIdx,:,:] = eigVec[eigIdx,:,:]
+
+	finally:
+		f.close()
+
+	return E
+
+
+def GetBoundstatesFilename(**args):
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
 	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+	outFolder = "output/boundstates"
+	return os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
 
+
+def RunFindBoundstates(**args):
 	#use default eigenvaluecount and eigenvaluebasissize
 	#if not specified
 	eigenvalueCount = args.get("eigenvalueCount", 30)
@@ -20,7 +116,7 @@ def RunFindBoundstates(**args):
 	if pyprop.ProcId == 0:
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
-	outFileName = os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
+	outFileName = GetBoundstatesFilename(**args)
 	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
 			
 

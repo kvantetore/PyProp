@@ -3,7 +3,6 @@ import sys
 
 from pyprop.utilities import ElectricFieldAtomicFromIntensitySI as field_from_intensity
 from pyprop.utilities import AngularFrequencyAtomicFromWavelengthSI as freq_from_wavelength
-#pyprop.serialization.DEBUG = True
 
 #------------------------------------------------------------------------------------
 #                       Stabilization functions
@@ -22,73 +21,15 @@ def FormatDuration(duration):
 
 	return " ".join(str)
 
-def GetInitialStateFilename(**args):	
-	radialPostfix = "_".join(GetRadialGridPostfix(**args))
-	angularPostfix = "_".join(GetAngularGridPostfix(**args))
-	gsFilenameGenerated = "output/initialstates/helium_groundstate_%s_%s.h5" % (radialPostfix, angularPostfix)
-	groundstateFilename = args.get("groundstateFilename", gsFilenameGenerated)
-	return groundstateFilename
-
-def RunStabilizationInputFile(**args):
-	"""
-	Sets up the initial state for a set of arguments
-	"""
-
-	if "configFile" not in args: args["configFile"] = "config.ini"
-
-	groundstateFilename = GetInitialStateFilename(**args)
-	PrintOut("Using Groundstate File %s" % (groundstateFilename,))
-	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
-
-	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
-	storeInitialState = args.get("storeInitialState", False)
-
-	#Find Groundstate with piram
-	initProp = SetupProblem(eigenvalueCount=1, **args)
-
-	#Setup inverse iterator	
-	invIt = pyprop.GMRESShiftInvertSolver(initProp)
-	initProp.Config.Arpack.matrix_vector_func = invIt.InverseIterations
-
-	#Setup solver
-	solver = pyprop.PiramSolver(initProp)
-	solver.Solve()
-
-	#Get groundstate wavefunction
-	eigIdx = args.get("eigenstateIndex", 0)
-	solver.SetEigenvector(initProp.psi, eigIdx)
-	initProp.psi.Normalize()
-	initPsi = initProp.psi.Copy()
-
-	#Store wavefunction
-	if storeInitialState:
-		initProp.SaveWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-
-	#Print ground state energy
-	energyExpt = initProp.GetEnergyExpectationValue()
-	groundstateEnergy = solver.GetEigenvalues()[0].real
-	PrintOut("Ground state energy = %s (%s)" % (1.0 / groundstateEnergy + initProp.Config.GMRES.shift, energyExpt))
-
-	#free memory
-	del solver
-	del initProp
-	del invIt
-
-	return initPsi
-	
 
 def RunStabilization(**args):
+	pyprop.PrintMemoryUsage("Before RunStabilization")
 	if "configFile" not in args: args["configFile"] = "config.ini"
 
-	groundstateFilename = GetInitialStateFilename(**args)
-	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
-	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
+	initialStateL = args["initialStateL"]
+	initialStateIndex = args["initialStateIndex"]
 
-	#Find Groundstate
-	findGroundstate = args.get("findGroundstate", True)
-	initPsi = None
-	if findGroundstate:
-		initPsi = RunStabilizationInputFile(**args)
+	saveWavefunctionDuringPropagation = args.get("saveWavefunctionDuringPropagation", False)
 		
 	#Set up propagation problem
 	potList = []
@@ -105,34 +46,37 @@ def RunStabilization(**args):
 		PrintOut("Setting up new problem WITHOUT absorber...")
 
 	sys.stdout.flush()
+	pyprop.PrintMemoryUsage("Before SetupProblem")
 	prop = SetupProblem(additionalPotentials=potList, **args)
+	pyprop.PrintMemoryUsage("After SetupProblem")
+
+	pyprop.PrintMemoryUsage("Before Loading InitialState")
+	conf = SetupConfig(**args)
+	initialEnergyLoaded = LoadBoundstate(prop.psi, conf, initialStateL, initialStateIndex)
+	initPsi = prop.psi.Copy()
+	initialEnergyCalculated = prop.GetEnergyExpectationValue()
+	PrintOut("Initial State Energy = %s (loaded) %s (calculated)" % (initialEnergyLoaded, initialEnergyCalculated))
+	pyprop.PrintMemoryUsage("After Loading InitialState")
+
 	PrintOut("Done setting up problem! (initPsi = %s)" % initPsi)
 	sys.stdout.flush()
 	
-	#Setup initial state
-	if initPsi == None:
-		PrintOut("Loading wavefunction... (%s,%s,%s)" % prop.psi.GetData().shape)
-		sys.stdout.flush()
-		prop.LoadWavefunctionHDF(groundstateFilename, groundstateDatasetPath)
-		initPsi = prop.psi.Copy()
-	else:
-		#PrintOut("Uh-oh, trying to get data from deleted object!")
-		sys.stdout.flush()
-		prop.psi.GetData()[:] = initPsi.GetData()
-		prop.psi.Normalize()
-		#initPsi = prop.psi.Copy()
-
 	#Set up box norm potentials
+	pyprop.PrintMemoryUsage("Before Box Potential 1")
 	singleIonizationBox = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.SingleIonizationBox)
 	singleIonizationBox.SetupStep(0)
+	pyprop.PrintMemoryUsage("Before Box Potential 2")
 	doubleIonizationBox = prop.Propagator.BasePropagator.GeneratePotential(prop.Config.DoubleIonizationBox)
 	doubleIonizationBox.SetupStep(0)
+	pyprop.PrintMemoryUsage("After Box Potential")
 
 	#Get electron coupling potential
 	propPotList = prop.Propagator.BasePropagator.PotentialList
 	electronicPotential = propPotList[where([pot.Name == "ElectronicCouplingPotential" for pot in propPotList])[0]]
-
+	
+	pyprop.PrintMemoryUsage("Before Wavefunction Copy")
 	tmpPsi = prop.psi.Copy()
+	pyprop.PrintMemoryUsage("After Wavefunction Copy")
 
 	distr = prop.psi.GetRepresentation().GetDistributedModel()
 
@@ -181,8 +125,10 @@ def RunStabilization(**args):
 		#Print stats
 		PrintOut("t = %.2f; N = %.15f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
 		PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
+		pyprop.PrintMemoryUsage("At t = %s" % t)
 
 	#Final output
+	pyprop.PrintMemoryUsage("After Propagation")
 	norm = prop.psi.GetNorm()
 	corr = abs(initPsi.InnerProduct(prop.psi))**2
 	timeList.append(t)
@@ -223,6 +169,7 @@ def RunStabilization(**args):
 		finally:
 			h5file.close()
 
+	pyprop.PrintMemoryUsage("After RunStabilization")
 
 def SubmitStabilizationRun():
 	"""
@@ -232,69 +179,86 @@ def SubmitStabilizationRun():
 	timestep = 0.01
 	frequency = 5.0
 	cycles = 6
-	phase = "pihalf"
+	phase = "zero"
 	pulse_duration = cycles * 2 * pi / frequency
 	duration = 1.5 * pulse_duration
 	#duration = 1.0
 	lmax = 5
 	L = range(lmax+1)
-	#lmax = 7
-	#L = range(4)
 
 	radialGrid = {\
-	'xsize' : 80, \
-	'xmax' : 80, \
-	'order' : 5, \
-	'bpstype' : 'exponentiallinear', \
-	'xpartition' : 20, \
-	'gamma' : 2.0}
+		'xsize' : 80, \
+		'xmax' : 80, \
+		'order' : 5, \
+		'bpstype' : 'exponentiallinear', \
+		'xpartition' : 20, \
+		'gamma' : 2.0, \
+	}
 
 	#amplitudeList = arange(1.0, 31.0)
 	#amplitudeList = arange(25.0, 31.0)
 	#amplitudeList = arange(41.0, 61.0)
 
-	amplitudeList = [1,5,10,15,20]
-	#amplitudeList = [15]
+	#amplitudeList = [1,5,10,15,20]
+	amplitudeList = [10]
 
+	statePostfix = "1s2p_1"
 	args = {
-		'account':'fysisk', \
-		'procPerNode':1, \
-		'procMemory':"4000M", \
-		'config':configFile, \
-		'storeInitialState':True, \
-		'saveWavefunctionDuringPropagation':True, \
-		'writeScript':False, \
-		'useStoredPotentials': False, \
-		'radialGrid':radialGrid, \
-		#'multipoleCutoff = 5, \
-		'lmax':lmax, \
-		'L': L, \
+		'account':'matematisk', 
+		'preconditionType': 'ifpack', 
+		'procPerNode':1, 
+		'procMemory':"4000M", 
+		'config':configFile, 
+		'storeInitialState':True, 
+		'saveWavefunctionDuringPropagation':True, 
+		'writeScript':False, 
+		'useStoredPotentials': False, 
+		'radialGrid':radialGrid, 
+		'lmax':lmax, 
+		'L': L, 
 		}
 
-			
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
 	angularPostFix = "_".join(GetAngularGridPostfix(**args))
 
 	#Set initial state to ground state or excited states
-	#statePostfix = "groundstate"
-	statePostfix = "1s1s"
-	args["shift"] = -2.9
-	args["eigenstateIndex"] = 0
-	args["groundstateFilename"] = "output/initialstates/helium_%s_%s_%s.h5" % (statePostfix, radialPostfix, angularPostFix)
-	
+	if statePostfix == "1s1s_1":
+		args["initialStateL"] = 0
+		args["initialStateIndex"] = 0
+	elif statePostfix == "1s2s_3":	
+		args["initialStateL"] = 0
+		args["initialStateIndex"] = 1
+	elif statePostfix == "1s2p_3":	
+		args["initialStateL"] = 1
+		args["initialStateIndex"] = 0
+	elif statePostfix == "1s2p_1":	
+		args["initialStateL"] = 1
+		args["initialStateIndex"] = 1
+	else:
+		raise Exception("Unknown statePostfix %s" % (statePostfix))
+
 	outputDir = "output/freq_%s_%s_%s_%s/" % (frequency, radialPostfix, angularPostFix, statePostfix)
 	if not os.path.exists(outputDir):
 		print "Created output dir: %s" % outputDir
 		os.makedirs(outputDir)
 
+
+	#Check that boundstate files exists
+	boundstateArgs = dict(args)
+	boundstateArgs["L"] = args["initialStateL"]
+	boundstateFile = GetBoundstatesFilename(**boundstateArgs)
+	if not os.path.exists(boundstateFile):
+		raise Exception("Required boundstate File %s does not exist. Run SetupBoundstates first." % boundstateFile)
+
 	depend = None
-	if not os.path.exists(GetInitialStateFilename(**args)):
-		dependJob = RunSubmitFullProcCount(RunStabilizationInputFile, walltime=timedelta(hours=0.5), **args)
-		depend = "afterany:%s" % (dependJob,)
+	#if not os.path.exists(GetInitialStateFilename(**args)):
+	#	dependJob = RunSubmitFullProcCount(RunStabilizationInputFile, walltime=timedelta(hours=0.5), **args)
+	#	depend = "afterany:%s" % (dependJob,)
 
 	for I in amplitudeList:
 		name = outputDir + "stabilization_I_%i_kb20_dt_%1.e_T_%2.1f_phase_%s" % (I, timestep, duration, phase)
-		args['walltime'] = timedelta(hours=6)
+		#args['walltime'] = timedelta(hours=6)
+		args['walltime'] = timedelta(hours=10)
 		args['timestep'] = timestep
 		args['duration'] = duration
 		args['frequency'] = frequency
@@ -304,6 +268,7 @@ def SubmitStabilizationRun():
 		args['outputCount'] = 30
 		args['outputFilename'] = name
 		args['findGroundstate'] = False
+		args['absorberOff'] = False
 		args['laserOff'] = False
 		args['depend'] = depend
 		RunSubmitFullProcCount(RunStabilization, **args)
@@ -359,14 +324,6 @@ def SubmitStabilizationEigenvaluesJob():
 	Calculate a number of the lowest eigenvalues of Helium for a range of L's
 	"""
 	lmax = 5
-#	radialGrid = {\
-#		'xsize' : 20, \
-#		'xmax' : 150, \
-#		'order' : 5, \
-#		'bpstype' : 'exponentiallinear', \
-#		'xpartition' : 6.28344983487, \
-#		'gamma' : 2.30042679472}
-
 	radialGrid = {\
 		'xsize' : 22, \
 		'xmax' : 200, \

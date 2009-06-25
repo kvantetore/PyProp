@@ -121,12 +121,14 @@ class RadialTwoElectronPreconditioner:
 		"""
 
 		#Setup overlap potential
+		pyprop.PrintMemoryUsage("Before Preconditioner Generate Potential (Overlap)")
 		tensorPotential = prop.BasePropagator.GeneratePotential(self.OverlapSection)
 		tensorPotential.PotentialData *= self.GetOverlapScaling()
 
 		#Add all potentials to solver
 		scalingH = self.GetHamiltonianScaling()
 		for conf in self.PotentialSections:
+			pyprop.PrintMemoryUsage("Before Preconditioner Generate Potential (%s)" % conf)
 			#Setup potential in basis
 			potential = prop.BasePropagator.GeneratePotential(conf)
 			if not tensorPotential.CanConsolidate(potential):
@@ -136,6 +138,7 @@ class RadialTwoElectronPreconditioner:
 			potential.PotentialData *= scalingH
 			tensorPotential.PotentialData += potential.PotentialData
 			del potential
+		pyprop.PrintMemoryUsage("After Preconditioner Generate Potentials")
 
 	
 		#Setup solvers
@@ -161,11 +164,14 @@ class RadialTwoElectronPreconditionerSuperLU(RadialTwoElectronPreconditioner):
 
 	def SetupRadialSolvers(self, tensorPotential):
 		#Setup radial matrices in CSC format
+		pyprop.PrintMemoryUsage("Before Preconditioner GetCompressedCol")
 		row, colStart, radialMatrices = GetRadialMatricesCompressedCol(tensorPotential, self.psi)
+		pyprop.PrintMemoryUsage("After Preconditioner GetCompressedCol")
 
 		shape = self.psi.GetRepresentation().GetFullShape()
 		matrixSize = shape[1] * shape[2]
 
+		pyprop.PrintMemoryUsage("Before SuperLU Setup")
 		#factorize each matrix
 		radialSolvers = []
 		for mat in radialMatrices:
@@ -178,6 +184,7 @@ class RadialTwoElectronPreconditionerSuperLU(RadialTwoElectronPreconditioner):
 			radialSolvers.append(solve)
 
 		self.RadialSolvers = radialSolvers
+		pyprop.PrintMemoryUsage("After SuperLU Setup")
 
 	def Solve(self, psi):
 		data = psi.GetData()
@@ -206,6 +213,8 @@ class RadialTwoElectronPreconditionerIfpack(RadialTwoElectronPreconditioner):
 		self.Cutoff = conf.cutoff
 
 	def SetupRadialSolvers(self, tensorPotential):
+		pyprop.PrintMemoryUsage("Before Ifpack Setup")
+
 		#Setup the ILU preconditioner for each radial rank
 		radialSolvers = []
 		matrixCount = tensorPotential.PotentialData.shape[0]
@@ -220,6 +229,7 @@ class RadialTwoElectronPreconditionerIfpack(RadialTwoElectronPreconditioner):
 			radialSolvers.append(solver)
 
 		self.RadialSolvers = radialSolvers
+		pyprop.PrintMemoryUsage("After Ifpack Setup")
 
 	def Solve(self, psi):
 		data = psi.GetData()
