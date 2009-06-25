@@ -54,6 +54,7 @@ clean:
 	rm -rf ../transform/bspline/*.o
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
+	rm -rf $(STATICFILE)
 
 #autodependencies
 DEPDIR        = .deps

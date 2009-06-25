@@ -49,6 +49,7 @@ clean:
 	rm -rf wrapper.cpp
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
+	rm -rf $(STATICFILE)
 
 #autodependencies
 DEPDIR        = .deps

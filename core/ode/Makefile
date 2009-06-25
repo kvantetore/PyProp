@@ -54,6 +54,7 @@ clean:
 	mkdir .deps
 	rm -rf wrapper.cpp
 	rm -rf *.o
+	rm -rf $(STATICFILE)
 	rm -rf $(MODULEFILE)
 
 #autodependencies
