@@ -154,8 +154,9 @@ def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
 	return sum( conj(vec) * dot(overlap, psi.GetData()[l, :]) )
 	
 
-def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap):
-	dE = min(diff(sorted(eigenValues[0])))
+def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap, dE=None):
+	if not dE:
+		dE = min(diff(sorted(eigenValues[0])))
 	minE = 0
 	maxE = eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]

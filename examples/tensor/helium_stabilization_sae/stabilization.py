@@ -86,7 +86,9 @@ def RunStabilization(**args):
 	overlapMatrix = SetupOverlapMatrix(prop)
 		
 	#Setup initial state
-	SetRadialEigenstate(prop.psi, V, n=1, l=0)
+	initialN = args.get("initialN", 1)
+	initialL = args.get("initialL", 0)
+	SetRadialEigenstate(prop.psi, V, n=initialN, l=initialL)
 	PrintOut("Initial State Energy = %s" % (prop.GetEnergy(), ))
 	prop.psi.Normalize()
 	initPsi = prop.psi.Copy()
@@ -157,6 +159,12 @@ def RunStabilization(**args):
 		#Print stats
 		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, bound = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, boundTotal, outsideAbsorber, FormatDuration(eta)))
 		PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
+
+		#ioff()
+		#cla()
+		#gca().pcolorfast(abs(prop.psi.GetData())**2)
+		#ion()
+		#draw()
 
 	#Save the time-valued variables
 	prop.TimeList = timeList

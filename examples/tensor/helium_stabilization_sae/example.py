@@ -29,8 +29,15 @@ execfile("analysis.py")
 
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
-	conf = pyprop.Load(configFile)
-	
+	#if configfile is a string, load it, otherwise, treat it as
+	#a config parser object
+	if isinstance(configFile, str):
+		conf = pyprop.Load(configFile)
+	elif isinstance(configFile, pyprop.Config):
+		conf = configFile
+	else:
+		conf = pyprop.Config(configFile)
+		
 	if "silent" in args:
 		silent = args["silent"]
 		conf.SetValue("Propagation", "silent", args["silent"])
