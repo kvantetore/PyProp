@@ -12,13 +12,48 @@ UiB_Red    = "#aa0000"
 UiB_Blue   = "#005473"
 UiB_Black  = "#000000"
 
-FigWidth = 5
-FigWidthLarge = 8
-LineWidth = 0.2
-GraphLineWidth = 0.5
-FontSize = 8
+FigWidth = None
+FigWidthLarge = None
+LineWidth = None
+GraphLineWidth = None
+FontSize = None
+PaperMaxE0 = None
+PaperFigureFont = None 
 FontFamily = "Times New Roman"
 GradientFile = "gradient_uib.txt"
+
+PlotOutputPaper = "paper"
+PlotOutputIcpeac = "icpeac"
+
+PaperOutput = None
+def PaperSetOutput(plotOutput):
+	global FigWidth, FigWidthLarge, LineWidth, GraphLineWidth
+	global FontSize, PaperOutput, PaperMaxE0, PaperFigureFont
+
+	if plotOutput == PlotOutputPaper:
+		FigWidth = 5
+		FigWidthLarge = 8
+		LineWidth = 0.2
+		GraphLineWidth = 0.5
+		FontSize = 8
+		PaperMaxE0 = 35
+		PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+
+
+	elif plotOutput == PlotOutputIcpeac:
+		FigWidth = 12
+		FigWidthLarge = 16
+		LineWidth = 1
+		GraphLineWidth = 1
+		FontSize = 16
+		PaperMaxE0 = 25
+		PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+
+	else:
+		raise Exception("Unknown output")
+
+	PaperOutput = plotOutput
+
 
 def WalkChildren(parent):
 	if hasattr(parent, "get_children"):
@@ -79,7 +114,6 @@ def GetOptimalAxesPosition(fig, ax, additionalArtists=[], padding=5):
 
 #------------------ Setup Matplotlib -------------------------
 
-PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
 def PaperGetFont():
 	return PaperFigureFont
 
@@ -91,7 +125,7 @@ def PaperSetAllFonts(parent):
 			PaperSetAllFonts(chld)
 
 
-def PaperFigureSettings(fig_width=FigWidth, fig_height=FigWidth/1.3):
+def PaperFigureSettings(fig_width, fig_height):
 	cm_to_inch = 0.393700787
 	fig_width *= cm_to_inch
 	fig_height *= cm_to_inch
@@ -117,7 +151,9 @@ def PaperUpdateFigure(fig):
 
 
 def PaperGetFolder():
-	folder = "figs/paper"
+	if not PaperOutput:
+		raise Exception("Please call PaperSetOutput before plotting")
+	folder = "figs/%s" % PaperOutput
 	if not os.path.exists(folder):
 		os.makedirs(folder)
 	return folder

@@ -3,16 +3,13 @@ execfile("example.py")
 execfile("plots.py")
 execfile("plot.py")
 
+PaperSetOutput("icpeac")
+#PaperSetOutput("paper")
+
 InputFolder_1s1s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s"
 InputFolder_1s2s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
-InputFolder_1s2p = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p"
-
-PlotToScreen = False
-if PlotToScreen:
-	FigWidth *= 2
-	FigWidthLarge *= 2
-	LineWidth = 1
-	GraphLineWidth = 1.5
+InputFolder_1s2p_1 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p_1"
+InputFolder_1s2p_3 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p_3"
 
 def GetInputFilename(experiment, e0):
 	if isinstance(e0, str):
@@ -22,8 +19,10 @@ def GetInputFilename(experiment, e0):
 		return os.path.join(InputFolder_1s1s, "stabilization_I_%i_kb20_dt_1e-02.h5" % e0)
 	elif experiment == "1s2s":
 		return os.path.join(InputFolder_1s2s, "stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5" % e0)
-	elif experiment == "1s2p":
-		return os.path.join(InputFolder_1s2p, "stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5" % e0)
+	elif experiment == "1s2p_1":
+		return os.path.join(InputFolder_1s2p_1, "stabilization_I_%i_kb20_dt_1e-02_T_11.3_phase_zero.h5" % e0)
+	elif experiment == "1s2p_3":
+		return os.path.join(InputFolder_1s2p_3, "stabilization_I_%i_kb20_dt_1e-02_T_11.3_phase_zero.h5" % e0)
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
 
@@ -33,8 +32,10 @@ def GetSymmetry(experiment):
 		return "sym"
 	elif experiment == "1s2s":
 		return "antisym"
-	elif experiment == "1s2p":
+	elif experiment == "1s2p_3":
 		return "antisym"
+	elif experiment == "1s2p_1":
+		return "sym"
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
 
@@ -50,7 +51,9 @@ def PaperGetBaseEnergy(experiment):
 		return 2.903
 	elif experiment == "1s2s":
 		return 2.17
-	elif experiment == "1s2p":
+	elif experiment == "1s2p_1":
+		return 2.13
+	elif experiment == "1s2p_3":
 		return 2.13
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
@@ -66,6 +69,20 @@ def PaperGetDpDOmegaEnergies(experiment):
 		return [("2photon", 4.45, 3.42)]
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
+
+
+def PaperGetSAEIonization(experiment):
+	filename = "output/sae_results/%s.h5" % experiment
+	f = tables.openFile(filename, "r")
+	try:
+		e0 = f.root.Amplitude[:]
+		single = f.root.SingleIonization[:]
+		double = f.root.DoubleIonization[:]
+
+	finally:
+		f.close()
+
+	return e0, single, double
 		
 
 def PaperMakePlotDpDomega(experiment, e0, energy1, energy2=None, vmin=None, vmax=None):
@@ -262,11 +279,20 @@ def PaperMakePlotIonization(experiment):
 	fileList = GetAllExperimentFiles(experiment)
 	symmetry = GetSymmetry(experiment)
 	e0, single, double = GetIonizationProbabilityScan(fileList, symmetry)
+	#filter
+	idx = find(array(e0) <= PaperMaxE0)
+	e0, single, double = array(e0)[idx], single[idx], double[idx]
 
 	#add zeros to start and end to get proper closed polys
 	e0 = array([0] + list(e0) + [e0[-1]+1])
 	single = array([0] + list(single) + [0])
 	double = array([0] + list(double) + [0])
+
+	#sae
+	e0_sae, single_sae, double_sae = PaperGetSAEIonization(experiment)
+	#filter
+	idx = find(e0_sae <= PaperMaxE0)
+	e0_sae, single_sae, double_sae = e0_sae[idx], single_sae[idx], double_sae[idx]
 
 	inter = isinteractive()
 	ioff()
@@ -276,12 +302,16 @@ def PaperMakePlotIonization(experiment):
 		ax = fig.gca()
 		ax.fill(e0, single+double, facecolor=UiB_Green, linewidth=LineWidth)
 		ax.fill(e0, single, facecolor=UiB_Red, linewidth=LineWidth)
-		ax.set_xlim(0,35)
+		if PaperOutput == PlotOutputIcpeac:
+			ax.plot(e0_sae, single_sae+double_sae, "k--")
+			ax.plot(e0_sae, single_sae, "k:")
+		ax.set_xlim(0,PaperMaxE0)
 		ax.set_ylim(0,1)
 		ax.set_xlabel("Field Strength (a.u.)")
 		ax.set_ylabel("Ionization Probability")
-	
+
 		PaperUpdateFigure(fig)
+		draw()
 		ax.set_position(GetOptimalAxesPosition(fig, ax))
 	finally:
 		interactive(inter)
@@ -297,6 +327,10 @@ def PaperMakePlotPartialIonization(experiment):
 	print limits
 	e0, partial = CalculatePartialIonizationProbabilityScan(fileList,limits)
 
+	#filter
+	idx = find(array(e0) <= PaperMaxE0)
+	e0, partial = array(e0)[idx], partial[idx,:]
+
 	inter = isinteractive()
 	ioff()
 	try:
@@ -309,7 +343,7 @@ def PaperMakePlotPartialIonization(experiment):
 		ax.plot(e0, partial[:,3], color=UiB_Blue, label="4 photon", linestyle=":", linewidth=GraphLineWidth)
 		legend()
 		ax.get_legend().legendPatch.set_visible(False)
-		ax.set_xlim(0,35)
+		ax.set_xlim(0,PaperMaxE0)
 		ax.set_xlabel("Field Strength (a.u.)")
 		ax.set_ylabel("Ionization Probability")
 		ax.set_ylim(0,1)

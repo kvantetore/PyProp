@@ -1,5 +1,5 @@
-maxEnergy = 1.0
-energyRes = 0.01
+maxEnergy = 14.0
+energyRes = 0.1
 
 def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
 	"""
