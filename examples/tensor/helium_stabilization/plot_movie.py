@@ -4,17 +4,56 @@ execfile("plot.py")
 execfile("plots.py")
 from pyprop import DefaultCoupledIndexIterator
 
-def InterpolateRadialDensity(oldGrid, newGrid, radialDensity):
+def InterpolateRadialDensity(oldGrid, newGrid, radialDensity, smoothing = 0.0):
 	"""
 	Interpolate a 2D radial density from an old mesh (oldGrid, oldGrid) to a new
 	mesh (newGrid, newGrid).
 	"""
-	densityInterp = scipy.interpolate.RectBivariateSpline(oldGrid, oldGrid, radialDensity, kx=3, ky=3)
+	#Filter
+	#densityFiltered = LowPassFilter(radialDensity)
+	densityFiltered = radialDensity
+
+	#Interpolate
+	densityInterp = scipy.interpolate.RectBivariateSpline(oldGrid, oldGrid, densityFiltered, kx=3, ky=3, s=smoothing)
 	densityNew = densityInterp(newGrid, newGrid)
+
+	#Normalize
+	deltaR = newGrid[1] - newGrid[0]
+	densityNorm = linalg.norm(densityNew) * deltaR**2
+	densityNew /= densityNorm
+
 	return densityNew
 
 
-def CreateIonizationMovieFrame(evalGrid, radialDensity, singleIon, doubleIon, timeIdx, sampleTimes, conf, vmin = None, vmax = None):
+def LowPassFilter(data):
+	data_freq = fft.fftshift(fft.fft2(data))
+	n = data_freq.shape[0]
+	gw = GaussianWindow2D(n/2.0, n/100.0)
+	return fft.ifft2(fft.fftshift(gw * data_freq))
+	
+
+def GaussianWindow2D(n, width):
+	"""
+	Return n-point 2D Gaussion window of width 'width'
+	"""
+	nabs = numpy.abs
+	x = range(-n,n)
+	X, Y = meshgrid(x,x)
+	#xymax = [max(x,y) for x in abs(X) for y in abs(Y)
+	#return exp(-numpy.max(nabs(X),nabs(Y))**2 / (2. * width**2))
+	return exp(-X**2 / (2. * width**2)) * exp(-Y**2 / (2. * width**2))
+
+
+def GetSingleIon(r, density, cutOff):
+	rIdx = numpy.where(r < cutOff)[0]
+	rStart = rIdx[0]
+	rEnd = rIdx[1]
+	dr = diff(r[:2])
+
+	return dr**2 * sum(density[r0:,:rEnd]) + sum(density[:rEnd, r0:])
+	
+
+def CreateIonizationMovieFrame(evalGrid, radialDensity, singleIon, doubleIon, timeIdx, sampleTimes, conf, vmin = None, vmax = None, smoothing = 0.0):
 	"""
 	"""
 
@@ -45,10 +84,10 @@ def CreateIonizationMovieFrame(evalGrid, radialDensity, singleIon, doubleIon, ti
 		print "vmin = %s" % (vmin,)
 
 	#Plot radial density
-	radialDensityInterp = InterpolateRadialDensity(evalGrid, interpGrid, radialDensity)
+	radialDensityInterp = InterpolateRadialDensity(evalGrid, interpGrid, radialDensity, smoothing)
 	rectDensity = (rectBound[0], rectBound[1], densityWidth, densityHeight)
 	axDensity = fig.add_axes(rectDensity)
-	axDensity.pcolorfast(interpGrid, interpGrid, log(radialDensityInterp), vmin=vmin, vmax=vmax, cmap=cmap)
+	axDensity.pcolorfast(interpGrid, interpGrid, radialDensityInterp, vmin=vmin, vmax=vmax, cmap=cmap)
 	#axLeft.set_xticks([])
 	#axLeft.set_ylim(energyLim)
 	#setp(axLeft.get_yticklines(), "markersize", 2)
@@ -100,10 +139,10 @@ def CreateIonizationMovieFrameFromFile(filename, masterFile, radialGrid=None):
 	CreateIonizationMovieFrame(radialGrid, radialDensity, singleIon, doubleIon, 280, sampleTimes, conf)
 
 
-def CreateIonizationMovie(fileList, masterFile, offset=0):
+def CreateIonizationMovie(fileList, masterFile, offset=0, smoothing=0.0):
 	interactive = rcParams["interactive"]
 	outputDir = "figs/stabilization_movie"
-	radialGrid = linspace(0, 30, 250)
+	radialGrid = linspace(0, 20, 300)
 
 	PaperFigureSettings(8,10)
 
@@ -116,8 +155,12 @@ def CreateIonizationMovie(fileList, masterFile, offset=0):
 		print "Creating frame %03i/%03i..." % (curIdx, len(fileList)+offset)
 		sys.stdout.flush()
 		curFigname = "%s/helium_stabilization_freq_5_cycle_6_I_20_%03i.png" % (outputDir, curIdx)
+
 		radialDensity = CreateRadialDensityFromFile(file, radialGrid)
-		fig = CreateIonizationMovieFrame(radialGrid, radialDensity, singleIon[curIdx].real, doubleIon[curIdx].real, curIdx, sampleTimes, conf, vmax = 1.0)
+		#StoreRadialDensity()
+
+		fig = CreateIonizationMovieFrame(radialGrid, radialDensity, singleIon[curIdx].real, doubleIon[curIdx].real, curIdx, sampleTimes, conf, vmin=1e-3, vmax=4e1, smoothing=smoothing)
+		MovieUpdateFigure(fig)
 		fig.savefig(curFigname, dpi=500)	
 		close(fig)
 
@@ -131,3 +174,44 @@ def GetMasterData(masterFile):
 	conf = pyprop.Config(pyprop.serialization.GetConfigFromHDF5(masterFile))
 
 	return sampleTimes, singleIon, doubleIon, conf
+
+
+#------------------ Setup Matplotlib -------------------------
+def MovieGetFont():
+	global PaperFigureFont
+	PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+	return PaperFigureFont
+
+def MovieSetAllFonts(parent):
+	if hasattr(parent, "get_children"):
+		for chld in parent.get_children():
+			if hasattr(chld, "set_fontproperties"):
+				chld.set_fontproperties(PaperGetFont())
+			PaperSetAllFonts(chld)
+
+
+def MovieFigureSettings(fig_width=FigWidth, fig_height=FigWidth/1.3):
+	cm_to_inch = 0.393700787
+	fig_width *= cm_to_inch
+	fig_height *= cm_to_inch
+	fig_size =  [fig_width,fig_height]
+	params = {
+			  'toolbar': "none",
+			  'axes.linewidth': LineWidth,
+			  'lines.linewidth': LineWidth,
+			  'text.usetex': False,
+			  'figure.figsize': fig_size,
+			  'font.family' : 'serif',
+			  'font.serif' : 'Times'}
+	matplotlib.rcParams.update(params)
+
+
+def MovieUpdateFigure(fig):
+	PaperSetAllFonts(fig)
+	fig.figurePatch.set_visible(False)
+	for ax in fig.axes:
+		ax.axesPatch.set_visible(False)
+		for ln in ax.get_xticklines() + ax.get_yticklines():
+			ln.set_linewidth(LineWidth)
+	draw()
+
