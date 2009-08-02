@@ -23,6 +23,7 @@ void Export_python_staticpotential()
         .def("ApplyPotential", &StaticPotential<1>::ApplyPotential)
         .def("MultiplyPotential", &StaticPotential<1>::MultiplyPotential)
     );
+    register_ptr_to_python< boost::shared_ptr< StaticPotential<1> > >();
 
     enum_< StaticPotential<1>::StorageModel >("StorageModel")
         .value("StorageExpValue", StaticPotential<1>::StorageExpValue)
@@ -43,6 +44,7 @@ void Export_python_staticpotential()
         .def("ApplyPotential", &StaticPotential<2>::ApplyPotential)
         .def("MultiplyPotential", &StaticPotential<2>::MultiplyPotential)
     );
+    register_ptr_to_python< boost::shared_ptr< StaticPotential<2> > >();
 
     enum_< StaticPotential<2>::StorageModel >("StorageModel")
         .value("StorageExpValue", StaticPotential<2>::StorageExpValue)
@@ -63,6 +65,7 @@ void Export_python_staticpotential()
         .def("ApplyPotential", &StaticPotential<3>::ApplyPotential)
         .def("MultiplyPotential", &StaticPotential<3>::MultiplyPotential)
     );
+    register_ptr_to_python< boost::shared_ptr< StaticPotential<3> > >();
 
     enum_< StaticPotential<3>::StorageModel >("StorageModel")
         .value("StorageExpValue", StaticPotential<3>::StorageExpValue)
@@ -83,6 +86,7 @@ void Export_python_staticpotential()
         .def("ApplyPotential", &StaticPotential<4>::ApplyPotential)
         .def("MultiplyPotential", &StaticPotential<4>::MultiplyPotential)
     );
+    register_ptr_to_python< boost::shared_ptr< StaticPotential<4> > >();
 
     enum_< StaticPotential<4>::StorageModel >("StorageModel")
         .value("StorageExpValue", StaticPotential<4>::StorageExpValue)

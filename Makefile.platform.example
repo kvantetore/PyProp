@@ -2,7 +2,7 @@
 #To suit your platform specific needs.
 #Compiler options set here will be included by makefiles in all subdirs
 
-PYPROP_ROOT    := /home/tore/prog/pyprop
+PYPROP_ROOT    := /home/torebi/prog/pyprop
 
 #optimization flags
 CXXFLAGS       := $(CXXFLAGS) $(OPTIMIZE_FLAGS) -Wall -g 
@@ -37,11 +37,18 @@ CPPFLAGS       := $(BOOST_INCLUDE) $(CPPFLAGS)
 LDFLAGS        := $(BOOST_LIB) $(LDFLAGS)
 BOOST_LIBS     := -lboost_python-mt
 
+#Trilinos
+TRILINOS_ROOT  := /opt/trilinos
+CPPFLAGS       := $(CPPFLAGS) -I$(TRILINOS_ROOT)/include -DPYPROP_USE_TRILINOS
+LDFLAGS        := $(LDFLAGS) -L$(TRILINOS_ROOT)/lib -lepetra -lteuchos -lifpack
+
+
 #pyste flags (use bundled pyste)
 #use version 3.4 or 4.1 of g++, otherwise pyste will not work
 PYSTE_BIN	   := $(PYPROP_ROOT)/extern/pyste/pyste.py
 #PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-3.4"
-PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-4.1"
+#PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++-4.1"
+PYSTE_FLAGS    := --gccxml-path="gccxml --gccxml-compiler g++"
 #pyste needs to know where to find mpi.h
 PYSTE_INCLUDE  := -I/usr/lib/openmpi/include
 

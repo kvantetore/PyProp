@@ -9,6 +9,8 @@ template<int Rank>
 class StaticPotential
 {
 public:
+	typedef shared_ptr< StaticPotential<Rank> > Ptr;
+
 	enum StorageModel
 	{
 		StorageValue = 1,

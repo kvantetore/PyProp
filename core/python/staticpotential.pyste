@@ -1,5 +1,6 @@
 
 StaticPotential = Template("StaticPotential", "potential/staticpotential.h")
+use_shared_ptr(StaticPotential)
 StaticPotential("1")
 StaticPotential("2")
 StaticPotential("3")

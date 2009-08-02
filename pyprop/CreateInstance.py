@@ -1,7 +1,7 @@
  
 def CreateInstanceRank(className, rank, globals=globals(), locals=locals()):
 	try:
-		return eval("%s_%i()" % (className, rank) )
+		return eval("%s_%i()" % (className, rank), globals, locals)
 	except Exception:
 		print "Could not create instance of class ", className, "with rank ", rank
 		raise

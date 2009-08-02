@@ -738,3 +738,57 @@ def RunningAverage2D(data2d, radialGrid, **args):
 	B /= linalg.norm(B)
 
 	return B
+
+
+def PlotR12Sparsity(multipoleCutoff, **args):
+	angularRank = 0
+	conf = SetupConfig(**args)
+	distr = pyprop.CreateDistribution(conf)
+	repr = pyprop.CreateRepresentation(conf, distr)
+	if multipoleCutoff>0:
+		sel = pyprop.core.CoupledSphericalSelectionRuleR12(multipoleCutoff)
+	else:
+		sel = pyprop.core.CoupledSphericalSelectionRuleR12Old()
+	#sel = pyprop.core.CoupledSphericalSelectionRuleLinearPolarizedField()
+	basisPairs = sel.GetBasisPairs(repr.GetRepresentation(angularRank))
+	N = repr.GetFullShape()[angularRank]
+	X = zeros((N, N))
+	rows = zeros(N, dtype=int)
+	for i, j in zip(basisPairs[:,0], basisPairs[:,1]):
+		X[i,j] = 1
+		rows[i] += 1
+	spy(X)
+	print "Sparsity = %f" % (1 - basisPairs.shape[0] / (N**2.))
+	return numpy.max(rows)
+	
+
+def EstimateMatrixSize(multipoleCutoff, lmax, L, N, k):
+	angularRank = 0
+	pyprop.Redirect.Enable(silent=True)
+	try:
+		conf = SetupConfig(lmax=lmax, L=L)
+		distr = pyprop.CreateDistribution(conf)
+		repr = pyprop.CreateRepresentation(conf, distr)
+		if multipoleCutoff>0:
+			sel = pyprop.core.CoupledSphericalSelectionRuleR12(multipoleCutoff)
+		else:
+			sel = pyprop.core.CoupledSphericalSelectionRuleR12Old()
+		basisPairs = sel.GetBasisPairs(repr.GetRepresentation(angularRank))
+		angularCount = repr.GetFullShape()[angularRank]
+		rows = zeros(angularCount, dtype=int)
+		for i, j in zip(basisPairs[:,0], basisPairs[:,1]):
+			rows[i] += 1
+	finally:
+		pyprop.Redirect.Disable()
+
+	radialSize = (N*k)**2
+	procMem = numpy.max(rows) * radialSize * 16. / 1024**2
+	totalMem = basisPairs.shape[0] * radialSize * 16./ 1024**2
+	print "Using %i processors" % angularCount
+	print "Maximum processor mem requirement = %6.0fMB" % procMem
+	print "Total mem requirement             = %6.0fMB" % totalMem
+	print "Optimal distribution procmem      = %6.0fMB" % (totalMem / angularCount)
+
+
+		
+

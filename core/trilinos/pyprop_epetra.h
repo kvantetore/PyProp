@@ -34,6 +34,7 @@
 typedef shared_ptr<Epetra_Comm> Epetra_Comm_Ptr;
 typedef shared_ptr<Epetra_Vector> Epetra_Vector_Ptr;
 typedef shared_ptr<Epetra_FECrsMatrix> Epetra_FECrsMatrix_Ptr;
+typedef shared_ptr<Epetra_CrsMatrix> Epetra_CrsMatrix_Ptr;
 typedef shared_ptr<Epetra_Map> Epetra_Map_Ptr;
 
 template<int Rank>
