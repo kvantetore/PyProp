@@ -28,10 +28,10 @@ template<int Rank>
 blitz::TinyVector<int, Rank> inline IndexToCoord(const blitz::TinyVector<int, Rank> &shape, int index)
 {
 	blitz::TinyVector<int, Rank> coord;
-	for (int i=0; i<Rank; i++)
+	for (int i=Rank-1; i>=0; i--)
 	{
 		coord(i) = index % shape(i);
-		index -= coord(i) * shape(i);
+		index = (index - coord(i)) / shape(i);
 	}
 	return coord;
 }
@@ -39,10 +39,10 @@ blitz::TinyVector<int, Rank> inline IndexToCoord(const blitz::TinyVector<int, Ra
 blitz::Array<int, 1> inline IndexToCoord(const blitz::Array<int, 1> &shape, int index)
 {
 	blitz::Array<int, 1> coord(shape.size());
-	for (int i=0; i<shape.size(); i++)
+	for (int i=shape.size()-1; i>=0; i--)
 	{
 		coord(i) = index % shape(i);
-		index -= coord(i) * shape(i);
+		index = (index - coord(i)) / shape(i);
 	}
 	return coord;
 }
