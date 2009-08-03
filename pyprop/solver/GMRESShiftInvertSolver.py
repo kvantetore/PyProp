@@ -57,6 +57,8 @@ class GMRESShiftInvertSolver:
 			self.Preconditioner = None
 		self.Timers["Setup"].Stop()
 
+		#Check if our basis is orthogonal
+		self.IsOrthogonalBasis = all([repr.IsOrthogonalBasis(i) for i in range(self.Rank)])
 
 	def __callback(self, srcPsi, dstPsi):
 		"""
@@ -75,7 +77,10 @@ class GMRESShiftInvertSolver:
 		#Multiply H * srcPsi, put in dstPsi (dstPsi is zeroed!)
 		self.Timers["MultiplyHamiltonian"].Start()
 		self.Counters["MultiplyHamiltonian"] += 1
-		multiplyHam = self.BaseProblem.Propagator.BasePropagator.MultiplyHamiltonianNoOverlap
+		if self.IsOrthogonalBasis:
+			multiplyHam = self.BaseProblem.Propagator.MultiplyHamiltonian
+		else:
+			multiplyHam = self.BaseProblem.Propagator.BasePropagator.MultiplyHamiltonianNoOverlap
 		multiplyHam(srcPsi, dstPsi, 0, 0)
 		self.Timers["MultiplyHamiltonian"].Stop()
 
