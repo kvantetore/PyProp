@@ -58,6 +58,7 @@ class GMRESShiftInvertSolver:
 		self.Timers["Setup"].Stop()
 
 		#Check if our basis is orthogonal
+		repr = self.psi.GetRepresentation()
 		self.IsOrthogonalBasis = all([repr.IsOrthogonalBasis(i) for i in range(self.Rank)])
 
 	def __callback(self, srcPsi, dstPsi):
