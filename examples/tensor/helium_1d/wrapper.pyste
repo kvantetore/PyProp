@@ -1,0 +1,15 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Kinetic Energy Potentials
+PotentialEvaluator("KineticEnergyPotential<2> 2","KineticEnergyPotential_2")
+
+#Length Gauge Laser
+PotentialEvaluator("DipoleLaserPotentialLength<2> 2","DipoleLaserPotentialLength_2")
+
+#Helium soft Coulomb potential
+PotentialEvaluator("SoftCoulombPotential<2> 2","SoftCoulombPotential_2")
+
+#Two-electron correlation
+PotentialEvaluator("TwoElectronCorrelation1D<2> 2","TwoElectronCorrelation1D_2")
+
