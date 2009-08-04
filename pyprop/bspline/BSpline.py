@@ -74,7 +74,14 @@ class BSPLINE(core.BSpline):
 			                                           conf.xmax, \
 			                                           conf.xsize, \
 			                                           conf.gamma)
-		
+
+		elif(conf.bpstype == 'centerexponentiallinear'):
+
+			bpsSeq = CenterExponentialLinearBreakpointSequence(conf.xmin, \
+			                                           conf.xpartition, \
+			                                           conf.xmax, \
+			                                           conf.xsize, \
+			                                           conf.gamma)		
 		else:
 			raise NameError, "Sequence not recognized!"
 		

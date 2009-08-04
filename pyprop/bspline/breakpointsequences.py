@@ -90,6 +90,35 @@ def ExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 
 	return xi
 
+def CenterExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
+	"""
+	Similar to 'ExponentialLinearBreakpointSequence', but densest region of points
+	is in the middle. More precicely, the right half of the grid will be exponential-
+	linear, and this will then be mirrored across the leftmost point to create the
+	full grid. Note: Number of grid points must be even.
+	"""
+
+	#
+	# Set up right part of grid
+	# 
+	centerPoint = (rmax + rmin) / 2.0
+
+	#Setup inner/exponential region
+	h = rpartition - centerPoint
+	xi = [ centerPoint + h * ( exp(gamma * float(i - 1) / float(n -1)) - 1 ) / ( exp(gamma) - 1 ) \
+	       for i in range(1, n + 1) ]
+
+	#Setup outer/linear region
+	h = xi[-1] - xi[-2]
+	xi += [x for x in frange(rpartition + h, rmax, h)]
+
+	#
+	# Mirror to get left part of grid
+	#
+	fullGrid = [-x for x in reversed(xi[1:])] + xi
+
+	return fullGrid
+
 
 def VarExponentialLinearBreakpointSequence(rmin, rmax, minSep, maxSep, N):
 	"""
