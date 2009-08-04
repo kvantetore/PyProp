@@ -91,6 +91,14 @@ def SetupConfig(**args):
 	return newConf
 
 
+def SetupProblem(**args):
+	conf = SetupConfig(**args)
+	prop = pyprop.Problem(conf)
+	prop.SetupStep()
+
+	return prop
+
+
 def FindGroundstate(**args):
 	prop = SetupProblem(imtime=True, **args)
 	for t in prop.Advance(10):
