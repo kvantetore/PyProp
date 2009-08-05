@@ -72,13 +72,13 @@ class CartesianPropagator(PropagatorBase):
 		if IsSingleProc():
 			self.FFTTransform.ForwardTransform(psi)
 		else:
-			distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
-			for rank in range(0, psi.GetRank()):
-				if rank not in distribRanks:
-					self.TransformRank(rank, self.FFT_FORWARD, psi)
-			self.Transpose(1, psi)
-			for rank in distribRanks:
-				self.TransformRank(rank, self.FFT_FORWARD, psi)
+			stage = 0
+			for curRank in self.TransformOrder:
+				distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
+				if curRank in distribRanks:
+					stage += 1
+					self.Transpose(stage, psi)
+				self.TransformRank(curRank, self.FFT_FORWARD, psi)
 
 		self.SetFourierRepresentation(psi)
 
@@ -87,13 +87,13 @@ class CartesianPropagator(PropagatorBase):
 		if IsSingleProc():
 			self.FFTTransform.InverseTransform(psi)
 		else:
-			distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
-			for rank in range(0, psi.GetRank()):
-				if rank not in distribRanks:
-					self.TransformRank(rank, self.FFT_BACKWARD, psi)
-			self.Transpose(2, psi)
-			for rank in distribRanks:
-				self.TransformRank(rank, self.FFT_BACKWARD, psi)
+			stage = len(self.DistribList)-1
+			for curRank in reversed(self.TransformOrder):
+				distribRanks = psi.GetRepresentation().GetDistributedModel().GetDistribution().copy()
+				if curRank in distribRanks:
+					stage -= 1
+					self.Transpose(stage, psi)
+				self.TransformRank(curRank, self.FFT_BACKWARD, psi)
 			self.TransformNormalize(psi)
 
 		self.SetGridRepresentation(psi)
@@ -140,38 +140,44 @@ class CartesianPropagator(PropagatorBase):
 	def SetupTranspose(self):
 		#get transpose
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()
-		if not distrModel.IsSingleProc():
-			self.Distribution1 = distrModel.GetDistribution().copy()
-			self.Distribution2 = GetAnotherDistribution(self.Distribution1, self.psi.GetRank())
-			if len(self.Distribution1) > 1: 
-				raise "Does not support more than 1D proc grid"
 
-			transpose = distrModel.GetTranspose()
-			#Setup shape	
+		if not distrModel.IsSingleProc():
+			distribs = []
+			transformOrder = []
+
+			initDistrib = distrModel.GetDistribution().copy()
 			fullShape = self.psi.GetRepresentation().GetFullShape()
-			print fullShape, self.Distribution2
-			distribShape = transpose.CreateDistributedShape(fullShape, self.Distribution2)
+
+			#the first transforms are the ones that are not distributed
+			transformOrder = [r for r in r_[:self.psi.GetRank()] if not r in initDistrib]
+			remainingRanks = filter(lambda r: r not in transformOrder, r_[:self.psi.GetRank()])
+
+			#the rest are done in ascending order
+			distribs.append( (initDistrib, array(self.psi.GetData().shape)) )
+			for i, curRank in enumerate(remainingRanks):
+				#Get the current distribution	
+				startDistrib, startShape = distribs[i] 
+
+				#Find the next distribution
+				finalDistrib = GetAnotherDistribution2(startDistrib, curRank, self.psi.GetRank())
 		
-			self.DistributedShape1 = array(self.psi.GetData().shape)
-			self.DistributedShape2 = distribShape
+				#Find shape of the next distribution
+				transpose = distrModel.GetTranspose()
+				finalShape = transpose.CreateDistributedShape(fullShape, finalDistrib)
+
+				#Update DistributionList
+				distribs.append( (finalDistrib, finalShape) )
+				transformOrder.append(curRank)
+
+			self.DistribList = distribs	
+			self.TransformOrder = transformOrder
 
 
 	def Transpose(self, stage, psi):
 		distrModel = psi.GetRepresentation().GetDistributedModel()
 		if not distrModel.IsSingleProc():
-			if stage == 1:
-				newDistrib = self.Distribution2
-				newShape = self.DistributedShape2
-				#Get transpose buffer
-				transposeBufferName = psi.GetAvailableDataBufferName(newShape)
-				if transposeBufferName == -1:
-					transposeBufferName = psi.AllocateData(newShape)
-				#Change Distribution
-				distrModel.ChangeDistribution(psi, newDistrib, transposeBufferName)
-
-			elif stage == 2:
-				newDistrib = self.Distribution1
-				newShape = self.DistributedShape1
+			if 0 <= stage < len(self.DistribList):
+				newDistrib, newShape = self.DistribList[stage]
 				#Get transpose buffer
 				transposeBufferName = psi.GetAvailableDataBufferName(newShape)
 				if transposeBufferName == -1:
