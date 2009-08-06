@@ -352,3 +352,47 @@ class TrilinosPreconditioner:
 			solv.Solve(psi.GetData()[i, :])
 
 
+#------------------------------------------------------------------------------------
+#             Filter functions to remove B-spline matrix elements
+#------------------------------------------------------------------------------------
+
+def DiagonalCriterion(b0, b1, l):
+	"""
+	Return true for diagonal basis pair fulfilling l-criterion:
+	left and right basis index equal, and one of them less than l
+	"""
+	return b0 == b1 and (b0 < l or b1 < l)
+
+
+def NonDiagonalCriterion(b0, b1, l):
+	"""
+	Return true for non-diagonal basis pair fulfilling l-criterion:
+	left and right basis index equal, and one of them less than l
+	"""
+	return b0 != b1 and (b0 < l or b1 < l)
+
+
+def FilterRadalBsplineMatrixElements(tensorPot, angularRank, radialRank):
+	"""
+	Filter matrix elements from tensor potential corresponding to
+	B-splines with 'wrong' behaviour near the origin (for radial
+	grids).
+	"""
+	radialBasisPairs = tensorPot.BasisPairs[radialRank]
+	numRadialBasisPairs = len(radialBasisPairs)
+	lmax = tensorPot.PotentialData.shape[angularRank] - 1
+
+	for l in range(lmax+1):
+		diagonalPairsIdx = [idx for idx,(b0,b1) in zip(xrange(numRadialBasisPairs), radialBasisPairs) if DiagonalCriterion(b0, b1, l)]
+		
+		nondiagonalPairsIdx = [idx for idx,(b0,b1) in zip(xrange(numRadialBasisPairs), radialBasisPairs) if NonDiagonalCriterion(b0, b1, l)]
+
+		tensorPot.PotentialData[l][diagonalPairsIdx] = 0.0
+		tensorPot.PotentialData[l][nondiagonalPairsIdx] = 0.0
+
+
+def FilterWavefunction(psi, angularRank, radialRank):
+	lmax = psi.GetData().shape[angularRank] - 1
+	for l in range(lmax+1):
+		psi.GetData()[l, :l] = 0.0
+

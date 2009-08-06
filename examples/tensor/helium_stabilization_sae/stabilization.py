@@ -81,6 +81,10 @@ def RunStabilization(**args):
 	potList = ["LaserPotentialVelocity1", "LaserPotentialVelocity2", "LaserPotentialVelocity3", "Absorber"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
 
+	#Remove problematic B-spline matrix elements
+	#for pot in prop.Propagator.BasePropagator.PotentialList:
+	#	FilterRadialBsplineMatrixElements(pot, 0, 1)
+
 	#Find radial eigenstates
 	E, V = SetupRadialEigenstates(prop)
 	overlapMatrix = SetupOverlapMatrix(prop)
@@ -158,7 +162,7 @@ def RunStabilization(**args):
 	
 		#Print stats
 		PrintOut("t = %.2f; N = %.10f; Corr = %.10f, bound = %.10f, outside = %.10f, ETA = %s" % (t, norm, corr, boundTotal, outsideAbsorber, FormatDuration(eta)))
-		PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
+		#PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
 
 		#ioff()
 		#cla()
