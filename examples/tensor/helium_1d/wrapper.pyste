@@ -2,6 +2,7 @@
 PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Kinetic Energy Potentials
+PotentialEvaluator("KineticEnergyPotential<1> 1","KineticEnergyPotential_1")
 PotentialEvaluator("KineticEnergyPotential<2> 2","KineticEnergyPotential_2")
 
 #Length Gauge Laser
@@ -9,6 +10,7 @@ PotentialEvaluator("DipoleLaserPotentialLength<2> 2","DipoleLaserPotentialLength
 
 #Helium soft Coulomb potential
 PotentialEvaluator("SoftCoulombPotential<2> 2","SoftCoulombPotential_2")
+PotentialEvaluator("SoftCoulombPotential<1> 1","SoftCoulombPotential_1")
 
 #Two-electron correlation
 PotentialEvaluator("TwoElectronCorrelation1D<2> 2","TwoElectronCorrelation1D_2")
