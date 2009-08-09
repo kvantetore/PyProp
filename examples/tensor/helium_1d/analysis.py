@@ -84,7 +84,7 @@ def SetupEigenstates1D(prop, potentialIndices=[0]):
 	return eigenValues, eigenVectors
 
 
-def SaveEigenstates(**args):
+def SaveEigenstates1D(**args):
 	postfix = GetGridPostfix(**args)
 	outputFile = "eigenstates/eigenstates_1D_%s.h5" % ("_".join(postfix))
 
@@ -141,336 +141,6 @@ def SetupOverlapMatrix(prop):
 
 
 #------------------------------------------------------------------------
-#                        Product State Analysis (examples)
-#------------------------------------------------------------------------
-
-def RunSingleIonizationStabilizationScan():
-	#filenameTemplate = "stabilization_freq_3.0_scan_1s2p_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02_T_12.6.h5"
-	filenameTemplate = "output/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0/stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5"
-	outputPrefix = "stabilization_scan_freq_5.0_1s2s"
-	intensity = r_[1:4]
-
-	filenames = [filenameTemplate % i for i in intensity]
-	absorb, totalIon, singleIon, doubleIon = RunSingleIonizationScan(filenames, outputPrefix)
-
-	pylab.plot(intensity, totalIon, "-", label="Total Ion.")
-	pylab.plot(intensity, singleIon, "--", label="Single Ion.")
-	pylab.plot(intensity, doubleIon, ":", label="Double Ion.")
-	xlabel("Intensity")
-	title("Ionization Probability (1s2s) for w=5")
-	ylim(0,1)
-	pylab.legend(loc="lower right")
-	pylab.savefig("%s.png" % outputPrefix)
-
-	f = tables.openFile("%s.h5" % outputPrefix, "a")
-	try:
-		f.createArray(f.root, "intensity", intensity)
-	finally:
-		f.close()
-
-
-def RunSingleIonizationEnergyDistributionScan():
-	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/stabilization_I_%i_kb20_dt_1e-02.h5"
-	outputPrefix = "dpde_scan"
-	intensity = r_[1:37:1]
-
-	filenames = [filenameTemplate % i for i in intensity]
-	E, dpde = RunGetSingleIonizationEnergyDistribution(filenames)
-
-	f = tables.openFile("%s.h5" % outputPrefix, "w")
-	try:
-		f.createArray(f.root, "intensity", intensity)
-		f.createArray(f.root, "energy", E)
-		f.createArray(f.root, "dpde", array(dpde))
-	finally:
-		f.close()
-
-def RunDoubleIonizationAngularDistributionScan(dE=None, dTheta=None):
-	filenameTemplate = "raymond/stabilization_freq_5_scan_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0/extra_cycles_propagation/stabilization_I_%i_kb20_dt_1e-02.h5"
-	outputPrefix = "stabilization_freq5_angular_distrib_scan"
-	intensity = r_[1:37:1]
-
-	filenames = [filenameTemplate % i for i in intensity]
-	f = tables.openFile("output/%s.h5" % outputPrefix, "w")
-	try:
-		for i, filename in enumerate(filenames):
-			energy, theta, (distribution,) = RunGetDoubleIonizationAngularDistribution([filename], dE, dTheta)
-			f.createArray(f.root, "distrib_%i" % i, distribution)
-		f.createArray(f.root, "intensity", intensity)
-		f.createArray(f.root, "theta", theta)
-		f.createArray(f.root, "energy", energy)
-		
-	finally:
-		f.close()
-
-
-#------------------------------------------------------------------------
-#                        Product State Analysis (implementation)
-#------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------
-#         Run a series of calculations and save the result
-#------------------------------------------------------------------------
-
-def RunFolderUpdateAnalysis(folder, noOverwrite=False):
-	"""
-	Checks every folder and subfolder, and updates every h5 file containing a /wavefunction
-	- single ionization dpde, 
-	- double ionization dpde,
-	- double ionization dpdedomega
-
-	"""
-	
-	#walk all h5 files files 
-	for dirpath, subfolders, files in os.walk(folder):
-		for file in filter(lambda s: s.endswith(".h5"), files):
-			filename = os.path.join(dirpath, file)
-			RunFileUpdateAnalysis(filename, noOverwrite)
-	
-
-
-def RunFileUpdateAnalysis(filename, noOverwrite=False):
-	"""
-	Updates 'filename' (if it contains a /wavefunction):
-	- single ionization dpde, 
-	- double ionization dpde,
-	- double ionization dpdedomega
-	"""
-
-	#check file contains wavefunction
-	f = tables.openFile(filename)
-	try:
-		if not "/wavefunction" in f:
-			print "Found no /wavefunction, so I skip this file: %s" % file
-			return
-		if "/dpdomega_double" in f and noOverwrite:
-			print "Skipping this file: %s" % filename
-			return
-	finally:
-		f.close()
-
-	print "Updating analysis for file %s" % (filename, )
-	print "    ionization prob"
-	pyprop.Redirect.Enable(silent=True)
-	(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
-	pyprop.Redirect.Disable()
-	print "    dP/dOmega (double)"
-	pyprop.Redirect.Enable(silent=True)
-	e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
-	pyprop.Redirect.Disable()
-	print "    dP/dE (double)"
-	pyprop.Redirect.Enable(silent=True)
-	e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename])
-	pyprop.Redirect.Disable()
-	print "    dP/dE (single)"
-	pyprop.Redirect.Enable(silent=True)
-	e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
-	pyprop.Redirect.Disable()
-	print "    dP/dOmega (single)"
-	pyprop.Redirect.Enable(silent=True)
-	e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename])
-	pyprop.Redirect.Disable()
-
-	print "    saving results"
-	f = tables.openFile(filename, "a")
-	try:
-		if "dpdomega" in f.root:
-			f.removeNode(f.root, "dpdomega", recursive=True)
-		if "dpdomega_double" in f.root:
-			f.removeNode(f.root, "dpdomega_double", recursive=True)
-		f.createArray(f.root, "dpdomega_double", dp1)
-		f.root.dpdomega_double._v_attrs.energy = e1
-		f.root.dpdomega_double._v_attrs.theta = th1
-
-		if "dpde_double" in f.root:
-			f.removeNode(f.root, "dpde_double", recursive=True)
-		f.createArray(f.root, "dpde_double", dp2)
-		f.root.dpde_double._v_attrs.energy = e2
-
-		if "dpde_single" in f.root:
-			f.removeNode(f.root, "dpde_single", recursive=True)
-		f.createArray(f.root, "dpde_single", dp3)
-		f.root.dpde_single._v_attrs.energy = e3
-
-		if "dpdomega_single" in f.root:
-			f.removeNode(f.root, "dpdomega_single", recursive=True)
-		f.createArray(f.root, "dpdomega_single", dp4)
-		f.root.dpdomega_single._v_attrs.energy = e4
-		f.root.dpdomega_single._v_attrs.theta = th4
-
-		attrs = f.root.wavefunction._v_attrs
-		attrs.Absorbed = symProb[0]
-		attrs.Ionization = symProb[1]
-		attrs.SingleIonization = symProb[2]
-		attrs.DoubleIonization = symProb[3]
-		attrs.AntiAbsorbed = antiProb[0]
-		attrs.AntiIonization = antiProb[1]
-		attrs.AntiSingleIonization = antiProb[2]
-		attrs.AntiDoubleIonization = antiProb[3]
-
-
-	finally:
-		f.close()
-
-
-def RunGetProductStatePopulations(fileList, scanParameter, outputFile, removeBoundStates=True):
-	"""
-	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
-	doubly ionized continuum for a list of wavefunction 
-	files by projecting onto products of single particle states.
-	"""
-	
-	maxE = 30.
-
-	#load wavefunction
-	conf = pyprop.LoadConfigFromFile(fileList[0])
-
-	#load bound states
-	if removeBoundStates:
-		boundEnergies, boundStates = GetBoundStates(config=conf)
-	else:
-		boundEnergies = boundStates = None
-
-	#Get single particle states
-	isIonized = lambda E: 0.0 < E
-	isIonizedCutoff = lambda E: 0.0 < E <= maxE
-	isBound = lambda E: E <= 0.
-	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isIonizedCutoff, config=conf)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
-
-
-	f = tables.openFile(outputFile, "w")
-	try:
-		f.createArray(f.root, "scanParameter", scanParameter)
-		f.createArray(f.root, "filenames", fileList)
-		f.createVLArray(f.root, "singleBoundEnergies", atom=tables.ObjectAtom()).append(singleBoundEnergies)
-		f.createVLArray(f.root, "singleIonEnergies", atom=tables.ObjectAtom()).append(singleIonEnergies)
-		f.createVLArray(f.root, "doubleIonEnergies", atom=tables.ObjectAtom()).append(doubleIonEnergies)
-
-		f.createVLArray(f.root, "doubleIonStates", atom=tables.ObjectAtom()).append(doubleIonStates)
-		f.createVLArray(f.root, "singleIonStates", atom=tables.ObjectAtom()).append(singleIonStates)
-		f.createVLArray(f.root, "singleBoundStates", atom=tables.ObjectAtom()).append(singleBoundStates)
-
-		#Calculate Energy Distribution (dP/dE1 dE2)
-		for i, filename in enumerate(fileList):
-			psi = pyprop.CreateWavefunctionFromFile(filename)
-			sym, anti = GetSymmetrizedWavefunction(psi)
-		
-			#get absorbed prob
-			absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
-			
-			#remove boundstate projection
-			if boundStates != None:
-				RemoveBoundStateProjection(psi, boundStates)
-			ionizationProbability = real(psi.InnerProduct(psi))
-		
-			#Get single ionization populations
-			singleIonPop = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
-			singleIonization = sum([sum([p for i1, i2, p in pop]) for l1, l2, pop in singleIonPop ])
-			#Get double ionization populations
-			doubleIonPop = GetPopulationProductStates(psi, doubleIonStates, doubleIonStates)
-
-			#save
-			grp = f.createGroup(f.root, "parameter_%i" % i)
-			grp._v_attrs.AbsorbedProbability = absorbedProbability
-			grp._v_attrs.TotalIonization = ionizationProbability
-			grp._v_attrs.SingleIonization = singleIonization
-			grp._v_attrs.SymmetrizedProbability = real(sym.InnerProduct(sym))
-			grp._v_attrs.AntiSymmetrizedProbability = real(anti.InnerProduct(anti))
-			f.createVLArray(grp, "singleIonPop", atom=tables.ObjectAtom()).append(singleIonPop)
-			f.createVLArray(grp, "doubleIonPop", atom=tables.ObjectAtom()).append(doubleIonPop)
-			del grp
-		
-	finally:
-		f.close()
-
-
-def FromFileCalculateSingleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.1):
-	E = r_[0:maxE:dE]
-
-	f = tables.openFile(filename, "r")
-	try:
-		singleBoundEnergies = f.root.singleBoundEnergies[0]
-		singleIonEnergies = f.root.singleIonEnergies[0]
-		params = f.root.scanParameter[:]
-
-		def calculateSingleIndex(index):
-			grp = f.getNode("/parameter_%i" % index)
-			singleIonPop = grp.singleIonPop[0]
-
-			#Create an array for dpde
-			dpde = zeros(len(E), dtype=double)
-			
-			#for every l-pair (lBound, lIon) we have a set of (iBound, iIon) states
-			#In order to create an approx to dp/de_ion, we interpolate for each iBound,
-			#and add coherently to the dpde array
-			for lBound, lIon, lPop in singleIonPop:
-				#number of states in this l-shell
-				nBound = len(singleBoundEnergies[lBound])
-				nIon = len(singleIonEnergies[lIon])
-			
-				#iterate over all bound states in this l-shell
-				pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
-				for iBound in range(nBound):
-					#interpolate over ionized singleIonPop
-					curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])
-					dpde += interp(E, singleIonEnergies[lIon][:-1], curPop)
-			
-			return dpde
-
-
-		if scanIndex != -1:
-			return params[scanIndex], E, calculateSingleIndex(scanIndex)
-		else:
-			return params, E, map(calculateSingleIndex, r_[:len(params)])
-
-	finally:
-		f.close()
-
-def FromFileCalculateDoubleIonizationDPDE(filename, scanIndex=-1, maxE=15, dE=0.1):
-	E = r_[0:maxE:dE]
-
-	f = tables.openFile(filename, "r")
-	try:
-		doubleIonEnergies = f.root.doubleIonEnergies[0]
-		params = f.root.scanParameter[:]
-
-		def calculateSingleIndex(index):
-			grp = f.getNode("/parameter_%i" % index)
-			doubleIonPop = grp.doubleIonPop[0]
-
-			dpde = zeros((len(E), len(E)), dtype=double)
-			for l1, l2, lPop in doubleIonPop:
-				#number of states in this l-shell
-				n1 = len(doubleIonEnergies[l1])
-				n2 = len(doubleIonEnergies[l2])
-			
-				#scale states with 1/dE_1 dE_2
-				pop = array([d[2] for d in lPop]).reshape(n1, n2)
-				E1 = doubleIonEnergies[l1]
-				E2 = doubleIonEnergies[l2]
-				pop[:-1,:-1] /= outer(diff(E1), diff(E2))
-				
-				#2d interpolation over all states in this shell
-				interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
-				dpde += interpolator(E, E)
-	
-			return dpde
-
-
-		if scanIndex != -1:
-			return params[scanIndex], E, calculateSingleIndex(scanIndex)
-		else:
-			return params, E, map(calculateSingleIndex, r_[:len(params)])
-
-	finally:
-		f.close()
-
-
-
-#------------------------------------------------------------------------
 #        Load Single Particle States
 #------------------------------------------------------------------------
 
@@ -513,7 +183,7 @@ def LoadSingleParticleStates(singleStatesFile):
 	return E, V
 
 
-def GetFilteredSingleParticleStates(stateFilter, **args):
+def GetEnergyFilteredSingleParticleStates(stateFilter, **args):
 	"""
 	Returns the single particle states and energies corresponding to the 1D model and 
 	an energy filter specified by stateFilter
@@ -588,6 +258,22 @@ def GetRadialCoulombWaveBSplines(Z, l, k, bsplineObj):
 	return coeff
 
 
+def SetSymmetrizedProductState(psi, stateIdx1, stateIdx2, **args):
+	"""
+	Create a symmetrized 2D product state from two 1D eigenstates
+	"""
+	
+	E, V = GetEnergyFilteredSingleParticleStates(lambda x: True, **args)
+
+	singleState1 = V[stateIdx1]
+	singleState2 = V[stateIdx2]
+
+	psi.Clear()
+	psi.GetData()[:] = outer(singleState1, singleState2)
+	psi.GetData()[:] += outer(singleState2, singleState1)
+	psi.Normalize()
+
+
 #------------------------------------------------------------------------
 #        Calculations on general product state combinations
 #------------------------------------------------------------------------
@@ -595,18 +281,19 @@ def CalculatePopulationProductStates(V1, V2, psiData):
 	numBsplines = psiData.shape[0]
 	numStates1 = shape(V1)[0]
 	numStates2 = shape(V2)[0]
-	print "numStates1 = %s, numStates2 = %s" % (numStates1, numStates2)
-	tempData = zeros((numBsplines, numStates2))
-	populations = zeros((numStates1, numStates2))	
+	#print "numStates1 = %s, numStates2 = %s" % (numStates1, numStates2)
+	tempData = zeros((numBsplines, numStates2), dtype=complex)
+	populations = zeros((numStates1, numStates2), dtype=complex)
 
 	#Project on V2 states
-	for i, v2 in enumerate(V2):
-		tempData[:,i] = dot(conj(v2), psiData[:])
+	#for i, v2 in enumerate(V2):
+	tempData[:] = transpose(dot(conj(V2), psiData[:]))
 
 	#Project on V1 states
-	for j, v1 in enumerate(V1):
-		populations[j,:] = dot(conj(v1), tempData[:])
-	
+	#for j, v1 in enumerate(V1):
+	populations[:] = dot(conj(V1), tempData[:])
+
+	#Get absolute square
 	populations *= conj(populations)
 
 	popList = []
@@ -616,6 +303,30 @@ def CalculatePopulationProductStates(V1, V2, psiData):
 
 	return popList
 		
+
+def CalculatePopulationProductStates2(V1, V2, psi):
+	"""
+	Calculate projection onto all possible symmetric product
+	state combinations of V1 and V2 by explicitly forming the
+	product states
+	"""
+	tmpPsi = psi.Copy()
+	popList = []
+
+	for i, v1 in enumerate(V1):
+		for j, v2 in enumerate(V2):
+			#print i, j
+			#sys.stdout.flush()
+			tmpPsi.GetData()[:] = outer(v1, v2)
+			tmpPsi.GetData()[:] += outer(v2, v1)
+			tmpPsi.Normalize()
+			
+			p = abs(psi.InnerProduct(tmpPsi))**2
+
+			popList += [[i, j, p]]	
+
+	return popList
+
 
 def GetPopulationProductStates(psi, singleStates1, singleStates2):
 	"""
@@ -683,14 +394,3 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 
 	return population
 
-
-#------------------------------------------------------------------------
-#                        Product state model ionization probabilities
-#------------------------------------------------------------------------
-def GetProductStateModelIonizationProbabilities(modelFirstElectron, modelSecondElectron):
-	"""
-	Calculate two-electron product state model ionization probabilities
-	from SAE ionization data.
-	"""
-#	if modelFirstElectron == modelSecondElectron:
-#		singleIon, 

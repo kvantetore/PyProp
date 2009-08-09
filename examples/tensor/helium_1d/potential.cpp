@@ -108,6 +108,44 @@ public:
 
 
 template<int Rank>
+class SoftCoulombPotential1D : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double charge;
+	double soft;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("charge", charge);
+		config.Get("soft", soft);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 *
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double z = pos(0);
+
+		double V = charge / std::sqrt(z * z + soft * soft);
+		
+		return V;
+	}
+};
+
+
+template<int Rank>
 class TwoElectronCorrelation1D : public PotentialBase<Rank>
 {
 public:

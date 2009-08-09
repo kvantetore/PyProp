@@ -20,8 +20,13 @@ from pylab import *
 from numpy import *
 from libpotential import *
 
+from pyprop.serialization import RemoveExistingDataset
+
 execfile("analysis.py")
 execfile("analysis_single.py")
+execfile("analysis_eigenvalues.py")
+execfile("eigenvalues.py")
+execfile("../helium_stabilization/constants.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -143,8 +148,12 @@ def FindGroundstate(**args):
 
 
 def FindEigenvalues(**args):
+	useArpack = args.get("useArpack", False)
 	prop = SetupProblem(**args)
-	solver = pyprop.PiramSolver(prop)
+	if useArpack:
+		solver = pyprop.ArpackSolver(prop)
+	else:
+		solver = pyprop.PiramSolver(prop)
 	solver.Solve()
 	print solver.GetEigenvalues()
 	return solver

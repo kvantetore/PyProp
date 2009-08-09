@@ -10,7 +10,9 @@ PotentialEvaluator("DipoleLaserPotentialLength<2> 2","DipoleLaserPotentialLength
 
 #Helium soft Coulomb potential
 PotentialEvaluator("SoftCoulombPotential<2> 2","SoftCoulombPotential_2")
-PotentialEvaluator("SoftCoulombPotential<1> 1","SoftCoulombPotential_1")
+
+#1D soft Coulomb potential
+PotentialEvaluator("SoftCoulombPotential1D<1> 1","SoftCoulombPotential1D_1")
 
 #Two-electron correlation
 PotentialEvaluator("TwoElectronCorrelation1D<2> 2","TwoElectronCorrelation1D_2")
