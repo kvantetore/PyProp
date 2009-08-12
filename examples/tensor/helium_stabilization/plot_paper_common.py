@@ -26,16 +26,18 @@ PlotOutputPaper = "paper"
 PlotOutputIcpeac = "icpeac"
 
 PaperOutput = None
-def PaperSetOutput(plotOutput):
+def PaperSetOutput(plotOutput, polar=False):
 	global FigWidth, FigWidthLarge, LineWidth, GraphLineWidth
 	global FontSize, PaperOutput, PaperMaxE0, PaperFigureFont
 
 	if plotOutput == PlotOutputPaper:
 		FigWidth = 5
 		FigWidthLarge = 8
-		LineWidth = 0.2
+		LineWidth = 0.4
 		GraphLineWidth = 0.5
 		FontSize = 8
+		if polar:
+			FontSize = 6
 		PaperMaxE0 = 35
 		PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
 
@@ -149,6 +151,23 @@ def PaperUpdateFigure(fig):
 			ln.set_linewidth(LineWidth)
 	draw()
 
+def PaperUpdatePolarFigure(fig):
+	#PolarAxColor = "#c5c5c5"
+	PolarAxColor = "#bababa"
+	#PolarAxColor = "#767676"
+	#PolarAxColor = "gray"
+	PolarAxLineWidth = 0.4
+	
+	PaperSetAllFonts(fig)
+
+	fig.figurePatch.set_visible(False)
+	for ax in fig.axes:
+		ax.axesPatch.set_visible(False)
+		for ln in ax.get_xgridlines() + ax.get_ygridlines():
+			ln.set_color(PolarAxColor)
+			ln.set_linewidth(PolarAxLineWidth)
+			ln.set_linestyle("-")
+	draw()
 
 def PaperGetFolder():
 	if not PaperOutput:
