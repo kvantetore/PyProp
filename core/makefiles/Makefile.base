@@ -93,6 +93,7 @@ SOURCES= \
 	representation/customgridrepresentation.cpp \
 	utility/matrix_conversion.cpp \
 	trilinos/pyprop_epetra.cpp \
+	trilinos/pyprop_tpetra.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 
