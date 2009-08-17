@@ -56,15 +56,15 @@ def GetEigenstateFileInfo(filename, infoId):
 
 
 def GetBoundStateFiles(**args):
-	locations = ["output/boundstates", "output/boundstates_mine"]
+	location = "output/boundstates"
 	conf = SetupConfig(**args)
 	lmax = max([l1 for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
 	Llist = unique([L for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
 	getPostfix = lambda L: "_".join(GetRadialGridPostfix(config=conf, lmax=lmax, L=L) + GetAngularGridPostfix(config=conf, lmax=lmax, L=L)) 
-	#getFilename = lambda L: "output/boundstates/boundstates_%s.h5" % (getPostfix(L))
-	getFilename = lambda L: filter(os.path.exists, ["%s/boundstates_%s.h5" % (loc, getPostfix(L)) for loc in locations])[0]
+	getFilename = lambda L: "output/boundstates/boundstates_%s.h5" % (getPostfix(L))
+	#getFilename = lambda L: filter(os.path.exists, ["%s/boundstates_%s.h5" % (loc, getPostfix(L)) for loc in locations])[0]
 
-	return map(getFilename, Llist)
+	return filter(os.path.exists, map(getFilename, Llist))
 
 
 def GetBoundStates(ionizationThreshold=-2.0, **args):

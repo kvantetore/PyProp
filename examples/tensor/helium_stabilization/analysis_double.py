@@ -285,3 +285,39 @@ def GetDoubleParallelMomentumDistribution(energy, th, dp):
 	e2 = array([-x for x in reversed(energy)] + [x for x in energy]) 
 
 	return e2, dp2
+
+
+def GetTPDICrossSectionFromFile(filename):
+	h5file = tables.openFile(filename, "r")
+	try:
+		doubleIon = h5file.root.wavefunction._v_attrs.DoubleIonization
+	finally:
+		h5file.close()
+
+	conf = pyprop.LoadConfigFromFile(filename)
+	cfgSec = conf.PulseParameters
+	freq = cfgSec.frequency
+	intensity = intensity_from_field(cfgSec.amplitude * freq)
+	pulseDuration = cfgSec.pulse_duration
+
+	sigma = tpdi_crossection(freq, intensity, doubleIon, pulseDuration)
+
+	return sigma
+
+
+def GetTPDIList():
+	fileList = [\
+		"output/tpdi/freq_1.6_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_0_freq_1.6_dt_1e-02_T_58.9.h5", \
+		"output/tpdi/freq_1.65_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s/tpdi_I_0_freq_1.65_dt_1e-02_T_124.0.h5", \
+		"output/tpdi/freq_1.7_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.7_dt_1e-02_T_55.4.h5", \
+		"output/tpdi/freq_1.8_grid_exponentiallinear_xmax150_xsize20_order5_xpartition6_gamma2.3_angular_lmax5_L0-4_M0/tpdi_I_0_freq_1.8_dt_1e-02_T_124.0.h5", \
+		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.9_dt_1e-02_T_49.6.h5", \
+		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.94_dt_1e-02_T_48.6.h5", \
+		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.99_dt_1e-02_T_47.4.h5"]
+
+	freqList = [1.6, 1.65, 1.7, 1.8, 1.9, 1.94, 1.99]
+	sigmaList = []		
+	for filename in fileList:
+		sigmaList += [GetTPDICrossSectionFromFile(filename)]
+
+	return freqList, sigmaList
