@@ -58,6 +58,16 @@ def keldysh_parameter(I, wavelength, I0):
 def critical_ionization_intensity(Ip):
 	return 4e9 * (Ip / eV_to_au)**4 / 1e15
 
+def tpdi_crossection(freq, intensity, pIon, pulseDuration):
+	tau = 35.0 / 128.0 * pulseDuration * units.constantsAU.time
+	photonEnergy = units.constantsAU.energy * freq
+	sigma = (photonEnergy / intensity)**2 / tau * pIon
+	print
+	print "Photon energy = %.1f eV" % (freq / eV_to_au)
+	print "TPDI cross section = %1.2e cm**4 s" % sigma
+	print
+	return sigma
+	
 
 class Levels():
 	_1s = {"n": 0, "l": 0, "name": "2p"}

@@ -1,6 +1,11 @@
+#
 IfpackPreconditioner = Template("IfpackRadialPreconditioner", "ifpackpreconditioner.h")
 IfpackPreconditioner("2")
 
+Solver = Template("AnasaziSolver", "ifpackpreconditioner.h")
+Solver("1")
+Solver("2")
+Solver("3")
 
 Include("analysis.cpp")
 module_code('    def("CalculateProjectionRadialProductStates", CalculateProjectionRadialProductStates);\n')

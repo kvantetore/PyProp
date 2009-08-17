@@ -35,7 +35,7 @@ def PaperSetOutput(plotOutput, polar=False):
 		FigWidthLarge = 8
 		LineWidth = 0.4
 		GraphLineWidth = 0.5
-		FontSize = 8
+		FontSize = 6
 		if polar:
 			FontSize = 6
 		PaperMaxE0 = 35
