@@ -48,3 +48,16 @@ def CalculateBoundstateProjections(psi, boundStates):
 	return populations
 
 
+def CreateSuperpositionOfBoundstates(**args):
+	conf = SetupConfig(**args)
+	psi = pyprop.CreateWavefunction(conf)
+	psi.Clear()
+	E, V = GetBoundStates(config = conf)
+
+	for b in V:
+		psi.GetData()[:] += b.GetData()[:]
+
+	#psi.Normalize()
+	
+	return psi
+

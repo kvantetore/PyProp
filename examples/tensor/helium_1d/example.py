@@ -24,6 +24,7 @@ from pyprop.serialization import RemoveExistingDataset
 
 execfile("analysis.py")
 execfile("analysis_single.py")
+execfile("analysis_double.py")
 execfile("analysis_eigenvalues.py")
 execfile("eigenvalues.py")
 execfile("../helium_stabilization/constants.py")
@@ -178,6 +179,22 @@ def GetGridPostfix(**args):
 	return postfix
 
 
+def GetPulsePostfix(**args):
+	"""
+	Returns "unique" list of strings string identifying the pulse parameters
+	implied by the specified args
+	"""
+	conf = SetupConfig(**args)
+	cfg = conf.PulseParameters
+	
+	freq = round(cfg.frequency, 2)
+	amplitude = round(cfg.amplitude, 2)
+	cycles = cfg.cycles
+	postfix = ["frequency%s" % freq, "amplitude%s" % amplitude, "cycles%i" % cycles]
+
+	return postfix
+
+
 def GroundstateFilename(**args):
 	gridPostfix = GetGridPostfix(**args)
 	filenamebase = "eigenstates/groundstate" + "_".join(gridPostfix) + ".h5"
@@ -259,7 +276,7 @@ def FormatDuration(duration):
 	return " ".join(str)
 
 
-def Propagate(**args):
+def Propagate(saveWavefunction = False, **args):
 	#Set up propagation problem
 	potList = ["LaserPotentialLength"]
 	prop = SetupProblem(additionalPotentials=potList, **args)
@@ -284,6 +301,16 @@ def Propagate(**args):
 	#outsideAbsorberBox = SetupRadialMaskPotential(prop, absorberEnd, 100)
 	#insideAbsorberBox = SetupRadialMaskPotential(prop, 0, absorberStart)
 
+	#Generate name of output file and path
+	krylovSize = prop.Config.Propagation.krylov_basis_size
+	T = round(prop.Duration, 1)
+	dt = round(prop.TimeStep.real, 3)
+	gridpostfix = GetGridPostfix(config=prop.Config)
+	pulsepostfix = GetPulsePostfix(config=prop.Config)
+	outputFilename = "output/convergence/propagation_krylov_%s_%s_%s_T_%s_dt_%1.2f" % (krylovSize, "_".join(gridpostfix), "_".join(pulsepostfix), T, dt)
+	#outputFilename = args.get("outputFilename", outputFilename)
+	outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
+
 	#Propagate
 	PrintOut("Starting propagation")
 	outputCount = args.get("outputCount", 100)
@@ -292,7 +319,7 @@ def Propagate(**args):
 	#Propagate until end of pulse
 	duration = prop.Duration
 	prop.Duration = duration
-	for t in prop.Advance(outputCount, yieldEnd=True):
+	for stepNum, t in enumerate(prop.Advance(outputCount, yieldEnd=True)):
 		#calculate values
 		norm = prop.psi.GetNorm()
 		corr = abs(initPsi.InnerProduct(prop.psi))**2
@@ -314,6 +341,10 @@ def Propagate(**args):
 		PrintOut("t = %.2f; N = %.15f; Corr = %.15f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
 		#PrintOut(prop.Propagator.Solver.GetErrorEstimateList())
 
+		if saveWavefunction:
+			fname = outputFilename + "_%03i.h5" % stepNum
+			prop.SaveWavefunctionHDF(fname, outputDatasetPath)
+
 	#Save the time-valued variables
 	prop.TimeList = timeList
 	prop.CorrList = corrList
@@ -323,10 +354,18 @@ def Propagate(**args):
 	PrintOut("")
 	prop.Propagator.PampWrapper.PrintStatistics()
 
-	#Saving final wavefunction
-	#outputFilename = args.get("outputFilename", "final.h5")
-	#outputDatasetPath = args.get("outputDatasetPath", "/wavefunction")
-	#prop.SaveWavefunctionHDF(outputFilename, outputDatasetPath)
+	#Save wavefunction
+	finalOutputFilename = outputFilename + ".h5"
+	prop.SaveWavefunctionHDF(finalOutputFilename, outputDatasetPath)
+
+	#Save propagation data
+	h5file = tables.openFile(finalOutputFilename, "r+")
+	try:
+		h5file.createArray("/", "norm", prop.NormList)
+		h5file.createArray("/", "corr", prop.CorrList)
+		h5file.createArray("/", "times", prop.TimeList)
+	finally:
+		h5file.close()
 
 	return prop
 

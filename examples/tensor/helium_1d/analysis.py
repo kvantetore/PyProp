@@ -200,6 +200,28 @@ def GetEnergyFilteredSingleParticleStates(stateFilter, **args):
 	return filteredEnergies, filteredStates	
 
 
+def GetFilteredSingleParticleStates(stateFilter, **args):
+	"""
+	Returns the single particle states and energies corresponding to the 1D model and 
+	a filter specified by stateFilter, which takes a single state and its energy as
+	parameters
+	"""
+
+	#load single particle states
+	singleStatesFile = GetSingleStatesFile(**args)
+	singleEnergies, singleStates = LoadSingleParticleStates(singleStatesFile)
+	
+	#filter states 
+	filteredList = [[en,v]  for en,v in zip (singleEnergies, transpose(singleStates)) if stateFilter(en, v)]
+	filteredEnergies = []
+	filteredStates = []
+	for en, v in filteredList:
+		filteredEnergies.append(en)
+		filteredStates.append(v)
+
+	return filteredEnergies, filteredStates	
+
+
 def SetupRadialCoulombStatesEnergyNormalized(psi, Z, Emax, dE, lmax):
 	E = r_[dE:Emax:dE]
 	k = sqrt(E*2)
@@ -302,7 +324,7 @@ def CalculatePopulationProductStates(V1, V2, psiData):
 			popList += [[i1, i2, 2 * real(populations[i1,i2])]]
 
 	return popList
-		
+
 
 def CalculatePopulationProductStates2(V1, V2, psi):
 	"""
@@ -328,15 +350,17 @@ def CalculatePopulationProductStates2(V1, V2, psi):
 	return popList
 
 
-def GetPopulationProductStates(psi, singleStates1, singleStates2):
+def GetPopulationProductStates(psi, states1Sym1, states1Sym2, states2Sym1, states2Sym2):
 	"""
 	Calculates the population of psi in a set of single electron product states
 
 	P_i = 2|< SingleState1_i(1), SingleState2_j(2) | psi(1,2) >|^2
 
-	singleStates 1 and 2 are lists of 1D eigenstates created by SetupEigenstates
-	
-	the projection is carried out for every combination of singlestate1 and singlestate2
+	statesxSymy 1D eigenstates created by SetupEigenstates, with symmetry either
+	even or odd
+
+	the projection is carried out for the combinations states1Sym1 x states2Sym2
+	and states1Sym2 x states2Sym1
 	"""
 
 	#Make a copy of the wavefunction and multiply 
@@ -346,10 +370,12 @@ def GetPopulationProductStates(psi, singleStates1, singleStates2):
 	repr.MultiplyIntegrationWeights(tempPsi)
 	data = tempPsi.GetData()
 
-	#Get the population for every combination of v1 and v2
-	popList = CalculatePopulationProductStates(singleStates1, singleStates2, data)
+	#Get the population for every combination of v1 and v2 resulting in a an odd
+	#product state
+	popListSym12 = CalculatePopulationProductStates(states1Sym1, states2Sym2, data)
+	popListSym21 = CalculatePopulationProductStates(states1Sym2, states2Sym1, data)
 
-	return popList
+	return popListSym12, popListSym21
 
 
 def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
@@ -394,3 +420,11 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 
 	return population
 
+
+def TPDICrossSection(freq, pulseDuration, E0, ionProb):
+	"""
+	Calculate two-photon double ionization cross section
+	"""
+	tau = 35.0 / 128.0 * pulseDuration
+	crossSection = (freq / E0**2)**2 * ionProb / tau
+	return crossSection

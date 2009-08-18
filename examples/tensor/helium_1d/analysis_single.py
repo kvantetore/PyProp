@@ -10,21 +10,26 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	#load bound states
 	if removeBoundStates:
 		boundEnergies, boundStates = GetBoundStates(config=conf)
-		#boundStates = [GetGroundstate(config=conf)]
 	else:
 		boundEnergies = boundStates = None
 
-	#Get single particle states
-	isIonized = lambda E: E > 0.0
-	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetEnergyFilteredSingleParticleStates(isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetEnergyFilteredSingleParticleStates(isBound, config=conf)
+	#Get single particle states for odd/even symmetry
+	isEven = lambda v: not (abs(sum([a+b for a,b in zip(v, reversed(v))])) < 1e-12)
+	isIonizedEven = lambda en, v: (0.0 <= en) and isEven(v)
+	isIonizedOdd = lambda en, v: (0.0 <= en) and not isEven(v)
+	isBoundEven = lambda en, v: (en < 0.0) and isEven(v)
+	isBoundOdd = lambda en, v: (en < 0.0) and not isEven(v)
+
+	singleIonEnergiesEven, singleIonStatesEven = GetFilteredSingleParticleStates(isIonizedEven, config=conf)
+	singleIonEnergiesOdd, singleIonStatesOdd = GetFilteredSingleParticleStates(isIonizedOdd, config=conf)
+	singleBoundEnergiesEven, singleBoundStatesEven = GetFilteredSingleParticleStates(isBoundEven, config=conf)
+	singleBoundEnergiesOdd, singleBoundStatesOdd = GetFilteredSingleParticleStates(isBoundOdd, config=conf)
 
 	def getIonProb(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 		sym, anti = GetSymmetrizedWavefunction(psi)
-		symProb = GetSingleIonizationProbability(sym, boundStates, singleBoundStates, singleIonStates)
-		antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStates, singleIonStates)
+		symProb = GetSingleIonizationProbability(sym, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd)
+		antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd)
 		return (symProb, antiProb)
 
 	return zip(*map(getIonProb, fileList))
@@ -46,28 +51,31 @@ def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	#load bound states
 	if removeBoundStates:
 		boundEnergies, boundStates = GetBoundStates(config=conf)
-		#boundStates = [GetGroundstate(config=conf)]
-
 	else:
 		boundEnergies = boundStates = None
 
+	#Get single particle states for odd/even symmetry
+	isEven = lambda v: not (abs(sum([a+b for a,b in zip(v, reversed(v))])) < 1e-12)
+	isIonizedEven = lambda en, v: (0.0 <= en <= maxE) and isEven(v)
+	isIonizedOdd = lambda en, v: (0.0 <= en <= maxE) and not isEven(v)
+	isBoundEven = lambda en, v: (en < 0.0) and isEven(v)
+	isBoundOdd = lambda en, v: (en < 0.0) and not isEven(v)
 
-	#Get single particle states
-	isIonized = lambda E: 0.0 <= E <= maxE
-	isBound = lambda E: E < 0.0
-	singleIonEnergies, singleIonStates = GetEnergyFilteredSingleParticleStates(isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetEnergyFilteredSingleParticleStates(isBound, config=conf)
+	singleIonEnergiesEven, singleIonStatesEven = GetFilteredSingleParticleStates(isIonizedEven, config=conf)
+	singleIonEnergiesOdd, singleIonStatesOdd = GetFilteredSingleParticleStates(isIonizedOdd, config=conf)
+	singleBoundEnergiesEven, singleBoundStatesEven = GetFilteredSingleParticleStates(isBoundEven, config=conf)
+	singleBoundEnergiesOdd, singleBoundStatesOdd = GetFilteredSingleParticleStates(isBoundOdd, config=conf)
 
 	#Calculate Energy Distribution (dP/dE)
 	def getdPdE(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
-		return GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE)
+		return GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd, dE, maxE)
 
 	E, dpde = zip(*map(getdPdE, fileList))
 	return E[0], dpde
 
 
-def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIonStates):
+def GetSingleIonizationProbability(psi, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd):
 	"""
 	Calculates the single ionization probability by first projecting 
 	away doubly bound states, then projecting on products of single 
@@ -87,11 +95,13 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	##calculate sum of populations in singly ionized product states
-	popList = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	#calculate populations in product states containing bound 1D states
+	popListEvenOdd, popListOddEven = GetPopulationProductStates(psi, singleIonStatesEven, singleIonStatesOdd, singleIonStatesOdd, singleIonStatesEven)
 	
-	populations = [p for (i1,i2,p) in popList]
-	singleIonizationProbability = sum(populations)
+	populations = [p for (i1,i2,p) in popListEvenOdd] + [p for (i1,i2,p) in popListOddEven]
+	#singleIonizationProbability = sum(populations)
+	doubleIonizationProbability = sum(populations)
+	singleIonizationProbability = ionizationProbability - doubleIonizationProbability
 	
 	print "Absorbed Probability     = %s" % (absorbedProbability)
 	print "Ioniziation Probability  = %s" % (ionizationProbability)
@@ -102,7 +112,7 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	return absorbedProbability, ionizationProbability, singleIonizationProbability, ionizationProbability-singleIonizationProbability
 
 
-def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, singleIonStates, singleIonEnergies, dE, maxE):
+def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd, dE, maxE):
 	"""
 	Calculates dP/dE for the single ionized part of the wavefunction, by first
 	projecting away doubly bound states, and then projecting on single particle
@@ -118,28 +128,35 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 	ionizationProbability = real(psi.InnerProduct(psi))
 
 	#calculate populations in product states containing bound he+ states
-	populations = GetPopulationProductStates(psi, singleBoundStates, singleIonStates)
+	populationsEvenOdd, populationsOddEven = GetPopulationProductStates(psi, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonStatesOdd)
 
 	#Create an array for dpde
 	E = r_[0:maxE:dE]
-	#dpde = zeros(len(E), dtype=double)
-	dpde = zeros(len(singleIonEnergies)-1, dtype=double)
+	dpde = zeros(len(E), dtype=double)
+	#dpde = zeros(len(singleIonEnergiesEven)-1, dtype=double)
 
 	#In order to create an approx to dp/de_ion, we interpolate for each iBound,
 	#and add coherently to the dpde array
 
 	#number of states
-	nBound = shape(singleBoundStates)[0]
-	nIon = shape(singleIonStates)[0]
+	nBoundEven = shape(singleBoundStatesEven)[0]
+	nBoundOdd = shape(singleBoundStatesOdd)[0]
+	nIonEven = shape(singleIonStatesEven)[0]
+	nIonOdd = shape(singleIonStatesOdd)[0]
 
-	#iterate over all bound states
-	pop = array([d[2] for d in populations]).reshape(nBound, nIon)
-	for iBound in range(nBound):
+	#iterate over all bound states (even-odd)
+	pop = array([d[2] for d in populationsEvenOdd]).reshape(nBoundEven, nIonOdd)
+	for iBound in range(nBoundEven):
 		#interpolate over ionized populations
-		curPop = pop[iBound, :-1] / diff(singleIonEnergies)
-		dpde += curPop
-		#dpde += interp(E, singleIonEnergies[:-1], curPop)
-		
-	#return E, interp(E, singleIonEnergies[:-1], dpde)
-	return singleIonEnergies[:-1], dpde
+		curPop = pop[iBound, :-1] / diff(singleIonEnergiesOdd)
+		dpde += interp(E, singleIonEnergiesOdd[:-1], curPop)
+
+	#iterate over all bound states (odd-even)
+	pop = array([d[2] for d in populationsOddEven]).reshape(nBoundOdd, nIonEven)
+	for iBound in range(nBoundOdd):
+		#interpolate over ionized populations
+		curPop = pop[iBound, :-1] / diff(singleIonEnergiesEven)
+		dpde += interp(E, singleIonEnergiesEven[:-1], curPop)		
+	
+	return E, dpde
 

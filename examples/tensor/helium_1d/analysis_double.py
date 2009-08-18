@@ -8,9 +8,6 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, r
 	files by projecting onto products of single particle states.
 	"""
 	
-	#maxE = 4.
-	#dE = 0.005
-
 	#load wavefunction
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
@@ -20,29 +17,35 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, r
 	else:
 		boundEnergies = boundStates = None
 
-	#Get single particle states
-	isIonized = lambda E: 0.0 < E
-	isFilteredIonized = lambda E: 0.0 < E < maxEnergy
-	isBound = lambda E: E <= 0.
-	singleIonEnergies, singleIonStates = GetEnergyFilteredSingleParticleStates(isIonized, config=conf)
-	singleBoundEnergies, singleBoundStates = GetEnergyFilteredSingleParticleStates(isBound, config=conf)
-	doubleIonEnergies, doubleIonStates = GetEnergyFilteredSingleParticleStates(isFilteredIonized, config=conf)
+	#Get single particle states for odd/even symmetry
+	isEven = lambda v: not (abs(sum([a+b for a,b in zip(v, reversed(v))])) < 1e-12)
+	isIonizedEven = lambda en, v: (0.0 <= en <= maxEnergy) and isEven(v)
+	isIonizedOdd = lambda en, v: (0.0 <= en <= maxEnergy) and not isEven(v)
+	isBoundEven = lambda en, v: (en < 0.0) and isEven(v)
+	isBoundOdd = lambda en, v: (en < 0.0) and not isEven(v)
+
+	singleIonEnergiesEven, singleIonStatesEven = GetFilteredSingleParticleStates(isIonizedEven, config=conf)
+	singleIonEnergiesOdd, singleIonStatesOdd = GetFilteredSingleParticleStates(isIonizedOdd, config=conf)
+	singleBoundEnergiesEven, singleBoundStatesEven = GetFilteredSingleParticleStates(isBoundEven, config=conf)
+	singleBoundEnergiesOdd, singleBoundStatesOdd = GetFilteredSingleParticleStates(isBoundOdd, config=conf)
 
 	#Calculate Energy Distribution (dP/dE1 dE2)
 	def getdPdE(filename):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 
 		if removeSingleIonStates:
-			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
-			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
+			RemoveProductStatesProjection(psi, singleBoundStatesEven, singleIonStatesOdd)
+			RemoveProductStatesProjection(psi, singleBoundStatesOdd, singleIonStatesEven)
+			RemoveProductStatesProjection(psi, singleIonStatesEven, singleBoundStatesOdd)
+			RemoveProductStatesProjection(psi, singleIonStatesOdd, singleBoundStatesEven)
 
-		return GetDoubleIonizationEnergyDistribution(psi, boundStates, doubleIonStates, doubleIonEnergies, energyRes, maxEnergy)
+		return GetDoubleIonizationProbability(psi, boundStates, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd, energyRes, maxEnergy)
 
 	E, dpde = zip(*map(getdPdE, fileList))
 	return E[0], dpde
 
 
-def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
+def GetDoubleIonizationProbability(psi, boundStates, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd, dE, maxE):
 	"""
 	Calculates double differential d^2P/(dE_1 dE_2) by 
 	1) projecting on a set of product of single particle ionized states.
@@ -57,28 +60,27 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 		RemoveBoundStateProjection(psi, boundStates)
 	ionizationProbability = real(psi.InnerProduct(psi))
 
-	populations = GetPopulationProductStates(psi, singleIonStates, singleIonStates)
-
+	populationsEvenEven, populationsOddOdd = GetPopulationProductStates(psi, singleIonStatesEven, singleIonStatesOdd, singleIonStatesOdd, singleIonStatesEven)
 
 	E = r_[0:maxE:dE]
 	dpde = zeros((len(E), len(E)), dtype=double)
 
-	#number of states 
-	n1 = len(singleIonStates)
-	n2 = len(singleIonStates)
+	#number of states
+	nIonEven = shape(singleIonStatesEven)[0]
+	nIonOdd = shape(singleIonStatesOdd)[0]
 
-	#scale states with 1/dE_1 dE_2
-	sliceStart = 1
-	sliceStep = 2
-	pop = array([d[2] for d in populations]).reshape(n1, n2)[sliceStart::sliceStep, sliceStart::sliceStep]
-	E1 = singleEnergies[sliceStart::sliceStep]
-	E2 = singleEnergies[sliceStart::sliceStep]
-	meshE1, meshE2 = meshgrid(E1[:-1], E2[:-1])
-	pop[:-1,:-1] /= outer(diff(E1), diff(E2))
+	def calculateDpDe(popList, E, nStates):
+		pop = array([d[2] for d in popList]).reshape(nStates, nStates)
+		meshE1, meshE2 = meshgrid(E[:-1], E[:-1])
+		pop[:-1,:-1] /= outer(diff(E), diff(E))
 	
-	#2d interpolation over all states in this shell
-	interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
-	dpde += interpolator(E, E)
+		#2d interpolation over all states with this symmetry
+		interpolator = scipy.interpolate.RectBivariateSpline(E[:-1], E[:-1], pop[:-1, :-1], kx=1, ky=1)
+		return interpolator
+
+	#Calculate dpde for both symmetry combinations
+	dpde += calculateDpDe(populationsEvenEven, singleIonEnergiesEven, nIonEven)(E, E)
+	dpde += calculateDpDe(populationsOddOdd, singleIonEnergiesOdd, nIonOdd)(E, E)
 	
 	return E, dpde
 
