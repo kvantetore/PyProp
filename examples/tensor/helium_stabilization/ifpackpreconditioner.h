@@ -29,6 +29,7 @@ public:
 		
 		// create the preconditioner. For valid PrecType values,
 		// please check the documentation
+		//string PrecType = "Amesos"; // incomplete LU
 		string PrecType = "ILU"; // incomplete LU
 		int OverlapLevel = 0; // must be >= 0. If Comm.NumProc() == 1,
 		                      // it is ignored.
@@ -219,6 +220,7 @@ private:
 	std::string Method;
 
 	bool GeneralizedEigenvalueProblem;
+	std::string OrthoMethod;
 
 	bool PrintWarnings;               /*!< Internal warnings */
 	bool PrintIterationDetails;       /*!< Approximate eigenvalues, errors */
@@ -246,6 +248,7 @@ public:
 		config.Get("krylov_locking_tolerance", LockingTolerance);
 		config.Get("krylov_method", Method);
 		config.Get("generalized_eigenvalue_problem", GeneralizedEigenvalueProblem);
+		config.Get("orthogonalization", OrthoMethod);
 		config.Get("print_warnings" ,PrintWarnings );
 		config.Get("print_iteration_details" ,PrintIterationDetails );
 		config.Get("print_ortho_details" ,PrintOrthoDetails );
@@ -318,6 +321,7 @@ public:
 		}
 		else if (Method == std::string("KrylovSchur"))
 		{
+			params.set("Orthogonalization", OrthoMethod);
 			manager = rcp( new Anasazi::BlockKrylovSchurSolMgr<SC, MV, OP>(Problem, params) );
 		}
 		else if (Method == std::string("LOBPCG"))

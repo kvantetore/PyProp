@@ -7,6 +7,7 @@ execfile("plot.py")
 PaperSetOutput("paper")
 
 InputFolder_1s1s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s"
+InputFolder_1s1s_cycle10 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax90_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s_1/"
 InputFolder_1s2s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
 InputFolder_1s2s_1 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s_1"
 InputFolder_1s2p_1 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p_1"
@@ -19,6 +20,8 @@ def GetInputFilename(experiment, e0):
 
 	if experiment == "1s1s":
 		return os.path.join(InputFolder_1s1s, "stabilization_I_%i_kb20_dt_1e-02.h5" % e0)
+	if experiment == "1s1s_cycle10":
+		return os.path.join(InputFolder_1s1s_cycle10, "stabilization_I_%i_kb20_dt_1e-02_T_18.8_phase_zero.h5" % e0)
 	elif experiment == "1s2s":
 		return os.path.join(InputFolder_1s2s, "stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5" % e0)
 	elif experiment == "1s2s_1":
@@ -34,7 +37,7 @@ def GetInputFilename(experiment, e0):
 
 
 def GetSymmetry(experiment):
-	if experiment == "1s1s":
+	if experiment == "1s1s" or experiment == "1s1s_cycle10":
 		return "sym"
 	elif experiment == "1s2s":
 		return "antisym"
@@ -57,7 +60,7 @@ def GetAllExperimentFiles(experiment):
 
 
 def PaperGetBaseEnergy(experiment):
-	if experiment == "1s1s":
+	if experiment == "1s1s" or experiment == "1s1s_cycle10":
 		return 2.903
 	elif experiment == "1s2s":
 		return 2.17
@@ -75,18 +78,18 @@ def PaperGetBaseEnergy(experiment):
 
 def PaperGetDpDOmegaEnergies(experiment):
 	E = array([5*i - PaperGetBaseEnergy(experiment) for i in [1,2,3]])
-	if experiment == "1s1s":
-		return zip(["1photon", "2photon", "3photon"], E/2, [E[0]/2, E[1]/2, E[1]/2])
+	if experiment == "1s1s" or experiment == "1s1s_cycle10":
+		return zip(["1photon", "2photon", "3photon", "3photon_inv"], [E[0]/2, E[1]/2, E[1]/2, E[1]/2+5], [E[0]/2, E[1]/2, E[1]/2+5, E[1]/2.0])
 	elif experiment == "1s2s":
-		return [("2photon", 4.55, 3.28)]
+		return zip(["2photon", "2photon_inv"], [4.55, 3.28], [3.28, 4.55])
 	elif experiment == "1s2s_1":
 		#return zip(["1photon", "2photon", "3photon"], E/2, [E[0]/2, E[1]/2, E[1]/2])
-		return zip(["1photon", "2photon", "3photon"], [E[0]/2, 3.44, 3.44], [E[0]/2, 4.56, 9.58])
+		return zip(["1photon", "2photon", "2photon_inv", "3photon", "3photon_inv"], [E[0]/2, 3.44, 4.56, 3.44, 9.58], [E[0]/2, 4.56, 3.44, 9.58, 3.44])
 		#return [("2photon", 3.93, 3.93)]
 	elif experiment == "1s2s_1_cycle10":
 		return zip(["1photon", "2photon", "3photon"], [E[0]/2, 3.44, 3.44], [E[0]/2, 4.56, 9.58])
 	elif experiment == "1s2p":
-		return [("2photon", 4.45, 3.42)]
+		return zip(["2photon", "2photon_inv"], [4.45, 3.42], [3.42, 4.45])
 	else:
 		raise Exception("Unknown experiment %s" % experiment)
 
@@ -165,7 +168,75 @@ def PaperMakePlotDpDomega(experiment, e0, energy1, energy2=None, vmin=None, vmax
 	return fig
 
 
-def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=None, vmax=None):
+def PaperMakePlotDpDomegaPolarTimeScan(fileList, thCut, energy1, energy2=None):
+	if energy2 == None:
+		energy2 = energy1
+
+	#setup bounds
+	rectBound = (.20, .20, .65, .65)
+	singleWidth = .025
+	singleSpacing = 0.005
+	
+	lineStyleList = ["-", "--", ":"]
+	colorList = [UiB_Blue, UiB_Green, UiB_Red]
+
+	#create figure
+	fig = figure()
+	rectMain = (rectBound[0]+singleWidth, rectBound[1]+singleWidth, rectBound[2]-singleWidth, rectBound[3]-singleWidth)
+	axMain = fig.add_axes(rectMain, polar=True, axisbelow=True)
+	
+	maxValDpDomega = 0
+	for	filename in fileList:
+		#get data
+		en, th, dp = GetDpDomegaDoubleFromFile(filename)
+		energy_double, dpde_double = GetDpDeDoubleFromFile(filename)
+
+		#slice at energies and theta1
+		idx1 = argmin(abs(en-energy1))
+		idx2 = argmin(abs(en-energy2))
+		idx3 = argmin(abs(th - thCut))
+		dpSlice = dp[idx3, : ,idx1, idx2]
+
+		#interpolate
+		th2 = linspace(0,pi,512)
+		dp2 = scipy.interpolate.UnivariateSpline(th, dpSlice, s=0)(th2)
+	
+		#get current line style and color
+		curColor = colorList.pop(0)
+		curStyle = lineStyleList.pop(0)
+
+		#normalize
+		#dp2Norm = sum(dp2 * sin(th2)) * diff(th2)[0]
+		#dp2 /= dp2Norm
+
+		#update max val
+		maxValDpDomega = max(max(dp2), maxValDpDomega)
+
+		#plot
+		axMain.plot(th2, dp2, color = curColor, linestyle = curStyle)
+		axMain.plot(-th2, dp2, color = curColor, linestyle = curStyle)
+
+	
+	fig.figurePatch.set_alpha(1.0)
+	PaperUpdatePolarFigure(fig)
+	#axMain.set_position(GetOptimalAxesPosition(fig, axMain))
+	axMain.set_xlim([0, maxValDpDomega])
+
+	#Update r and theta grid lines/labels
+	rGridLines = linspace(0, maxValDpDomega, 5)[1:-1]
+	rgrids(rGridLines, ["" for p in rGridLines])
+	thetagrids(range(0,360,45), [r"%s$^\circ$" % t for t in range(0,360,45)])
+
+	#put arrow indicating direction of other electron
+	axMain.plot([0,0], [0, maxValDpDomega/3.0], "k-", linewidth=0.8)
+	axMain.plot([0], [maxValDpDomega/3.0], "k>", markersize=3.0)
+
+	draw()
+
+	return fig
+
+
+def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=None, vmax=None, energyAverage=False):
 	if energy2 == None:
 		energy2 = energy1
 
@@ -177,13 +248,14 @@ def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=No
 	lineStyleList = ["-", "--", ":"]
 	colorList = [UiB_Blue, UiB_Green, UiB_Red]
 	e0List = [1, 10, 20]
+	#e0List = range(1,21)
+	#e0List = [15]
 
 	#get photon energy interval
 	limits = [0] + [ 5 * (i+0.5) - PaperGetBaseEnergy(experiment) for i in range(1,5)]
 	totalEnergy = energy1 + energy2
 	enLimLow = filter(lambda en: en<totalEnergy, limits)[-1]
 	enLimHigh = filter(lambda en: en>totalEnergy, limits)[0]
-	print energy1, energy2
 
 	#create figure
 	fig = figure()
@@ -201,7 +273,14 @@ def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=No
 		idx1 = argmin(abs(en-energy1))
 		idx2 = argmin(abs(en-energy2))
 		idx3 = argmin(abs(th - thCut))
-		dpSlice = dp[idx3, : ,idx1, idx2]
+		#dpSlice = sum(sum(dp, axis=3), axis=2)[idx3, :]
+		if energyAverage:
+			print "Averaging over energy"
+			#dpdomega_double = CalculatePartialAngularIonizationProbability(en, th, dp, enLimLow, enLimHigh)
+			dpdomega_double = CalculateRadialPartialAngularIonizationProbability(en, th, dp, energy1, energy2, 1.0)
+			dpSlice = dpdomega_double[:, idx3]
+		else:
+			dpSlice = dp[idx3, : ,idx1, idx2]
 
 		#interpolate
 		th2 = linspace(0,pi,512)
@@ -212,11 +291,17 @@ def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=No
 		#get current line style and color
 		curColor = colorList.pop(0)
 		curStyle = lineStyleList.pop(0)
+		#curColor = UiB_Blue
+		#if e0 == 10:
+		#	curColor = UiB_Green
+		#if e0 == 20:
+		#	curColor = UiB_Red
+		#curStyle = "-"
 
-		print "Current n-photon prob: %s (lim = %s,%s)" % (curPhotonProb, enLimLow, enLimHigh)
-		if curPhotonProb < 1e-4:
-			print "Skipping e0 = %s, since n-photon ionization probability is only %s" % (e0,curPhotonProb)
-			continue
+		#print "Current n-photon prob: %s (lim = %s,%s)" % (curPhotonProb, enLimLow, enLimHigh)
+		#if curPhotonProb < 1e-5:
+		#	print "Skipping e0 = %s, since n-photon ionization probability is only %s" % (e0,curPhotonProb)
+		#	continue
 
 		#normalize
 		dp2Norm = sum(dp2 * sin(th2)) * diff(th2)[0]
@@ -229,21 +314,15 @@ def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=No
 		axMain.plot(th2, dp2, color = curColor, linestyle = curStyle)
 		axMain.plot(-th2, dp2, color = curColor, linestyle = curStyle)
 
-		#plot additional markers
-		#axMain.plot(th2, dp2, color = 'white', linestyle=curStyle)
-		#axMain.plot(-th2, dp2, color = 'white', linestyle=curStyle)
-		#markerSlice = slice(0, len(th2), len(th2)/10.0)
-		#axMain.plot(th2[markerSlice], dp2[markerSlice], linestyle='', marker=curStyle, ms=2.0, mfc=curColor, mec=curColor)
-		#axMain.plot(-th2[markerSlice], dp2[markerSlice], linestyle='', marker=curStyle, ms=2.0, mfc=curColor, mec=curColor)
-
-
 	#fig.figurePatch.set_alpha(1.0)
 	PaperUpdatePolarFigure(fig)
 	axMain.set_position(GetOptimalAxesPosition(fig, axMain))
 	axMain.set_xlim([0, maxValDpDomega])
 
 	#Update r and theta grid lines/labels
+	#axMain.axes.axesFrame.set_visible(False)
 	rGridLines = linspace(0, maxValDpDomega, 5)[1:-1]
+	#rGridLines = [maxValDpDomega / 1.618]
 	rgrids(rGridLines, ["" for p in rGridLines])
 	thetagrids(range(0,360,45), [r"%s$^\circ$" % t for t in range(0,360,45)])
 
@@ -408,7 +487,7 @@ def PaperMakePlotDpDomegaScan(experiment, doClose=True):
 		rcParams["interactive"] = interactive
 
 
-def PaperMakePlotDpDomegaPolarScan(experiment, doClose=True):
+def PaperMakePlotDpDomegaPolarScan(experiment, doClose=True, energyAverage=False):
 	interactive = rcParams["interactive"]
 	rcParams["interactive"] = False
 	thCut = 0
@@ -418,11 +497,13 @@ def PaperMakePlotDpDomegaPolarScan(experiment, doClose=True):
 			folder = PaperGetFolder()
 			PaperFigureSettings(FigWidth, FigWidth)
 
-			fig = PaperMakePlotDpDomegaPolar(experiment, thCut, E1, E2)
+			fig = PaperMakePlotDpDomegaPolar(experiment, thCut, E1, E2, energyAverage=energyAverage)
 
-					
-			fig.savefig(os.path.join(folder, "%s_dpdomega_polar_theta_%s_%s_E1_%2.2f_E2_%2.2f.eps" % (experiment, thCut, photonName, E1, E2)), dpi=300)
-			fig.savefig(os.path.join(folder, "%s_dpdomega_polar_theta_%s_%s_E1_%2.2f_E2_%2.2f.pdf" % (experiment, thCut, photonName, E1, E2)), dpi=300)
+			outputPrefix = ""
+			if energyAverage:
+				outputPrefix = "energyavg_"
+			fig.savefig(os.path.join(folder, "%s%s_dpdomega_polar_theta_%s_%s_E1_%2.2f_E2_%2.2f.eps" % (outputPrefix, experiment, thCut, photonName, E1, E2)), dpi=300)
+			fig.savefig(os.path.join(folder, "%s%s_dpdomega_polar_theta_%s_%s_E1_%2.2f_E2_%2.2f.pdf" % (outputPrefix, experiment, thCut, photonName, E1, E2)), dpi=300)
 			if doClose: close(fig)
 	
 			if doClose: close(fig)
@@ -516,6 +597,7 @@ def PaperMakePlotPartialIonization(experiment):
 		PaperFigureSettings(FigWidth, FigWidth)
 		fig = figure()
 		ax = fig.gca()
+		ax.plot(e0, sum(partial, axis=1), color=UiB_Blue, label="Total prob.", linestyle="-", linewidth=2*GraphLineWidth)
 		ax.plot(e0, partial[:,0], color=UiB_Black, label="1 photon", linestyle="-", linewidth=GraphLineWidth)
 		ax.plot(e0, partial[:,1], color=UiB_Green, label="2 photon", linestyle="--", linewidth=GraphLineWidth)
 		ax.plot(e0, partial[:,2], color=UiB_Red, label="3 photon", linestyle="-.", linewidth=GraphLineWidth)
@@ -541,7 +623,7 @@ def PaperMakePlotsExperiment(experiment):
 	#PaperMakePlotDpDomegaScan(experiment)
 	PaperMakePlotDpDomegaPolarScan(experiment)
 	PaperMakePlotDpDeScan(experiment)
-	PaperMakePlotIonization(experiment)
+	#PaperMakePlotIonization(experiment)
 	PaperMakePlotPartialIonization(experiment)
 
 def PaperMakePlots():
@@ -549,8 +631,9 @@ def PaperMakePlots():
 	Make all plots for paper
 	"""
 	PaperMakePlotsExperiment("1s1s")
+	PaperMakePlotsExperiment("1s1s_cycle10")
 	PaperMakePlotsExperiment("1s2s")
 	PaperMakePlotsExperiment("1s2s_1")
-	#PaperMakePlotsExperiment("1s2s_1_cycle10")
+	PaperMakePlotsExperiment("1s2s_1_cycle10")
 	#PaperMakePlotsExperiment("1s2p")
 

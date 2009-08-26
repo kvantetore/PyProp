@@ -1,6 +1,36 @@
 maxEnergy = 14.0
 energyRes = 0.1
 
+def RunGetDoubleIonizationProbability(fileList, removeBoundStates=True):
+	"""
+	Calculates total and double ionization probability
+	for a list of wavefunction files
+	"""
+
+	#load wavefunction
+	conf = pyprop.LoadConfigFromFile(fileList[0])
+
+	#load bound states
+	if removeBoundStates:
+		boundEnergies, boundStates = GetBoundStates(config=conf)
+	else:
+		boundEnergies = boundStates = None
+
+	#Get single particle states
+	isIonized = lambda E: E > 0.0
+	isBound = lambda E: not isIonized(E)
+	doubleIonEnergies, doubleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+
+	def getIonProb(filename):
+		psi = pyprop.CreateWavefunctionFromFile(filename)
+		sym, anti = GetSymmetrizedWavefunction(psi)
+		symProb = GetDoubleIonizationProbability(sym, boundStates, doubleIonStates)
+		antiProb = GetDoubleIonizationProbability(anti, boundStates, doubleIonStates)
+		return (symProb, antiProb)
+
+	return zip(*map(getIonProb, fileList))
+
+
 def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
@@ -114,6 +144,44 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 	return interpE, theta, angDistr
 
 
+
+def	GetDoubleIonizationProbability(psi, boundStates, doubleIonStates):
+	"""
+	Calculates the double ionization probability by first projecting 
+	away doubly bound states, then projecting on products of single 
+	particle states, where both particles are ionized
+
+	returns 
+		- absorbed probabilty: norm when psi enters routine
+		- ionization probability: norm when all doubly bound states are projected away
+		- single ionization probability: projection on single particle states
+	"""
+
+	#get absorbed prob
+	absorbedProbability = 1.0 - real(psi.InnerProduct(psi))
+
+	#remove boundstate projection
+	if boundStates != None:
+		RemoveBoundStateProjection(psi, boundStates)
+	ionizationProbability = real(psi.InnerProduct(psi))
+
+	##calculate populations in product states containing bound he+ states
+	populations = GetPopulationProductStates(psi, doubleIonStates, doubleIonStates)
+
+	#Calculate single- and double ionization probability
+	lpop = [sum([p for i1, i2, p in pop if i1<=i2]) for l1, l2, pop in populations]
+	doubleIonizationProbability = sum(lpop)
+	singleIonizationProbability = ionizationProbability - doubleIonizationProbability
+	
+	print "Absorbed Probability     = %s" % (absorbedProbability)
+	print "Ioniziation Probability  = %s" % (ionizationProbability)
+	print "Single Ionization Prob.  = %s" % singleIonizationProbability
+	print "Double Ionization Prob.  = %s" % doubleIonizationProbability
+	print "Single Ionization ratio  = %s" % (singleIonizationProbability/ionizationProbability)
+
+	return absorbedProbability, ionizationProbability, singleIonizationProbability, doubleIonizationProbability
+
+
 def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, singleEnergies, dE, maxE):
 	"""
 	Calculates double differential d^2P/(dE_1 dE_2) by 
@@ -154,6 +222,8 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 		#2d interpolation over all states in this shell
 		interpolator = scipy.interpolate.RectBivariateSpline(E1[:-1], E2[:-1], pop[:-1, :-1], kx=1, ky=1)
 		dpde += interpolator(E, E)
+
+		#check interpolation
 	
 	return E, dpde
 
@@ -300,9 +370,9 @@ def GetTPDICrossSectionFromFile(filename):
 	intensity = intensity_from_field(cfgSec.amplitude * freq)
 	pulseDuration = cfgSec.pulse_duration
 
-	sigma = tpdi_crossection(freq, intensity, doubleIon, pulseDuration)
+	photonEnergy, sigma = tpdi_crossection(freq, intensity, doubleIon, pulseDuration)
 
-	return sigma
+	return photonEnergy, sigma
 
 
 def GetTPDIList():
@@ -311,13 +381,19 @@ def GetTPDIList():
 		"output/tpdi/freq_1.65_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s/tpdi_I_0_freq_1.65_dt_1e-02_T_124.0.h5", \
 		"output/tpdi/freq_1.7_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.7_dt_1e-02_T_55.4.h5", \
 		"output/tpdi/freq_1.8_grid_exponentiallinear_xmax150_xsize20_order5_xpartition6_gamma2.3_angular_lmax5_L0-4_M0/tpdi_I_0_freq_1.8_dt_1e-02_T_124.0.h5", \
-		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.9_dt_1e-02_T_49.6.h5", \
-		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.94_dt_1e-02_T_48.6.h5", \
-		"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.99_dt_1e-02_T_47.4.h5"]
+		#"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.9_dt_1e-02_T_49.6.h5", \
+		#"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.94_dt_1e-02_T_48.6.h5", \
+		#"output/tpdi/grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.99_dt_1e-02_T_47.4.h5"]
+		"output/tpdi/freq_1.9_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.9_dt_1e-02_T_99.2.h5", \
+		"output/tpdi/freq_1.99_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.99_dt_1e-02_T_94.7.h5", \
+		]
 
-	freqList = [1.6, 1.65, 1.7, 1.8, 1.9, 1.94, 1.99]
+	#freqList = [1.6, 1.65, 1.7, 1.8, 1.9, 1.94, 1.99]
+	photonEnergyList = []
 	sigmaList = []		
 	for filename in fileList:
-		sigmaList += [GetTPDICrossSectionFromFile(filename)]
+		photonEnergy, sigma = GetTPDICrossSectionFromFile(filename)
+		photonEnergyList += [photonEnergy]
+		sigmaList += [sigma]
 
-	return freqList, sigmaList
+	return photonEnergyList, sigmaList

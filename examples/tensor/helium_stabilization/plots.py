@@ -50,6 +50,64 @@ def SaveIonizationDataFreq5Scan():
 	f.createArray(f.root, "antisymmetric", anti)
 
 
+def MakePlotDpDomegaPolar(filename, thCut, energy1, energy2=None, vmin=None, vmax=None):
+	if energy2 == None:
+		energy2 = energy1
+
+	#setup bounds
+	rectBound = (.20, .20, .65, .65)
+	singleWidth = .025
+	singleSpacing = 0.005
+	
+	#create figure
+	fig = figure()
+	rectMain = (rectBound[0]+singleWidth, rectBound[1]+singleWidth, rectBound[2]-singleWidth, rectBound[3]-singleWidth)
+	axMain = fig.add_axes(rectMain, polar=True, axisbelow=True)
+	
+	#get data
+	en, th, dp = GetDpDomegaDoubleFromFile(filename)
+	energy_double, dpde_double = GetDpDeDoubleFromFile(filename)
+
+	#slice at energies and theta1
+	idx1 = argmin(abs(en-energy1))
+	idx2 = argmin(abs(en-energy2))
+	idx3 = argmin(abs(th - thCut))
+	dpSlice = dp[idx3, : ,idx1, idx2]
+
+	#interpolate
+	th2 = linspace(0,pi,512)
+	dp2 = scipy.interpolate.UnivariateSpline(th, dpSlice, s=0)(th2)
+
+	#normalize
+	dp2Norm = sum(dp2 * sin(th2)) * diff(th2)[0]
+	dp2 /= dp2Norm
+
+	maxValDpDomega = max(dp2)
+
+	#plot
+	axMain.plot(th2, dp2, color = UiB_Blue, linestyle = '-')
+	axMain.plot(-th2, dp2, color = UiB_Blue, linestyle = '-')
+
+
+	#fig.figurePatch.set_alpha(1.0)
+	PaperUpdatePolarFigure(fig)
+	axMain.set_position(GetOptimalAxesPosition(fig, axMain))
+	axMain.set_xlim([0, maxValDpDomega])
+
+	#Update r and theta grid lines/labels
+	rGridLines = linspace(0, maxValDpDomega, 5)[1:-1]
+	rgrids(rGridLines, ["" for p in rGridLines])
+	thetagrids(range(0,360,45), [r"%s$^\circ$" % t for t in range(0,360,45)])
+
+	#put arrow indicating direction of other electron
+	axMain.plot([0,0], [0, maxValDpDomega/3.0], "k-", linewidth=0.8)
+	axMain.plot([0], [maxValDpDomega/3.0], "k>", markersize=3.0)
+
+	draw()
+
+	return fig
+
+
 def MakePlotStabilizationFreq5ScanIonization():
 	f = tables.openFile("output/stabilization_freq5_scan.h5")
 	try:
@@ -239,6 +297,7 @@ def CalculatePartialIonizationProbability(energy_double, dpde_double, minE, maxE
 		title("minE = %f, maxE = %f" % (minE, maxE))
 
 	#integrate to get partial ionization probability
+	#partialProb = sum(triu(dp)) * diff(energy_double)[0]**2
 	partialProb = sum(dp) * diff(energy_double)[0]**2
 
 	return partialProb
@@ -293,3 +352,60 @@ def GetIonizationProbabilityScan(fileList, symmetry="sym"):
 	return e0list, array(singleList), array(doubleList)
 
 
+
+def CalculatePartialAngularIonizationProbability(energy_double, theta, dpdomegade_double, minE, maxE):
+	"""
+	Calculates the angular double ionization probability for getting electrons with
+	combined energy between minE and maxE (minE < E1 + E2 < maxE)
+	"""
+
+	E1, E2 = meshgrid(energy_double, energy_double)
+	numE = len(energy_double)
+	numTheta = len(theta)
+	dpSize = len(energy_double)**2
+	dpdomega_double = numpy.zeros((numTheta, numTheta))
+
+	for i in range(numTheta):
+		for j in range(numTheta):
+			#flatten to make indices from find work
+			dp = dpdomegade_double[i,j,:,:].copy().reshape(dpSize)
+			
+			#zero out energies outside the requested range (and E1 < E2)
+			dp[find(E1 + E2 < minE)] = 0
+			dp[find(E1 + E2 >= maxE)] = 0
+			dp[find(E1 < E2 )] = 0
+			
+			dpdomega_double[i,j] = sum(dp)
+
+	#Scale by energy spacing
+	dpdomega_double[:] *= diff(energy_double)[0]**2
+
+	return dpdomega_double
+
+
+def CalculateRadialPartialAngularIonizationProbability(energy_double, theta, dpdomegade_double, energyPos1, energyPos2, energyRadius):
+	"""
+	Calculates the angular double ionization probability for getting electrons with
+	combined energy between minE and maxE inside the circle 
+	"""
+
+	E1, E2 = meshgrid(energy_double-energyPos1, energy_double-energyPos2)
+	numE = len(energy_double)
+	numTheta = len(theta)
+	dpSize = len(energy_double)**2
+	dpdomega_double = numpy.zeros((numTheta, numTheta))
+
+	for i in range(numTheta):
+		for j in range(numTheta):
+			#flatten to make indices from find work
+			dp = dpdomegade_double[i,j,:,:].copy().reshape(dpSize)
+			
+			#zero out energies outside the requested energy circle
+			dp[find(sqrt(E1**2 + E2**2) > energyRadius)] = 0
+			
+			dpdomega_double[i,j] = sum(dp)
+
+	#Scale by energy spacing
+	dpdomega_double[:] *= diff(energy_double)[0]**2
+
+	return dpdomega_double

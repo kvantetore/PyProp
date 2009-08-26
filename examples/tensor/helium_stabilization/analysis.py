@@ -1,3 +1,5 @@
+from warnings import warn
+
 #------------------------------------------------------------------------
 #                Spherical Harmonics (partial waves) analysis
 #------------------------------------------------------------------------
@@ -220,6 +222,7 @@ def RunFolderUpdateAnalysis(folder, noOverwrite=False):
 		for file in filter(lambda s: s.endswith(".h5"), files):
 			filename = os.path.join(dirpath, file)
 			RunFileUpdateAnalysis(filename, noOverwrite)
+			CheckIonizationProbabilitiesConsistensy(filename)
 	
 
 
@@ -711,3 +714,80 @@ def GetProductStateModelIonizationProbabilities(modelFirstElectron, modelSecondE
 	"""
 #	if modelFirstElectron == modelSecondElectron:
 #		singleIon, 
+
+
+
+#------------------------------------------------------------------------
+#                        Misc analysis functions
+#------------------------------------------------------------------------
+def CheckIonizationProbabilitiesConsistensy(filename, verbose=False):
+	"""
+	Check consistensy of ionization probabilities stored in file 'filename'
+	by comparing total-, single- and double ionization probabilities with
+	values of integrals over stored differential probabilities
+	"""
+
+	h5file = tables.openFile(filename, 'r')
+	try:
+		psi = h5file.root.wavefunction
+
+		#Check the symmetry of the problem (should be either sym or antisym)
+		if abs(psi._v_attrs.AntiSingleIonization - psi._v_attrs.SingleIonization) < 0.01:
+			print "Symmetric and antisymmetric parts seems to be of equal magnitude - please check!"
+
+		#Determine symmetry of problem
+		probSym = ""
+		if psi._v_attrs.AntiSingleIonization / psi._v_attrs.SingleIonization > 10.0:
+			probSym = "Anti"
+
+		#Get single-, double- and total ionization
+		singleIon = psi.getAttr("%sSingleIonization" % probSym)
+		doubleIon = psi.getAttr("%sDoubleIonization" % probSym)
+		totalIon = psi.getAttr("%sIonization" % probSym)
+
+		#Integrate dP/dE (single)
+		E = h5file.root.dpde_single._v_attrs.energy[:]
+		dpde_single = h5file.root.dpde_single[:]
+		singleIonEn = sum(dpde_single) * diff(E)[0]
+
+		#Integrate dP/dE1dE2 (double)
+		E = h5file.root.dpde_double._v_attrs.energy[:]
+		dpde_double = h5file.root.dpde_double[:]
+		doubleIonEn = sum((dpde_double)) * (diff(E)[0])**2 / 2.0
+
+		#Integrate dP/dOmegadE1dE2 (double, angles)
+		E = h5file.root.dpdomega_double._v_attrs.energy[:]
+		theta = h5file.root.dpdomega_double._v_attrs.theta[:]
+		numE = len(E)
+		numTheta = len(theta)
+		dpdomega_dE_double = h5file.root.dpdomega_double[:]
+		#dpdomega_double = numpy.zeros((numTheta, numTheta))
+		#for i in range(numTheta):
+		#	for j in range(numTheta):
+		#		dpdomega_double[i,j] += sum(triu(dpdomega_dE_double[i,j,:,:]))
+		
+		dpdomega_double = sum(sum(dpdomega_dE_double, axis=3), axis=2) * (diff(E)[0])**2
+		#dpdomega_double *= (diff(E)[0])**2
+
+		doubleIonAng = (2*pi)**2 * sum( dpdomega_double * outer(sin(theta), sin(theta)) ) * (diff(theta)[0])**2
+
+		#Check single ion relative diff (should be less than 2%)
+		singleIonDiffRel = abs(singleIon - singleIonEn) / abs(singleIon)
+		if singleIonDiffRel > 0.02:
+			print "Single ionization inconsistency: %s" % singleIonDiffRel
+
+		#Check double ion relative diff (should be less than 2%)
+		doubleIonDiffRel = abs(doubleIon - doubleIonEn) / abs(doubleIon)
+		if doubleIonDiffRel > 0.02:
+			print "Double ionization inconsistency (dpde_double): %s" % doubleIonDiffRel
+
+		#Check double ion angular relative diff (should be less than 2%)
+		doubleIonDiffAngRel = abs(doubleIon - doubleIonAng) / abs(doubleIon)
+		if doubleIonDiffAngRel > 0.02:
+			print "Double angular ionization inconsistency (dpdomega_double): %s" % doubleIonDiffAngRel
+	finally:
+		h5file.close()
+
+	if verbose:
+		print "Single ion: %s (%s)" % (singleIon, singleIonEn)
+		print "Double ion: %s (%s, %s)" % (doubleIon, doubleIonEn, doubleIonAng)

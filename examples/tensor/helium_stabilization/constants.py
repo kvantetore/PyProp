@@ -66,7 +66,7 @@ def tpdi_crossection(freq, intensity, pIon, pulseDuration):
 	print "Photon energy = %.1f eV" % (freq / eV_to_au)
 	print "TPDI cross section = %1.2e cm**4 s" % sigma
 	print
-	return sigma
+	return freq / eV_to_au, sigma
 	
 
 class Levels():
