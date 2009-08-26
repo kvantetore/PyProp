@@ -17,7 +17,7 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
 	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	def getIonProb(filename):
@@ -39,7 +39,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	files by projecting onto products of single particle states.
 	"""
 	
-	maxE = 15.
+	maxE = 14.
 	dE = 0.005
 
 	#load wavefunction
@@ -55,7 +55,7 @@ def RunGetSingleIonizationEnergyDistribution(fileList, removeBoundStates=True):
 	#Get single particle states
 	isIonized = lambda E: 0.0 <= E <= maxE
 	isBound = lambda E: E < 0.0
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he+", isIonized, config=conf)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	#Calculate Energy Distribution (dP/dE)
@@ -195,9 +195,10 @@ def	GetSingleIonizationProbability(psi, boundStates, singleBoundStates, singleIo
 	#singleIonizationProbability2 = ionizationProbability - real(psi.InnerProduct(psi))
 	singleIonizationProbability2 = 0
 
-	#Calculate single ionization probability
+	#Calculate single ionization probability, factor 2
+	#because of implicit symmetrization of prod. state
 	lpop = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populations]
-	singleIonizationProbability = sum(lpop)
+	singleIonizationProbability = 2.0 * sum(lpop)
 	
 	print "Absorbed Probability     = %s" % (absorbedProbability)
 	print "Ioniziation Probability  = %s" % (ionizationProbability)
@@ -239,8 +240,9 @@ def GetSingleIonizationEnergyDistribution(psi, boundStates, singleBoundStates, s
 		nBound = singleBoundStates[lBound].shape[1]
 		nIon = singleIonStates[lIon].shape[1]
 
-		#iterate over all bound states in this l-shell
-		pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
+		#iterate over all bound states in this l-shell, factor 2
+		#because of implicit symmetrization of prod. state
+		pop = 2 * array([d[2] for d in lPop]).reshape(nBound, nIon)
 		for iBound in range(nBound):
 			#interpolate over ionized populations
 			curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])
@@ -282,8 +284,9 @@ def GetSingleIonizationBoundEnergyDistribution(psi, boundStates, singleBoundStat
 		nBound = singleBoundStates[lBound].shape[1]
 		nIon = singleIonStates[lIon].shape[1]
 
-		#iterate over all bound states in this l-shell
-		pop = array([d[2] for d in lPop]).reshape(nBound, nIon)
+		#iterate over all bound states in this l-shell, factor 2
+		#because of implicit symmetrization of prod. state
+		pop = 2 * array([d[2] for d in lPop]).reshape(nBound, nIon)
 		for iBound in range(nBound):
 			#interpolate over ionized populations
 			curPop = pop[iBound, :-1] / diff(singleIonEnergies[lIon])

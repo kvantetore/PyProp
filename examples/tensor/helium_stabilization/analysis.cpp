@@ -144,7 +144,7 @@ list CalculatePopulationRadialProductStates(int l1, MatrixType V1, int l2, Matri
 	{
 		for (int i2=0; i2<count2; i2++)
 		{
-			double pop = 2 * real(sum(proj(Range::all(), i1, i2)));
+			double pop = real(sum(proj(Range::all(), i1, i2)));
 			popList.append(make_tuple(i1, i2, pop));
 		}
 	}
