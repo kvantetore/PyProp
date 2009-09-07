@@ -2,9 +2,11 @@ import matplotlib
 #matplotlib.use("qtagg")
 matplotlib.use("agg")
 from matplotlib.transforms import Bbox
+from pylab import draw
 import os
 
-execfile("load_cmap.py")
+#execfile("load_cmap.py")
+from load_cmap import *
 
 UiB_Orange = "#d95900"
 UiB_Green  = "#77af00"
@@ -26,6 +28,7 @@ PlotOutputPaper = "paper"
 PlotOutputIcpeac = "icpeac"
 
 PaperOutput = None
+
 def PaperSetOutput(plotOutput, polar=False):
 	global FigWidth, FigWidthLarge, LineWidth, GraphLineWidth
 	global FontSize, PaperOutput, PaperMaxE0, PaperFigureFont
@@ -55,6 +58,38 @@ def PaperSetOutput(plotOutput, polar=False):
 		raise Exception("Unknown output")
 
 	PaperOutput = plotOutput
+
+PaperSetOutput(PlotOutputPaper)
+
+class FigureSettings:
+	FontFamily = "Times New Roman"
+	GradientFile = "gradient_uib.txt"
+	FigWidth = None
+	FigWidthLarge = None
+	LineWidth = None
+	GraphLineWidth = None
+	FontSize = None
+	PaperMaxE0 = None
+	PaperFigureFont = None 
+
+class FigureSettingsPaper(FigureSettings):
+	FigWidth = 5
+	FigWidthLarge = 8
+	LineWidth = 0.4
+	GraphLineWidth = 0.5
+	FontSize = 6
+	PaperMaxE0 = 35
+	PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+
+class FigureSettingsICPEAC:
+	FigWidth = 12
+	FigWidthLarge = 16
+	LineWidth = 1
+	GraphLineWidth = 1
+	FontSize = 16
+	PaperMaxE0 = 25
+	PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+
 
 
 def WalkChildren(parent):

@@ -114,10 +114,11 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 	interpE = r_[dE:maxEnergy:dE]
 	interpK = sqrt(interpE * 2)
 
-	#Get spherical harmonics
+	#Get spherical harmonics at phi1=phi2=0
 	assocLegendre = GetAssociatedLegendrePoly(lmax, theta)
 
-	angDistr = []
+	angDistrAvgPhi = []
+	angDistrCoplanar = []
 	for i, filename in enumerate(fileList):
 		psi = pyprop.CreateWavefunctionFromFile(filename)
 		#sym, anti = GetSymmetrizedWavefunction(psi)
@@ -138,10 +139,13 @@ def RunGetDoubleIonizationAngularDistribution(fileList, dE=None, dTheta=None, re
 			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
 			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
 
-		#calculate angular distr for double ionized psi
-		angDistr.append(GetDoubleAngularDistribution(psi, Z, interpE, doubleIonEnergies, doubleIonStates, assocLegendre, theta))
+		#calculate angular distr for double ionized psi, averaged over phi's
+		angDistrAvgPhi.append(GetDoubleAngularDistributionAvgPhi(psi, Z, interpE, doubleIonEnergies, doubleIonStates, assocLegendre, theta))
+		
+		#calculate angular distr for double ionized psi, evaluated at phi1=phi2=0
+		angDistrCoplanar.append(GetDoubleAngularDistributionCoplanar(psi, Z, interpE, doubleIonEnergies, doubleIonStates, assocLegendre, theta))
 
-	return interpE, theta, angDistr
+	return interpE, theta, angDistrAvgPhi, angDistrCoplanar
 
 
 
@@ -228,7 +232,7 @@ def GetDoubleIonizationEnergyDistribution(psi, boundStates, singleIonStates, sin
 	return E, dpde
 
 
-def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates, assocLegendre, theta):
+def GetDoubleAngularDistributionAvgPhi(psi, Z, interpEnergies, ionEnergies, ionStates, assocLegendre, theta):
 	#Make a copy of the wavefunction and multiply 
 	#integration weights and overlap matrix
 	tempPsi = psi.Copy()
@@ -260,6 +264,7 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 	M = 0
 	for m in range(-5,5+1): 
 		#if m == 0: continue
+		#if not m == 0: continue #phi1 = phi2 = 0
 
 		angularDistrProj = zeros(angularDistr.shape, dtype=complex)
 		for l1, V1 in enumerate(ionStates):
@@ -344,6 +349,103 @@ def GetDoubleAngularDistribution(psi, Z, interpEnergies, ionEnergies, ionStates,
 
 	return angularDistr
 
+
+def GetDoubleAngularDistributionCoplanar(psi, Z, interpEnergies, ionEnergies, ionStates, assocLegendre, theta):
+	#Make a copy of the wavefunction and multiply 
+	#integration weights and overlap matrix
+	tempPsi = psi.Copy()
+	repr = psi.GetRepresentation()
+	repr.MultiplyIntegrationWeights(tempPsi)
+	distr = psi.GetRepresentation().GetDistributedModel()
+
+	data = tempPsi.GetData()
+	population = []
+
+	angularRank = 0
+	angRepr = repr.GetRepresentation(angularRank)
+
+	dE = diff(interpEnergies)[0]**2
+	dTh = diff(theta)[0]**2 * outer(sin(theta), sin(theta)) * (2*pi)**2
+
+	cg = pyprop.core.ClebschGordan()
+
+	interpK = sqrt(2 * interpEnergies)
+	interpCount = len(interpEnergies)
+
+	thetaCount = assocLegendre.shape[1]
+	stateCount = ionStates[0].shape[1]
+	angularDistr = zeros((thetaCount, thetaCount, interpCount, interpCount), dtype=double)
+
+	assocLegendre = array(assocLegendre, dtype=complex)
+
+	pop = 0
+	M = 0
+	angularDistrProj = zeros(angularDistr.shape, dtype=complex)
+	for l1, V1 in enumerate(ionStates):
+		E1 = array(ionEnergies[l1])
+		print "%i/%i" % (l1, len(ionStates))
+	
+		for l2, V2 in enumerate(ionStates):
+			E2 = array(ionEnergies[l2])
+	
+			#filter out coupled spherical harmonic indices. this gives us a set of L's for the given l1, l2, M
+			lfilter = lambda coupledIndex: coupledIndex.l1 == l1 and coupledIndex.l2 == l2  
+			angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int)
+			coupledIndices = map(angRepr.Range.GetCoupledIndex, angularIndices)
+
+			if len(angularIndices) == 0:
+				continue
+		
+			#calculate projection on radial states
+			def doProj():
+				radialProj = CalculateProjectionRadialProductStates(l1, V1, l2, V2, data, angularIndices)
+				return radialProj
+			radialProj = doProj()
+
+			#scale states with 1/dE_1 dE_2
+			def GetDensity(curE):
+				interiorSpacing = list(diff(curE)[1:])
+				leftSpacing = (curE[1] - curE[0])
+				rightSpacing = (curE[-1] - curE[-2])
+				spacing = array([leftSpacing] + interiorSpacing + [rightSpacing])
+				return 1.0 / sqrt(spacing)
+			stateDensity = outer(GetDensity(E1), GetDensity(E2))
+
+			#coulomb phases (-i)**(l1 + l2) * exp( sigma_l1 * sigma_l2 )
+			phase1 = exp(1.0j * array([GetCoulombPhase(l1, -Z/curK) for curK in sqrt(2*E1)]))
+			phase2 = exp(1.0j * array([GetCoulombPhase(l2, -Z/curK) for curK in sqrt(2*E2)]))
+			phase = (-1.j)**(l1 + l2) * outer(phase1, phase2)
+
+			#interpolate projection on equidistant energies and sum over L and M
+			interpProj = zeros((interpCount, interpCount), dtype=complex)
+			for j in range(radialProj.shape[0]):
+				curRadialProj = phase * stateDensity * radialProj[j,:,:]
+
+				#interpolate in polar complex coordinates
+				def dointerp():
+					r = abs(curRadialProj)**2
+					i = arctan2(imag(curRadialProj), real(curRadialProj))
+					argr = cos(i)
+					argi = sin(i)
+					interpr = scipy.interpolate.RectBivariateSpline(E1, E2, r, kx=1, ky=1)(interpEnergies, interpEnergies)
+					interpArgR = scipy.interpolate.RectBivariateSpline(E1, E2, argr, kx=1, ky=1)(interpEnergies, interpEnergies)
+					interpArgI = scipy.interpolate.RectBivariateSpline(E1, E2, argi, kx=1, ky=1)(interpEnergies, interpEnergies)
+					interpPhase = (interpArgR + 1.j*interpArgI) / sqrt(interpArgR**2 + interpArgI**2)
+					curInterpProj = sqrt(maximum(interpr, 0)) * interpPhase
+					return curInterpProj
+				curInterpProj = dointerp()
+
+				#Sum over m:
+				def doSum():
+					AddDoubleAngularProjectionCoplanar(angularDistrProj, assocLegendre, curInterpProj, coupledIndices[j])
+				doSum()
+
+	#calculate projection for this m-shell
+	angularDistr = real(angularDistrProj * conj(angularDistrProj))
+
+	return angularDistr
+
+
 def GetDoubleParallelMomentumDistribution(energy, th, dp):
 	nE = len(energy)
 	dp2 = zeros((nE*2, nE*2), dtype=double)
@@ -377,6 +479,7 @@ def GetTPDICrossSectionFromFile(filename):
 
 def GetTPDIList():
 	fileList = [\
+		"output/tpdi/freq_1.50714285714_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.50714285714_dt_1e-02_T_166.1.h5", \
 		"output/tpdi/freq_1.6_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_0_freq_1.6_dt_1e-02_T_58.9.h5", \
 		"output/tpdi/freq_1.65_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s/tpdi_I_0_freq_1.65_dt_1e-02_T_124.0.h5", \
 		"output/tpdi/freq_1.7_grid_exponentiallinear_xmax400_xsize20_order5_xpartition10_gamma3.0_angular_lmax5_L0-4_M0_1s1s_1/tpdi_I_1.0e13_freq_1.7_dt_1e-02_T_55.4.h5", \

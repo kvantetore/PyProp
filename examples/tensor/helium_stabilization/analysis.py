@@ -253,7 +253,7 @@ def RunFileUpdateAnalysis(filename, noOverwrite=False):
 	pyprop.Redirect.Disable()
 	print "    dP/dOmega (double)"
 	pyprop.Redirect.Enable(silent=True)
-	e1, th1, (dp1,) = RunGetDoubleIonizationAngularDistribution([filename])
+	e1, th1, (dp1_avg,), (dp1_coplanar,) = RunGetDoubleIonizationAngularDistribution([filename])
 	pyprop.Redirect.Disable()
 	print "    dP/dE (double)"
 	pyprop.Redirect.Enable(silent=True)
@@ -273,11 +273,19 @@ def RunFileUpdateAnalysis(filename, noOverwrite=False):
 	try:
 		if "dpdomega" in f.root:
 			f.removeNode(f.root, "dpdomega", recursive=True)
-		if "dpdomega_double" in f.root:
-			f.removeNode(f.root, "dpdomega_double", recursive=True)
-		f.createArray(f.root, "dpdomega_double", dp1)
-		f.root.dpdomega_double._v_attrs.energy = e1
-		f.root.dpdomega_double._v_attrs.theta = th1
+		if "dpdomega_double_avg" in f.root:
+			f.removeNode(f.root, "dpdomega_double_avg", recursive=True)
+		f.createArray(f.root, "dpdomega_double_avg", dp1_avg)
+		f.root.dpdomega_double_avg._v_attrs.energy = e1
+		f.root.dpdomega_double_avg._v_attrs.theta = th1
+
+		if "dpdomega_double_coplanar" in f.root:
+			f.removeNode(f.root, "dpdomega_double_coplanar", recursive=True)
+		f.createArray(f.root, "dpdomega_double_coplanar", dp1_coplanar)
+		f.root.dpdomega_double_coplanar._v_attrs.energy = e1
+		f.root.dpdomega_double_coplanar._v_attrs.theta = th1
+		f.root.dpdomega_double_coplanar._v_attrs.phi1 = 0
+		f.root.dpdomega_double_coplanar._v_attrs.phi2 = 0
 
 		if "dpde_double" in f.root:
 			f.removeNode(f.root, "dpde_double", recursive=True)
@@ -753,14 +761,14 @@ def CheckIonizationProbabilitiesConsistensy(filename, verbose=False):
 		#Integrate dP/dE1dE2 (double)
 		E = h5file.root.dpde_double._v_attrs.energy[:]
 		dpde_double = h5file.root.dpde_double[:]
-		doubleIonEn = sum((dpde_double)) * (diff(E)[0])**2 / 2.0
+		doubleIonEn = sum((dpde_double)) * (diff(E)[0])**2
 
 		#Integrate dP/dOmegadE1dE2 (double, angles)
-		E = h5file.root.dpdomega_double._v_attrs.energy[:]
-		theta = h5file.root.dpdomega_double._v_attrs.theta[:]
+		E = h5file.root.dpdomega_double_avg._v_attrs.energy[:]
+		theta = h5file.root.dpdomega_double_avg._v_attrs.theta[:]
 		numE = len(E)
 		numTheta = len(theta)
-		dpdomega_dE_double = h5file.root.dpdomega_double[:]
+		dpdomega_dE_double = h5file.root.dpdomega_double_avg[:]
 		#dpdomega_double = numpy.zeros((numTheta, numTheta))
 		#for i in range(numTheta):
 		#	for j in range(numTheta):

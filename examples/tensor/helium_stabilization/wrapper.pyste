@@ -13,6 +13,7 @@ module_code('    def("CalculatePopulationRadialProductStates", CalculatePopulati
 module_code('    def("GetWavefunctionParticleExchange",  GetWavefunctionParticleExchange);\n')
 module_code('    def("AddSingleAngularProjectionAvgPhi",  AddSingleAngularProjectionAvgPhi);\n')
 module_code('    def("AddDoubleAngularProjectionAvgPhi",  AddDoubleAngularProjectionAvgPhi);\n')
+module_code('    def("AddDoubleAngularProjectionCoplanar",  AddDoubleAngularProjectionCoplanar);\n')
 module_code('    def("GetCoulombPhase",  GetCoulombPhase);\n')
 module_code('    def("RemoveProjectionRadialProductStates",  RemoveProjectionRadialProductStates);\n')
 module_code('    def("SetRadialCoulombWave",  SetRadialCoulombWave);\n')

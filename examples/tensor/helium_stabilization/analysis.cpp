@@ -199,7 +199,7 @@ void SetRadialCoulombWave(int Z, int l, double k, blitz::Array<double, 1> r, bli
 // ------------------------------------------------------------------------------------------------------- 
 
 /*
- * adds exp(-i pi / 2 (l1 + l2) + i (sigma_l1 + sigma_l2)) Y^{L,M}_{l1,l2}(theta1, theta2) radialProj(l1, l2, L, M, i1, i2) 
+ * adds Y^{L,M}_{l1,l2}(theta1, theta2) radialProj(l1, l2, L, M, i1, i2) 
  * to the existing angularData(theta1, theta2, i1, i2)
  *
  * radialProj(l1, l2, L, M, E1, E2) should calculated from CalculateProjectionRadialProductStates
@@ -221,6 +221,35 @@ void AddDoubleAngularProjectionAvgPhi(Array<cplx, 4> angularData, Array<cplx, 2>
 	angularData +=    sph1(tensor::i) * sph2(tensor::j)
 					* radialProj(tensor::k, tensor::l);
 }
+
+void AddDoubleAngularProjectionCoplanar(Array<cplx, 4> angularData, Array<cplx, 2> sphericalHarmonics, 
+		Array<cplx, 2> radialProj, CoupledSpherical::CoupledIndex coupledIndex)
+{
+	CoupledSpherical::ClebschGordan cg;
+
+	int l1 = coupledIndex.l1;
+	int l2 = coupledIndex.l2;
+	int L = coupledIndex.L;
+	int M = coupledIndex.M;
+	
+	//intuitively obvious:
+	int mMin = std::max(-l1, M-l2);
+	int mMax = std::min(l1, M+l2);
+	for (int m=mMin; m<=mMax; m++)
+	{
+		//create a view to the current spherical harmonic and radialProjection arrays
+		Array<cplx, 1> sph1 = sphericalHarmonics( MapLmIndex(l1, m), Range::all());
+		Array<cplx, 1> sph2 = sphericalHarmonics( MapLmIndex(l2, M-m), Range::all());
+		double curCg = cg(l1, l2, m, M-m, L, M);
+		
+		//Add data
+		angularData +=    curCg * sph1(tensor::i) * sph2(tensor::j)
+						* radialProj(tensor::k, tensor::l);
+	}
+
+}
+
+
 
 
 void AddSingleAngularProjectionAvgPhi(Array<cplx, 3> angularData, Array<cplx, 2> sphericalHarmonics,

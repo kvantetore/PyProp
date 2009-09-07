@@ -138,12 +138,17 @@ def MakePlotStabilizationFreq5ScanSingleIonizationDPDE():
 
 
 #convergence
-def GetDpDomegaDoubleFromFile(filename):
+def GetDpDomegaDoubleFromFile(filename, phiEvalType='avg'):
 	f = tables.openFile(filename)
 	try:
-		e = f.root.dpdomega_double._v_attrs.energy
-		th = f.root.dpdomega_double._v_attrs.theta
-		dp = f.root.dpdomega_double[:]
+		if phiEvalType == 'avg':
+			e = f.root.dpdomega_double_avg._v_attrs.energy
+			th = f.root.dpdomega_double_avg._v_attrs.theta
+			dp = f.root.dpdomega_double_avg[:]
+		elif phiEvalType == 'coplanar':
+			e = f.root.dpdomega_double_coplanar._v_attrs.energy
+			th = f.root.dpdomega_double_coplanar._v_attrs.theta
+			dp = f.root.dpdomega_double_coplanar[:]
 	finally:
 		f.close()
 	return e, th, dp
