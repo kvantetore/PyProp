@@ -1,5 +1,6 @@
 import matplotlib
 import pylab
+from numpy import linspace
 
 def LoadColormap(filename, reverse=False):
 	data = pylab.load(filename)

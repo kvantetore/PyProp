@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import sys
 
 sys.path.append("./pyprop")
@@ -18,9 +19,12 @@ from pylab import *
 from numpy import *
 from libpotential import *
 
-execfile("stabilization.py")
-execfile("eigenvalues.py")
-execfile("analysis.py")
+#execfile("stabilization.py")
+#execfile("eigenvalues.py")
+#execfile("analysis.py")
+#from stabilization import *
+#from eigenvalues import *
+#from analysis import *
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
@@ -54,6 +58,10 @@ def SetupConfig(**args):
 	if "duration" in args:
 		duration = args["duration"]
 		conf.SetValue("Propagation", "duration", duration)
+
+	if "pulseDuration" in args:
+		T = args["pulseDuration"]
+		conf.SetValue("PulseParameters", "pulse_duration", T)
 
 	if "dt" in args:
 		conf.SetValue("Propagation", "timestep", args["dt"])
@@ -109,6 +117,10 @@ def SetupConfig(**args):
 			z = sqrt(2 * 1.45)
 			a1 = a2 = a3 = a4 = a5 = a6 = 0
 
+		elif model == "he3":
+			z = sqrt(2 * 2.9)
+			a1 = a2 = a3 = a4 = a5 = a6 = 0
+
 		else:
 			raise Exception("Unknown model '%s'" % model)
 
@@ -129,6 +141,17 @@ def SetupConfig(**args):
 	
 	if "frequency" in args:
 		conf.SetValue("PulseParameters", "frequency", args["frequency"])
+  
+	if "phase" in args:
+		phase = args['phase']
+		if phase == "zero":
+			conf.SetValue("LaserPotentialVelocityBase", "phase", 0.0)
+		elif phase == "pihalf":
+			conf.SetValue("LaserPotentialVelocityBase", "phase", pi/2.0)
+		elif phase == "pi":
+			conf.SetValue("LaserPotentialVelocityBase", "phase", pi)
+		else:
+			PrintOut("Unknown phase, using the one specified in the config file!")
 
 	potentials = conf.Propagation.grid_potential_list + args.get("additionalPotentials", [])
 	conf.SetValue("Propagation", "grid_potential_list", potentials)
@@ -195,10 +218,13 @@ def FindEigenvalues(**args):
 #------------------------------------------------------------------------------------
 
 def LaserFunctionVelocity(conf, t):
+	phase = 0.0
+	if hasattr(conf, "phase"):
+		phase = conf.phase
 	if 0 <= t < conf.pulse_duration:
 		curField = conf.amplitude;
 		curField *= sin(t * pi / conf.pulse_duration)**2;
-		curField *= - cos(t * conf.frequency);
+		curField *= - cos(t * conf.frequency + phase);
 	else:
 		curField = 0
 	return curField
@@ -351,6 +377,34 @@ class TrilinosPreconditioner:
 		for i, solv in enumerate(self.Solvers):
 			solv.Solve(psi.GetData()[i, :])
 
+
+def ReconstructRadialDensityOnGrid(psi, radialGrid, bsplineObject):
+	"""
+	Construct grid radial density
+	"""
+
+	#Total number of B-splines
+	numBsplines = bsplineObject.NumberOfBSplines
+
+	#Array for final radial density
+	radialDensity = zeros((radialGrid.size), dtype=double)
+
+	#A buffer for reconstructing 
+	buffer1D = zeros(radialGrid.size, dtype=complex)
+	psiSliceGrid = zeros(radialGrid.size, dtype=complex)
+	psiSlice = zeros(numBsplines, dtype=complex)
+
+	#Calculate radial density
+	numL = psi.GetData().shape[0]
+	for lIdx  in range(numL):
+		psiSlice[:] = psi.GetData()[lIdx, :]
+		buffer1D[:] = 0.0
+		bsplineObject.ConstructFunctionFromBSplineExpansion(psiSlice, radialGrid, buffer1D)
+
+		#Incoherent sum over partial waves (but coherent over b-spline coefficients)
+		radialDensity[:] += abs(buffer1D[:])**2
+
+	return radialDensity
 
 #------------------------------------------------------------------------------------
 #             Filter functions to remove B-spline matrix elements

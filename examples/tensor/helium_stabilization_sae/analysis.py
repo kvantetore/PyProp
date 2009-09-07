@@ -1,3 +1,7 @@
+import pyprop
+from numpy import *
+import scipy
+
 #---------------------------------------------------------------------------------------
 #            Eigenstate Analysis
 #---------------------------------------------------------------------------------------
@@ -154,11 +158,12 @@ def CalculateRadialCorrelation(psi, eigenVectors, n, l, overlap):
 	return sum( conj(vec) * dot(overlap, psi.GetData()[l, :]) )
 	
 
-def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap, dE=None):
+def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap, dE=None, maxE=None):
 	if not dE:
 		dE = min(diff(sorted(eigenValues[0])))
 	minE = 0
-	maxE = eigenValues[0][3*len(eigenValues[0])/4]
+	if not maxE:
+		maxE = eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]
 	energyDistr = zeros(len(E), dtype=double)
 	#energyDistr = []
@@ -199,12 +204,12 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap, dE=None
 def CalculateAngularDistribution(psi, eigenValues, eigenVectors, overlap, interpMethod="polar-square"):
 	dE = maximum(min(diff(eigenValues[0])), 0.1)
 	minE = dE
-	maxE = 16 #eigenValues[0][-1] #eigenValues[0][3*len(eigenValues[0])/4]
+	maxE = 14 #eigenValues[0][-1] #eigenValues[0][3*len(eigenValues[0])/4]
 	E = r_[minE:maxE:dE]
 	energyDistr = []
 
 	Z = 1
-	thetaCount = 10
+	thetaCount = 100
 	lmax = len(eigenValues) -1
 	theta = linspace(0, pi, thetaCount)
 	leg = GetLegendrePoly(lmax, theta)
@@ -219,7 +224,7 @@ def CalculateAngularDistribution(psi, eigenValues, eigenVectors, overlap, interp
 		curk = sqrt(curE/2)
 
 		#Phase for outgoing waves
-		sigma = array([GetCoulombPhase(l, Z / k) for k in curk])
+		sigma = array([GetCoulombPhase(l, -Z / k) for k in curk])
 		phase = (-1.j)**l * exp(1.j * sigma)
 
 		#Get projection on eigenstates

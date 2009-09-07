@@ -1,3 +1,6 @@
+from example import *
+from analysis import *
+
 try:
 	import scipy
 	import scipy.linalg
@@ -74,6 +77,16 @@ def RunHasbani(**args):
 	return frequencyData
 
 def RunStabilization(**args):
+
+#	radialGrid = {\
+#		'xsize' : 80, \
+#		'xmax' : 80, \
+#		'order' : 5, \
+#		'bpstype' : 'exponentiallinear', \
+#		'xpartition' : 20, \
+#		'gamma' : 2.0}
+#	args["radialGrid"] = radialGrid
+
 	groundstateFilename = args.get("groundstateFilename", "helium_groundstate.h5")
 	groundstateDatasetPath = args.get("groundstateDatasetPath", "/wavefunction")
 
