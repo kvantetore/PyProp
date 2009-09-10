@@ -56,15 +56,36 @@ def GetEigenstateFileInfo(filename, infoId):
 
 
 def GetBoundStateFiles(**args):
-	location = "output/boundstates"
+	"""
+	Get list of bound states files for all L's. Uses GetBoundstatesFilename
+	defined in 'eigenvalues.py'
+	"""
 	conf = SetupConfig(**args)
-	lmax = max([l1 for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
 	Llist = unique([L for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
-	getPostfix = lambda L: "_".join(GetRadialGridPostfix(config=conf, lmax=lmax, L=L) + GetAngularGridPostfix(config=conf, lmax=lmax, L=L)) 
-	getFilename = lambda L: "output/boundstates/boundstates_%s.h5" % (getPostfix(L))
+	fileList = [GetBoundstatesFilename(L=L, **args) for L in Llist]
+
+	ignoreMissing = args.get("ignoreMissingFiles", False)
+
+	filteredFileList = fileList
+	if not ignoreMissing:
+		filteredFileList = filter(os.path.exists, fileList)
+
+	return filteredFileList
+
+	#location = "output/boundstates"
+	#conf = SetupConfig(**args)
+	#lmax = max([l1 for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
+	#Llist = unique([L for l1, l2, L, M in conf.AngularRepresentation.index_iterator])
+	#getPostfix = lambda L: "_".join(GetRadialGridPostfix(config=conf, lmax=lmax, L=L) + GetAngularGridPostfix(config=conf, lmax=lmax, L=L)) 
+
+	#customPostfix = ""
+	#if hasattr(conf, "Special"):
+	#	customPostfix = getattr(conf.Special, "custom_postfix", "")
+
+	#getFilename = lambda L: "output/boundstates/boundstates_%s%s.h5" % (getPostfix(L), customPostfix)
 	#getFilename = lambda L: filter(os.path.exists, ["%s/boundstates_%s.h5" % (loc, getPostfix(L)) for loc in locations])[0]
 
-	return filter(os.path.exists, map(getFilename, Llist))
+	#return filter(os.path.exists, map(getFilename, Llist))
 
 
 def GetBoundStates(ionizationThreshold=-2.0, **args):
@@ -138,7 +159,7 @@ def RunRemoveBoundStateProjection(wavefunctionFile, ionizationThreshold=-2.0):
 	print "Probability not in projected    = %s" % real(psi.InnerProduct(psi))
 	print "Probability in projected states = %s" % (sum([sum(abs(array(p1))**2) for p1 in projList]))
 
-	return psi
+	return conf, psi
 
 
 #-----------------------------------------------------------------------------

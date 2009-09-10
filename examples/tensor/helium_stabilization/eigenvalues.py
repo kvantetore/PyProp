@@ -14,7 +14,7 @@ def LoadBoundstate(psi, conf, L, eigenvalueIndex):
 	"""
 
 	#Get boundstates filename	
-	filename = GetBoundstatesFilename2(config=conf, L=L)
+	filename = GetBoundstatesFilename(config=conf, L=L)
 
 	#Get sorted index in the eigenvalue list
 	f = tables.openFile(filename, "r")
@@ -95,22 +95,44 @@ def LoadBoundstateIndex(psi, filename, eigenvectorIndex):
 	return E
 
 
+#def GetBoundstatesFilename(**args):
+#	radialPostfix = "_".join(GetRadialGridPostfix(**args))
+#	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+#	locations = ["output/boundstates", "tore/output/boundstates"]
+#	boundstatesFilename = filter(os.path.exists, ["%s/boundstates_%s_%s.h5" % (loc, radialPostfix, angularPostfix) for loc in locations])
+#	
+#	return boundstatesFilename[0]
+
+
 def GetBoundstatesFilename(**args):
-	radialPostfix = "_".join(GetRadialGridPostfix(**args))
-	angularPostfix = "_".join(GetAngularGridPostfix(**args))
-	locations = ["output/boundstates", "tore/output/boundstates"]
-	boundstatesFilename = filter(os.path.exists, ["%s/boundstates_%s_%s.h5" % (loc, radialPostfix, angularPostfix) for loc in locations])
+	"""
+	Generate the name of a file where bound states associated with a given
+	config is located. Note that L must be specified for the filename to be
+	uniquely determined.
+
+	Returns: A single file name (string)
+	"""
+
+	#Check that L is specified
+	if not "L" in args:
+		raise Exception("GetBoundstatesFilename requires L to be specified!")
 	
-	return boundstatesFilename[0]
+	#Hard-coded location of file (bad)
+	location = "output/boundstates"
 
+	#Setup config object
+	conf = SetupConfig(**args)
 
-def GetBoundstatesFilename2(**args):
+	#Get custom postfix for filename, if specified
 	customPostfix = ""
-	if "customPostfix" in args:
-		customPostFix = "_%s" % args["customPostfix"]
+	if hasattr(conf, "Special"):
+		customPostfix = "_%s" % getattr(conf.Special, "custom_postfix", "")
+
+	#Generate radial and angular postfixes from config
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
 	angularPostfix = "_".join(GetAngularGridPostfix(**args))
-	location = "output/boundstates"
+
+	#Generate bound states filename
 	boundstatesFilename = "%s/boundstates_%s_%s%s.h5" % (location, radialPostfix, angularPostfix, customPostfix)
 	
 	return boundstatesFilename

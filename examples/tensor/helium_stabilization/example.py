@@ -5,6 +5,7 @@ import os
 import time
 import commands
 from datetime import timedelta
+import copy as objectcopier
 
 #Pyprop
 sys.path.append("./pyprop")
@@ -77,7 +78,8 @@ def SetupConfig(**args):
 	if isinstance(configFile, str):
 		conf = pyprop.Load(configFile)
 	elif isinstance(configFile, pyprop.Config):
-		conf = configFile
+		#Let's make a deep copy here to avoid changing input
+		conf = objectcopier.deepcopy(configFile)
 	else:
 		conf = pyprop.Config(configFile)
 	
@@ -233,8 +235,15 @@ def SetupConfig(**args):
 			conf.cfgObj.set("RadialPreconditioner", "type", "RadialTwoElectronPreconditionerSuperLU")
 		else:
 			raise Exception("Invalid preconditionType %s" % preconditionType)
-				
 
+	if "customPostfix" in args:
+		customPostfix = args["customPostfix"]
+
+		if hasattr(conf, "Special"):
+			conf.SetValue("Special", "custom_postfix", customPostfix)
+		else:
+			conf.cfgObj.add_section("Special")
+			conf.cfgObj.set("Special", "custom_postfix", "'%s'" % customPostfix)
 
 	#Update config object from possible changed ConfigParser object
 	newConf = pyprop.Config(conf.cfgObj)
