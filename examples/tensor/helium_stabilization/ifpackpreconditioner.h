@@ -300,6 +300,7 @@ public:
 		params.set("Num Blocks", BlockCount);
 		params.set("Maximum Restarts", MaxIterationCount);
 		params.set("Convergence Tolerance", Tolerance);
+		params.set("Orthogonalization", "DGKS");
 		params.set("Verbosity", 
 				(PrintWarnings ? Anasazi::Warnings & PrintWarnings : 0) |
 				(PrintIterationDetails ? Anasazi::IterationDetails : 0 ) |
