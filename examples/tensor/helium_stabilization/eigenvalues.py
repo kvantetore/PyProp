@@ -14,7 +14,7 @@ def LoadBoundstate(psi, conf, L, eigenvalueIndex):
 	"""
 
 	#Get boundstates filename	
-	filename = GetBoundstatesFilename(config=conf, L=L)
+	filename = GetBoundstatesFilename2(config=conf, L=L)
 
 	#Get sorted index in the eigenvalue list
 	f = tables.openFile(filename, "r")
@@ -98,8 +98,22 @@ def LoadBoundstateIndex(psi, filename, eigenvectorIndex):
 def GetBoundstatesFilename(**args):
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
 	angularPostfix = "_".join(GetAngularGridPostfix(**args))
-	outFolder = "output/boundstates"
-	return os.path.join(outFolder, "boundstates_%s_%s.h5" % (radialPostfix, angularPostfix))
+	locations = ["output/boundstates", "tore/output/boundstates"]
+	boundstatesFilename = filter(os.path.exists, ["%s/boundstates_%s_%s.h5" % (loc, radialPostfix, angularPostfix) for loc in locations])
+	
+	return boundstatesFilename[0]
+
+
+def GetBoundstatesFilename2(**args):
+	customPostfix = ""
+	if "customPostfix" in args:
+		customPostFix = "_%s" % args["customPostfix"]
+	radialPostfix = "_".join(GetRadialGridPostfix(**args))
+	angularPostfix = "_".join(GetAngularGridPostfix(**args))
+	location = "output/boundstates"
+	boundstatesFilename = "%s/boundstates_%s_%s%s.h5" % (location, radialPostfix, angularPostfix, customPostfix)
+	
+	return boundstatesFilename
 
 
 def RunFindBoundstates(**args):
@@ -116,7 +130,7 @@ def RunFindBoundstates(**args):
 	if pyprop.ProcId == 0:
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
-	outFileName = GetBoundstatesFilename(**args)
+	outFileName = GetBoundstatesFilename2(**args)
 	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
 			
 
@@ -127,8 +141,14 @@ def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	and pIRAM and saves the result in outFileName
 	"""
 	shift = args.get("shift", -2.9)
-	args["shift"] = shift
-	solver, shiftInvertSolver, eigenvalues = FindEigenvaluesNearShift(config=config, **args)
+	args.pop("shift")
+	#args["shift"] = shift
+	useAnasazi = args["useAnasazi"]
+
+	if useAnasazi:
+		solver, shiftInvertSolver, eigenvalues = FindEigenvaluesNearShiftAnasazi(shift, config=config, **args)
+	else:
+		solver, shiftInvertSolver, eigenvalues = FindEigenvaluesNearShift(shift, config=config, **args)
 	SaveEigenvalueSolverShiftInvert(outFileName, solver, shiftInvertSolver, shift)
 
 	#Print Statistics
@@ -148,7 +168,7 @@ def FindEigenvaluesNearShift(shift, **args):
 	"""
 
 	#Setup Problem
-	prop = SetupProblem(silent=True, eigenvalueShift=shift, **args)
+	prop = SetupProblem(silent=True, eigenvalueShift=shift, disablePreconditioner=True, **args)
 
 	#Setup shift invert solver in order to perform inverse iterations
 	shiftInvertSolver = pyprop.GMRESShiftInvertSolver(prop)
@@ -350,4 +370,43 @@ def FindEigenvaluesDirectDiagonalization(L=0, lmax=3, storeResult=False, checkSy
 		return prop, HamiltonMatrix, OverlapMatrix, E, V
 
 
+
+
+
+#------------------------------------------------------------------------------------
+#       Eigenvalue Functions using Trilinos::Anasazi
+#------------------------------------------------------------------------------------
+
+execfile("AnasaziSolver.py")
+
+def FindEigenvaluesNearShiftAnasazi(shift, **args):
+	"""
+	Calculates eigenvalues and eigenvectors for **args around shift
+	by using inverse iterations and Anasazi
+	"""
+	
+	#Setup Problem
+	prop = SetupProblem(silent=True, eigenvalueShift=shift, disablePreconditioner=False, **args)
+
+	###Setup shift invert solver in order to perform inverse iterations
+	prop.Config.GMRES.shift = shift
+	shiftInvertSolver = pyprop.GMRESShiftInvertSolver(prop)
+	prop.Config.Arpack.inverse_iterations = True
+	prop.Config.Arpack.matrix_vector_func = shiftInvertSolver.InverseIterations
+
+	solver = AnasaziSolver(prop)
+	#solver.ApplyMatrix = lambda src, dst, a, b: solver.Preconditioner.Preconditioner.Multiply(src, dst)
+	solver.Solve()
+	
+	PrintOut("GMRES Error Estimates: %s " % shiftInvertSolver.Solver.GetErrorEstimateList())
+	shiftInvertSolver.PrintStatistics()
+
+	#Get the converged eigenvalues
+	eigenvalues = solver.Solver.GetEigenvalues().copy()
+
+	#convert from shift inverted eigenvalues to "actual" eigenvalues
+	eigenvalues = 1.0 / eigenvalues + shift
+	PrintOut("eigenvalues = %s" % eigenvalues)
+
+	return solver, shiftInvertSolver, eigenvalues
 
