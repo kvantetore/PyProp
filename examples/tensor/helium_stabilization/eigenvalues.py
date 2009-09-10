@@ -152,7 +152,7 @@ def RunFindBoundstates(**args):
 	if pyprop.ProcId == 0:
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
-	outFileName = GetBoundstatesFilename2(**args)
+	outFileName = GetBoundstatesFilename(**args)
 	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
 			
 
