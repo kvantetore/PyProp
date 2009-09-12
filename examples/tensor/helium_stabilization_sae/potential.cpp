@@ -36,6 +36,43 @@ public:
 
 
 template<int Rank>
+class KineticEnergyPotential2 : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+	int RadialRank;
+
+	//Potential parameters
+	double mass;
+	double Soft;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("mass", mass);
+		config.Get("radial_rank", RadialRank);
+		config.Get("soft", Soft);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double r = pos(RadialRank);
+		return - 1. / (mass * std::sqrt(r*r + Soft*Soft));
+	}
+
+};
+
+
+template<int Rank>
 class DipoleLaserPotentialLength : public PotentialBase<Rank>
 {
 public:
@@ -234,6 +271,7 @@ public:
 	double a4;
 	double a5;
 	double a6;
+	double Soft;
 
 	/*
 	 * Called once with the corresponding config section
@@ -249,6 +287,7 @@ public:
 		config.Get("a4", a4);
 		config.Get("a5", a5);
 		config.Get("a6", a6);
+		config.Get("soft", Soft);
 
 		config.Get("radial_rank", radialRank);
 	}
@@ -268,7 +307,7 @@ public:
 		double r = std::fabs(pos(radialRank));
 		
 		double V = -(Z + a1 * exp(-a2 * r) + a3 * r * exp(-a4 * r)
-			+ a5 * exp(-a6 * r)) / r;
+			+ a5 * exp(-a6 * r)) / std::sqrt(r*r + Soft*Soft);
 
 		return V;
 	}

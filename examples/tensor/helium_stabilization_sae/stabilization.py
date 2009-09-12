@@ -77,7 +77,6 @@ def RunHasbani(**args):
 	return frequencyData
 
 def RunStabilization(**args):
-
 #	radialGrid = {\
 #		'xsize' : 80, \
 #		'xmax' : 80, \

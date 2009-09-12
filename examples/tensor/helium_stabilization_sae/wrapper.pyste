@@ -10,6 +10,7 @@ PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
 
 #Kinetic Energy Potentials
 PotentialEvaluator("KineticEnergyPotential<2> 2","KineticEnergyPotential_2")
+PotentialEvaluator("KineticEnergyPotential2<2> 2","KineticEnergyPotential2_2")
 PotentialEvaluator("AngularKineticEnergyPotential<2> 2","AngularKineticEnergyPotential_2")
 
 #Length Gauge Laser

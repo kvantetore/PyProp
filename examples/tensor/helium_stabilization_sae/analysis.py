@@ -1,6 +1,7 @@
 import pyprop
 from numpy import *
 import scipy
+from scipy.special import gamma
 
 #---------------------------------------------------------------------------------------
 #            Eigenstate Analysis
@@ -200,6 +201,50 @@ def CalculateEnergyDistribution(psi, eigenValues, eigenVectors, overlap, dE=None
 	interpolateError = totalIon - totalIon2 
 
 	return E, energyDistr
+
+
+def CalculateEnergyDistributionNoSumL(psi, eigenValues, eigenVectors, overlap, dE=None, maxE=None):
+	numL = psi.GetData().shape[0]
+	if not dE:
+		dE = min(diff(sorted(eigenValues[0])))
+	minE = 0
+	if not maxE:
+		maxE = eigenValues[0][3*len(eigenValues[0])/4]
+	E = r_[minE:maxE:dE]
+	#energyDistr = zeros((numL), dtype=complex)
+	#E = zeros((numL), dtype=double)
+	energyDistr = []
+	#E = []
+
+	for l, (curE, curV) in enumerate(zip(eigenValues, eigenVectors)):
+		idx = where(curE>0)[0]
+		curE = curE[idx]
+		curV = curV[:,idx]
+		idx = argsort(curE)
+		curE = curE[idx]
+		curV = curV[:,idx]
+
+		#Get projection on eigenstates
+		psiSlice = psi.GetData()[l, :]
+		overlapPsi = dot(overlap, psiSlice)
+		#proj = abs(dot(conj(curV[:,idx].transpose()), overlapPsi))**2
+		proj = dot(conj(curV[:,idx].transpose()), overlapPsi)
+
+		#Calculate density of states
+		interiorSpacing = list((diff(curE[:-1]) + diff(curE[1:])) / 2.)
+		leftSpacing = (curE[1] - curE[0]) / 2.
+		rightSpacing = (curE[-1] - curE[-2]) / 2.
+		spacing = array([leftSpacing] + interiorSpacing + [rightSpacing])
+		density = sqrt(1.0 / spacing)
+
+		#Interpolate to get equispaced dP/dE
+		#energyDistr.apComplexBivariateInterp(en1[l1], en1[l2], A, E)pend( scipy.interp(E, curE, proj * density, left=0, right=0) )
+
+		curProjInterp = ComplexUnivariateInterp(curE, proj * density, E)
+		energyDistr += [curProjInterp]
+
+	return E, energyDistr
+
 
 def CalculateAngularDistribution(psi, eigenValues, eigenVectors, overlap, interpMethod="polar-square"):
 	dE = maximum(min(diff(eigenValues[0])), 0.1)
@@ -423,3 +468,40 @@ def PlotEnergyDistributionMorten():
 	E0, dpde = numpy.loadtxt("dpde_morten.txt").transpose()
 	plot(E0, dpde, label="morten")
 	return E0, dpde
+
+def GetCoulombPhase(l, eta):
+	sigma = gamma(l + 1 + eta * 1j)
+	return arctan2(sigma.imag, sigma.real)
+
+#---------------------------------------------------------------------------------------
+#            Complex interpolation
+#---------------------------------------------------------------------------------------
+
+
+#interpolate 2D data in polar complex coordinates
+def ComplexBivariateInterp(E1, E2, curProj, interpEnergies):
+	r = abs(curProj)**2
+	i = arctan2(imag(curProj), real(curProj))
+	argr = cos(i)
+	argi = sin(i)
+	interpr = scipy.interpolate.RectBivariateSpline(E1, E2, r, kx=1, ky=1)(interpEnergies, interpEnergies)
+	interpArgR = scipy.interpolate.RectBivariateSpline(E1, E2, argr, kx=1, ky=1)(interpEnergies, interpEnergies)
+	interpArgI = scipy.interpolate.RectBivariateSpline(E1, E2, argi, kx=1, ky=1)(interpEnergies, interpEnergies)
+	interpPhase = (interpArgR + 1.j*interpArgI) / sqrt(interpArgR**2 + interpArgI**2)
+	curInterpProj = sqrt(maximum(interpr, 0)) * interpPhase
+
+	return curInterpProj
+
+#interpolate 1D data in polar complex coordinates
+def ComplexUnivariateInterp(E, curProj, interpEnergies):
+	r = abs(curProj)**2
+	i = arctan2(imag(curProj), real(curProj))
+	argr = cos(i)
+	argi = sin(i)
+	interpr = scipy.interpolate.InterpolatedUnivariateSpline(E, r, k=1)(interpEnergies)
+	interpArgR = scipy.interpolate.InterpolatedUnivariateSpline(E, argr, k=1)(interpEnergies)
+	interpArgI = scipy.interpolate.InterpolatedUnivariateSpline(E, argi, k=1)(interpEnergies)
+	interpPhase = (interpArgR + 1.j*interpArgI) / sqrt(interpArgR**2 + interpArgI**2)
+	curInterpProj = sqrt(maximum(interpr, 0)) * interpPhase
+
+	return curInterpProj
