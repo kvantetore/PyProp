@@ -11,7 +11,7 @@ class AnasaziSolver:
 
 	"""
 
-	def __init__(self, prop):
+	def __init__(self, prop, preconditioner = None):
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
 
@@ -47,7 +47,9 @@ class AnasaziSolver:
 			if configSection.counter_on == True:
 				self.CounterOn = True
 
-		if hasattr(configSection, "preconditioner"):
+		if preconditioner:
+			self.Preconditioner = preconditioner
+		elif hasattr(configSection, "preconditioner"):
 			config = configSection.Config
 			preconditionerName = configSection.preconditioner
 			if preconditionerName:
@@ -56,7 +58,7 @@ class AnasaziSolver:
 				preconditionerSection.Apply(preconditioner)
 				self.Preconditioner = preconditioner
 				self.Preconditioner.SetHamiltonianScaling(1.0)
-				self.Preconditioner.SetOverlapScaling(0)
+				self.Preconditioner.SetOverlapScaling(0.0)
 				self.Preconditioner.Setup(self.BaseProblem.Propagator)
 
 		eigenvalueCount = configSection.krylov_eigenvalue_count

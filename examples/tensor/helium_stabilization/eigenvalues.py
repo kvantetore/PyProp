@@ -125,8 +125,8 @@ def GetBoundstatesFilename(**args):
 
 	#Get custom postfix for filename, if specified
 	customPostfix = ""
-	if hasattr(conf, "Special"):
-		customPostfix = "_%s" % getattr(conf.Special, "custom_postfix", "")
+	#if hasattr(conf, "Special"):
+	#	customPostfix = "_%s" % getattr(conf.Special, "custom_postfix", "")
 
 	#Generate radial and angular postfixes from config
 	radialPostfix = "_".join(GetRadialGridPostfix(**args))
@@ -153,8 +153,33 @@ def RunFindBoundstates(**args):
 		if not os.path.exists(outFolder):
 			os.makedirs(outFolder)
 	outFileName = GetBoundstatesFilename(**args)
-	FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
-			
+	
+	#Determine eigenvalue method
+	conf = SetupConfig(**args)
+	method = conf.Arpack.krylov_method
+
+	if method == "Davidson" and args["useAnasazi"]:
+		FindEigenvaluesDavidson(outFileName=outFileName, **args)
+	else:
+		FindEigenvaluesInverseIterations(outFileName=outFileName, **args)
+
+
+def FindEigenvaluesDavidson(config="config_eigenvalues.ini", \
+	outFileName="out/eig_inverseit.h5", **args):
+	"""
+	Finds a subset of the eigenvalues/eigenvectors using Block-Davidson
+	and saves the result in outFileName
+	"""
+	shift = args.get("shift", -2.9)
+	args.pop("shift")
+	#args["shift"] = shift
+
+	solver, eigenvalues = FindEigenvaluesDavidsonAnasazi(shift, config=config, **args)
+	
+	SaveEigenvaluesDavidson(outFileName, solver, shift)
+
+	return solver
+
 
 def FindEigenvaluesInverseIterations(config="config_eigenvalues.ini", \
 	outFileName="out/eig_inverseit.h5", **args):
@@ -275,6 +300,46 @@ def SaveEigenvalueSolverShiftInvert(filename, solver, shiftInvertSolver, shift):
 			myGroup._v_attrs.orthCount = solver.Solver.GetOrthogonalizationCount()
 		finally:
 			h5file.close()
+
+def SaveEigenvaluesDavidson(filename, solver, shift):
+	"""
+	Saves the output of FindEigenvaluesDavidson to a hdf file.
+	"""
+
+	#Get eigenvalues
+	prop = solver.BaseProblem
+	E = array(solver.GetEigenvalues())
+
+	#remove file if it exists
+	try:
+		if os.path.exists(filename):
+			if pyprop.ProcId == 0:
+				os.remove(filename)
+	except:
+		PrintOut("Could not remove %s (%s)" % (filename, sys.exc_info()[1]))
+
+	#Store eigenvalues and eigenvectors
+	PrintOut("Now storing eigenvectors...")
+	for i in range(len(E)):
+		solver.SetEigenvector(prop.psi, i)
+		prop.SaveWavefunctionHDF(filename, GetEigenvectorDatasetPath(i))
+
+	if pyprop.ProcId == 0:
+		RemoveExistingDataset(filename, "/Eig/Eigenvalues")
+		RemoveExistingDataset(filename, "/Eig/ErrorEstimateListGMRES")
+		RemoveExistingDataset(filename, "/Eig/ErrorEstimateListPIRAM")
+		RemoveExistingDataset(filename, "/Eig/ConvergenceEstimateEig")
+		h5file = tables.openFile(filename, "r+")
+		try:
+			myGroup = h5file.getNode("/Eig")
+			h5file.createArray(myGroup, "Eigenvalues", E)
+
+			#Store config
+			myGroup._v_attrs.configObject = prop.Config.cfgObj
+			
+		finally:
+			h5file.close()
+
 
 #------------------------------------------------------------------------------------
 #                       Eigenvalue Functions not using pyprop
@@ -431,4 +496,40 @@ def FindEigenvaluesNearShiftAnasazi(shift, **args):
 	PrintOut("eigenvalues = %s" % eigenvalues)
 
 	return solver, shiftInvertSolver, eigenvalues
+
+
+def FindEigenvaluesDavidsonAnasazi(shift, **args):
+	"""
+	Calculates eigenvalues and eigenvectors for **args around shift
+	by using Block-Davidson algorithm from Anasazi
+	"""
+	
+	#Setup Problem
+	prop = SetupProblem(silent=True, eigenvalueShift=shift, disablePreconditioner=False, **args)
+
+	#Setup preconditioner
+	preconditionerName = prop.Config.Arpack.preconditioner
+	Preconditioner = None
+	if preconditionerName:
+		preconditionerSection = prop.Config.GetSection(preconditionerName)
+		Preconditioner = preconditionerSection.type(prop.psi)
+		preconditionerSection.Apply(Preconditioner)
+		Preconditioner.SetHamiltonianScaling(1.0)
+		Preconditioner.SetOverlapScaling(-shift)
+		Preconditioner.Setup(prop.Propagator)
+
+	solver = AnasaziSolver(prop, preconditioner=Preconditioner)
+	#solver.ApplyMatrix = lambda src, dst, a, b: solver.Preconditioner.Preconditioner.Multiply(src, dst)
+	solver.Solve()
+	
+	#Get the converged eigenvalues
+	eigenvalues = solver.Solver.GetEigenvalues().copy()
+	PrintOut("eigenvalues = %s" % eigenvalues)
+
+	return solver, eigenvalues
+
+
+
+
+
 
