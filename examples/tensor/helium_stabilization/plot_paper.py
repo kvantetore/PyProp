@@ -12,9 +12,10 @@ energyAvgRadius = 1.0
 #PaperSetOutput("icpeac")
 PaperSetOutput("paper")
 
-InputFolder_1s1s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s"
+InputFolder_1s1s = "output/stabilization-paper-data/figure-data/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s"
 InputFolder_1s1s_cycle10 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax90_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s1s_1/"
-InputFolder_1s1s_cycle20 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax160_xsize30_order5_xpartition10_gamma1.0_angular_lmax5_L0-6_M0_1s1s_1_20cycle/"
+InputFolder_1s1s_cycle20 = "output/stabilization-paper-data/figure-data/freq_5.0_grid_exponentiallinear_xmax160_xsize30_order5_xpartition10_gamma1.0_angular_lmax5_L0-6_M0_1s1s_1_20cycle/"
+InputFolder_1s1s_nor12 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax160_xsize30_order5_xpartition10_gamma1.0_angular_lmax5_L0-6_M0_1s1s_1nor12_afterpulse_propagation/"
 InputFolder_1s2s = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s"
 InputFolder_1s2s_1 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2s_1"
 InputFolder_1s2p_1 = "output/stabilization/freq_5.0_grid_exponentiallinear_xmax80_xsize80_order5_xpartition20_gamma2.0_angular_lmax5_L0-6_M0_1s2p_1"
@@ -31,6 +32,8 @@ def GetInputFilename(experiment, e0):
 		return os.path.join(InputFolder_1s1s_cycle10, "stabilization_I_%i_kb20_dt_1e-02_T_18.8_phase_zero.h5" % e0)
 	if experiment == "1s1s_cycle20":
 		return os.path.join(InputFolder_1s1s_cycle20, "stabilization_I_%s_kb20_dt_1e-02_T_37.7_phase_zero.h5" % e0)
+	if experiment == "1s1s_nor12":
+		return os.path.join(InputFolder_1s1s_nor12, "stabilization_I_%s_kb20_dt_1e-02_T_3.8_phase_zero.h5" % e0)
 	elif experiment == "1s2s":
 		return os.path.join(InputFolder_1s2s, "stabilization_I_%i_kb20_dt_1e-02_T_11.3.h5" % e0)
 	elif experiment == "1s2s_1":
@@ -46,7 +49,7 @@ def GetInputFilename(experiment, e0):
 
 
 def GetSymmetry(experiment):
-	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_cycle20":
+	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_cycle20" or experiment == "1s1s_nor12":
 		return "sym"
 	elif experiment == "1s2s":
 		return "antisym"
@@ -69,7 +72,7 @@ def GetAllExperimentFiles(experiment):
 
 
 def PaperGetBaseEnergy(experiment):
-	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_cycle20":
+	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_cycle20" or experiment == "1s1s_nor12":
 		return 2.903
 	elif experiment == "1s2s":
 		return 2.17
@@ -87,8 +90,10 @@ def PaperGetBaseEnergy(experiment):
 
 def PaperGetDpDOmegaEnergies(experiment):
 	E = array([5*i - PaperGetBaseEnergy(experiment) for i in [1,2,3]])
-	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_cycle20":
+	if experiment == "1s1s" or experiment == "1s1s_cycle10" or experiment == "1s1s_nor12":
 		return zip(["1photon", "2photon", "3photon", "3photon_inv"], [E[0]/2, E[1]/2, E[1]/2, E[1]/2+5], [E[0]/2, E[1]/2, E[1]/2+5, E[1]/2.0])
+	elif experiment == "1s1s_cycle20":
+		return zip(["2photon",], [3.15,], [4.05,])
 	elif experiment == "1s2s":
 		return zip(["2photon", "2photon_inv"], [4.55, 3.28], [3.28, 4.55])
 	elif experiment == "1s2s_1":
@@ -133,7 +138,27 @@ def PaperGetIonization(experiment, e0):
 		f.close()
 
 	return single, double
-		
+
+
+def PaperGetDpDeNormalizationFactor(experiment):
+	if experiment == "1s1s":
+		return 0.00072561123476237374/5.0,
+
+	elif experiment == "1s1s_cycle20":
+		return 0.00072561123476237374/5.0
+	
+	else:
+		return 1.0
+
+
+def PaperGetDpDeVmaxList(experiment):
+	if experiment == "1s1s":
+		return [2.24366662509, 942.434516461, 1213.43592354]
+	elif experiment == "1s1s_cycle20":
+		return [15, None, None]
+	else:
+		return [None, None, None]
+
 
 def PaperMakePlotDpDomega(experiment, e0, energy1, energy2=None, vmin=None, vmax=None):
 	if energy2 == None:
@@ -186,8 +211,10 @@ def PaperMakePlotDpDomegaPolarTimeScan(fileList, thCut, energy1, energy2=None):
 	singleWidth = .025
 	singleSpacing = 0.005
 	
-	lineStyleList = ["-", "--", ":"]
-	colorList = [UiB_Blue, UiB_Green, UiB_Red]
+	#lineStyleList = ["-", "--", ":"]
+	#colorList = [UiB_Blue, UiB_Green, UiB_Red]
+	lineStyleList = ["-", "-", ":"]
+	colorList = [UiB_Blue, UiB_Red, UiB_Green]
 
 	#create figure
 	fig = figure()
@@ -222,8 +249,8 @@ def PaperMakePlotDpDomegaPolarTimeScan(fileList, thCut, energy1, energy2=None):
 		maxValDpDomega = max(max(dp2), maxValDpDomega)
 
 		#plot
-		axMain.plot(th2, dp2, color = curColor, linestyle = curStyle)
-		axMain.plot(-th2, dp2, color = curColor, linestyle = curStyle)
+		axMain.plot(th2, dp2, color = curColor, linestyle = curStyle, linewidth=.5)
+		axMain.plot(-th2, dp2, color = curColor, linestyle = curStyle, linewidth=.5)
 
 	
 	fig.figurePatch.set_alpha(1.0)
@@ -258,7 +285,7 @@ def PaperMakePlotDpDomegaPolar(experiment, thCut, energy1, energy2=None, vmin=No
 	colorList = [UiB_Blue, UiB_Green, UiB_Red]
 	e0List = [1, 10, 20]
 	#e0List = range(1,21)
-	#e0List = [15]
+	#e0List = [1]
 
 	#get photon energy interval
 	limits = [0] + [ 5 * (i+0.5) - PaperGetBaseEnergy(experiment) for i in range(1,5)]
@@ -447,7 +474,7 @@ def _PaperMakePlotDpDeAlt(filename, baseEnergy, e0, photonEnergies, normFactor =
 	energy_single, dpde_single = GetDpDeSingleFromFile(filename)
 
 	#interpolate to get smoother plot
-	energy_double2 = linspace(energy_double[0], energy_double[-1], 512)
+	energy_double2 = linspace(energy_double[0], energy_double[-1], 2048)
 	interp = scipy.interpolate.RectBivariateSpline(energy_double, energy_double, dpde_double, s=0.0)
 	dpde_double2 = interp(energy_double2, energy_double2)
 
@@ -502,7 +529,7 @@ def _PaperMakePlotDpDeAlt(filename, baseEnergy, e0, photonEnergies, normFactor =
 		ytl.set_fontproperties(cbarFont)
 
 	#reposition containers
-	RepositionDpDe(fig, axMain, axLeft, axBottom, axColorbar)
+	#RepositionDpDe(fig, axMain, axLeft, axBottom, axColorbar)
 	
 	draw()
 
@@ -607,9 +634,9 @@ def PaperMakePlotDpDomegaPolarScan(experiment, doClose=True, energyAverage=False
 		rcParams["interactive"] = interactive
 
 
-def PaperMakePlotDpDeScan(experiment):
+def PaperMakePlotDpDeScan(experiment, e0list = [1,10,20]):
 	#e0list = [1,5,10,15,20]
-	e0list = [1,10,20]
+	#e0list = [1,10,20]
 	folder = PaperGetFolder()
 	#single, double = PaperGetIonization(experiment, e0list[0])
 
@@ -618,12 +645,13 @@ def PaperMakePlotDpDeScan(experiment):
 	interactive = rcParams["interactive"]
 	rcParams["interactive"] = False
 
-	normFactors = {'1s1s': 0.00072561123476237374/5.0}
+	normFactor = PaperGetDpDeNormalizationFactor(experiment)
+	vmaxList = PaperGetDpDeVmaxList(experiment)
 
 	try:
-		for e0 in e0list:
+		for i, e0 in enumerate(e0list):
 			#fig, axMain, ax1, ax2 = PaperMakePlotDpDe(experiment, e0, normFactor = double / 5.0)
-			fig, axMain = PaperMakePlotDpDe(experiment, e0, normFactor = normFactors[experiment], plotFunc= _PaperMakePlotDpDeAlt)
+			fig, axMain = PaperMakePlotDpDe(experiment, e0, normFactor = normFactor, plotFunc= _PaperMakePlotDpDeAlt, vmax = vmaxList[i])
 			fig.savefig(os.path.join(folder, "%s_dpde_e0_%i.eps" % (experiment, e0,)), dpi=300)
 			fig.savefig(os.path.join(folder, "%s_dpde_e0_%i.pdf" % (experiment, e0,)), dpi=300)
 			#close(fig)
@@ -679,6 +707,60 @@ def PaperMakePlotIonization(experiment):
 	folder = PaperGetFolder()
 	savefig(os.path.join(folder, "%s_ionization_probability.eps" % experiment), dpi=300)
 	savefig(os.path.join(folder, "%s_ionization_probability.pdf" % experiment), dpi=300)
+
+
+def PaperMakePlotIonizationWithModel(experiment):
+	fileList = GetAllExperimentFiles(experiment)
+	symmetry = GetSymmetry(experiment)
+	e0, single, double = GetIonizationProbabilityScan(fileList, symmetry)
+	#filter
+	idx = find(array(e0) <= PaperMaxE0)
+	e0, single, double = array(e0)[idx], single[idx], double[idx]
+
+	#sae
+	e0_sae, single_sae, double_sae = PaperGetSAEIonization(experiment)
+	single_sae[:] *= 1.0
+	double_sae[:] *= 1.0
+
+	#filter
+	idx = find(e0_sae <= PaperMaxE0)
+	e0_sae, single_sae, double_sae = e0_sae[idx], single_sae[idx], double_sae[idx]
+
+	inter = isinteractive()
+	ioff()
+	try:
+		PaperFigureSettings(FigWidth*1.165, FigWidth)
+		fig = figure()
+		ax = fig.gca()
+		
+		#full calculation
+		ax.plot(e0, single+double, color=UiB_Blue, linestyle="-", linewidth=2*LineWidth, label="Total")
+		ax.plot(e0, double, color=UiB_Green, linestyle="-", linewidth=LineWidth, label="Double")
+		ax.plot(e0, single, color=UiB_Red, linestyle="-", linewidth=LineWidth, label="Single")
+
+		#model
+		ax.plot(e0_sae, single_sae+double_sae, ":", color=UiB_Blue, linewidth=2*LineWidth, label="Total (IEM)")
+		ax.plot(e0_sae, double_sae, ":", color=UiB_Green, linewidth=LineWidth, label="Double (IEM)")
+		ax.plot(e0_sae, single_sae, ":", color=UiB_Red, linewidth=LineWidth, label="Single (IEM)")
+		ax.set_xlim(0,PaperMaxE0)
+		ax.set_ylim(0,1)
+		ax.set_xlabel("Field Strength (a.u.)")
+		ax.set_ylabel("Ionization Probability")
+		#ax.text(10, .2, "Single ionization")
+		#ax.text(10, .6, "Double ionization")
+
+		PaperUpdateFigure(fig)
+		
+		legend(loc="upper left", prop=matplotlib.font_manager.FontProperties(size=3.0))
+		
+		draw()
+		ax.set_position(GetOptimalAxesPosition(fig, ax))
+	finally:
+		interactive(inter)
+	draw()
+	folder = PaperGetFolder()
+	savefig(os.path.join(folder, "%s_ionization_probability_with_model.eps" % experiment), dpi=300)
+	savefig(os.path.join(folder, "%s_ionization_probability_with_model.pdf" % experiment), dpi=300)
 
 
 def PaperMakePlotPartialIonization(experiment):
@@ -751,17 +833,18 @@ def PaperMakePlotPartialIonizationWithModel(experiment):
 		ax.plot(e0, partial[:,0], color=UiB_Green, label="1 photon", linestyle="-", linewidth=GraphLineWidth)
 		ax.plot(e0, partial[:,1], color=UiB_Black, label="2 photon", linestyle="-", linewidth=GraphLineWidth)
 		ax.plot(e0, partial[:,2], color=UiB_Red, label="3 photon", linestyle="-", linewidth=GraphLineWidth)
-		#ax.plot(e0, partial[:,3], color=UiB_Blue, label="4 photon", linestyle=":", linewidth=GraphLineWidth)
+		#ax.plot(e0, partial[:,3], color=UiB_Blue, label="4 photon", linestyle="-", linewidth=GraphLineWidth)
 
 		#scaleFactor = max(partial[:,1]) / max(partialModel[:,0])
-		scaleFactor = max(partial[:,2]) / max(partialModel[:,1])
-		#partialModel[:] *= scaleFactor
-		partialModel[:] *= 1.5
+		#scaleFactor = max(partial[:,2]) / max(partialModel[:,1])
+		scaleFactor = 1.5
+		partialModel[:] *= scaleFactor
 		saeMarker = ""
 		saeLine = ":"
 		ax.plot(e0Model, sum(partialModel, axis=1), color=UiB_Blue, label="Total (SAE)", linestyle=saeLine, marker=saeMarker, linewidth=2*GraphLineWidth, markersize=2)
 		ax.plot(e0Model, partialModel[:,0], color=UiB_Black, label="2 photon (SAE)", marker=saeMarker, linewidth=GraphLineWidth, linestyle=saeLine, markersize=1)
 		ax.plot(e0Model, partialModel[:,1], color=UiB_Red, label="3 photon (SAE)", marker=saeMarker, linestyle=saeLine, linewidth=GraphLineWidth, markersize=1)
+		#ax.plot(e0Model, partialModel[:,2], color=UiB_Orange, label="4 photon (SAE)", marker=saeMarker, linestyle=saeLine, linewidth=GraphLineWidth, markersize=1)
 
 		ax.legend(loc=(.5, .48), numpoints = 2)
 		ax.get_legend().legendPatch.set_visible(False)
@@ -785,7 +868,9 @@ def PaperMakePlotPartialIonizationWithModel(experiment):
 	savefig(os.path.join(folder, "%s_ionization_partial_probability.eps" % experiment), dpi=300)
 	savefig(os.path.join(folder, "%s_ionization_partial_probability.pdf" % experiment), dpi=300)
 
+	idx = argmax(partial[:,1])
 	print "Scaling factor for SAE model results: %s" % scaleFactor
+	print "4-photon / 2-photon ratio (max): %2.2f" % (partial[idx,3]/partial[idx,1] * 100.0)
 
 
 def PaperMakePlotsExperiment(experiment):

@@ -1,10 +1,25 @@
 maxEnergy = 14.0
 energyRes = 0.1
 
+INFOLEVEL = 1
+
+def PrintInfo(str, infolvl=0):
+	def printMsg():
+		print str
+
+	if pyprop.IsMaster() and infolvl >= INFOLEVEL:
+		if pyprop.Redirect.redirect_stdout:
+			pyprop.Redirect.Disable()
+			printMsg()	
+			pyprop.Redirect.Enable(silent=True)
+		else:
+			printMsg()
+
+
 def RunGetDoubleIonizationProbability(fileList, removeBoundStates=True):
 	"""
-	Calculates total and double ionization probability
-	for a list of wavefunction files
+	Calculates total and double ionization probability for a list of wavefunction
+	files. 
 	"""
 
 	#load wavefunction
@@ -31,27 +46,31 @@ def RunGetDoubleIonizationProbability(fileList, removeBoundStates=True):
 	return zip(*map(getIonProb, fileList))
 
 
-def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False):
+def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, removeSingleIonStates=False, filterL=None, silent=False):
 	"""
 	Calculates the double differential energy distribution (dP/dE1 dE2) of the 
-	doubly ionized continuum for a list of wavefunction 
-	files by projecting onto products of single particle states.
+	doubly ionized continuum for a list of wavefunction files by projecting onto 
+	products of single particle states.
+
+	filterL: specifies which L's to include in analysis (None => all)
 	"""
-	
-	#maxE = 4.
-	#dE = 0.005
+	if silent:
+		pyprop.Redirect.Enable(silent=True)
+
 	lmax = 10
 
-	#load wavefunction
+	#load config
 	conf = pyprop.LoadConfigFromFile(fileList[0])
 
 	#load bound states
+	PrintInfo("Loading bound states...")
 	if removeBoundStates:
 		boundEnergies, boundStates = GetBoundStates(config=conf)
 	else:
 		boundEnergies = boundStates = None
 
 	#Get single particle states
+	PrintInfo("Loading single particle states...")
 	isIonized = lambda E: 0.0 < E
 	isFilteredIonized = lambda E: 0.0 < E < maxEnergy
 	isBound = lambda E: E <= 0.
@@ -71,9 +90,22 @@ def RunGetDoubleIonizationEnergyDistribution(fileList, removeBoundStates=True, r
 			RemoveProductStatesProjection(psi, singleBoundStates, singleIonStates)
 			RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
 
+		#Filter wavefunction (on L)
+		if filterL:
+			PrintInfo("    Filtering L's: %s" % ", ".join("%s" % L for L in filterL))
+			lfilter = lambda coupledIndex: coupledIndex.L not in filterL
+			angularIndices = array(GetLocalCoupledSphericalHarmonicIndices(psi, lfilter), dtype=int32)
+			psi.GetData()[angularIndices, :, :] = 0.0
+
 		return GetDoubleIonizationEnergyDistribution(psi, boundStates, doubleIonStates, doubleIonEnergies, energyRes, maxEnergy)
 
+	PrintInfo("Calculating energy distribution...")
 	E, dpde = zip(*map(getdPdE, fileList))
+
+	#Disable redirect
+	if silent:
+		pyprop.Redirect.Disable()
+
 	return E[0], dpde
 
 
@@ -173,7 +205,8 @@ def	GetDoubleIonizationProbability(psi, boundStates, doubleIonStates):
 	populations = GetPopulationProductStates(psi, doubleIonStates, doubleIonStates)
 
 	#Calculate single- and double ionization probability
-	lpop = [sum([p for i1, i2, p in pop if i1<=i2]) for l1, l2, pop in populations]
+	#lpop = [sum([p for i1, i2, p in pop if i1<=i2]) for l1, l2, pop in populations] #WRONG?
+	lpop = [sum([p for i1, i2, p in pop]) for l1, l2, pop in populations]
 	doubleIonizationProbability = sum(lpop)
 	singleIonizationProbability = ionizationProbability - doubleIonizationProbability
 	

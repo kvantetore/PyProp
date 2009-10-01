@@ -17,7 +17,7 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	#Get single particle states
 	isIonized = lambda E: E > 0.0
 	isBound = lambda E: not isIonized(E)
-	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("h", isIonized, config=conf)
 	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
 
 	def getIonProb(filename):

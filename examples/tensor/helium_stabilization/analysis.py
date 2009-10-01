@@ -1,4 +1,7 @@
 from warnings import warn
+import pyprop
+pyprop = reload(pyprop)
+pyprop.ProjectNamespace = globals()
 
 #------------------------------------------------------------------------
 #                Spherical Harmonics (partial waves) analysis
@@ -208,7 +211,7 @@ def RunDoubleIonizationAngularDistributionScan(dE=None, dTheta=None):
 #         Run a series of calculations and save the result
 #------------------------------------------------------------------------
 
-def RunFolderUpdateAnalysis(folder, noOverwrite=False):
+def RunFolderUpdateAnalysis(folder, noOverwrite=False, removeBoundStates=True):
 	"""
 	Checks every folder and subfolder, and updates every h5 file containing a /wavefunction
 	- single ionization dpde, 
@@ -221,12 +224,79 @@ def RunFolderUpdateAnalysis(folder, noOverwrite=False):
 	for dirpath, subfolders, files in os.walk(folder):
 		for file in filter(lambda s: s.endswith(".h5"), files):
 			filename = os.path.join(dirpath, file)
-			RunFileUpdateAnalysis(filename, noOverwrite)
+			RunFileUpdateAnalysis(filename, noOverwrite, removeBoundStates=removeBoundStates)
 			CheckIonizationProbabilitiesConsistensy(filename)
 	
 
+def RunFileUpdateAnalysisIonizationProbability(filename, removeBoundStates=True):
+	"""
+	Updates ionization probability analysis in 'filename' (if it contains a /wavefunction)
+	"""
+	#check file contains wavefunction
+	f = tables.openFile(filename)
+	try:
+		if not "/wavefunction" in f:
+			print "Found no /wavefunction, so I skip this file: %s" % file
+			return
+	finally:
+		f.close()
+	print "Updating analysis for file %s" % (filename, )
+	print "    ionization prob"
+	pyprop.Redirect.Enable(silent=True)
+	(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename], removeBoundStates=removeBoundStates) 
+	pyprop.Redirect.Disable()
 
-def RunFileUpdateAnalysis(filename, noOverwrite=False):
+	print "    saving results"
+	f = tables.openFile(filename, "a")
+	try:
+		attrs = f.root.wavefunction._v_attrs
+		attrs.Absorbed = symProb[0]
+		attrs.Ionization = symProb[1]
+		attrs.SingleIonization = symProb[2]
+		attrs.DoubleIonization = symProb[3]
+		attrs.AntiAbsorbed = antiProb[0]
+		attrs.AntiIonization = antiProb[1]
+		attrs.AntiSingleIonization = antiProb[2]
+		attrs.AntiDoubleIonization = antiProb[3]
+	finally:
+		f.close()
+
+
+def RunFileUpdateAnalysisEnergyDistributionL(filename, removeBoundStates=True, filterL=None):
+	"""
+	Updates double ionization energy distribution analysis for given L's 
+	in 'filename' (if it contains a /wavefunction).
+	"""
+	#check file contains wavefunction
+	f = tables.openFile(filename)
+	try:
+		if not "/wavefunction" in f:
+			print "Found no /wavefunction, so I skip this file: %s" % file
+			return
+	finally:
+		f.close()
+
+	#Perform analysis
+	print "Updating analysis for file %s" % (filename, )
+	print "    dP/dE (double)"
+	pyprop.Redirect.Enable(silent=True)
+	e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename], removeBoundStates=removeBoundStates, filterL=filterL)
+	pyprop.Redirect.Disable()
+
+	#Save results
+	print "    saving results"
+	nodeName = "dpde_double_L_%s" % "_".join("%s" % L for L in filterL)
+	f = tables.openFile(filename, "a")
+	try:
+		if nodeName in f.root:
+			f.removeNode(f.root, nodeName, recursive=True)
+		f.createArray(f.root, nodeName, dp2)
+		f.setNodeAttr("/%s" % nodeName, "energy", e2)
+	finally:
+		f.close()
+
+
+def RunFileUpdateAnalysis(filename, noOverwrite=False, removeBoundStates=True):
 	"""
 	Updates 'filename' (if it contains a /wavefunction):
 	- single ionization dpde, 
@@ -240,7 +310,7 @@ def RunFileUpdateAnalysis(filename, noOverwrite=False):
 		if not "/wavefunction" in f:
 			print "Found no /wavefunction, so I skip this file: %s" % file
 			return
-		if "/dpdomega_double" in f and noOverwrite:
+		if "/dpdomega_double_coplanar" in f and noOverwrite:
 			print "Skipping this file: %s" % filename
 			return
 	finally:
@@ -249,23 +319,23 @@ def RunFileUpdateAnalysis(filename, noOverwrite=False):
 	print "Updating analysis for file %s" % (filename, )
 	print "    ionization prob"
 	pyprop.Redirect.Enable(silent=True)
-	(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename]) 
+	(symProb,), (antiProb,) = RunGetSingleIonizationProbability([filename], removeBoundStates=removeBoundStates) 
 	pyprop.Redirect.Disable()
 	print "    dP/dOmega (double)"
 	pyprop.Redirect.Enable(silent=True)
-	e1, th1, (dp1_avg,), (dp1_coplanar,) = RunGetDoubleIonizationAngularDistribution([filename])
+	e1, th1, (dp1_avg,), (dp1_coplanar,) = RunGetDoubleIonizationAngularDistribution([filename], removeBoundStates=removeBoundStates)
 	pyprop.Redirect.Disable()
 	print "    dP/dE (double)"
 	pyprop.Redirect.Enable(silent=True)
-	e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename])
+	e2, (dp2,) = RunGetDoubleIonizationEnergyDistribution([filename], removeBoundStates=removeBoundStates)
 	pyprop.Redirect.Disable()
 	print "    dP/dE (single)"
 	pyprop.Redirect.Enable(silent=True)
-	e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename])
+	e3, (dp3,) = RunGetSingleIonizationEnergyDistribution([filename], removeBoundStates=removeBoundStates)
 	pyprop.Redirect.Disable()
 	print "    dP/dOmega (single)"
 	pyprop.Redirect.Enable(silent=True)
-	e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename])
+	e4, th4, (dp4,) = RunGetSingleIonizationAngularDistribution([filename], removeBoundStates=removeBoundStates)
 	pyprop.Redirect.Disable()
 
 	print "    saving results"
@@ -708,12 +778,29 @@ def RemoveProductStatesProjection(psi, singleStates1, singleStates2):
 			#Remove projection for every combination of v1 and v2
 			projV = RemoveProjectionRadialProductStates(l1, V1, l2, V2, data, angularIndices, psi.GetData())
 
-
 	return population
 
 
+def RunRemoveSingleIonizedStates(psi, conf):
+	#Get single particle states
+	isIonized = lambda E: E > 0.0
+	isBound = lambda E: not isIonized(E)
+	singleIonEnergies, singleIonStates = GetFilteredSingleParticleStates("he", isIonized, config=conf)
+	singleBoundEnergies, singleBoundStates = GetFilteredSingleParticleStates("he+", isBound, config=conf)
+
+	projList = RemoveProductStatesProjection(psi, singleIonStates, singleBoundStates)
+
+
+def RunRemoveBoundAndSingleIonStates(wavefunctionFile):
+	conf, psi = conf, psi = RunRemoveBoundStateProjection(wavefunctionFile)
+	RunRemoveSingleIonizedStates(psi, conf)
+
+	return conf, psi
+
+
+
 #------------------------------------------------------------------------
-#                        Product state model ionization probabilities
+#                        Product state model stuff
 #------------------------------------------------------------------------
 def GetProductStateModelIonizationProbabilities(modelFirstElectron, modelSecondElectron):
 	"""
@@ -724,6 +811,53 @@ def GetProductStateModelIonizationProbabilities(modelFirstElectron, modelSecondE
 #		singleIon, 
 
 
+def SetupWavefunctionFromSAE(inputFile, outputFile):
+	#Get radial representation parameters from input file
+	updateElements = ['xmin', 'xmax', 'xsize', 'gamma', 'joinpoint', 'xpartition', 'bpstype', 'continuity', 'order']
+	h5in = tables.openFile(inputFile)
+	try:
+		cfgObj = h5in.root.wavefunction._v_attrs.configObject
+	finally:
+		h5in.close()
+	radialSection = pyprop.Section("RadialRepresentation", cfgObj)
+
+	#Setup config with radial params from input
+	conf = SetupConfig(config="config_sae_model.ini")
+	for key in updateElements:
+		conf.SetValue("RadialRepresentation", key, radialSection.Get(key))
+	#conf.RadialRepresentation = radialSection
+
+	#Setup wavefunction
+	psi = pyprop.CreateWavefunction(conf)
+	psi.Clear()
+
+	#Load SAE wavefunction
+	h5in = tables.openFile(inputFile)
+	psiSAEData = h5in.root.wavefunction[:]
+	h5in.close()
+
+	#Put radial data into full wavefunction
+	for li in range(psiSAEData.shape[0]):
+		curSAEi = psiSAEData[li,:]
+
+		for lj in range(psiSAEData.shape[0]):
+			curSAEj = psiSAEData[lj, :]
+
+			#Determine which angular indices of psi corresponds to this l
+			angIt = conf.AngularRepresentation.index_iterator
+			angIdx = [i for i, (l1,l2,L,M) in enumerate(angIt) if l1 == li and l2 == lj]
+
+			#Store in appropriate slice of psi
+			psi.GetData()[angIdx, :, :] = outer(curSAEi, curSAEj)
+
+	#Normalize psi
+	#psi.Normalize()
+	
+	#Store psi and config obj
+	pyprop.serialization.SaveWavefunctionHDF(outputFile, "/wavefunction", psi)
+	pyprop.serialization.SaveConfigObject(outputFile, "/wavefunction", conf)
+
+	
 
 #------------------------------------------------------------------------
 #                        Misc analysis functions

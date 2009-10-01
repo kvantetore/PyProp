@@ -1,4 +1,5 @@
 import matplotlib
+matplotlib.rcParams['verbose.level'] = 'debug-annoying'
 #matplotlib.use("qtagg")
 matplotlib.use("agg")
 from matplotlib.transforms import Bbox
@@ -21,7 +22,7 @@ GraphLineWidth = None
 FontSize = None
 PaperMaxE0 = None
 PaperFigureFont = None 
-FontFamily = "Times New Roman"
+FontFamily = ["Times New Roman", "serif"]
 GradientFile = "gradient_uib.txt"
 
 PlotOutputPaper = "paper"
@@ -42,7 +43,7 @@ def PaperSetOutput(plotOutput, polar=False):
 		if polar:
 			FontSize = 6
 		PaperMaxE0 = 35
-		PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize)
+		PaperFigureFont = matplotlib.font_manager.FontProperties(family=FontFamily, size=FontSize, weight='light')
 
 
 	elif plotOutput == PlotOutputIcpeac:

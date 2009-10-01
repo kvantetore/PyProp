@@ -313,8 +313,8 @@ def CalculatePartialIonizationProbabilityScan(fileList, limits):
 	for filename in fileList:
 		f = tables.openFile(filename)
 		try:
-			energy_double = f.root.dpde_double._v_attrs.energy
-			dpde_double = f.root.dpde_double[:]
+			energy_double = f.root.dpde_double_L_1._v_attrs.energy
+			dpde_double = f.root.dpde_double_L_1[:]
 			
 			a0 = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "amplitude")
 			frequency = f.root.wavefunction._v_attrs.configObject.get("PulseParameters", "frequency")
