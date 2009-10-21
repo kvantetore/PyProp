@@ -19,9 +19,11 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_RefCountPtr.hpp>
 
-#ifndef SINGLEPROC
+#ifdef EPETRA_MPI
 #include <mpi.h>
 #include <Epetra_MpiComm.h>
+#else
+#include <Epetra_SerialComm.h>
 #endif
 
 /*

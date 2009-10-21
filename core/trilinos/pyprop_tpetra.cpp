@@ -3,11 +3,11 @@
 
 #include <Teuchos_OpaqueWrapper.hpp>
 
-#ifndef SINGLEPROC
+#ifdef EPETRA_MPI
 #include <mpi.h>
 #include <Teuchos_DefaultMpiComm.hpp>
 #else
-#include <Teuchos_DefaultSerialCommn.hpp>
+#include <Teuchos_DefaultSerialComm.hpp>
 #endif
 
 
@@ -21,7 +21,7 @@ template<int Rank>
 Tpetra_Comm_Ptr CreateDistributedModelTpetraComm(typename DistributedModel<Rank>::Ptr distr)
 {
 	using namespace Teuchos;
-#ifndef SINGLEPROC
+#ifdef EPETRA_MPI
 	//should get MPI_COMM from distributed model
 	return RCP< MpiComm<int> >( new MpiComm<int>(opaqueWrapper(MPI_COMM_WORLD)) );
 #else

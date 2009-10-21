@@ -10,11 +10,14 @@ endif
 ifeq ($(PYPROP_USE_RUNGEKUTTA),1)
 SUBDIRS := $(SUBDIRS) runge-kutta
 endif
+ifeq ($(PYPROP_USE_TRILINOS),1)
+SUBDIRS := $(SUBDIRS) trilinos/wrappers
+endif
 
 #A small rule to compile only a selected few pyste files
 #TESTFILES :=  python/blitzblas.pyste
 #TESTFILES :=  python/tensorpotential.pyste
-TESTFILES :=  python/staticpotential.pyste
+TESTFILES :=  python/sphericalharmonicselectionrule.pyste
 
 #TESTFILES :=  python/distributedmodel.pyste
 BSPLINEREPFILES := python/bspline/bsplinerepresentation.pyste

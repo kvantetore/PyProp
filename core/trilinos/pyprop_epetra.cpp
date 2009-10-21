@@ -9,7 +9,7 @@
 template<int Rank>
 Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr)
 {
-#ifndef SINGLEPROC
+#ifdef EPETRA_MPI
 	//should get MPI_COMM from distributed model
 	return shared_ptr<Epetra_MpiComm>( new Epetra_MpiComm(MPI_COMM_WORLD) );
 #else

@@ -64,6 +64,12 @@ except:
 	#print "Warning: could not load Runge-Kutta wrapper (%s)" % sys.exc_info()[1]
 	pass
 
+try:
+	from libtrilinos import *
+except:
+	#print "Warning: could not load Trilinos wrapper (%s)" % sys.exc_info()[1]
+	pass
+
 
 def EnumerateRankClasses(baseName):
 	for className, classObject in dict(globals()).iteritems():
