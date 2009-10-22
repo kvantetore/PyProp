@@ -11,7 +11,9 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 	if removeBoundStates:
 		boundEnergies, boundStates = GetBoundStates(config=conf)
 	else:
-		boundEnergies = boundStates = None
+		boundEnergies = [0]
+		gsPsi = pyprop.CreateWavefunctionFromFile(GroundstateFilename(config=conf), "/wavefunction")
+		boundStates = [gsPsi]
 
 	#Get single particle states for odd/even symmetry
 	isEven = lambda v: not (abs(sum([a+b for a,b in zip(v, reversed(v))])) < 1e-12)
@@ -32,6 +34,9 @@ def RunGetSingleIonizationProbability(fileList, removeBoundStates=True):
 		antiProb = GetSingleIonizationProbability(anti, boundStates, singleBoundStatesEven, singleBoundStatesOdd, singleIonStatesEven, singleIonEnergiesEven, singleIonStatesOdd, singleIonEnergiesOdd)
 		return (symProb, antiProb)
 
+	print
+	print len(fileList)
+	print
 	return zip(*map(getIonProb, fileList))
 
 

@@ -68,6 +68,38 @@ public:
 };
 
 template<int Rank>
+class DipoleLaserPotentialLength1D : public PotentialBase<Rank>
+{
+public:
+	//Required by DynamicPotentialEvaluator
+	cplx TimeStep;
+	double CurTime;
+
+	//Potential parameters
+	double Charge;
+
+	/*
+	 * Called once with the corresponding config section
+	 * from the configuration file. Do all one time set up routines
+	 * here.
+	 */
+	void ApplyConfigSection(const ConfigSection &config)
+	{
+		config.Get("charge", Charge);
+	}
+
+	/*
+	 * Called for every grid point at every time step. 
+	 */
+	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos)
+	{
+		double z = pos(0);
+		return -Charge * z;
+	}
+};
+
+
+template<int Rank>
 class SoftCoulombPotential : public PotentialBase<Rank>
 {
 public:

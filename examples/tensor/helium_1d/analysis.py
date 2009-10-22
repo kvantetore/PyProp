@@ -321,7 +321,7 @@ def CalculatePopulationProductStates(V1, V2, psiData):
 	popList = []
 	for i1 in range(numStates1):
 		for i2 in range(numStates2):
-			popList += [[i1, i2, 2 * real(populations[i1,i2])]]
+			popList += [[i1, i2, real(populations[i1,i2])]]
 
 	return popList
 
@@ -426,5 +426,41 @@ def TPDICrossSection(freq, pulseDuration, E0, ionProb):
 	Calculate two-photon double ionization cross section
 	"""
 	tau = 35.0 / 128.0 * pulseDuration
-	crossSection = (freq / E0**2)**2 * ionProb / tau
+
+	#Calculated from I0 = 1/2 * eps_0 * c * E0**2
+	I0 = units.constantsAU.lightSpeed / (8 * pi) * E0**2
+
+	crossSection = (freq / I0)**2 * ionProb / tau
 	return crossSection
+
+
+def TPDICrossSectionScan(fileList, removeBoundStates=True):
+	"""
+	Calculate two-photon double ionization cross section from
+	files in fileList
+	"""
+	crossSectionList = []
+	#Get ionization probabilities
+	ionProbList = RunGetSingleIonizationProbability(fileList, removeBoundStates=removeBoundStates)
+
+	#Get pulse frequency and duration
+	freqList = []
+	pulseDurationList = []
+	amplitude = float(pyprop.serialization.GetConfigFromHDF5(fileList[0]).get("PulseParameters", "amplitude"))
+	for file in fileList:
+		h5file = tables.openFile(file, "r")
+		try:
+			cfg = pyprop.serialization.GetConfigFromHDF5(file)
+			freqList += [float(cfg.get("PulseParameters", "frequency"))]
+			pulseDurationList += [eval(cfg.get("PulseParameters", "pulse_duration"))]
+		finally:
+			h5file.close()
+
+	for i, curIon in enumerate(ionProbList[0]):
+		ionProb = curIon[3]
+		#E0 = freqList[i] * amplitude
+		E0 = amplitude
+		crossSection = TPDICrossSection(freqList[i], pulseDurationList[i], E0, ionProb)
+		crossSectionList += [crossSection]
+
+	return freqList, crossSectionList

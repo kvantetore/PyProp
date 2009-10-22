@@ -17,3 +17,5 @@ PotentialEvaluator("SoftCoulombPotential1D<1> 1","SoftCoulombPotential1D_1")
 #Two-electron correlation
 PotentialEvaluator("TwoElectronCorrelation1D<2> 2","TwoElectronCorrelation1D_2")
 
+#1D laser potentail
+PotentialEvaluator("DipoleLaserPotentialLength1D<1> 1","DipoleLaserPotentialLength_1")
