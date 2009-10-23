@@ -1,6 +1,6 @@
 class TwoElectronPreconditioner:
 	"""
-	Preconditioner for GMRES for solving systems of the type
+	Preconditioner for iterative solvers of linear equations,
 
 	(1)     (a H + b S) x = y  ->  x
 
@@ -59,7 +59,6 @@ class TwoElectronPreconditioner:
 			tensorPotential.PotentialData += potential.PotentialData
 			del potential
 		pyprop.PrintMemoryUsage("After Preconditioner Generate Potentials")
-
 	
 		#Setup solvers
 		tensorPotential.SetupStep(0.0)

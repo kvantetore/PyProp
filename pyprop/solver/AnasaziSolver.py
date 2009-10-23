@@ -6,11 +6,10 @@ from pyprop.core import AnasaziSolver_1, AnasaziSolver_2, AnasaziSolver_3
 
 class AnasaziSolver:
 	"""
-	Pyprop wrapper for Anasazi, a trilinos eigensolver package
+	Pyprop wrapper for Anasazi, a Trilinos eigensolver package.
 	
 	It works by using the matrix-vector product functionality of the Problem-object
 	supplied in the constructor
-
 	"""
 
 	def __init__(self, prop, preconditioner = None):
@@ -22,23 +21,18 @@ class AnasaziSolver:
 
 		#Set up Anasazi Solver
 		self.Solver = CreateInstanceRank("AnasaziSolver", self.Rank, globals())
-
 		configSection = prop.Config.Anasazi
 		configSection.Apply(self.Solver)
+		self.Solver.Setup(prop.psi)
 
+		#Check for inverse iterations
 		useInverseIterations = False
 		if hasattr(configSection, "inverse_iterations"):
 			useInverseIterations = configSection.inverse_iterations
 
+		#Do we have a generalized eigenvalue problem?
 		generalizedEigenvalueProblem = configSection.generalized_eigenvalue_problem
-		
-		#matrixSize = prop.psi.GetData().size
-		#basisSize = configSection.krylov_basis_size
-		#memoryUsage = self.Solver.EstimateMemoryUsage(matrixSize, basisSize)
-		#if ProcId == 0:
-		#	print "Approximate pIRAM memory usage = %.2fMB" % memoryUsage
-		self.Solver.Setup(prop.psi)
-
+	
 		self.Debug = False
 		if hasattr(configSection, "krylov_debug"):
 			if configSection.krylov_debug == True:	
@@ -90,57 +84,30 @@ class AnasaziSolver:
 		else:
 			precCallback = None
 
-		#self.Solver.Solve(self.__MatVecCallback, precCallback, self.__OverlapCallback, psi, tempPsi)
 		self.Solver.Solve(self.__MatVecCallback, precCallback, self.__OverlapCallback, psi, tempPsi)
-		print "DONE!"
+
 
 	def __PreconditionCallback(self, srcPsi, dstPsi):
 		dstPsi.GetData()[:] = srcPsi.GetData()
 		self.Preconditioner.Solve(dstPsi)
 
+
 	def __OverlapCallback(self, srcPsi, dstPsi):
 		dstPsi.GetData()[:] = srcPsi.GetData()
 		dstPsi.GetRepresentation().MultiplyOverlap(dstPsi)
 
+
 	def __MatVecCallback(self, psi, tempPsi):
-		#self.BaseProblem.Propagator.MultiplyHamiltonianBalancedOverlap(tempPsi, 0, 0)
-		#self.BaseProblem.Propagator.MultiplyHamiltonian(psi, tempPsi, 0, 0)
-
 		self.ApplyMatrix(psi, tempPsi, 0, 0)
-
 		self.Count += 1
-#		if self.Debug and ProcId == 0:
-#			if self.Count % 100 == 0:
-#				print ""
-#				print "Count = ", self.Count
-#				print "EV = ", real(self.Solver.GetEigenvalues())
-#				print "Error = ", self.Solver.GetErrorEstimates()
-#				print "Convergence = ", self.Solver.GetConvergenceEstimates()
-#
-#		if self.CounterOn and ProcId == 0:
-#
-#			if self.Count == 1:
-#				infoStr = "Progress:   0 %"
-#				sys.stdout.write(infoStr)
-#				sys.stdout.flush()
-#		
-#			if (self.Count * 100) % self.TotalMaxIterations == 0:
-#				backStr = "\b" * 30
-#				
-#				convergenceCriteria = self.Solver.GetConvergenceEstimates()
-#				total = len(convergenceCriteria)
-#				converged = len(where(convergenceCriteria<0)[0])
-#
-#				infoStr =  "Progress: %3i %s (%i/%i)" % ((self.Count * 100)/ self.TotalMaxIterations, "%", converged, total)
-#				sys.stdout.write(backStr + infoStr)
-#				sys.stdout.flush()
-#
+
 
 	def GetEigenvalues(self):
 		"""
-		Returns the real part of all the converged eigenvalues from pIRAM
+		Returns the real part of all the converged eigenvalues from Anasazi
 	    """
 		return self.Solver.GetEigenvalues().real.copy()
+
 
 	def GetEigenvector(self, index):
 		"""
@@ -155,6 +122,7 @@ class AnasaziSolver:
 		psi.Normalize()
 		"""
 		return self.Solver.GetEigenvector(index)
+
 
 	def SetEigenvector(self, psi, eigenvectorIndex, normalize=True):
 		"""

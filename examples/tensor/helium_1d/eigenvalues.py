@@ -95,15 +95,20 @@ def SaveEigenvectors(filename, solver):
 #------------------------------------------------------------------------------------
 #                     Find eigenpairs using Anasazi
 #------------------------------------------------------------------------------------
-from pyprop.core import IfpackRadialPreconditioner_2, AnasaziSolver_2
+from pyprop.core import IfpackRadialPreconditioner_2
 from pyprop import AnasaziSolver
-pyprop.ProjectNamespace = globals()
-
 
 def FindEigenvaluesDavidsonAnasazi(shift, **args):
 	"""
 	Calculates eigenvalues and eigenvectors for **args around shift
-	by using Block-Davidson algorithm from Anasazi
+	by using Block-Davidson algorithm from Anasazi. 
+	
+	The Davidson method performs much better with a preconditioner,
+	and if one is specified in the config file (Propagation.preconditioner),
+	it will be set up and used here.
+
+		shift: Shift to use in the preconditioner. Value should be close to
+		       the desired eigenvalue.
 	"""
 	
 	#Setup Problem
