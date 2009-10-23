@@ -1,6 +1,8 @@
 import sys
 
 from pyprop import CreateInstanceRank, ProcId
+from pyprop.core import AnasaziSolver_1, AnasaziSolver_2, AnasaziSolver_3
+
 
 class AnasaziSolver:
 	"""
@@ -18,10 +20,10 @@ class AnasaziSolver:
 		#Create a copy of the wavefunction to calculate H|psi>
 		self.TempPsi = prop.psi.CopyDeep()
 
-		#Set up pIRAM Solver
+		#Set up Anasazi Solver
 		self.Solver = CreateInstanceRank("AnasaziSolver", self.Rank, globals())
 
-		configSection = prop.Config.Arpack
+		configSection = prop.Config.Anasazi
 		configSection.Apply(self.Solver)
 
 		useInverseIterations = False

@@ -28,6 +28,7 @@ execfile("analysis_double.py")
 execfile("analysis_eigenvalues.py")
 execfile("eigenvalues.py")
 execfile("../helium_stabilization/constants.py")
+execfile("preconditioner.py")
 
 #------------------------------------------------------------------------------------
 #                       Setup Functions
