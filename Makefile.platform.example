@@ -40,7 +40,7 @@ BOOST_LIBS     := -lboost_python-mt
 #Trilinos
 TRILINOS_ROOT  := /opt/trilinos
 CPPFLAGS       := $(CPPFLAGS) -I$(TRILINOS_ROOT)/include -DPYPROP_USE_TRILINOS
-LDFLAGS        := $(LDFLAGS) -L$(TRILINOS_ROOT)/lib -lepetra -lteuchos -lifpack
+LDFLAGS        := $(LDFLAGS) -L$(TRILINOS_ROOT)/lib -lepetra -lteuchos -lifpack -lanasazi
 
 
 #pyste flags (use bundled pyste)
@@ -63,6 +63,7 @@ PYPROP_USE_BSPLINE := 1
 PYPROP_USE_RUNGEKUTTA := 1
 PYPROP_USE_PAMP    := 1
 PYPROP_USE_GMRES   := 1
+PYPROP_USE_TRILINOS := 1
 
 #set whether we are building a static pyprop or not. currently static building only works on hex
 PYPROP_STATIC := 0
