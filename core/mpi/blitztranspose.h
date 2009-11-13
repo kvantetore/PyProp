@@ -275,9 +275,10 @@ public:
 		return GetGlobalSumImpl(localValue, procRank);
 	}
 
-	ProcVectorComm GetGroupComm()
+	MPI_Comm GetGroupCommRank(int rank)
 	{
-		return GroupComm;
+		assert(rank < ProcRank);
+		return GroupComm(rank);
 	}
 
 };

@@ -28,19 +28,30 @@ template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<4>(DistributedModel<4>
  * Creates an Epetra_Comm object from a DistributedModel.
  *
  *   distr: Distributed model in use (possible multi-dim proc grid)
- *   procRank: which rank of processor grid to use when creating Epetra comm.
+ *   rank: which rank in the wavefunction to use when creating Epetra comm. If this rank is
+ *         not distributed, we return a SerialComm for now.
+ *
  */
 template<int Rank>
-Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr, int procRank)
+Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr, int wavefunctionRank)
 {
 
 #ifdef EPETRA_MPI
 
 	typedef blitz::Array<MPI_Comm, 1> ProcVectorComm;
 
-	//get MPI_COMM from distributed model, for given proc grid rank
-	ProcVectorComm groupComm = distr->GetTranspose()->GetGroupComm();
-	return shared_ptr<Epetra_MpiComm>( new Epetra_MpiComm( groupComm(procRank) ) );
+	//Check if wavefunctionRank is distributed; otherwise no communication is needed
+	if (distr->IsDistributedRank(wavefunctionRank))
+	{
+		//get MPI_COMM from distributed model, for given proc grid rank
+		MPI_Comm groupCommRank = distr->GetGroupCommRank(wavefunctionRank);
+		return shared_ptr<Epetra_MpiComm>( new Epetra_MpiComm(groupCommRank) );
+	}
+	else
+	{
+		return shared_ptr<Epetra_SerialComm>( new Epetra_SerialComm() );
+	}
+	
 
 #else
 	assert(distr->IsSingleProc());

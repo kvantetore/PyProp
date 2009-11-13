@@ -17,6 +17,7 @@ void DistributedOverlapMatrix<Rank>::MultiplyOverlapRank(Wavefunction<Rank> &src
 	assert(opRank > -1);
 
 	//Assert non-orthogonal rank opRank
+	assert (srcPsi.GetRepresentation()->IsOrthogonalBasis(opRank));
 
 	//Create Epetra map for this rank
 	typename Wavefunction<Rank>::Ptr tmpPsi = srcPsi.Copy();
@@ -89,12 +90,9 @@ void DistributedOverlapMatrix<Rank>::MultiplyOverlapRank(Wavefunction<Rank> &src
 			cout << "Wavefunction Map " << *wavefunctionMap << endl;
 			cout << endl;
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 
-	MPI_Barrier(MPI_COMM_WORLD);
-	
 	int globalStartRow = wavefunctionMap->MinMyGID();
 	int globalEndRow = wavefunctionMap->MaxMyGID();
 	for (int i=globalStartRow; i<=globalEndRow; i++)
@@ -142,4 +140,3 @@ template class DistributedOverlapMatrix<1>;
 template class DistributedOverlapMatrix<2>;
 template class DistributedOverlapMatrix<3>;
 template class DistributedOverlapMatrix<4>;
-

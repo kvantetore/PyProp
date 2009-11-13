@@ -5,6 +5,8 @@
 #include "../wavefunction.h"
 #include "distribution.h"
 
+#include <mpi.h>
+
 //Forward declaration of arraytranspose
 template<int Rank> class ArrayTranspose;
 
@@ -116,6 +118,8 @@ public:
 
 	bool IsDistributedRank(int rank);
 	void ChangeDistribution(Wavefunction<Rank> &psi, const Distribution::DataArray &newDistrib, int destBufferName);
+
+	MPI_Comm GetGroupCommRank(int rank);
 
 	static void InitMPI(int argc, char* argv[]);
 	static void FinalizeMPI();

@@ -131,6 +131,33 @@ bool DistributedModel<Rank>::IsDistributedRank(int rank)
 	return false;
 }
 
+/*
+ * Get MPI communicator group for a wavefunction rank (rank)
+ */
+template<int Rank>
+MPI_Comm DistributedModel<Rank>::GetGroupCommRank(int rank)
+{
+	//Sanity check: rank should be distributed
+	assert (IsDistributedRank(rank));
+
+	//Get rank in proc grid corresponding to wavefunction rank
+	Distribution::DataArray distrib(CurrentDistribution->GetDistribution());
+	int procRank = -1;
+	for (int i=0; i<CurrentDistribution->GetProcRank(); i++)
+	{
+		if (rank == distrib(i))
+		{
+			procRank = i;
+		}
+	}
+	
+	//What?!
+	assert (procRank >= 0);
+	
+	//Return rank-specific MPI communicator group from ArrayTranspose
+	return Transpose->GetGroupCommRank(procRank);
+}
+
 
 /* Performs the necessary communication with the other processes to change the distribution
  * of the wavefunction
