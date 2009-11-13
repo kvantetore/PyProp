@@ -12,8 +12,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_orthopolpotentials()
 {
-    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,1> >("RankOnePotentialEvaluator_AddedHermitePotential_1_1", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedHermitePotential<1>,1>& >())
+    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,1>, boost::noncopyable >("RankOnePotentialEvaluator_AddedHermitePotential_1_1", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedHermitePotential<1>,1>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,1>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,1>::MultiplyPotential)
@@ -21,8 +20,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedHermitePotential<1>,1>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,2> >("RankOnePotentialEvaluator_AddedHermitePotential_1_2", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedHermitePotential<1>,2>& >())
+    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,2>, boost::noncopyable >("RankOnePotentialEvaluator_AddedHermitePotential_1_2", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedHermitePotential<1>,2>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,2>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,2>::MultiplyPotential)
@@ -30,8 +28,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedHermitePotential<1>,2>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,3> >("RankOnePotentialEvaluator_AddedHermitePotential_1_3", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedHermitePotential<1>,3>& >())
+    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,3>, boost::noncopyable >("RankOnePotentialEvaluator_AddedHermitePotential_1_3", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedHermitePotential<1>,3>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,3>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,3>::MultiplyPotential)
@@ -39,8 +36,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedHermitePotential<1>,3>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,4> >("RankOnePotentialEvaluator_AddedHermitePotential_1_4", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedHermitePotential<1>,4>& >())
+    class_< RankOnePotentialEvaluator<AddedHermitePotential<1>,4>, boost::noncopyable >("RankOnePotentialEvaluator_AddedHermitePotential_1_4", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedHermitePotential<1>,4>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,4>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedHermitePotential<1>,4>::MultiplyPotential)
@@ -48,8 +44,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedHermitePotential<1>,4>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1> >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_1", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>& >())
+    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>, boost::noncopyable >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_1", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>::MultiplyPotential)
@@ -57,8 +52,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,1>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2> >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_2", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>& >())
+    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>, boost::noncopyable >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_2", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>::MultiplyPotential)
@@ -66,8 +60,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,2>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3> >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_3", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>& >())
+    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>, boost::noncopyable >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_3", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>::MultiplyPotential)
@@ -75,8 +68,7 @@ void Export_python_orthopolpotentials()
         .def("CalculateExpectationValue", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,3>::CalculateExpectationValue)
     ;
 
-    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4> >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_4", init<  >())
-        .def(init< const RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4>& >())
+    class_< RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4>, boost::noncopyable >("RankOnePotentialEvaluator_AddedLaguerrePotential_1_4", no_init)
         .def("ApplyConfigSection", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4>::ApplyConfigSection)
         .def("ApplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4>::ApplyPotential)
         .def("MultiplyPotential", &RankOnePotentialEvaluator<AddedLaguerrePotential<1>,4>::MultiplyPotential)

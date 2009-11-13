@@ -14,8 +14,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_orthopolrepresentation()
 {
-    class_< OrthoPol::Parameter >("OrthoPolParameter", init<  >())
-        .def(init< const OrthoPol::Parameter& >())
+    class_< OrthoPol::Parameter, boost::noncopyable >("OrthoPolParameter", no_init)
         .def_readwrite("Type", &OrthoPol::Parameter::Type)
         .def_readwrite("Scaling", &OrthoPol::Parameter::Scaling)
         .def_readwrite("HypersphericalRank", &OrthoPol::Parameter::HypersphericalRank)
@@ -26,8 +25,7 @@ void Export_python_orthopolrepresentation()
         .value("HermitePolynomial", OrthoPol::HermitePolynomial)
     ;
 
-    class_< OrthoPol::OrthoPolRange >("OrthoPolRange", init<  >())
-        .def(init< const OrthoPol::OrthoPolRange& >())
+    class_< OrthoPol::OrthoPolRange, boost::noncopyable >("OrthoPolRange", init<  >())
         .def(init< const OrthoPol::Parameter&, int >())
         .def_readwrite("Count", &OrthoPol::OrthoPolRange::Count)
         .def_readwrite("Param", &OrthoPol::OrthoPolRange::Param)

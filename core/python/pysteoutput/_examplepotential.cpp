@@ -12,8 +12,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_examplepotential()
 {
-    class_< DynamicPotentialEvaluator<DipoleElectricPulse<1>,1> >("DynamicPotentialEvaluator_DipoleElectricPulse_1_1", init<  >())
-        .def(init< const DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>& >())
+    class_< DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>, boost::noncopyable >("DynamicPotentialEvaluator_DipoleElectricPulse_1_1", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>::MultiplyPotential)
@@ -23,8 +22,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<DipoleElectricPulse<1>,1>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<DipoleElectricPulse<2>,2> >("DynamicPotentialEvaluator_DipoleElectricPulse_2_2", init<  >())
-        .def(init< const DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>& >())
+    class_< DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>, boost::noncopyable >("DynamicPotentialEvaluator_DipoleElectricPulse_2_2", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>::MultiplyPotential)
@@ -34,8 +32,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<DipoleElectricPulse<2>,2>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<DipoleElectricPulse<3>,3> >("DynamicPotentialEvaluator_DipoleElectricPulse_3_3", init<  >())
-        .def(init< const DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>& >())
+    class_< DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>, boost::noncopyable >("DynamicPotentialEvaluator_DipoleElectricPulse_3_3", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>::MultiplyPotential)
@@ -45,8 +42,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<DipoleElectricPulse<3>,3>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<DipoleElectricPulse<4>,4> >("DynamicPotentialEvaluator_DipoleElectricPulse_4_4", init<  >())
-        .def(init< const DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>& >())
+    class_< DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>, boost::noncopyable >("DynamicPotentialEvaluator_DipoleElectricPulse_4_4", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>::MultiplyPotential)
@@ -56,8 +52,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<DipoleElectricPulse<4>,4>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1> >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_1_1", init<  >())
-        .def(init< const DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>& >())
+    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>, boost::noncopyable >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_1_1", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>::MultiplyPotential)
@@ -67,8 +62,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<1>,1>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2> >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_2_2", init<  >())
-        .def(init< const DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>& >())
+    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>, boost::noncopyable >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_2_2", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>::MultiplyPotential)
@@ -78,8 +72,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<2>,2>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3> >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_3_3", init<  >())
-        .def(init< const DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>& >())
+    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>, boost::noncopyable >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_3_3", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>::MultiplyPotential)
@@ -89,8 +82,7 @@ void Export_python_examplepotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<3>,3>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4> >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_4_4", init<  >())
-        .def(init< const DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4>& >())
+    class_< DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4>, boost::noncopyable >("DynamicPotentialEvaluator_HarmonicOscillatorPotential_4_4", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<HarmonicOscillatorPotential<4>,4>::MultiplyPotential)

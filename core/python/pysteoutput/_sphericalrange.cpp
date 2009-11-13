@@ -14,8 +14,7 @@ using namespace boost::python;
 void Export_python_sphericalrange()
 {
     scope* OmegaRange_scope = new scope(
-    class_< OmegaRange >("OmegaRange", init<  >())
-        .def(init< const OmegaRange& >())
+    class_< OmegaRange, boost::noncopyable >("OmegaRange", init<  >())
         .def_readwrite("Type", &OmegaRange::Type)
         .def_readwrite("MaxL", &OmegaRange::MaxL)
         .def("SetupRange", &OmegaRange::SetupRange)
@@ -33,8 +32,7 @@ void Export_python_sphericalrange()
 
     delete OmegaRange_scope;
 
-    class_< LmRange >("LmRange", init<  >())
-        .def(init< const LmRange& >())
+    class_< LmRange, boost::noncopyable >("LmRange", init<  >())
         .def(init< int >())
         .def_readwrite("MaxL", &LmRange::MaxL)
         .def("Count", &LmRange::Count)

@@ -29,6 +29,9 @@ struct CoupledSphericalSelectionRule_Wrapper: CoupledSphericalSelectionRule
 
 struct CoupledSphericalSelectionRuleR12_Wrapper: CoupledSphericalSelectionRuleR12
 {
+    CoupledSphericalSelectionRuleR12_Wrapper(PyObject* py_self_):
+        CoupledSphericalSelectionRuleR12(), py_self(py_self_) {}
+
     CoupledSphericalSelectionRuleR12_Wrapper(PyObject* py_self_, int p0):
         CoupledSphericalSelectionRuleR12(p0), py_self(py_self_) {}
 
@@ -103,7 +106,8 @@ void Export_python_coupledsphericalselectionrule()
         .def("GetBasisPairs", &CoupledSphericalSelectionRule::GetBasisPairs)
     ;
 
-    class_< CoupledSphericalSelectionRuleR12, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleR12_Wrapper >("CoupledSphericalSelectionRuleR12", init< int >())
+    class_< CoupledSphericalSelectionRuleR12, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleR12_Wrapper >("CoupledSphericalSelectionRuleR12", init<  >())
+        .def(init< int >())
         .def_readwrite("cg", &CoupledSphericalSelectionRuleR12::cg)
         .def("SelectionRule", (bool (CoupledSphericalSelectionRuleR12::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&) )&CoupledSphericalSelectionRuleR12::SelectionRule, (bool (CoupledSphericalSelectionRuleR12_Wrapper::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&))&CoupledSphericalSelectionRuleR12_Wrapper::default_SelectionRule)
     ;

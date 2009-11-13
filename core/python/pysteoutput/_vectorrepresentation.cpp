@@ -51,15 +51,13 @@ void Export_python_vectorrepresentation()
     register_ptr_to_python< boost::shared_ptr< VectorRepresentation > >();
     delete VectorRepresentation_scope;
 
-    class_< SparseMatrixPotentialEvaluator >("SparseMatrixPotentialEvaluator", init<  >())
-        .def(init< const SparseMatrixPotentialEvaluator& >())
+    class_< SparseMatrixPotentialEvaluator, boost::noncopyable >("SparseMatrixPotentialEvaluator", no_init)
         .def("SetMatrixData", &SparseMatrixPotentialEvaluator::SetMatrixData)
         .def("MultiplyPotential", &SparseMatrixPotentialEvaluator::MultiplyPotential)
         .def("CalculateExpectationValue", &SparseMatrixPotentialEvaluator::CalculateExpectationValue)
     ;
 
-    class_< DenseMatrixPotentialEvaluator<1> >("DenseMatrixPotentialEvaluator_1", init<  >())
-        .def(init< const DenseMatrixPotentialEvaluator<1>& >())
+    class_< DenseMatrixPotentialEvaluator<1>, boost::noncopyable >("DenseMatrixPotentialEvaluator_1", init<  >())
         .def("GetEigenvectors", &DenseMatrixPotentialEvaluator<1>::GetEigenvectors)
         .def("GetEigenvalues", &DenseMatrixPotentialEvaluator<1>::GetEigenvalues)
         .def("GetMatrixData", &DenseMatrixPotentialEvaluator<1>::GetMatrixData)
@@ -72,8 +70,7 @@ void Export_python_vectorrepresentation()
         .def("ApplyPotential", &DenseMatrixPotentialEvaluator<1>::ApplyPotential)
     ;
 
-    class_< DenseMatrixPotentialEvaluator<2> >("DenseMatrixPotentialEvaluator_2", init<  >())
-        .def(init< const DenseMatrixPotentialEvaluator<2>& >())
+    class_< DenseMatrixPotentialEvaluator<2>, boost::noncopyable >("DenseMatrixPotentialEvaluator_2", init<  >())
         .def("GetEigenvectors", &DenseMatrixPotentialEvaluator<2>::GetEigenvectors)
         .def("GetEigenvalues", &DenseMatrixPotentialEvaluator<2>::GetEigenvalues)
         .def("GetMatrixData", &DenseMatrixPotentialEvaluator<2>::GetMatrixData)
@@ -86,8 +83,7 @@ void Export_python_vectorrepresentation()
         .def("ApplyPotential", &DenseMatrixPotentialEvaluator<2>::ApplyPotential)
     ;
 
-    class_< DenseMatrixPotentialEvaluatorOld >("DenseMatrixPotentialEvaluatorOld", init<  >())
-        .def(init< const DenseMatrixPotentialEvaluatorOld& >())
+    class_< DenseMatrixPotentialEvaluatorOld, boost::noncopyable >("DenseMatrixPotentialEvaluatorOld", no_init)
         .def("SetMatrixData", &DenseMatrixPotentialEvaluatorOld::SetMatrixData)
         .def("MultiplyPotential", &DenseMatrixPotentialEvaluatorOld::MultiplyPotential)
         .def("CalculateExpectationValue", &DenseMatrixPotentialEvaluatorOld::CalculateExpectationValue)

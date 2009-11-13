@@ -17,8 +17,7 @@ void Export_python_exponentialfinitediff()
     def("EXPFD_UpdateEigenvectors", &EXPFD_UpdateEigenvectors);
     def("EXPFD_UpdateBlock", &EXPFD_UpdateBlock);
     def("EXPFD_UpdateDiagonal", &EXPFD_UpdateDiagonal);
-    class_< ExponentialFiniteDifferenceEvaluator<HarmonicOscillatorPotential<1>,1> >("ExponentialFiniteDifferenceEvaluator_HarmonicOscillatorPotential_1_1", init<  >())
-        .def(init< const ExponentialFiniteDifferenceEvaluator<HarmonicOscillatorPotential<1>,1>& >())
+    class_< ExponentialFiniteDifferenceEvaluator<HarmonicOscillatorPotential<1>,1>, boost::noncopyable >("ExponentialFiniteDifferenceEvaluator_HarmonicOscillatorPotential_1_1", no_init)
         .def_readwrite("strength", &HarmonicOscillatorPotential<1>::strength)
         .def_readwrite("CurTime", &PotentialBase<1>::CurTime)
         .def_readwrite("TimeStep", &PotentialBase<1>::TimeStep)

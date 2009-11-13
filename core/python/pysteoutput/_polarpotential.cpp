@@ -12,8 +12,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_polarpotential()
 {
-    class_< DynamicPotentialEvaluator<PolarKineticPotential<2>,2> >("PolarKineticPotential_2", init<  >())
-        .def(init< const DynamicPotentialEvaluator<PolarKineticPotential<2>,2>& >())
+    class_< DynamicPotentialEvaluator<PolarKineticPotential<2>,2>, boost::noncopyable >("PolarKineticPotential_2", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<PolarKineticPotential<2>,2>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<2>,2>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<2>,2>::MultiplyPotential)
@@ -23,8 +22,7 @@ void Export_python_polarpotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<PolarKineticPotential<2>,2>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<PolarKineticPotential<3>,3> >("PolarKineticPotential_3", init<  >())
-        .def(init< const DynamicPotentialEvaluator<PolarKineticPotential<3>,3>& >())
+    class_< DynamicPotentialEvaluator<PolarKineticPotential<3>,3>, boost::noncopyable >("PolarKineticPotential_3", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<PolarKineticPotential<3>,3>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<3>,3>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<3>,3>::MultiplyPotential)
@@ -34,8 +32,7 @@ void Export_python_polarpotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<PolarKineticPotential<3>,3>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<PolarKineticPotential<4>,4> >("PolarKineticPotential_4", init<  >())
-        .def(init< const DynamicPotentialEvaluator<PolarKineticPotential<4>,4>& >())
+    class_< DynamicPotentialEvaluator<PolarKineticPotential<4>,4>, boost::noncopyable >("PolarKineticPotential_4", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<PolarKineticPotential<4>,4>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<4>,4>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<PolarKineticPotential<4>,4>::MultiplyPotential)

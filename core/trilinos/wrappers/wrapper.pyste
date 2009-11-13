@@ -1,9 +1,17 @@
-Solver = Template("AnasaziSolver", "anasaziwrapper.h")
-Solver("1")
-Solver("2")
-Solver("3")
+#Solver = Template("AnasaziSolver", "anasaziwrapper.h")
+#Solver("1")
+#Solver("2")
+#Solver("3")
 
 IfPack = Template("IfpackRadialPreconditioner", "ifpackwrapper.h")
 IfPack("1")
 IfPack("2")
 IfPack("3")
+
+
+Include("../pyprop_epetra.cpp")
+module_code('def("CreateTensorPotentialEpetraMatrix_1", CreateTensorPotentialEpetraMatrix<1>);\n')
+module_code('def("CreateTensorPotentialEpetraMatrix_2", CreateTensorPotentialEpetraMatrix<2>);\n')
+module_code('def("CreateTensorPotentialEpetraMatrix_3", CreateTensorPotentialEpetraMatrix<3>);\n')
+module_code('def("CreateTensorPotentialEpetraMatrix_4", CreateTensorPotentialEpetraMatrix<4>);\n')
+

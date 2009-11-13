@@ -12,8 +12,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_reducedsphericalkineticpotential()
 {
-    class_< DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2> >("ReducedAngularKineticEnergyPotential_2", init<  >())
-        .def(init< const DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>& >())
+    class_< DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>, boost::noncopyable >("ReducedAngularKineticEnergyPotential_2", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>::MultiplyPotential)
@@ -23,8 +22,7 @@ void Export_python_reducedsphericalkineticpotential()
         .def("CalculateExpectationValue", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<2>,2>::CalculateExpectationValue)
     ;
 
-    class_< DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3> >("ReducedAngularKineticEnergyPotential_3", init<  >())
-        .def(init< const DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3>& >())
+    class_< DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3>, boost::noncopyable >("ReducedAngularKineticEnergyPotential_3", init<  >())
         .def("ApplyConfigSection", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3>::ApplyConfigSection)
         .def("ApplyPotential", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3>::ApplyPotential)
         .def("MultiplyPotential", &DynamicPotentialEvaluator<ReducedAngularKineticEnergyPotential<3>,3>::MultiplyPotential)

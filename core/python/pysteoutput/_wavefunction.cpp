@@ -69,8 +69,7 @@ void (Wavefunction<4>::*Wavefunction_4___AllocateData)()  = &Wavefunction<4>::Al
 void Export_python_wavefunction()
 {
     scope* Wavefunction_1_scope = new scope(
-    class_< Wavefunction<1> >("Wavefunction_1", init<  >())
-        .def(init< const Wavefunction<1>& >())
+    class_< Wavefunction<1>, boost::noncopyable >("Wavefunction_1", init<  >())
         .def_readwrite("Data", &Wavefunction<1>::Data)
         .def("SetRepresentation", &Wavefunction<1>::SetRepresentation)
         .def("GetRepresentation", &Wavefunction<1>::GetRepresentation)
@@ -103,8 +102,7 @@ void Export_python_wavefunction()
     delete Wavefunction_1_scope;
 
     scope* Wavefunction_2_scope = new scope(
-    class_< Wavefunction<2> >("Wavefunction_2", init<  >())
-        .def(init< const Wavefunction<2>& >())
+    class_< Wavefunction<2>, boost::noncopyable >("Wavefunction_2", init<  >())
         .def_readwrite("Data", &Wavefunction<2>::Data)
         .def("SetRepresentation", &Wavefunction<2>::SetRepresentation)
         .def("GetRepresentation", &Wavefunction<2>::GetRepresentation)
@@ -137,8 +135,7 @@ void Export_python_wavefunction()
     delete Wavefunction_2_scope;
 
     scope* Wavefunction_3_scope = new scope(
-    class_< Wavefunction<3> >("Wavefunction_3", init<  >())
-        .def(init< const Wavefunction<3>& >())
+    class_< Wavefunction<3>, boost::noncopyable >("Wavefunction_3", init<  >())
         .def_readwrite("Data", &Wavefunction<3>::Data)
         .def("SetRepresentation", &Wavefunction<3>::SetRepresentation)
         .def("GetRepresentation", &Wavefunction<3>::GetRepresentation)
@@ -171,8 +168,7 @@ void Export_python_wavefunction()
     delete Wavefunction_3_scope;
 
     scope* Wavefunction_4_scope = new scope(
-    class_< Wavefunction<4> >("Wavefunction_4", init<  >())
-        .def(init< const Wavefunction<4>& >())
+    class_< Wavefunction<4>, boost::noncopyable >("Wavefunction_4", init<  >())
         .def_readwrite("Data", &Wavefunction<4>::Data)
         .def("SetRepresentation", &Wavefunction<4>::SetRepresentation)
         .def("GetRepresentation", &Wavefunction<4>::GetRepresentation)

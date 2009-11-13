@@ -443,7 +443,7 @@ cplx CombinedRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, co
 		//Copy data from old buffer to work buffer
 		psiLeft->GetData()(blitz::Range::all()) = psiLeft->GetData(oldNameLeft)(blitz::Range::all());
 
-
+		//Similar procedure for "right" wavefunction
 		int nameRight = psiRight->GetAvailableDataBufferName(psiRight->GetData().shape());
 		if (nameRight == -1)
 		{
@@ -463,7 +463,8 @@ cplx CombinedRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, co
 
 		//Calculate inner product by overlap of the vectors
 		cplx innerProduct = VectorInnerProduct(psiLeft->GetData(oldNameLeft), psiRight->GetData(nameRight));
-
+		
+		//Unlock and restore original buffers
 		psiRight->UnLockBuffer(oldNameRight);
 		psiRight->SetActiveBuffer(oldNameRight);
 		psiLeft->UnLockBuffer(oldNameLeft);

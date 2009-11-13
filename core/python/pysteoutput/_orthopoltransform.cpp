@@ -12,8 +12,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_orthopoltransform()
 {
-    class_< OrthoPol::Propagator<1> >("OrthoPolPropagator_1", init<  >())
-        .def(init< const OrthoPol::Propagator<1>& >())
+    class_< OrthoPol::Propagator<1>, boost::noncopyable >("OrthoPolPropagator_1", no_init)
         .def("ApplyConfigSection", &OrthoPol::Propagator<1>::ApplyConfigSection)
         .def("Setup", &OrthoPol::Propagator<1>::Setup)
         .def("AdvanceStep", &OrthoPol::Propagator<1>::AdvanceStep)
@@ -24,8 +23,7 @@ void Export_python_orthopoltransform()
         .def("GetEigenvalues", &OrthoPol::Propagator<1>::GetEigenvalues)
     ;
 
-    class_< OrthoPol::Propagator<2> >("OrthoPolPropagator_2", init<  >())
-        .def(init< const OrthoPol::Propagator<2>& >())
+    class_< OrthoPol::Propagator<2>, boost::noncopyable >("OrthoPolPropagator_2", no_init)
         .def("ApplyConfigSection", &OrthoPol::Propagator<2>::ApplyConfigSection)
         .def("Setup", &OrthoPol::Propagator<2>::Setup)
         .def("AdvanceStep", &OrthoPol::Propagator<2>::AdvanceStep)
@@ -36,8 +34,7 @@ void Export_python_orthopoltransform()
         .def("GetEigenvalues", &OrthoPol::Propagator<2>::GetEigenvalues)
     ;
 
-    class_< OrthoPol::Propagator<3> >("OrthoPolPropagator_3", init<  >())
-        .def(init< const OrthoPol::Propagator<3>& >())
+    class_< OrthoPol::Propagator<3>, boost::noncopyable >("OrthoPolPropagator_3", no_init)
         .def("ApplyConfigSection", &OrthoPol::Propagator<3>::ApplyConfigSection)
         .def("Setup", &OrthoPol::Propagator<3>::Setup)
         .def("AdvanceStep", &OrthoPol::Propagator<3>::AdvanceStep)
@@ -48,8 +45,7 @@ void Export_python_orthopoltransform()
         .def("GetEigenvalues", &OrthoPol::Propagator<3>::GetEigenvalues)
     ;
 
-    class_< OrthoPol::Propagator<4> >("OrthoPolPropagator_4", init<  >())
-        .def(init< const OrthoPol::Propagator<4>& >())
+    class_< OrthoPol::Propagator<4>, boost::noncopyable >("OrthoPolPropagator_4", no_init)
         .def("ApplyConfigSection", &OrthoPol::Propagator<4>::ApplyConfigSection)
         .def("Setup", &OrthoPol::Propagator<4>::Setup)
         .def("AdvanceStep", &OrthoPol::Propagator<4>::AdvanceStep)

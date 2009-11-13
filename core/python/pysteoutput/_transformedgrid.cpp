@@ -15,8 +15,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_transformedgrid()
 {
-    class_< TransformedGrid::Parameter >("TransformedGridParameter", init<  >())
-        .def(init< const TransformedGrid::Parameter& >())
+    class_< TransformedGrid::Parameter, boost::noncopyable >("TransformedGridParameter", init<  >())
         .def_readwrite("Type", &TransformedGrid::Parameter::Type)
         .def_readwrite("Range", &TransformedGrid::Parameter::Range)
         .def_readwrite("Scaling", &TransformedGrid::Parameter::Scaling)
@@ -33,8 +32,7 @@ void Export_python_transformedgrid()
         .value("TransformRangeCartesian", TransformedGrid::TransformRangeCartesian)
     ;
 
-    class_< TransformedRange >("TransformedRange", init<  >())
-        .def(init< const TransformedRange& >())
+    class_< TransformedRange, boost::noncopyable >("TransformedRange", init<  >())
         .def(init< const TransformedGrid::Parameter&, int >())
         .def_readwrite("Count", &TransformedRange::Count)
         .def_readwrite("Param", &TransformedRange::Param)
@@ -54,8 +52,7 @@ void Export_python_transformedgrid()
         .def("GetGlobalOverlapMatrix", &OrthogonalRepresentation::GetGlobalOverlapMatrix)
     ;
 
-    class_< TransformedGrid::Propagator<1> >("TransformedGridPropagator_1", init<  >())
-        .def(init< const TransformedGrid::Propagator<1>& >())
+    class_< TransformedGrid::Propagator<1>, boost::noncopyable >("TransformedGridPropagator_1", no_init)
         .def("ApplyConfigSection", &TransformedGrid::Propagator<1>::ApplyConfigSection)
         .def("Setup", &TransformedGrid::Propagator<1>::Setup)
         .def("AdvanceStep", &TransformedGrid::Propagator<1>::AdvanceStep)
@@ -66,8 +63,7 @@ void Export_python_transformedgrid()
         .def("GetEigenvalues", &TransformedGrid::Propagator<1>::GetEigenvalues)
     ;
 
-    class_< TransformedGrid::Propagator<2> >("TransformedGridPropagator_2", init<  >())
-        .def(init< const TransformedGrid::Propagator<2>& >())
+    class_< TransformedGrid::Propagator<2>, boost::noncopyable >("TransformedGridPropagator_2", no_init)
         .def("ApplyConfigSection", &TransformedGrid::Propagator<2>::ApplyConfigSection)
         .def("Setup", &TransformedGrid::Propagator<2>::Setup)
         .def("AdvanceStep", &TransformedGrid::Propagator<2>::AdvanceStep)
@@ -78,8 +74,7 @@ void Export_python_transformedgrid()
         .def("GetEigenvalues", &TransformedGrid::Propagator<2>::GetEigenvalues)
     ;
 
-    class_< TransformedGrid::Propagator<3> >("TransformedGridPropagator_3", init<  >())
-        .def(init< const TransformedGrid::Propagator<3>& >())
+    class_< TransformedGrid::Propagator<3>, boost::noncopyable >("TransformedGridPropagator_3", no_init)
         .def("ApplyConfigSection", &TransformedGrid::Propagator<3>::ApplyConfigSection)
         .def("Setup", &TransformedGrid::Propagator<3>::Setup)
         .def("AdvanceStep", &TransformedGrid::Propagator<3>::AdvanceStep)

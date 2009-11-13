@@ -14,7 +14,7 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_sphericaltransform()
 {
-    class_< SphericalTransformTensorGrid, boost::noncopyable >("SphericalTransformTensorGrid", init<  >())
+    class_< SphericalTransformTensorGrid, boost::noncopyable >("SphericalTransformTensorGrid", no_init)
         .def("GenerateThetaQuadrature", &SphericalTransformTensorGrid::GenerateThetaQuadrature)
         .def("EvaluateAssociatedLegendrePolynomials", &SphericalTransformTensorGrid::EvaluateAssociatedLegendrePolynomials)
         .def("GetLMax", &SphericalTransformTensorGrid::GetLMax)

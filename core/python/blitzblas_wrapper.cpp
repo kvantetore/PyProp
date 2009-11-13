@@ -5,6 +5,7 @@
 
 // Includes ====================================================================
 #include <utility/blitzblas.h>
+#include <utility/matrix_conversion.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -65,6 +66,7 @@ void ExportBlitzBlas()
 	def("MatrixVectorMultiplyHermitianBanded", MatrixVectorMultiplyHermitianBanded_cplx);
 	def("MatrixVectorMultiplyBanded", MatrixVectorMultiplyBanded_cplx);
 #endif
+	def("ConvertMatrixBlasBandedToFull", ConvertMatrixBlasBandedToFull);
 	//def("VectorElementMultiply_1", VectorElementMultiply<1>);
 	//def("VectorInnerProduct_1", VectorInnerProduct<1>);
 }
