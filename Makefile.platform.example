@@ -73,7 +73,7 @@ ARPACK_LIB        = /opt/ARPACK/libparpack.a /opt/ARPACK/libarpack.a -lmpi_f77 -
 
 #fortran flags
 FC             := mpif90
-FORTRAN_FLAGS  := -ffree-form -implicit-none -ffree-line-length-none -fPIC -O3 -g -Wall
+FORTRAN_FLAGS  := -ffree-form -fimplicit-none -ffree-line-length-none -fPIC -O3 -g -Wall
 FORTRAN_FLAGS  := $(FORTRAN_FLAGS) -fbounds-check 
 FORTRAN_LIBS   := -lmpi_f90 -lmpi_f77 -lgfortran
 

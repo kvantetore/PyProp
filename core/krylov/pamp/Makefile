@@ -46,10 +46,12 @@ clean:
 	rm -f arpacktest
 	rm -rf .deps
 	mkdir .deps
-	rm -rf wrapper.cpp
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
 	rm -rf $(STATICFILE)
+
+pyclean:
+	rm -rf wrapper.cpp
 
 #autodependencies
 DEPDIR        = .deps

@@ -52,10 +52,12 @@ $(ODE_LIB): ode.f
 clean:
 	rm -rf .deps
 	mkdir .deps
-	rm -rf wrapper.cpp
 	rm -rf *.o
 	rm -rf $(STATICFILE)
 	rm -rf $(MODULEFILE)
+
+pyclean:
+	rm -rf wrapper.cpp
 
 #autodependencies
 DEPDIR        = .deps

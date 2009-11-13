@@ -27,9 +27,11 @@ wrapper.cpp: wrapper.pyste
 clean:
 	rm -rf .deps
 	mkdir .deps
-	rm -rf wrapper.cpp
 	rm -rf *.o
 	rm -rf $(MODULEFILE)
+
+pyclean:
+	rm -rf wrapper.cpp
 
 #autodependencies
 DEPDIR        = .deps
