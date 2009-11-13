@@ -185,7 +185,7 @@ template Epetra_Vector_Ptr CreateWavefunctionEpetraView<3>(Wavefunction<3>::Ptr 
 template Epetra_Vector_Ptr CreateWavefunctionEpetraView<4>(Wavefunction<4>::Ptr psi, Epetra_Map& wavefunctionMap);
 
 /*
- * Crates a distributed Epetra_FECrsMatrix from a tensor potential
+ * Creates a distributed Epetra_FECrsMatrix from a tensor potential
  */
 template<int Rank> 
 Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(typename Wavefunction<Rank>::Ptr psi, blitz::Array<cplx, Rank> potentialData, list pyLocalBasisPairs, double cutoff)
@@ -216,14 +216,38 @@ template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix<4>(Wavefunctio
 
 
 /*
- * Crates a Epetra_FECrsMatrix from a tensor potential
+ * Creates a Epetra_FECrsMatrix from a tensor potential
  */
 template<int Rank> 
-Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff)
+Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff, bool globalAssemble)
 {
-	double sqrCutoff = sqr(cutoff);
-
 	Epetra_FECrsMatrix_Ptr matrix( new Epetra_FECrsMatrix(Copy, processorMap, 0) );
+
+	CopyTensorPotentialToEpetraMatrix(matrix, potentialData, pyLocalBasisPairs, globalStrides, cutoff);
+
+	if (globalAssemble)
+	{
+		matrix->GlobalAssemble();
+	}
+
+	return matrix;
+}
+template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, 1> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 1> globalStrides, double cutoff, bool globalAssemble);
+template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, 2> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 2> globalStrides, double cutoff, bool globalAssemble);
+template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, 3> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 3> globalStrides, double cutoff, bool globalAssemble);
+template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, 4> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 4> globalStrides, double cutoff, bool globalAssemble);
+
+/*
+ * Copy data from tensor potential to already existing Epetra matrix
+ */
+template<int Rank> 
+void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blitz::Array<cplx, Rank> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff)
+{
+	blitz::Array<int, 2> indexArray;
+	indexArray.resize(4 * potentialData.size(), 2);
+	indexArray = -100;
+
+	double sqrCutoff = sqr(cutoff);
 
 	//Setup structures for calculating matrix row/col indices from the 
 	//basis pairs in the tensor potential
@@ -264,29 +288,33 @@ Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMa
 		{
 			int r,c;
 			r = 2*globalRow; c = 2*globalCol;
-			matrix->InsertGlobalValues(r, 1, &realVal, &c);
+			indexArray(4*linearCount, 0) = r;
+			indexArray(4*linearCount, 1) = c;
+			epetraMatrix->InsertGlobalValues(r, 1, &realVal, &c);
 			r++; c++;
-			matrix->InsertGlobalValues(r, 1, &realVal, &c);
+			epetraMatrix->InsertGlobalValues(r, 1, &realVal, &c);
+			indexArray(4*linearCount+1, 0) = r;
+			indexArray(4*linearCount+1, 1) = c;
 		}
 		if (sqr(imagVal) > sqrCutoff)
 		{
 			int r,c;
-			r = 2*globalRow+1; c = 2*globalCol;
-			matrix->InsertGlobalValues(r, 1, &imagVal, &c);
+			r = 2*globalRow; c = 2*globalCol+1;
+			indexArray(4*linearCount+2, 0) = r;
+			indexArray(4*linearCount+2, 1) = c;
+			epetraMatrix->InsertGlobalValues(r, 1, &imagVal, &c);
 			imagVal = -imagVal;
-			matrix->InsertGlobalValues(c, 1, &imagVal, &r);
+			epetraMatrix->InsertGlobalValues(c, 1, &imagVal, &r);
+			indexArray(4*linearCount+3, 0) = c;
+			indexArray(4*linearCount+3, 1) = r;
 		}
 		++it;	
 	}
-
-	matrix->GlobalAssemble();
-	
-	return matrix;
 }
-template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix<1>(Epetra_Map &processorMap, blitz::Array<cplx, 1> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 1> globalStrides, double cutoff);
-template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix<2>(Epetra_Map &processorMap, blitz::Array<cplx, 2> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 2> globalStrides, double cutoff);
-template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix<3>(Epetra_Map &processorMap, blitz::Array<cplx, 3> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 3> globalStrides, double cutoff);
-template Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix<4>(Epetra_Map &processorMap, blitz::Array<cplx, 4> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 4> globalStrides, double cutoff);
+template void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blitz::Array<cplx, 1> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 1> globalStrides, double cutoff);
+template void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blitz::Array<cplx, 2> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 2> globalStrides, double cutoff);
+template void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blitz::Array<cplx, 3> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 3> globalStrides, double cutoff);
+template void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blitz::Array<cplx, 4> potentialData, list pyLocalBasisPairs, blitz::TinyVector<int, 4> globalStrides, double cutoff);
 
 
 #endif // use trilinos

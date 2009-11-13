@@ -58,7 +58,16 @@ template<int Rank>
 Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(typename Wavefunction<Rank>::Ptr psi, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, double cutoff);
 
 template<int Rank> 
-Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff);
+Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff)
+{
+	return CreateTensorPotentialEpetraMatrix(processorMap, potentialData, pyLocalBasisPairs, globalStrides, true);	
+}
+
+template<int Rank> 
+Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff, bool globalAssemble);
+
+template<int Rank> 
+void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff);
 
 
 #endif // use trilinos
