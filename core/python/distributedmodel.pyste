@@ -10,6 +10,8 @@ if not '-DSINGLEPROC' in sys.argv:
 	use_shared_ptr(AT_3)
 	use_shared_ptr(AT_4)
 
+exclude(DistributedModel.GetGroupCommRank)
+
 DistributedModel = Template("DistributedModel", "mpi/distributedmodel.h")
 DM_1 = DistributedModel("1")
 DM_2 = DistributedModel("2")

@@ -6,6 +6,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+//Forward declaration of distributedoverlapmatrix
+template<int Rank> class DistributedOverlapMatrix;
+
 typedef Representation<1>::Ptr Representation1DPtr;
 
 template<int Rank>
@@ -15,11 +18,15 @@ public:
 	typedef blitz::Array<cplx, Rank> DataArray;
 
 private:
+	typedef shared_ptr< DistributedOverlapMatrix<Rank> > DistributedOverlapPtr;
+
 	//Variables
 	blitz::TinyVector<Representation1DPtr, Rank> Representations;
 
 	cplx InnerProductImpl_Algo1(DataArray d1, DataArray d2);
 	cplx InnerProductImpl_Algo2(DataArray d1, DataArray d2);
+
+	DistributedOverlapPtr DistributedOverlap;
 
 public:
 	typedef shared_ptr< CombinedRepresentation<Rank> > Ptr;
@@ -58,6 +65,7 @@ public:
 	virtual void SolveOverlap(Wavefunction<Rank> &psi);
 	virtual void MultiplySqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
 	virtual void SolveSqrtOverlap(bool conjugate, Wavefunction<Rank> &psi);
+
 };
 
 #endif

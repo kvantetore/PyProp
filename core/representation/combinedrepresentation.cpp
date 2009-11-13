@@ -2,11 +2,13 @@
 #include "cartesianrepresentation.h"
 #include "../utility/blitztricks.h"
 #include "../utility/blitzblas.h"
+#include "distributedoverlapmatrix.h"
 
 template<int Rank>
 CombinedRepresentation<Rank>::CombinedRepresentation() 
 {
-	Algorithm = 3;
+	DistributedOverlap = typename DistributedOverlapMatrix<Rank>::Ptr(new DistributedOverlapMatrix<Rank>());
+	Algorithm = 4;
 }
 
 template<int Rank>
@@ -103,7 +105,14 @@ void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank>
 	}
 	else
 	{
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+		if (this->GetDistributedModel()->IsDistributedRank(rank))
+		{
+			DistributedOverlap->MultiplyOverlapRank(srcPsi, dstPsi, rank, true);
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+		}
 	}
 
 }
@@ -122,11 +131,6 @@ void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank>
 template<int Rank>
 void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank> &psi, int rank)
 {
-	if (this->GetDistributedModel()->IsDistributedRank(rank) && !this->IsOrthogonalBasis(rank))
-	{
-		throw std::runtime_error("Rank is distributed and not orthogonal");
-	}
-
 	blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), rank, 1);
 	if (this->IsOrthogonalBasis(rank))
 	{
@@ -135,7 +139,14 @@ void CombinedRepresentation<Rank>::MultiplyIntegrationWeights(Wavefunction<Rank>
 	}
 	else
 	{
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(data);
+		if (this->GetDistributedModel()->IsDistributedRank(rank))
+		{
+			DistributedOverlap->MultiplyOverlapRank(psi, rank, true);
+		}
+		else
+		{
+			this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(data);
+		}
 	}
 }
 
@@ -155,15 +166,18 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &psi)
 {
 	for (int i=0; i<Rank; i++)
 	{	
-		if (this->GetDistributedModel()->IsDistributedRank(i) && !this->IsOrthogonalBasis(i))
-		{
-			throw std::runtime_error("Rank is distributed and not orthogonal");
-		}
-
 		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-			this->GetGlobalOverlapMatrix(i)->MultiplyOverlapTensor(data);
+			if (this->GetDistributedModel()->IsDistributedRank(i))
+			{
+				DistributedOverlap->MultiplyOverlapRank(psi, i, true);
+				//throw std::runtime_error("Rank is distributed and not orthogonal");
+			}
+			else
+			{
+				blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
+				this->GetGlobalOverlapMatrix(i)->MultiplyOverlapTensor(data);
+			}
 		}
 	}
 }
@@ -173,14 +187,18 @@ void CombinedRepresentation<Rank>::SolveOverlap(Wavefunction<Rank> &psi)
 {
 	for (int i=0; i<Rank; i++)
 	{	
-		if (this->GetDistributedModel()->IsDistributedRank(i) && !this->IsOrthogonalBasis(i))
-		{
-			throw std::runtime_error("Rank is distributed and not orthogonal");
-		}
 		if (!this->IsOrthogonalBasis(i))
 		{
-			blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
-			this->GetGlobalOverlapMatrix(i)->SolveOverlapTensor(data);
+			if (this->GetDistributedModel()->IsDistributedRank(i))
+			{
+				DistributedOverlap->SolveOverlapRank(psi, i, true);
+				//throw std::runtime_error("Rank is distributed and not orthogonal");
+			}
+			else
+			{
+				blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), i, 1);
+				this->GetGlobalOverlapMatrix(i)->SolveOverlapTensor(data);
+			}
 		}
 	}
 }
@@ -230,11 +248,12 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, W
 	}
 	else
 	{
+		DistributedOverlap->MultiplyOverlapRank(srcPsi, dstPsi, rank, true);
 		//Map the data to a 3D array, where the b-spline part is the middle rank
-		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
-		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+		//Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		//Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
 
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+		//this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
 	}
 
 }
@@ -242,6 +261,9 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(Wavefunction<Rank> &srcPsi, W
 template<int Rank> 
 void CombinedRepresentation<Rank>::MultiplyOverlap(cplx sourceScaling, Wavefunction<Rank> &srcPsi, cplx destScaling, Wavefunction<Rank> &dstPsi, int rank)
 {
+	//Not implemented correctly atm.
+	throw std::runtime_error("Not implemented properly yet!");
+
 	using namespace blitz;
 
 	if (this->IsOrthogonalBasis(rank))
@@ -251,10 +273,11 @@ void CombinedRepresentation<Rank>::MultiplyOverlap(cplx sourceScaling, Wavefunct
 	else
 	{
 		//Map the data to a 3D array, where the b-spline part is the middle rank
-		Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
-		Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
+		//Array<cplx, 3> srcData = MapToRank3(srcPsi.Data, rank, 1);
+		//Array<cplx, 3> dstData = MapToRank3(dstPsi.Data, rank, 1);
 
-		this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+		//this->GetGlobalOverlapMatrix(rank)->MultiplyOverlapTensor(srcData, dstData);
+		DistributedOverlap->MultiplyOverlapRank(srcPsi, dstPsi, rank, true);
 	}
 
 }
@@ -395,6 +418,35 @@ cplx CombinedRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, co
 			psiList[tempNamePsi[i]]->UnLockBuffer(tempName[i]);
 		}
 	
+		return innerProduct;
+	}
+	else if (Algorithm == 4) //Using DistributedOverlapMatrix / Trilinos
+	{
+		
+		Wavefunction<Rank>* psiRight = const_cast<Wavefunction<Rank>*>(&w2);
+
+		int name = psiRight->GetAvailableDataBufferName(psiRight->GetData().shape());
+		if (name == -1)
+		{
+			name = psiRight->AllocateData(psiRight->GetData().shape());
+		}
+
+		int oldName = psiRight->SetActiveBuffer(name);
+		
+		//Lock original data buffer
+		psiRight->LockBuffer(oldName);
+		
+		//Copy data from old to new (work) buffer
+		psiRight->GetData()(blitz::Range::all()) = psiRight->GetData(oldName)(blitz::Range::all());
+
+		MultiplyIntegrationWeights(*psiRight);
+
+		//Calculate inner product by overlap of the vectors
+		cplx innerProduct = VectorInnerProduct(w1.GetData(), psiRight->GetData());
+
+		psiRight->UnLockBuffer(oldName);
+		psiRight->SetActiveBuffer(oldName);
+
 		return innerProduct;
 	}
 	else
