@@ -27,18 +27,24 @@ void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int o
 
 		//Create Epetra map for this rank
 		typename Wavefunction<Rank>::Ptr tmpPsi = srcPsi.Copy();
-		//Epetra_Map_Ptr wavefunctionMap = CreateWavefunctionMultiVectorEpetraMap<Rank>(tmpPsi, opRank);
 		WavefunctionMaps(opRank) = CreateWavefunctionMultiVectorEpetraMap<Rank>(tmpPsi, opRank);
 
 		//Setup overlap matrix
 		SetupOverlapMatrixRank(srcPsi, opRank);
 
-		//Allocate work multivectors
+		//Setup work multivectors
 		blitz::Array<cplx, 3> psiData = MapToRank3(srcPsi.GetData(), opRank, 1);
 		int numVectors = 2 * psiData.extent(0) * psiData.extent(2);
 		InputVector(opRank) = Epetra_MultiVector_Ptr( new Epetra_MultiVector(*WavefunctionMaps(opRank), numVectors, false) );
 		OutputVector(opRank) = Epetra_MultiVector_Ptr( new Epetra_MultiVector(*WavefunctionMaps(opRank), numVectors, false) );
 
+		//Allocate mem for multivectors
+		//InputData.resize(srcPsi.GetData().size(), 1);
+		//OutputData.resize(srcPsi.GetData().size(), 1);
+	
+		//Setup Amesos solvers
+		SetupOverlapSolvers(srcPsi, opRank);
+		
 		//Flag this rank as set up
 		IsSetupRank(opRank) = true;
 	}
@@ -75,6 +81,8 @@ void DistributedOverlapMatrix<Rank>::SetupOverlapMatrixRank(Wavefunction<Rank> &
 	}
 
 	OverlapMatrices(opRank) = Epetra_CrsMatrix_Ptr( new Epetra_CrsMatrix(Copy, *WavefunctionMaps(opRank), RowLengths.data(), true) );
+
+	//Debug output from Epetra
 	OverlapMatrices(opRank)->SetTracebackMode(4);
 
 	/*int procId = 0;
@@ -110,12 +118,54 @@ void DistributedOverlapMatrix<Rank>::SetupOverlapMatrixRank(Wavefunction<Rank> &
 	OverlapMatrices(opRank)->FillComplete();
 }
 
+/*
+ * Set up Amesos solver for each rank in wavefunction. The choice of solver type is determined
+ * by whether the wavefunction rank is distributed or not (SuperLU_dist or KLU).
+ */
+template<int Rank>
+void DistributedOverlapMatrix<Rank>::SetupOverlapSolvers(Wavefunction<Rank> &psi, int opRank)
+{
+	//Set up Epetra LinearProblem with overlap for this rank and input/output multivectors
+	EpetraProblems(opRank) = Epetra_LinearProblem_Ptr( new Epetra_LinearProblem(OverlapMatrices(opRank).get(), OutputVector(opRank).get(), InputVector(opRank).get()) );
+
+	//Determine solver type. Use SuperLU_dist if opRank is distributed, else KLU
+	Amesos Factory;
+	std::string SolverType;
+	if (psi.GetRepresentation()->GetDistributedModel()->IsDistributedRank(opRank))
+	{
+		SolverType = "Amesos_Superludist";
+	}
+	else
+	{
+		SolverType = "Amesos_Klu";
+	}
+
+	//Create Amesos solver for this rank
+	Solvers(opRank) = Amesos_BaseSolver_Ptr( Factory.Create(SolverType, *EpetraProblems(opRank)) );
+
+	//Check that requested solver exists in Amesos build
+	if (Solvers(opRank) == 0)
+	{
+		throw std::runtime_error("Specified Amesos solver not available");
+	}
+
+	//Setup the parameter list for the solver (TODO: get these from Python config section)
+	Teuchos::ParameterList List;
+	List.set("MatrixType", "symmetric");
+	List.set("PrintTiming", false);
+	List.set("PrintStatus", false);
+	List.set("ComputeTrueResidual", false);
+	Solvers(opRank)->SetParameters(List);
+
+	//Perform symbolic factorization
+	Solvers(opRank)->SymbolicFactorization();
+}
+
 
 template<int Rank>
 shared_ptr<Epetra_MultiVector> DistributedOverlapMatrix<Rank>::SetupMultivector(Wavefunction<Rank> &srcPsi, int opRank)
 {
 	//Setup Epetra stuff for opRank
-	cout << Rank << " " << opRank << endl;
 	SetupRank(srcPsi, opRank);
 
 	//Map wavefunction to 3D array (compress before- and after-ranks)
@@ -164,7 +214,6 @@ void DistributedOverlapMatrix<Rank>::WavefunctionToMultiVector(Wavefunction<Rank
 	int otherSize = beforeSize*afterSize;
 
 	//Copy real and imag part of wavefunction into multivector
-	int vecLength = vec->MyLength();
 	double realVal, imagVal;
 	for (int i=0; i<beforeSize; i++)
 	{
@@ -191,18 +240,18 @@ void DistributedOverlapMatrix<Rank>::WavefunctionToMultiVector(Wavefunction<Rank
 template<int Rank>
 void DistributedOverlapMatrix<Rank>::MultiVectorToWavefunction(Wavefunction<Rank> &psi, Epetra_MultiVector_Ptr vec, int opRank)
 {
-	//Put result into destPsi
+	//Put result into psi
 	blitz::Array<cplx, 3> data = MapToRank3(psi.GetData(), opRank, 1);
 	int beforeSize = data.extent(0);
 	int opSize = data.extent(1);
 	int afterSize = data.extent(2);
 	int otherSize = beforeSize*afterSize;
-	//double *destVecView=0;
-	//destVec->ExtractView(&destVecView, opSize);
-	//Array<double, 2> data2(destVecView, data.shape(), data.strides(), neverDeleteData)
-	blitz::Array<double, 2> data2;
-	data2.resize(2 * otherSize, opSize);
-	vec->ExtractCopy(data2.data(), opSize);
+	double *destVecView=0;
+	vec->ExtractView(&destVecView, &opSize);
+	blitz::Array<double, 2> data2(destVecView, shape(2 * otherSize, opSize), shape(opSize, 1), neverDeleteData);
+	//blitz::Array<double, 2> data2;
+	//data2.resize(2 * otherSize, opSize);
+	//vec->ExtractCopy(data2.data(), opSize);
 	for (int i=0; i<beforeSize; i++)
 	{
 		for (int j=0; j<opSize; j++)
@@ -233,7 +282,7 @@ void DistributedOverlapMatrix<Rank>::MultiplyOverlapRank(Wavefunction<Rank> &src
 		OverlapMatrices(opRank)->Multiply(false, *InputVector(opRank), *OutputVector(opRank));
 
 		//Put result multivector into destination wavefunction
-		MultiVectorToWavefunction(srcPsi, OutputVector(opRank), opRank);
+		MultiVectorToWavefunction(destPsi, OutputVector(opRank), opRank);
 	}
 	else
 	{
@@ -265,7 +314,7 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 		WavefunctionToMultiVector(srcPsi, InputVector(opRank), opRank);
 
 		//Set up Epetra LinearProblem with overlap for this rank and input/output multivectors
-		Epetra_LinearProblem Problem(OverlapMatrices(opRank).get(), OutputVector(opRank).get(), InputVector(opRank).get());
+	/*	Epetra_LinearProblem Problem(OverlapMatrices(opRank).get(), OutputVector(opRank).get(), InputVector(opRank).get());
 
 		//Initialize Amesos solver and factory. Use SuperLU_dist if opRank is distributed, else KLU
 		Amesos_BaseSolver* Solver;
@@ -289,19 +338,23 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 
 		//Setup the parameter list for the solver
 		Teuchos::ParameterList List;
-		List.set("PrintTiming", true);
-		List.set("PrintStatus", true);
+		List.set("MatrixType", "symmetric");
+		List.set("PrintTiming", false);
+		List.set("PrintStatus", false);
+		List.set("ComputeTrueResidual", false);
 		Solver->SetParameters(List);
 
 		//Factorization and solve
 		Solver->SymbolicFactorization();
-		Solver->NumericFactorization();
-		AMESOS_CHK_ERRV(Solver->Solve());
+		*/
+
+		Solvers(opRank)->NumericFactorization();
+		AMESOS_CHK_ERRV(Solvers(opRank)->Solve());
 
 		//Put solution multivector into destination wavefunction
 		MultiVectorToWavefunction(destPsi, OutputVector(opRank), opRank);
 
-		Solver->PrintTiming();
+		//Solver->PrintTiming();
 	}
 	else
 	{
@@ -317,7 +370,6 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 		//Initialize Amesos solver and factory
 		Amesos_BaseSolver* Solver;
 		Amesos Factory;
-		//std::string SolverType = "Amesos_Superludist";
 		std::string SolverType = "Amesos_Superludist";
 		Solver = Factory.Create(SolverType, Problem);
 
@@ -329,8 +381,8 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 
 		//Setup the parameter list for the solver
 		Teuchos::ParameterList List;
-		List.set("PrintTiming", true);
-		List.set("PrintStatus", true);
+		//List.set("PrintTiming", true);
+		//List.set("PrintStatus", true);
 		Solver->SetParameters(List);
 
 		//Factorization and solve
@@ -341,7 +393,7 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 		//Put solution multivector into destination wavefunction
 		MultiVectorToWavefunction(destPsi, destVec, opRank);
 
-		Solver->PrintTiming();
+		//Solver->PrintTiming();
 	}
 
 }

@@ -423,29 +423,51 @@ cplx CombinedRepresentation<Rank>::InnerProduct(const Wavefunction<Rank>& w1, co
 	else if (Algorithm == 4) //Using DistributedOverlapMatrix / Trilinos
 	{
 		
+		Wavefunction<Rank>* psiLeft = const_cast<Wavefunction<Rank>*>(&w1);
 		Wavefunction<Rank>* psiRight = const_cast<Wavefunction<Rank>*>(&w2);
 
-		int name = psiRight->GetAvailableDataBufferName(psiRight->GetData().shape());
-		if (name == -1)
+		//Get name of available databuffer for "left" wavefunction
+		int nameLeft = psiLeft->GetAvailableDataBufferName(psiLeft->GetData().shape());
+		
+		//Is a buffer available? If not, create one
+		if (nameLeft == -1)
 		{
-			name = psiRight->AllocateData(psiRight->GetData().shape());
+			nameLeft = psiLeft->AllocateData(psiLeft->GetData().shape());
 		}
 
-		int oldName = psiRight->SetActiveBuffer(name);
+		int oldNameLeft = psiLeft->SetActiveBuffer(nameLeft);
+
+		//Lock old buffer
+		psiLeft->LockBuffer(oldNameLeft);
+
+		//Copy data from old buffer to work buffer
+		psiLeft->GetData()(blitz::Range::all()) = psiLeft->GetData(oldNameLeft)(blitz::Range::all());
+
+
+		int nameRight = psiRight->GetAvailableDataBufferName(psiRight->GetData().shape());
+		if (nameRight == -1)
+		{
+			nameRight = psiRight->AllocateData(psiRight->GetData().shape());
+		}
+
+		int oldNameRight = psiRight->SetActiveBuffer(nameRight);
 		
 		//Lock original data buffer
-		psiRight->LockBuffer(oldName);
+		psiRight->LockBuffer(oldNameRight);
 		
 		//Copy data from old to new (work) buffer
-		psiRight->GetData()(blitz::Range::all()) = psiRight->GetData(oldName)(blitz::Range::all());
+		psiRight->GetData(nameRight)(blitz::Range::all()) = psiRight->GetData(oldNameRight)(blitz::Range::all());
 
+		//Multiply integration weights
 		MultiplyIntegrationWeights(*psiRight);
 
 		//Calculate inner product by overlap of the vectors
-		cplx innerProduct = VectorInnerProduct(w1.GetData(), psiRight->GetData());
+		cplx innerProduct = VectorInnerProduct(psiLeft->GetData(oldNameLeft), psiRight->GetData(nameRight));
 
-		psiRight->UnLockBuffer(oldName);
-		psiRight->SetActiveBuffer(oldName);
+		psiRight->UnLockBuffer(oldNameRight);
+		psiRight->SetActiveBuffer(oldNameRight);
+		psiLeft->UnLockBuffer(oldNameLeft);
+		psiLeft->SetActiveBuffer(oldNameLeft);
 
 		return innerProduct;
 	}
