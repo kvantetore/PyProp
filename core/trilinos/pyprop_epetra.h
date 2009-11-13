@@ -43,8 +43,13 @@ template<int Rank>
 Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr);
 
 template<int Rank>
+Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr, int procRank);
+
+template<int Rank>
 Epetra_Map_Ptr CreateWavefunctionEpetraMap(typename Wavefunction<Rank>::Ptr psi);
 
+template<int Rank>
+Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap(typename Wavefunction<Rank>::Ptr psi, int opRank);
 
 template<int Rank>
 Epetra_Vector_Ptr CreateWavefunctionEpetraView(typename Wavefunction<Rank>::Ptr psi, Epetra_Map& wavefunctionMap);

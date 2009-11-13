@@ -50,6 +50,7 @@ PYSTEFILES = \
 	python/coupledsphericalselectionrule.pyste \
 	python/tensorpotential_basis.pyste \
 	python/databuffer.pyste \
+	python/distributedoverlapmatrix.pyste \
 
 
 PYSTEOUTPUTDIR   = python/pysteoutput
@@ -94,6 +95,7 @@ SOURCES= \
 	utility/matrix_conversion.cpp \
 	trilinos/pyprop_epetra.cpp \
 	trilinos/pyprop_tpetra.cpp \
+	representation/distributedoverlapmatrix.cpp \
 	$(PYSTEOUTPUTFILES) 
 SOURCEFILES=$(notdir $(SOURCES))
 

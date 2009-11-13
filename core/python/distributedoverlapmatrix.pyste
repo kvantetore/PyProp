@@ -1,0 +1,7 @@
+DistributedOverlapMatrix = Template("DistributedOverlapMatrix", "representation/distributedoverlapmatrix.h")
+no_virtual(DistributedOverlapMatrix)
+
+DistributedOverlapMatrix("1")
+DistributedOverlapMatrix("2")
+DistributedOverlapMatrix("3")
+DistributedOverlapMatrix("4")

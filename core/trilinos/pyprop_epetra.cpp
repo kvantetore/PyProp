@@ -13,6 +13,7 @@ Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>
 	//should get MPI_COMM from distributed model
 	return shared_ptr<Epetra_MpiComm>( new Epetra_MpiComm(MPI_COMM_WORLD) );
 #else
+	assert(distr->IsSingleProc());
 	return shared_ptr<Epetra_SerialComm>( new Epetra_SerialComm() );
 #endif
 }
@@ -22,6 +23,78 @@ template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<2>(DistributedModel<2>
 template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<3>(DistributedModel<3>::Ptr distr);
 template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<4>(DistributedModel<4>::Ptr distr);
 
+
+/*
+ * Creates an Epetra_Comm object from a DistributedModel.
+ *
+ *   distr: Distributed model in use (possible multi-dim proc grid)
+ *   procRank: which rank of processor grid to use when creating Epetra comm.
+ */
+template<int Rank>
+Epetra_Comm_Ptr CreateDistributedModelEpetraComm(typename DistributedModel<Rank>::Ptr distr, int procRank)
+{
+
+#ifdef EPETRA_MPI
+
+	typedef blitz::Array<MPI_Comm, 1> ProcVectorComm;
+
+	//get MPI_COMM from distributed model, for given proc grid rank
+	ProcVectorComm groupComm = distr->GetTranspose()->GetGroupComm();
+	return shared_ptr<Epetra_MpiComm>( new Epetra_MpiComm( groupComm(procRank) ) );
+
+#else
+	assert(distr->IsSingleProc());
+	return shared_ptr<Epetra_SerialComm>( new Epetra_SerialComm() );
+
+#endif
+}
+
+template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<1>(DistributedModel<1>::Ptr distr, int procRank);
+template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<2>(DistributedModel<2>::Ptr distr, int procRank);
+template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<3>(DistributedModel<3>::Ptr distr, int procRank);
+template Epetra_Comm_Ptr CreateDistributedModelEpetraComm<4>(DistributedModel<4>::Ptr distr, int procRank);
+
+
+/*
+ * Creates an Epetra_Map corresponding to how a DistributedModel distributes a wavefunction, 
+ * for a single rank (opRank). That is, we group together the procs that has the remaining 
+ * parts of the wavefunction data for given opRank. Thus, only local <-> global index map
+ * for this rank needs be constructed.
+ *
+ */
+template<int Rank>
+Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap(typename Wavefunction<Rank>::Ptr psi, int opRank)
+{
+	typedef blitz::Array<cplx, Rank> ArrayType;
+	
+	//Create a comm object from wavefunction distribution. Only involves procs with
+	//data for current operation rank
+	typename DistributedModel<Rank>::Ptr distr = psi->GetRepresentation()->GetDistributedModel();
+	Epetra_Comm_Ptr comm = CreateDistributedModelEpetraComm<Rank>(distr, opRank);
+
+	//Local size of wavefunction (opRank)
+	ArrayType data = psi->GetData();
+	int localSize = data.extent(opRank);
+
+	//Get global start idx for opRank
+	int rankSizeGlobal = psi->GetRepresentation()->GetFullShape()(opRank);
+	int globalStartIdx = distr->GetLocalStartIndex(rankSizeGlobal, opRank);
+
+	//Create index map for local elements (local idx -> global idx) 
+	int* myElems = new int[localSize];
+
+	//Setup local->global index map
+	for (int i=0; i<localSize; i++)	
+	{
+		myElems[i] = i + globalStartIdx;
+	}
+
+	return Epetra_Map_Ptr( new Epetra_Map(-1, localSize, myElems, 0, *comm) );
+}
+template Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap<1>(Wavefunction<1>::Ptr psi, int opRank);
+template Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap<2>(Wavefunction<2>::Ptr psi, int opRank);
+template Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap<3>(Wavefunction<3>::Ptr psi, int opRank);
+template Epetra_Map_Ptr CreateWavefunctionMultiVectorEpetraMap<4>(Wavefunction<4>::Ptr psi, int opRank);
 
 
 /*
