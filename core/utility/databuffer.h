@@ -20,7 +20,9 @@ public:
 
 	DataBuffer()
 	{
-		DataArray.resize(0);
+		blitz::TinyVector<int, Rank> bufShape;
+		bufShape = 1;
+		DataArray.resize(bufShape);
 		isAvailable = BoolPtr(new bool);
 		*isAvailable = true;
 	}
