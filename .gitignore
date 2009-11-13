@@ -1,0 +1,13 @@
+Makefile.platform
+core/indextricks.mod
+core/representation/combinedrepresentation_generated.cpp
+core/tensorpotential/tensorpotentialmultiply_0.f90
+core/tensorpotential/tensorpotentialmultiply_1.f90
+core/tensorpotential/tensorpotentialmultiply_2.f90
+core/tensorpotential/tensorpotentialmultiply_3.f90
+core/tensorpotential/tensorpotentialmultiply_4.f90
+core/tensorpotential/tensorpotentialmultiply_wrapper.cpp
+core/tensorpotential/tensorpotentialmultiply_wrapper.h
+extern/blitz/blitz-configure/
+extern/blitz/build/
+extern/pypar/build/
