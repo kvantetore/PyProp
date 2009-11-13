@@ -17,7 +17,7 @@ void DistributedOverlapMatrix<Rank>::MultiplyOverlapRank(Wavefunction<Rank> &src
 	assert(opRank > -1);
 
 	//Assert non-orthogonal rank opRank
-	assert (srcPsi.GetRepresentation()->IsOrthogonalBasis(opRank));
+	assert (!srcPsi.GetRepresentation()->IsOrthogonalBasis(opRank));
 
 	//Create Epetra map for this rank
 	typename Wavefunction<Rank>::Ptr tmpPsi = srcPsi.Copy();
