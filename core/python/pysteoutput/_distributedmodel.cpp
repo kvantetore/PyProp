@@ -215,6 +215,7 @@ void Export_python_distributedmodel()
         .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumdouble_int)
         .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumstd__complex_double__int)
         .def("GetGlobalSum", ArrayTranspose_1___GetGlobalSumint_int)
+        .def("GetGroupComm", &ArrayTranspose<1>::GetGroupComm)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<1> > >();
     delete ArrayTranspose_1_scope;
@@ -238,6 +239,7 @@ void Export_python_distributedmodel()
         .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumdouble_int)
         .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumstd__complex_double__int)
         .def("GetGlobalSum", ArrayTranspose_2___GetGlobalSumint_int)
+        .def("GetGroupComm", &ArrayTranspose<2>::GetGroupComm)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<2> > >();
     delete ArrayTranspose_2_scope;
@@ -261,6 +263,7 @@ void Export_python_distributedmodel()
         .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumdouble_int)
         .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumstd__complex_double__int)
         .def("GetGlobalSum", ArrayTranspose_3___GetGlobalSumint_int)
+        .def("GetGroupComm", &ArrayTranspose<3>::GetGroupComm)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<3> > >();
     delete ArrayTranspose_3_scope;
@@ -284,6 +287,7 @@ void Export_python_distributedmodel()
         .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumdouble_int)
         .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumstd__complex_double__int)
         .def("GetGlobalSum", ArrayTranspose_4___GetGlobalSumint_int)
+        .def("GetGroupComm", &ArrayTranspose<4>::GetGroupComm)
     );
     register_ptr_to_python< boost::shared_ptr< ArrayTranspose<4> > >();
     delete ArrayTranspose_4_scope;

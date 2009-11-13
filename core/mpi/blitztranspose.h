@@ -275,6 +275,11 @@ public:
 		return GetGlobalSumImpl(localValue, procRank);
 	}
 
+	ProcVectorComm GetGroupComm()
+	{
+		return GroupComm;
+	}
+
 };
 
 template<int DataRank>
