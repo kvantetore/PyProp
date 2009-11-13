@@ -1,0 +1,4 @@
+EpetraPotential = Template("EpetraPotential", "epetrapotential.h")
+EpetraPotential("2")
+EpetraPotential("3")
+

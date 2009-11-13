@@ -8,6 +8,12 @@ IfPack("1")
 IfPack("2")
 IfPack("3")
 
+EpetraPotential = Template("EpetraPotential", "epetrapotential.h")
+EpetraPotential("1")
+EpetraPotential("2")
+EpetraPotential("3")
+EpetraPotential("4")
+
 
 Include("../pyprop_epetra.cpp")
 module_code('def("CreateTensorPotentialEpetraMatrix_1", CreateTensorPotentialEpetraMatrix<1>);\n')

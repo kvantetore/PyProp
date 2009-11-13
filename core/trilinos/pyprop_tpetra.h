@@ -1,6 +1,7 @@
 #ifndef PYPROP_TPETRA
 #define PYPROP_TPETRA
 #ifdef PYPROP_USE_TRILINOS
+#ifdef PYPROP_USE_TRILINOS_TPETRA
 
 #include "../common.h"
 #include "../wavefunction.h"
@@ -41,6 +42,6 @@ Tpetra_Map_Ptr CreateWavefunctionTpetraMap(typename Wavefunction<Rank>::Ptr psi)
 template<int Rank>
 Tpetra_Vector_Ptr CreateWavefunctionTpetraView(typename Wavefunction<Rank>::Ptr psi, Tpetra_Map& wavefunctionMap);
 
-
+#endif // use tpetra
 #endif // use trilinos
 #endif

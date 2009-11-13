@@ -20,12 +20,14 @@ void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int o
 	if (!HasPsi)
 	{
 		Psi = srcPsi.Copy();
+		HasPsi = true;
 	}
 
-	//Check that distribution for opRank has not changed since last call
+	//Check that distribution for opRank has not changed since last call.
+	//Also check that typeID of representation is the same
 	int curDistribOpRank = Psi->GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
 	int srcDistribOpRank = srcPsi.GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
-	if (curDistribOpRank != srcDistribOpRank)
+	if ( (curDistribOpRank != srcDistribOpRank) )
 	{
 		Psi = srcPsi.Copy();
 
@@ -175,6 +177,7 @@ void DistributedOverlapMatrix<Rank>::SetupOverlapSolvers(Wavefunction<Rank> &psi
 
 	//Perform symbolic factorization
 	Solvers(opRank)->SymbolicFactorization();
+	Solvers(opRank)->NumericFactorization();
 }
 
 
@@ -329,9 +332,6 @@ void DistributedOverlapMatrix<Rank>::SolveOverlapRank(Wavefunction<Rank> &srcPsi
 		//Setup source multivector
 		WavefunctionToMultiVector(srcPsi, InputVector(opRank), opRank);
 		
-		//Numerical factorization
-		Solvers(opRank)->NumericFactorization();
-
 		//Solve
 		AMESOS_CHK_ERRV(Solvers(opRank)->Solve());
 

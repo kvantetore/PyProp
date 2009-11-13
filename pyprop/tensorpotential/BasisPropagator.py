@@ -33,7 +33,7 @@ class BasisPropagator(PropagatorBase):
 		PrintMemoryUsage("Before Generate Potential %s" % configSection.name)
 		potential = TensorPotential(self.psi)
 		configSection.Apply(potential)
-		SerialPrint("PotentialShape = %s" % (potential.PotentialData.shape, ))
+		#SerialPrint("PotentialShape = %s" % (potential.PotentialData.shape, ))
 		PrintMemoryUsage("After Potential %s" % configSection.name)
 
 		return potential

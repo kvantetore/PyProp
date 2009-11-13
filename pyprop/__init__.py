@@ -17,10 +17,13 @@ except:
 import numpy
 from numpy import *
 
+
+
 #The main namespace used for accessing functions defined in the "main"
 #project (i.e. example.py) file from configuration files and the like. 
 #Must be overridden if the main project is not in the __main__ namespace 
 #(i.e. when using IPython1)
+
 ProjectNamespace = sys.modules["__main__"].__dict__
 
 __DisableMPI = False

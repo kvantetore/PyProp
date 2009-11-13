@@ -1,4 +1,5 @@
 #ifdef PYPROP_USE_TRILINOS
+#ifdef PYPROP_USE_TRILINOS_TPETRA
 #include "pyprop_tpetra.h"
 
 #include <Teuchos_OpaqueWrapper.hpp>
@@ -103,7 +104,8 @@ template<int Rank>
 Tpetra_Vector_Ptr CreateWavefunctionTpetraView(typename Wavefunction<Rank>::Ptr psi, Tpetra_Map& wavefunctionMap)
 {
 	Teuchos::ArrayView<cplx> myElemsView((cplx*)psi->GetData().data(), psi->GetData().size());
-	return Tpetra_Vector_Ptr(new Tpetra_Vector(wavefunctionMap, myElemsView));
+	throw std::runtime_error("Tpetra interface not working at the moment.");
+	//return Tpetra_Vector_Ptr(new Tpetra_Vector(wavefunctionMap, myElemsView));
 }
 template Tpetra_Vector_Ptr CreateWavefunctionTpetraView<1>(Wavefunction<1>::Ptr psi, Tpetra_Map& wavefunctionMap);
 template Tpetra_Vector_Ptr CreateWavefunctionTpetraView<2>(Wavefunction<2>::Ptr psi, Tpetra_Map& wavefunctionMap);
@@ -111,5 +113,6 @@ template Tpetra_Vector_Ptr CreateWavefunctionTpetraView<3>(Wavefunction<3>::Ptr 
 template Tpetra_Vector_Ptr CreateWavefunctionTpetraView<4>(Wavefunction<4>::Ptr psi, Tpetra_Map& wavefunctionMap);
 
 
+#endif // use tpetra
 #endif // use trilinos
 

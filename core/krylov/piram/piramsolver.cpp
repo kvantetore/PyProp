@@ -77,12 +77,12 @@ void PiramSolver<Rank>::ApplyConfigSection(const ConfigSection &config)
 
 	if (config.HasValue("inverse_iterations"))
 	{
-		cout << "PIRAM: Using inverse iterations" << endl;
 		bool inverseIt;
 		config.Get("inverse_iterations", inverseIt);
 
 		if (inverseIt)
 		{
+			cout << "PIRAM: Using inverse iterations" << endl;
 			typedef piram::CompareComplexGreaterAbs compareType;
 			typedef piram::ShiftFunctorSelectRitzValues< cplx, compareType > shiftFunctorType;
 			compareType compare;

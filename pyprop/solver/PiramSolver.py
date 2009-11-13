@@ -22,6 +22,7 @@ class PiramSolver:
 	def __init__(self, prop):
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
+		self.Silent = getattr(prop.Config.Propagation, "silent", False)
 
 		#Create a copy of the wavefunction to calculate H|psi>
 		self.TempPsi = prop.psi.CopyDeep()
@@ -61,6 +62,7 @@ class PiramSolver:
 		self.ApplyMatrix = self.BaseProblem.Propagator.MultiplyHamiltonian
 		if hasattr(configSection, "matrix_vector_func"):
 			if configSection.matrix_vector_func:
+				PrintOut("  Using custom matrix-vector product")
 				self.ApplyMatrix = configSection.matrix_vector_func
 		else:
 			if useInverseIterations:
@@ -89,7 +91,7 @@ class PiramSolver:
 				print "Error = ", self.Solver.GetErrorEstimates()
 				print "Convergence = ", self.Solver.GetConvergenceEstimates()
 
-		if self.CounterOn and ProcId == 0:
+		if (not self.Silent) and self.CounterOn and ProcId == 0:
 
 			if self.Count == 1:
 				infoStr = "Progress:   0 %"

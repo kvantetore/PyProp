@@ -1,3 +1,4 @@
+import warnings
 
 class StdOut:
 	def __init__(self, stdout, silent):
@@ -16,7 +17,8 @@ class RedirectClass:
 	def Enable(self, silent):
 		if silent:
 			if self.redirect_stdout != None:
-				raise Exception("Already redirected")
+				#raise Exception("Already redirected")
+				warnings.warn("Already redirected", RuntimeWarning)
 	
 			self.redirect_stdout = StdOut(sys.stdout, silent)
 			self.redirect_cout = core.redirect_cout()

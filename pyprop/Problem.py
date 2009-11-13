@@ -72,7 +72,7 @@ class Problem:
 				self.Silent = config.Propagation.silent
 			else:
 				self.Silent = False
-
+			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
 		
 			#Create wavefunction
@@ -85,7 +85,8 @@ class Problem:
 			config.Propagation.Apply(self)
 
 			#Disable redirect
-			Redirect.Disable()
+			if not redirectStateOld == Redirect.redirect_stdout:
+				Redirect.Disable()
 
 		except:
 			#Diasable redirect
@@ -117,6 +118,7 @@ class Problem:
 		"""
 		try:
 			#Enable redirect
+			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
 			
 			print "Starting setup timestep..."
@@ -131,7 +133,8 @@ class Problem:
 			print "Setup timestep complete."
 	
 			#Disable redirect
-			Redirect.Disable()
+			if not redirectStateOld:
+				Redirect.Disable()
 
 		except:
 			#Diasable redirect
