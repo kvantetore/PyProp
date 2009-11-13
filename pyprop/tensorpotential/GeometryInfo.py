@@ -296,8 +296,10 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoDistributedBase):
 		#Set member variables 
 		self.BandCount = bandCount
 		self.UseGrid = useGrid
-		assert(repr.GetBaseRank() == 0)
-		self.BaseRank = 0 #Supports only distributed in the first rank
+#		assert(repr.GetBaseRank() == 0)
+#		self.BaseRank = 0 #Supports only distributed in the first rank
+		assert(repr.GetBaseRank() in [0,1])
+		self.BaseRank = repr.GetBaseRank()
 		self.Representation = repr
 		self.RankCount = int(repr.GetFullShape()[0])
 		self.TempArrays = None

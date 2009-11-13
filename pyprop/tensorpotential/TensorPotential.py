@@ -81,7 +81,10 @@ class TensorPotential(PotentialWrapper):
 		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]
 
 		multiplyFuncName = "core.TensorPotentialMultiply_" + "_".join([geom.GetStorageId() for geom in self.GeometryList])
-		self.MultiplyFunction = eval(multiplyFuncName)
+		try:
+			self.MultiplyFunction = eval(multiplyFuncName)
+		except:
+			print "ERROR: Could not find multiplyfunction for potential: %s" % multiplyFuncName
 		
 	def AdvanceStep(self, t, timestep):
 		raise NotImplementedException("TensorPotentials can not be exponentiated directly")

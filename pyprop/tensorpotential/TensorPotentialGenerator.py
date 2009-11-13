@@ -5,7 +5,8 @@
 def CreateBasisFromRepresentation(representation):
 	if representation.__class__ == core.BSplineRepresentation:
 		basis = BasisfunctionBSpline()
-		basis.SetupBasis(representation.GetBSplineObject())
+		#basis.SetupBasis(representation.GetBSplineObject())
+		basis.SetupBasis(representation)
 	
 	elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
@@ -56,6 +57,8 @@ class TensorPotentialGenerator(object):
 			basisObject = rankSection.basis()
 			rankSection.Apply(basisObject)
 			self.BasisList.append(basisObject)
+		
+		self.OrigDistribution = CreateDistribution(config)
 
 	def SetupBasisFromRepresentation(self, representation):
 		self.BasisList = []
@@ -63,6 +66,8 @@ class TensorPotentialGenerator(object):
 			subRepr = representation.GetRepresentation(i)
 			basisObject = CreateBasisFromRepresentation(subRepr)
 			self.BasisList.append(basisObject)
+
+		self.OrigDistribution = representation.GetDistributedModel()
 
 	def GeneratePotential(self, configSection):
 		"""
@@ -91,6 +96,11 @@ class TensorPotentialGenerator(object):
 		#4) Initialize potential with basis pairs for custom potentials
 		isCustomPotential = hasattr(potentialEvaluator, "SetBasisPairs")
 		potentialShape = list(psi.GetRepresentation().GetInitialShape())
+		fullShape = repr.GetFullShape()
+
+		#TEST: trying to get correct potential shape
+		#potentialShape = [geometryList[rank].GetLocalBasisPairCount() for rank in range(self.Rank)]
+
 		if isCustomPotential:
 			for rank, geometryInfo in enumerate(geometryList):
 				if not geometryInfo.UseGridRepresentation():
@@ -100,13 +110,13 @@ class TensorPotentialGenerator(object):
 
 					#Get basis pairs from geometry info, and pass it to the potential
 					potentialShape[rank] = geometryInfo.GetLocalBasisPairCount()
+					fullShape[rank] = geometryInfo.GetGlobalBasisPairCount()
 					try:
 						basisPairs = geometryInfo.GetBasisPairs()
 						potentialEvaluator.SetBasisPairs(rank, basisPairs)
 					except:
 						print "BASISPAIRSHAPE=", basisPairs.shape
 						raise
-
 
 		#4) Evaluate the potential on the grid
 		potentialData = CreateInstanceRank("core.DataBuffer", self.Rank)
@@ -121,8 +131,7 @@ class TensorPotentialGenerator(object):
 		#for parallelization
 		#We only support the first rank initially distributed
 		assert(repr.GetDistributedModel().GetDistribution()[0] == 0)
-		assert(len(repr.GetDistributedModel().GetDistribution()) == 1)
-		fullShape = repr.GetFullShape()
+		#assert(len(repr.GetDistributedModel().GetDistribution()) == 1)
 		if repr.GetDistributedModel().IsSingleProc():
 			distribution = []
 			origDistribution = []
@@ -137,6 +146,7 @@ class TensorPotentialGenerator(object):
 				raise Exception("Distributed Rank %i (%s), has no support for parallel multiplication" % (distribRank, geomInfo.GetStorageId()))
 
 		#5) Represent the potential in the bases
+		tempDistributions = []
 
 		source = potentialData
 		dest = None
@@ -155,9 +165,10 @@ class TensorPotentialGenerator(object):
 
 				#Check if this rank is distributed. If it is, we must redistribute
 				if rank in distribution:
+					tempDistributions += [distribution]
 					PrintOut( "Rank %i is distributed" % rank )
 					assert(rank != self.Rank-1)
-					assert(not rank+1 in distribution)
+					#assert(not rank+1 in distribution)
 
 					#Create new distribution
 					distribIndex = distribution.index(rank)
@@ -203,22 +214,44 @@ class TensorPotentialGenerator(object):
 		#done!
 
 		#Transpose back to the original distribution
+#		if distribution != origDistribution:
+#			#Create shape of transposed function and allocate dest buffer
+#			transposedShape = transpose.CreateDistributedShape(fullShape, array(origDistribution, dtype=int32))
+#			del dest
+#			#dest = zeros(transposedShape, dtype=complex)
+#			dest = CreateInstanceRank("core.DataBuffer", self.Rank)
+#			dest.ResizeArray(array(transposedShape))
+#
+#			#Transpose
+#			transpose.Transpose(fullShape, source.GetArray(), array(distribution, int), dest.GetArray(), array(origDistribution, int))
+#
+#			#Use the new buffer
+#			del source
+#			source = dest
+#			distribution = origDistribution
+
+		#Transpose back to the original distribution, changing one pair of ranks at the time, due
+		#to current restrictions in TransposeArray. That is, return to the original distribution 
+		#is achieved by stepping through the tranposes performed in the potential setup, in reverse
+		#order.
 		if distribution != origDistribution:
-			#Create shape of transposed function and allocate dest buffer
-			transposedShape = transpose.CreateDistributedShape(fullShape, array(origDistribution, dtype=int32))
-			del dest
-			#dest = zeros(transposedShape, dtype=complex)
-			dest = CreateInstanceRank("core.DataBuffer", self.Rank)
-			dest.ResizeArray(array(transposedShape))
+			curDistr = distribution
 
-			#Transpose
-			transpose.Transpose(fullShape, source.GetArray(), array(distribution, int), dest.GetArray(), array(origDistribution, int))
+			#Iterate over all intermediate distributions, in reverse
+			for stepDistr in reversed(tempDistributions):
+				#Create shape of transposed function and allocate dest buffer
+				transposedShape = transpose.CreateDistributedShape(fullShape, array(stepDistr, dtype=int32))
+				del dest
+				dest = CreateInstanceRank("core.DataBuffer", self.Rank)
+				dest.ResizeArray(array(transposedShape))
 
-			#Use the new buffer
-			del source
-			source = dest
-			distribution = origDistribution
+				#Transpose rank pair
+				transpose.Transpose(fullShape, source.GetArray(), array(curDistr, int), dest.GetArray(), array(stepDistr, int))
 
+				#Use the new buffer
+				del source
+				source = dest
+				curDistr = stepDistr
 		del dest
 		return source
 
@@ -248,7 +281,8 @@ class TensorPotentialGenerator(object):
 		repr = CreateInstanceRank("core.CombinedRepresentation", self.Rank)
 	
 		#Set distributed model
-		distrib = CreateDistribution(None, rank=self.Rank)
+		#distrib = CreateDistribution(None, rank=self.Rank)
+		distrib = self.OrigDistribution
 		repr.SetDistributedModel(distrib)
 	
 		#Setup sub representations

@@ -18,7 +18,7 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 		return False
 	
 	def GetGlobalBasisPairCount(self):
-		return self.GetBasisPairs().shape[0] 
+		return self.GetBasisPairs().shape[0]
 		
 	def GetBasisPairs(self):
 		if self.IndexPairs == None:
@@ -117,6 +117,13 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 		self.BasisRepresentation = basisRepresentation
 		self.BasisSize = self.BasisRepresentation.Range.Count()
 
+		#Check if rank is distributed; if so, set appropriate Geometry function
+		baseRank = self.BasisRepresentation.GetBaseRank()
+		distr = self.BasisRepresentation.GetDistributedModel()
+		self.GeometryFunction = GeometryInfoCoupledSphericalHarmonic
+		if distr.IsDistributedRank(baseRank):
+			self.GeometryFunction = GeometryInfoCoupledSphericalHarmonicDistributed
+
 	def GetGridRepresentation(self):
 		raise Exception("Coupled Spherical Harmonics does not support grid representations")
 
@@ -128,9 +135,8 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			#return GeometryInfoCommonDiagonal(self.BasisSize, False)
 			selectionRule = core.CoupledSphericalSelectionRuleDiagonal()
-			return GeometryInfoCoupledSphericalHarmonicDistributed(self.BasisRepresentation, selectionRule)
+			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
 		elif geom == "dense":
 			return GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
@@ -144,8 +150,8 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedField()
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
-				
-			return GeometryInfoCoupledSphericalHarmonicDistributed(self.BasisRepresentation, selectionRule)
+
+			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 

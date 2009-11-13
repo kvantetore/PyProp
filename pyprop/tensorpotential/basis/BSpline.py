@@ -107,6 +107,67 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 		return []
 
 
+class GeometryInfoBsplineBandedDistributed(GeometryInfoDistributedBase):
+	"""
+	Geometry for a banded B-spline matrix with support for parallel
+	matvec through Epetra.
+	"""
+	def __init__(self, repr, useGrid):
+		GeometryInfoDistributedBase.__init__(self)
+		#Set member variables 
+		self.UseGrid = useGrid
+		self.BaseRank = repr.GetBaseRank()
+		self.Representation = repr
+		self.BSplineObject = repr.GetBSplineObject()	
+
+	def UseGridRepresentation(self):
+		return self.UseGrid
+
+	def GetGlobalBasisPairCount(self):
+		N = self.BSplineObject.NumberOfBSplines
+		k = self.BSplineObject.MaxSplineOrder
+		return 2 * N * k - (k) * (k-1) - N
+
+	def SetupBasisPairs(self):
+		distr = self.Representation.GetDistributedModel()
+		rank = self.Representation.GetBaseRank()
+		localRange = distr.GetLocalIndexRange(self.GetGlobalBasisPairCount(), rank)
+
+		count = self.GetGlobalBasisPairCount()
+
+		N = self.BSplineObject.NumberOfBSplines
+		k = self.BSplineObject.MaxSplineOrder
+		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
+		pairs[:,0] = 0
+		pairs[:,1] = N-1
+
+		index = 0
+		for i in xrange(N):
+			for j in xrange(max(0, i-k+1), min(i+k, N)):
+				pairs[index, 0] = i
+				pairs[index, 1] = j
+				index+=1
+
+		if index != pairs.shape[0]:
+			raise Execption()
+
+		#store pairs
+		self.GlobalIndexPairs = pairs
+		self.LocalBasisPairIndices = r_[localRange]
+		self.LocalIndexPairs = pairs[localRange]
+
+		return pairs
+
+	def GetStorageId(self):
+		return "Distr"
+
+	def GetMultiplyArguments(self, psi):
+		raise Exception("GetMultiplyArguments not implemented, use Epetra for matvec!")
+
+	def SetupTempArrays(self, psi):
+		raise Exception("SetupTempArrays not implemented, use Epetra for matvec!")
+
+
 class BasisfunctionBSpline(BasisfunctionBase):
 	"""
 	Basisfunction class for BSplines
@@ -116,8 +177,10 @@ class BasisfunctionBSpline(BasisfunctionBase):
 	def ApplyConfigSection(self, configSection):
 		self.SetupBasis( InitBSpline(configSection) )
 
-	def SetupBasis(self, bsplineObject):
-		self.BSplineObject = bsplineObject
+	def SetupBasis(self, repr):
+		self.Representation = repr
+		#self.BSplineObject = bsplineObject
+		self.BSplineObject = repr.GetBSplineObject()
 
 	def GetGridRepresentation(self):
 		repr = core.BSplineGridRepresentation()
@@ -148,6 +211,8 @@ class BasisfunctionBSpline(BasisfunctionBase):
 			return GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "hermitian":
 			return GeometryInfoCommonDense(BasisSize, True)
+		elif geom == "banded-bspline-distributed":
+			return GeometryInfoBsplineBandedDistributed(self.Representation, True)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
