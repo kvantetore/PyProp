@@ -27,11 +27,14 @@ private:
 	typedef shared_ptr<Amesos> Amesos_Ptr;
 	typedef shared_ptr<Amesos_BaseSolver> Amesos_BaseSolver_Ptr;
 
+	bool HasPsi;
 	CrsVector OverlapMatrices; 
 	EpetraMapVector WavefunctionMaps;
 	blitz::TinyVector<bool, Rank> IsSetupRank;
 	blitz::TinyVector<Epetra_MultiVector_Ptr, Rank> InputVector;
 	blitz::TinyVector<Epetra_MultiVector_Ptr, Rank> OutputVector;
+
+	typename Wavefunction<Rank>::Ptr Psi;
 
 	blitz::Array<cplx, Rank> TempData;
 	blitz::Array<cplx, Rank> InputData;
@@ -50,6 +53,7 @@ public:
 	DistributedOverlapMatrix() 
 	{
 		IsSetupRank = false;
+		HasPsi = false;
 	}
 	virtual ~DistributedOverlapMatrix() {}
 	

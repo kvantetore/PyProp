@@ -16,6 +16,23 @@ using namespace blitz;
 template<int Rank>
 void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int opRank)
 {
+	//Need a copy of srcPsi for future reference (only on first call to this function)
+	if (!HasPsi)
+	{
+		Psi = srcPsi.Copy();
+	}
+
+	//Check that distribution for opRank has not changed since last call
+	int curDistribOpRank = Psi->GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
+	int srcDistribOpRank = srcPsi.GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
+	if (curDistribOpRank != srcDistribOpRank)
+	{
+		Psi = srcPsi.Copy();
+
+		//NB: We reset IsSetup flag for _all_ ranks!
+		IsSetupRank = false;
+	}
+
 	if (!IsSetupRank(opRank))
 	{
 		//Sanity check: operation rank should be less than rank of wavefunction (and nonzero, duh)
@@ -26,8 +43,7 @@ void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int o
 		assert (!srcPsi.GetRepresentation()->IsOrthogonalBasis(opRank));
 
 		//Create Epetra map for this rank
-		typename Wavefunction<Rank>::Ptr tmpPsi = srcPsi.Copy();
-		WavefunctionMaps(opRank) = CreateWavefunctionMultiVectorEpetraMap<Rank>(tmpPsi, opRank);
+		WavefunctionMaps(opRank) = CreateWavefunctionMultiVectorEpetraMap<Rank>(Psi, opRank);
 
 		//Setup overlap matrix
 		SetupOverlapMatrixRank(srcPsi, opRank);
