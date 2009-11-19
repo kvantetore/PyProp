@@ -118,28 +118,50 @@ public:
 			int paddedDistrShape = paddedShape / CartesianShape(procRank);
 			int shape = fullShape - paddedDistrShape * groupRank;
 
+
 			/* Here we handle the cases where some procs end up with zero data. 
 			 * The last proc to have non-zero data size substracts one data point
 			 * for each remaining proc from its shape. These are then claimed by
 			 * the remaining procs by the std::min statement below (1 per proc).
 			 */
-			if ( (shape <= paddedDistrShape) && (shape > 0) )
+			if (rest < paddedDistrShape)
 			{
-				shape -= CartesianShape(procRank) - groupRank - 1;
-
-				//Case where shape on this proc is less than or equal to number of
-				//remaining procs will fail.
-				//FIX: Should handle the error here, but Exceptions might not be
-				//a good idea.
-				if (shape <= 0)
+				if ( (shape <= paddedDistrShape) && (shape > 0) )
 				{
-					cout << "Something went awry in CreateDistributedShape! Could not redistribute"
-						<<	"grid end-data to remaining procs!" << endl;
+					shape -= CartesianShape(procRank) - groupRank - 1;
+
+					//Case where shape on this proc is less than or equal to number of
+					//remaining procs will fail.
+					//FIX: Should handle the error here, but Exceptions might not be
+					//a good idea.
+					if (shape <= 0)
+					{
+						cout << "Something went awry in CreateDistributedShape! Could not redistribute"
+							<<	"grid end-data to remaining procs!" << endl;
+					}
+				}
+
+				shape = std::max(shape, 1);
+				shape = std::min(shape, paddedDistrShape);
+			}
+
+			/*
+			 * If not enough elements are left on the last proc with non-zero shape to fill
+			 * up the remaining procs, we instead give all procs an extra element, and substract
+			 * from a subset of all procs until the full shape has been properly distributed
+			 */
+			else
+			{
+				//All procs get the padded shape...
+				shape = paddedDistrShape;
+
+				//Proc 0..rest-1 substracts one element
+				if (procRank < rest)
+				{
+					shape -= 1;
 				}
 			}
 
-			shape = std::max(shape, 1);
-			shape = std::min(shape, paddedDistrShape);
 			distrShape = shape;	
 		}
 				

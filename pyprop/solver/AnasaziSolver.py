@@ -1,7 +1,6 @@
 import sys
 
 from pyprop import CreateInstanceRank, ProcId
-from pyprop.core import AnasaziSolver_1, AnasaziSolver_2, AnasaziSolver_3
 
 
 class AnasaziSolver:
@@ -20,7 +19,7 @@ class AnasaziSolver:
 		self.TempPsi = prop.psi.CopyDeep()
 
 		#Set up Anasazi Solver
-		self.Solver = CreateInstanceRank("AnasaziSolver", self.Rank, globals())
+		self.Solver = CreateInstanceRank("core.AnasaziSolver", self.Rank, globals())
 		configSection = prop.Config.Anasazi
 		configSection.Apply(self.Solver)
 		self.Solver.Setup(prop.psi)

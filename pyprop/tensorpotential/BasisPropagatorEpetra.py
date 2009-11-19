@@ -8,7 +8,7 @@ class BasisPropagatorEpetra(BasisPropagator):
 	to set up the potential matrices.
 	"""
 
-	__Base = PropagatorBase
+	__Base = BasisPropagator
 
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
