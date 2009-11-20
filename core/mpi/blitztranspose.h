@@ -114,7 +114,7 @@ public:
 		 * procs, there are rest more elements to distribute, we give these elements
 		 * to the rest first processors
 		 */
-		if (procRank < rest)
+		if (groupRank < rest)
 		{
 			distrShape += 1;
 		}
@@ -134,8 +134,8 @@ public:
 		 * to the "rest" first processors
 		 */
 		
-		int localStart = std::min(rest, procRank) * (distrShape+1)
-			           + std::max(0, procRank-rest) * (distrShape);
+		int localStart = std::min(rest, groupRank) * (distrShape+1)
+			           + std::max(0, groupRank-rest) * (distrShape);
 
 		return localStart;
 	}
