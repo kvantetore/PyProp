@@ -107,88 +107,37 @@ public:
 	int CreateDistributedShape(int fullShape, int procRank, int groupRank)
 	{
 		int rest = fullShape % CartesianShape(procRank);
-		int distrShape;
-		if (rest == 0) 
+		int distrShape = fullShape / CartesianShape(procRank); // integer division, rounds down
+		assert(rest + (distrShape*CartesianShape(procRank)) == fullShape);
+		
+		/* If we were not able to fully distribute fullShape on the available
+		 * procs, there are rest more elements to distribute, we give these elements
+		 * to the rest first processors
+		 */
+		if (procRank < rest)
 		{
-			distrShape = fullShape / CartesianShape(procRank);
-		}
-		else
-		{
-			int paddedShape = CreatePaddedShape(fullShape, procRank);
-			int paddedDistrShape = paddedShape / CartesianShape(procRank);
-			int shape = fullShape - paddedDistrShape * groupRank;
-
-
-			/* Here we handle the cases where some procs end up with zero data. 
-			 * The last proc to have non-zero data size substracts one data point
-			 * for each remaining proc from its shape. These are then claimed by
-			 * the remaining procs by the std::min statement below (1 per proc).
-			 */
-			if (rest < paddedDistrShape)
-			{
-				if ( (shape <= paddedDistrShape) && (shape > 0) )
-				{
-					shape -= CartesianShape(procRank) - groupRank - 1;
-
-					//Case where shape on this proc is less than or equal to number of
-					//remaining procs will fail.
-					//FIX: Should handle the error here, but Exceptions might not be
-					//a good idea.
-					if (shape <= 0)
-					{
-						cout << "Something went awry in CreateDistributedShape! Could not redistribute"
-							<<	"grid end-data to remaining procs!" << endl;
-					}
-				}
-
-				shape = std::max(shape, 1);
-				shape = std::min(shape, paddedDistrShape);
-			}
-
-			/*
-			 * If not enough elements are left on the last proc with non-zero shape to fill
-			 * up the remaining procs, we instead give all procs an extra element, and substract
-			 * from a subset of all procs until the full shape has been properly distributed
-			 */
-			else
-			{
-				//All procs get the padded shape...
-				shape = paddedDistrShape;
-
-				//Proc 0..rest-1 substracts one element
-				if (procRank < rest)
-				{
-					shape -= 1;
-				}
-			}
-
-			distrShape = shape;	
+			distrShape += 1;
 		}
 				
 		return distrShape;
 	}
 
 
-	int GetLocalStartIndex(int globalSize, int procRank, int groupRank)
+	int GetLocalStartIndex(int fullShape, int procRank, int groupRank)
 	{
-		int paddedShape = CreatePaddedShape(globalSize, procRank);
-		int paddedDistribShape = CreateDistributedShape(paddedShape, procRank, groupRank);
-		int groupSize = CartesianShape(procRank);
+		int rest = fullShape % CartesianShape(procRank);
+		int distrShape = fullShape / CartesianShape(procRank); //integer division, rounds down
+		assert(rest + (distrShape*CartesianShape(procRank)) == fullShape);
 
-		int firstSmallRank = globalSize/paddedDistribShape;
-		if (globalSize % paddedDistribShape == 0)
-		{
-			firstSmallRank -= 1;
-		}
-		if (groupRank <= firstSmallRank)
-		{
-			return groupRank * paddedDistribShape;
-		}
-		else
-		{
-			return globalSize - (groupSize - groupRank);
-		}
+		/* If we were not able to fully distribute fullShape on the available
+		 * procs, there are "rest" more elements to distribute, we give these elements
+		 * to the "rest" first processors
+		 */
+		
+		int localStart = std::min(rest, procRank) * (distrShape+1)
+			           + std::max(0, procRank-rest) * (distrShape);
 
+		return localStart;
 	}
 
 	blitz::Range GetLocalRange(int globalSize, int procRank, int groupRank)
