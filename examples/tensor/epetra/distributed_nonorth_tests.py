@@ -9,8 +9,9 @@ from scipy import *
 from pylab import *
 
 import pypar
+import time
 
-from libepetratest import *
+#from libepetratest import *
 from libpotential import *
 
 def Print(str="", whichProc = [0]):
@@ -24,6 +25,14 @@ def Print(str="", whichProc = [0]):
 		pyprop.Redirect.Enable(silent=True)
 	else:
 		printMsg()
+		
+
+def timeIt(func):
+	t1 = time.time()
+	func()
+	t2 = time.time()
+	Print("  Function '%s' took %4.1f s." % (func.func_name, (t2-t1)))
+
 
 def SetupConfig(**args):
 	configFile = args.get("config", "config.ini")
@@ -297,9 +306,85 @@ def TestEpetraMatrix():
 	print "||psi|| = %s" % psiNorm
 
 
+def TestSolveOverlapSpeed():
+	def timeIt(func):
+		t1 = time.time()
+		func()
+		t2 = time.time()
+		Print("  Function '%s' took %4.1f s." % (func.func_name, (t2-t1)))
+
+	numSolves = 100
+
+	pyprop.PrintOut("")
+	pyprop.PrintOut("Now testing multiple S^-1 * psi...")
+	pyprop.Redirect.Enable(silent=True)
+
+	seed(0)
+
+	conf = pyprop.Load("config_eigenvalues.ini")
+	psi = pyprop.CreateWavefunction(conf)
+	tmpPsi = psi.Copy()
+
+	Print("  Size of wavefunction is: %s" % repr(psi.GetData().shape)) 
+
+	#Calculate S^-1 * psi
+	Print("  Performing %i solves..." % numSolves)
+	def solve():
+		for i in range(numSolves):
+			psi.GetRepresentation().MultiplyOverlap(tmpPsi)
+	timeIt(solve)
+	
+	#finish and cleanup
+	pypar.barrier()
+	pyprop.Redirect.Disable()
+	pyprop.PrintOut("\n...done!")
+
+
+def TestEpetraMatvecSpeed():
+	numMatVecs = 500
+
+	pyprop.PrintOut("")
+	Print("Now testing Epetra matvec speed...")
+	pyprop.Redirect.Enable(silent=True)
+
+	#Test
+	conf = pyprop.Load("config_eigenvalues.ini")
+	psi = pyprop.CreateWavefunction(conf)
+	Print("  Size of wavefunction is: %s" % repr(psi.GetData().shape)) 
+
+	#Setup problem
+	Print("  Setting up propagator w/potentials...")
+	prop = SetupProblem(config='config_eigenvalues.ini')
+	psi = prop.psi
+	tmpPsi = psi.Copy()
+	tmpPsi.Clear()
+
+	Print("  Local size of wavefunction is: %s" % repr(prop.psi.GetData().shape)) 
+	Print("  Global size of wavefunction is: %s" % repr(prop.psi.GetRepresentation().GetFullShape())) 
+
+	#Get Epetra potential
+	pot = prop.Propagator.BasePropagator.PotentialList[0]
+
+	#Calculate S^-1 * psi
+	Print("  Performing %i matvecs..." % numMatVecs)
+	def matvecs():
+		for i in range(numMatVecs):
+			pot.MultiplyPotential(psi, tmpPsi, 0, 0)
+			tmpPsi.GetRepresentation().SolveOverlap(tmpPsi)
+
+	timeIt(matvecs)
+	
+	#finish and cleanup
+	pypar.barrier()
+	pyprop.Redirect.Disable()
+	pyprop.PrintOut("\n...done!")
+
+
 if __name__ == "__main__":
-	TestMultiplyOverlap()
-	TestSolveOverlap()
-	TestInnerProduct()
-	TestFindEigenvalues()
+	#TestMultiplyOverlap()
+	#TestSolveOverlap()
+	#TestInnerProduct()
+	#TestFindEigenvalues()
 	#TestEpetraMatrix()
+	#TestSolveOverlapSpeed()
+	TestEpetraMatvecSpeed()
