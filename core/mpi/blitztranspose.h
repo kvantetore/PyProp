@@ -431,10 +431,10 @@ Transpose(const DataVector fullShape, const ProcVector fullDistr, DataArray inDa
 		int toProc = (i + curProc) % Np;
 		int fromProc = (Np - i + curProc) % Np;
 
-		int toProcStart = sendSize * toProc;
+		int toProcStart = GetLocalStartIndex(outSizeFull, procRank, toProc);
 		int toProcSize =  CreateDistributedShape(outSizeFull, procRank, toProc);
 		
-		int fromProcStart = recvSize * fromProc;
+		int fromProcStart = GetLocalStartIndex(inSizeFull, procRank, fromProc);
 		int fromProcSize = CreateDistributedShape(inSizeFull, procRank, fromProc);
 
 
