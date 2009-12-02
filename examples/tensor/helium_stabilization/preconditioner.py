@@ -223,7 +223,8 @@ class RadialTwoElectronPreconditionerIfpack(RadialTwoElectronPreconditioner):
 			vector = self.psi.GetData()[i,:,:]
 			matrix = tensorPotential.PotentialData[i, :, :]
 
-			solver = IfpackRadialPreconditioner_2()
+			#solver = IfpackRadialPreconditioner_2()
+			solver = pyprop.CreateInstanceRank("core.IfpackRadialPreconditioner", 2)
 			basisPairs = tensorPotential.BasisPairs[1:]
 			solver.Setup(vector, matrix, basisPairs, self.Cutoff)
 			radialSolvers.append(solver)
