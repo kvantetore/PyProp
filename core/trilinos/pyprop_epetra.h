@@ -60,7 +60,9 @@ Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(typename Wavefunction<R
 template<int Rank> 
 Epetra_FECrsMatrix_Ptr CreateTensorPotentialEpetraMatrix(Epetra_Map &processorMap, blitz::Array<cplx, Rank> potentialData, boost::python::list pyLocalBasisPairs, blitz::TinyVector<int, Rank> globalStrides, double cutoff)
 {
-	return CreateTensorPotentialEpetraMatrix(processorMap, potentialData, pyLocalBasisPairs, globalStrides, true);	
+
+	Epetra_FECrsMatrix_Ptr matrix = CreateTensorPotentialEpetraMatrix(processorMap, potentialData, pyLocalBasisPairs, globalStrides, cutoff, true);	
+	return matrix;
 }
 
 template<int Rank> 
