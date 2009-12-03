@@ -10,9 +10,12 @@ from pylab import *
 
 import pypar
 import time
+import tables
 
 #from libepetratest import *
 from libpotential import *
+
+execfile("../helium_stabilization/preconditioner.py")
 
 def Print(str="", whichProc = [0]):
 	def printMsg():
@@ -32,6 +35,20 @@ def timeIt(func):
 	func()
 	t2 = time.time()
 	Print("  Function '%s' took %4.1f s." % (func.func_name, (t2-t1)))
+
+
+def FormatDuration(duration):
+	duration = int(duration)
+	h = (duration / 3600)
+	m = (duration / 60) % 60
+	s = (duration % 60)
+
+	str = []
+	if h>0: str += ["%ih" % h]
+	if m>0: str += ["%im" % m]
+	if s>0: str += ["%is" % s]
+
+	return " ".join(str)
 
 
 def SetupConfig(**args):
@@ -315,8 +332,8 @@ def TestSolveOverlapSpeed():
 
 	numSolves = 100
 
-	pyprop.PrintOut("")
-	pyprop.PrintOut("Now testing multiple S^-1 * psi...")
+	Print("")
+	Print("Now testing multiple S^-1 * psi...")
 	pyprop.Redirect.Enable(silent=True)
 
 	seed(0)
@@ -337,40 +354,42 @@ def TestSolveOverlapSpeed():
 	#finish and cleanup
 	pypar.barrier()
 	pyprop.Redirect.Disable()
-	pyprop.PrintOut("\n...done!")
+	Print("\n...done!")
 
 
 def TestEpetraMatvecSpeed():
 	numMatVecs = 500
 
-	pyprop.PrintOut("")
+	Print("")
 	Print("Now testing Epetra matvec speed...")
 	pyprop.Redirect.Enable(silent=True)
 
 	#Test
-	conf = pyprop.Load("config_eigenvalues.ini")
+	conf = pyprop.Load("config_propagation.ini")
 	psi = pyprop.CreateWavefunction(conf)
 	Print("  Size of wavefunction is: %s" % repr(psi.GetData().shape)) 
 
 	#Setup problem
 	Print("  Setting up propagator w/potentials...")
-	prop = SetupProblem(config='config_eigenvalues.ini')
+	prop = SetupProblem(config='config_propagation.ini')
 	psi = prop.psi
 	tmpPsi = psi.Copy()
 	tmpPsi.Clear()
 
-	Print("  Local size of wavefunction is: %s" % repr(prop.psi.GetData().shape)) 
-	Print("  Global size of wavefunction is: %s" % repr(prop.psi.GetRepresentation().GetFullShape())) 
+	Print("  Local size of wavefunction is: %s" % str(prop.psi.GetData().shape)) 
+	Print("  Global size of wavefunction is: %s" % str(prop.psi.GetRepresentation().GetFullShape())) 
 
 	#Get Epetra potential
-	pot = prop.Propagator.BasePropagator.PotentialList[0]
+	#pot = prop.Propagator.BasePropagator.PotentialList[1]
+	Print("  Number of potentials: %s" % len(prop.Propagator.BasePropagator.PotentialList))
 
 	#Calculate S^-1 * psi
 	Print("  Performing %i matvecs..." % numMatVecs)
 	def matvecs():
 		for i in range(numMatVecs):
-			pot.MultiplyPotential(psi, tmpPsi, 0, 0)
-			tmpPsi.GetRepresentation().SolveOverlap(tmpPsi)
+			#pot.MultiplyPotential(psi, tmpPsi, 0, 0)
+			prop.Propagator.BasePropagator.MultiplyHamiltonianNoOverlap(psi, tmpPsi, 0, 0)
+			#tmpPsi.GetRepresentation().SolveOverlap(tmpPsi)
 
 	timeIt(matvecs)
 	
@@ -378,6 +397,86 @@ def TestEpetraMatvecSpeed():
 	pypar.barrier()
 	pyprop.Redirect.Disable()
 	pyprop.PrintOut("\n...done!")
+
+
+def TestPropagation(inputFile = "groundstate_propagation.h5", **args):
+	pyprop.PrintMemoryUsage("Before TestPropagation")
+	
+	Print("")
+	Print("Now testing propagation...")
+	pyprop.Redirect.Enable(silent=True)
+
+	#Set up propagation problem
+	potList = []
+	#if not args.get("laserOff", False):
+	#	Print("Setting up new problem with laser potentials...")
+	#	potList += ["LaserPotentialVelocityDerivativeR1", "LaserPotentialVelocityDerivativeR2", "LaserPotentialVelocity"]
+	#else:
+	#	Print("Setting up new problem WITHOUT laser potentials...")
+
+	#if not args.get("absorberOff", False):
+	#	potList += ["Absorber"]
+	#	Print("Setting up new problem with absorber...")
+	#else:
+	#	Print("Setting up new problem WITHOUT absorber...")
+
+	pyprop.PrintMemoryUsage("Before SetupProblem")
+	args["config"] = args.get("config", "config_propagation_nonorthdistr.ini")
+	#args["config"] = args.get("config", "config_propagation.ini")
+	prop = SetupProblem(**args)
+	Print("Proc %i has wavefunction shape = %s" % (pyprop.ProcId, list(prop.psi.GetData().shape)), [pyprop.ProcId])
+	pyprop.PrintMemoryUsage("After SetupProblem")
+
+	#Load initial state
+	Print("Loading intial state...")
+	pyprop.PrintMemoryUsage("Before Loading InitialState")
+	prop.psi.GetData()[:] = 0
+	pyprop.serialization.LoadWavefunctionHDF(inputFile, "/wavefunction", prop.psi)
+	prop.psi.Normalize()
+	initPsi = prop.psi.Copy()
+	initialEnergyCalculated = prop.GetEnergyExpectationValue()
+	Print("Initial State Energy = %s" % initialEnergyCalculated)
+	pyprop.PrintMemoryUsage("After Loading InitialState")
+
+	Print("Done setting up problem!")
+	
+	#Propagate
+	Print("Starting propagation")
+	outputCount = args.get("outputCount", 10)
+	startTime = time.time()
+	for step, t in enumerate(prop.Advance(outputCount)):
+		#calculate values
+		norm = prop.psi.GetNorm()
+		corr = abs(initPsi.InnerProduct(prop.psi))**2
+
+		#estimate remaining time
+		curTime = time.time() - startTime
+		totalTime = (curTime / t) * prop.Duration
+		eta = totalTime - curTime
+
+		#Print stats
+		Print("t = %.2f; N = %.15f; Corr = %.10f, ETA = %s" % (t, norm, corr, FormatDuration(eta)))
+		Print("GMRES errors = %s" % prop.Propagator.Solver.GetErrorEstimateList())
+		pyprop.PrintMemoryUsage("At t = %s" % t)
+	
+	endTime = time.time()
+	Print("Propagation time = %s" % FormatDuration(endTime-startTime))
+
+	#Final output
+	pyprop.PrintMemoryUsage("After Propagation")
+	norm = prop.psi.GetNorm()
+	corr = abs(initPsi.InnerProduct(prop.psi))**2
+
+	Print("Final status: N = %.10f; Corr = %.10f" % (norm, corr))
+
+	Print("")
+	prop.Propagator.Solver.PrintStatistics()
+
+	#finish and cleanup
+	pypar.barrier()
+	pyprop.Redirect.Disable()
+	pyprop.PrintMemoryUsage("After TestPropagation")
+	Print("\n...done!")
 
 
 if __name__ == "__main__":
@@ -388,3 +487,4 @@ if __name__ == "__main__":
 	#TestEpetraMatrix()
 	#TestSolveOverlapSpeed()
 	TestEpetraMatvecSpeed()
+	#TestPropagation()
