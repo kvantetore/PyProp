@@ -30,6 +30,7 @@ def CreateBasisFromRepresentation(representation):
 	return basis
 
 
+
 class TensorPotentialGenerator(object):
 
 	def __init__(self, **args):
@@ -130,7 +131,7 @@ class TensorPotentialGenerator(object):
 			
 		#for parallelization
 		#We only support the first rank initially distributed
-		assert(repr.GetDistributedModel().GetDistribution()[0] == 0)
+		#assert(repr.GetDistributedModel().GetDistribution()[0] == 0)
 		#assert(len(repr.GetDistributedModel().GetDistribution()) == 1)
 		if repr.GetDistributedModel().IsSingleProc():
 			distribution = []
@@ -167,13 +168,18 @@ class TensorPotentialGenerator(object):
 				if rank in distribution:
 					tempDistributions += [distribution]
 					PrintOut( "Rank %i is distributed" % rank )
-					assert(rank != self.Rank-1)
+					#assert(rank != self.Rank-1)
 					#assert(not rank+1 in distribution)
 
 					#Create new distribution
+					nonDistrRank = self.FindNondistributedRank(rank, distribution)
+					#assert(not rank-1 in distribution)
 					distribIndex = distribution.index(rank)
 					newDistribution = list(distribution)
-					newDistribution[distribIndex] = rank+1
+					newDistribution[distribIndex] = nonDistrRank
+					#distribIndex = distribution.index(rank)
+					#newDistribution = list(distribution)
+					#newDistribution[distribIndex] = rank+1
 
 					#Create shape of transposed function and allocate dest buffer
 					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int32))
@@ -316,3 +322,9 @@ class TensorPotentialGenerator(object):
 		
 
 
+	def FindNondistributedRank(self, curRank, distributions):
+		for rank in range(self.Rank):
+			if not rank in distributions:
+				return rank
+
+		raise Exception("All other ranks seems to be distributed!")

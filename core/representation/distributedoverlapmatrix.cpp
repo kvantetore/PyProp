@@ -25,7 +25,7 @@ void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int o
 
 	//Check that distribution for opRank has not changed since last call.
 	//Also check that typeID of representation is the same
-	int curDistribOpRank = Psi->GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
+/*	int curDistribOpRank = Psi->GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
 	int srcDistribOpRank = srcPsi.GetRepresentation()->GetDistributedModel()->GetDistribution()(opRank);
 	if ( (curDistribOpRank != srcDistribOpRank) )
 	{
@@ -34,7 +34,7 @@ void DistributedOverlapMatrix<Rank>::SetupRank(Wavefunction<Rank> &srcPsi, int o
 		//NB: We reset IsSetup flag for _all_ ranks!
 		IsSetupRank = false;
 	}
-
+*/
 	if (!IsSetupRank(opRank))
 	{
 		//Sanity check: operation rank should be less than rank of wavefunction (and nonzero, duh)

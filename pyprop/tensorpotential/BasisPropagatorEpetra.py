@@ -20,14 +20,6 @@ class BasisPropagatorEpetra(BasisPropagator):
 		self.Psi = self.psi.Copy()
 
 
-	def ApplyConfig(self, config):
-		#Create any precalculated potentials 
-		self.__Base.ApplyConfig(self, config)
-		
-		#Generate potentials
-		self.GeneratePotentials(config)
-
-
 	def GeneratePotentials(self, config):
 		"""
 		Generate TensorPotentials from potentials specified on the grid in the
