@@ -19,7 +19,7 @@ class RedirectClass:
 			if self.redirect_stdout != None:
 				#raise Exception("Already redirected")
 				warnings.warn("Already redirected", RuntimeWarning)
-	
+			sys.stdout.flush()
 			self.redirect_stdout = StdOut(sys.stdout, silent)
 			self.redirect_cout = core.redirect_cout()
 			sys.stdout = self.redirect_stdout

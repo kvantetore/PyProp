@@ -85,6 +85,8 @@ class Config:
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
 	#hierarchy
+	if fileName is None:
+		raise Exception("Filename can not be none")
 	configFiles = []
 	newFiles = [(".", fileName)]
 	while len(newFiles) > 0:
