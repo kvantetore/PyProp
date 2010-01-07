@@ -9,12 +9,16 @@ template<class InitialConditionClass, int Rank>
 class WavefunctionEvaluator : public InitialConditionClass
 {
 public:
+
+	WavefunctionEvaluator() {}
+	~WavefunctionEvaluator() {}
+
 	/** Setup the wavefunction **/
-	void SetupWavefunction(Wavefunction<Rank> &psi)
+	void SetupWavefunction(typename Wavefunction<Rank>::Ptr psi)
 	{
 		//Set up grid
 		blitz::TinyVector< blitz::Array<double, 1>, Rank> grid;
-		typename Representation<Rank>::Ptr repr = psi.GetRepresentation();
+		typename Representation<Rank>::Ptr repr = psi->GetRepresentation();
 		for (int curRank = 0; curRank<Rank; curRank++)
 		{
 			grid(curRank).reference(repr->GetLocalGrid(curRank));
@@ -23,8 +27,8 @@ public:
 		//Iterate through each point in the wavefunction
 		blitz::TinyVector<double, Rank> pos;
 		blitz::TinyVector<int, Rank> indexPos;
-		typename blitz::Array<cplx, Rank>::iterator it = psi.Data.begin();
-		for (int linearCount=0; linearCount<psi.Data.size(); linearCount++)
+		typename blitz::Array<cplx, Rank>::iterator it = psi->Data.begin();
+		for (int linearCount=0; linearCount<psi->Data.size(); linearCount++)
 		{
 			for (int curRank=0; curRank<Rank; curRank++)
 			{
@@ -36,7 +40,7 @@ public:
 			it++;
 		}
 
-		psi.Normalize();
+		//psi->Normalize();
 	}
 
 };
