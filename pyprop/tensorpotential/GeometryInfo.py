@@ -284,6 +284,7 @@ class GeometryInfoCommonDiagonal(GeometryInfoDistributedBase):
 	def GetMultiplyArguments(self, psi):
 		return []
 
+		#return False
 
 
 class GeometryInfoCommonBandedDistributed(GeometryInfoDistributedBase):
