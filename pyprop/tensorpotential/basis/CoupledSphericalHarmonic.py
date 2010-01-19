@@ -148,6 +148,8 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 				selectionRule = core.CoupledSphericalSelectionRuleR12(multipoleCutoff)
 			elif selectionRuleName == "linearpolarizedfield":
 				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedField()
+			elif selectionRuleName == "linearpolarizedfieldperpendicular":
+				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular()
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 

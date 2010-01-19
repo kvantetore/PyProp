@@ -94,6 +94,22 @@ struct CoupledSphericalSelectionRuleDiagonal_Wrapper: CoupledSphericalSelectionR
     PyObject* py_self;
 };
 
+struct CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular_Wrapper: CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular
+{
+    CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular_Wrapper(PyObject* py_self_):
+        CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular(), py_self(py_self_) {}
+
+    bool SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
+        return call_method< bool >(py_self, "SelectionRule", p0, p1);
+    }
+
+    bool default_SelectionRule(const CoupledSpherical::CoupledIndex& p0, const CoupledSpherical::CoupledIndex& p1) {
+        return CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular::SelectionRule(p0, p1);
+    }
+
+    PyObject* py_self;
+};
+
 
 }// namespace 
 
@@ -123,6 +139,10 @@ void Export_python_coupledsphericalselectionrule()
 
     class_< CoupledSphericalSelectionRuleDiagonal, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleDiagonal_Wrapper >("CoupledSphericalSelectionRuleDiagonal", init<  >())
         .def("SelectionRule", (bool (CoupledSphericalSelectionRuleDiagonal::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&) )&CoupledSphericalSelectionRuleDiagonal::SelectionRule, (bool (CoupledSphericalSelectionRuleDiagonal_Wrapper::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&))&CoupledSphericalSelectionRuleDiagonal_Wrapper::default_SelectionRule)
+    ;
+
+    class_< CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular, bases< CoupledSphericalSelectionRule > , boost::noncopyable, CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular_Wrapper >("CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular", init<  >())
+        .def("SelectionRule", (bool (CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&) )&CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular::SelectionRule, (bool (CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular_Wrapper::*)(const CoupledSpherical::CoupledIndex&, const CoupledSpherical::CoupledIndex&))&CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular_Wrapper::default_SelectionRule)
     ;
 
 }
