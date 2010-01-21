@@ -9,9 +9,18 @@ try:
 except:
 	LOAD_TRILINOS_FALSE = True
 
+try:
+	from libcore import *
+	LOAD_CORE_OK = True
+except:
+	LOAD_CORE_OK = False
 
-from libcore import *
-from libredirect import *
+
+try:
+	from libredirect import *
+	LOAD_REDIRECT_OK = True
+except:
+	LOAD_REDIRECT_OK = False
 
 try:
 	from libexpokit import *
@@ -86,19 +95,20 @@ def RepresentationEq(self,other):
 		return self.GetId() == other.GetId()
 	else:
 		return False
-	
-for classObject in EnumerateRankClasses('Representation'):
-	classObject.__hash__ = RepresentationHash
-	classObject.__eq__ = RepresentationEq
-	
-#CartesianRange
-def CartesianRange__str__(self):
-	mystr = "(min, max, count, step, istranslated) = ("
-	mystr += str(self.Min) + ", "
-	mystr += str(self.Max) + ", "
-	mystr += str(self.Count) + ", "
-	mystr += str(self.Dx) + ", "
-	mystr += str(self.TranslatedGrid) + ")"
-	return mystr
-	
-CartesianRange.__str__ = CartesianRange__str__
+
+if LOAD_CORE_OK:
+	for classObject in EnumerateRankClasses('Representation'):
+		classObject.__hash__ = RepresentationHash
+		classObject.__eq__ = RepresentationEq
+		
+	#CartesianRange
+	def CartesianRange__str__(self):
+		mystr = "(min, max, count, step, istranslated) = ("
+		mystr += str(self.Min) + ", "
+		mystr += str(self.Max) + ", "
+		mystr += str(self.Count) + ", "
+		mystr += str(self.Dx) + ", "
+		mystr += str(self.TranslatedGrid) + ")"
+		return mystr
+		
+	CartesianRange.__str__ = CartesianRange__str__

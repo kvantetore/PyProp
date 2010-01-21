@@ -9,7 +9,8 @@ class PotentialType:
 	RankOne = 7
 
 #Matches core/representation/orthopol/orthopoltools.h PolynomialType
-PolynomialType = core.OrthoPolType
+if core.LOAD_CORE_OK:
+	PolynomialType = core.OrthoPolType
 	
 #Initial condition types
 class InitialConditionType:

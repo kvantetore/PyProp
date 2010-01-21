@@ -48,8 +48,9 @@ if __DisableMPI:
 	for name, obj in core.__dict__.iteritems():
 		if name.startswith("DistributedModel_"):
 			obj.ForceSingleProc()
-	
-StaticStorageModel = core.StaticPotential_1.StorageModel
+
+if core.LOAD_CORE_OK:
+	StaticStorageModel = core.StaticPotential_1.StorageModel
 
 
 DEBUG_PRINT_MEMORY_USAGE = False

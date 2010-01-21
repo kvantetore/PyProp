@@ -1,10 +1,18 @@
-
+import os
+import os.path as path
 
 def rewrite_extension(filename, newext):
 	return "%s%s" % (path.splitext(filename)[0], newext)
 
 
-def compile_cxx(conf, src, dst=None):
+def build_subdir(subdir):
+	curdir = path.abspath(path.curdir)
+	os.chdir(dir)
+	fab.run("./build.py")
+	os.chdir(curdir)
+
+
+def compile_cxx(conf, bld, src, dst=None):
 	if not dst:
 		dst = rewrite_extension(src, ".o")
 

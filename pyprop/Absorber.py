@@ -19,8 +19,14 @@ absorb_right = True
 
 """
 
+if core.LOAD_CORE_OK:
+	AbsorbingBoundaryBase = core.AbsorberModel
+else:
+	AbsorbingBoundaryBase = object
+	
 
-class AbsorbingBoundary(core.AbsorberModel):
+
+class AbsorbingBoundary(AbsorbingBoundaryBase):
 
 	def ApplyConfigSection(self, config):
 		self.Width = config.width
