@@ -1,0 +1,19 @@
+import os.path
+import os
+
+def set_options(opt):
+	print('--> Options from core')
+	opt.sub_options("core")
+
+def configure(conf):
+	print('--> Configuring core')
+
+	#configure subdirs
+	conf.sub_config("core")
+
+def build(bld):
+	#build subdirs
+	bld.add_subdirs("core") 
+
+
+

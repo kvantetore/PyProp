@@ -1,0 +1,75 @@
+from Configure import conftest
+
+sources = [
+	"representation/coupledspherical/coupledsphericalharmonicrepresentation.cpp",
+	"representation/overlapmatrix.cpp",
+	"transform/orthopol/orthopoltools.cpp",
+	"transform/orthopol/orthopolpropagator.cpp",
+	"representation/reducedspherical/thetarepresentation.cpp",
+	"transform/reducedspherical/reducedsphericaltools.cpp",
+	"transform/reducedspherical/reducedsphericaltransform.cpp",
+	"utility/blitzblas.cpp",
+	"utility/orthogonalpolynomial.cpp",
+	"utility/gamma.cpp",
+	"transform/transformedgrid/transformedgridpropagator.cpp",
+	"transform/transformedgrid/tgridweights.cpp",
+	"transform/transformedgrid/tgridcheb.cpp",
+	"transform/transformedgrid/tgridsetup.cpp",
+	"transform/transformedgrid/tgridxymat.cpp",
+	"wavefunction.cpp",
+	"representation/combinedrepresentation.cpp",
+	"configuration.cpp",
+	"transform/radialtransform.cpp",
+	"transform/fouriertransform.cpp",
+	"transform/cartesianfouriertransform.cpp",
+	"transform/spherical/shtools.cpp",
+	"representation/cartesianrepresentation.cpp",
+	"representation/spherical/angularrepresentation.cpp",
+	"mpi/distributedmodel.cpp",
+	"python/pysteoutput/_main.cpp",
+	"finitediff/exponentialfinitedifference.cpp",
+	"utility/timer.cpp",
+	"representation/customgridrepresentation.cpp",
+	"utility/matrix_conversion.cpp",
+	"trilinos/pyprop_epetra.cpp",
+	"trilinos/pyprop_tpetra.cpp",
+	"representation/distributedoverlapmatrix.cpp",
+]
+
+def set_options(opt):
+	pass
+
+def configure(conf):
+	print("---> Configuring core/core")
+
+
+def build(bld):
+	#t = bld.new_task_gen(
+	#		source="representation/combinedrepresentation_generator.py",
+	#		target="representation/combinedrepresentation_generated.cpp",
+	#		rule="python ${SRC} > ${TGT}"
+	#		)
+
+
+	#t = bld.new_task_gen(
+	#	features	= "cxx shlib",
+	#	source		= sources,
+	#	target		= "libcore",
+	#	includes	= ["..", "."] + bld.env.BOOST_PYTHON_INC + bld.env.PYTHON_INC + bld.env.BLITZ_INC + bld.env.TRILINOS_INC,
+	#	install_path= None,
+	#	defines		= [] + bld.env.TRILINOS_DEFINES,
+	#	ccflags		= ["-O2", "-Wall", "-fPIC"],
+	#	libpath		= [],
+	#	linkflags	= [],
+	#)
+
+	tskgen = bld.new_task_gen(
+		features="pyste compile link",
+		source="configuration.cpp",
+		pyste_files="python/wavefunction.pyste",
+		pyste_module="libcore",
+	)
+
+
+	
+
