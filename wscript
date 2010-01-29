@@ -38,6 +38,7 @@ def configure(conf):
 	#configure modules
 	conf.sub_config("core")
 
+
 def build(bld):
 	bld.add_subdirs("core") 
 

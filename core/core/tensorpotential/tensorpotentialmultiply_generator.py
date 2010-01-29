@@ -56,7 +56,7 @@ subroutine func &
         dest, destExtent0, destExtent1, destExtent2&
     )
     implicit none
-    include "parameters.f"
+    include "tensorpotential/parameters.f"
 
 	complex (kind=dbl), dimension(0:potentialExtent2-1, 0:potentialExtent1-1, 0:potentialExtent0-1), intent(in) :: potential
 	integer, intent(in) :: potentialExtent0, potentialExtent1, potentialExtent2
@@ -1410,7 +1410,7 @@ class TensorPotentialMultiplyGenerator(object):
 			use IndexTricks
 			implicit none
 			include "mpif.h"
-			include "parameters.f"
+			include "tensorpotential/parameters.f"
 		""" % { "methodName": self.GetMethodName(), "rank": systemRank, "parameterString": parameterString}
 		str += GetFortranArrayDeclaration("potential", systemRank, "complex (kind=dbl)", "in")
 		str += "real (kind=dbl) :: scaling\n"
@@ -1613,7 +1613,7 @@ def PrintFortranCode(curPart, partCount):
 					integer, intent(in) :: fullSize, procCount, globalIndex
 					integer :: rest, paddedSize, procId, firstSmallRank, distribPaddedSize
 	
-					include "parameters.f"
+					include "tensorpotential/parameters.f"
 						
 					paddedSize = fullSize
 					rest = mod(fullSize, procCount)
@@ -1649,9 +1649,9 @@ def PrintWrapperCode():
 	#define BOOST_PYTHON_MAX_ARITY 20
 	#include <boost/python.hpp>
 
-	#include "../common.h"
-	#include "../utility/fortran.h"
-	#include "tensorpotentialmultiply_wrapper.h"
+	#include "common.h"
+	#include "utility/fortran.h"
+	#include "tensorpotential/tensorpotentialmultiply_wrapper.h"
 
 	namespace TensorPotential
 	{
@@ -1680,7 +1680,7 @@ def PrintWrapperHeader():
 	#ifndef TENSORPOTENTIAL_H
 	#define TENSORPOTENTIAL_H
 
-	#include "../common.h"
+	#include "common.h"
 
 	namespace TensorPotential
 	{
@@ -1705,4 +1705,28 @@ for systemRank in range(1,4+1):
 		generatorPermutationList.append(TensorPotentialMultiplyGenerator(list(perm)))
 
 
+if __name__ == "__main__":
+	from optparse import OptionParser
+	import sys
 
+	parser = OptionParser()
+	parser.add_option("--print-fortran", action="store_true", dest="print_fortran", default=False)
+	parser.add_option("--print-cpp-code", action="store_true", dest="print_cpp_code", default=False)
+	parser.add_option("--print-cpp-header", action="store_true", dest="print_cpp_header", default=False)
+	parser.add_option("--split-count", action="store", type="int", dest="split_count", default=4)
+	parser.add_option("--split-index", action="store", type="int", dest="split_index")
+
+	(opts, args) = parser.parse_args()
+	if opts.print_fortran:
+		PrintFortranCode(opts.split_index, opts.split_count)
+	elif opts.print_cpp_code:
+		PrintWrapperCode()
+	elif opts.print_cpp_header:
+		PrintWrapperHeader()
+	else:
+		parser.print_help()
+		print ""
+		print "Specify at least one of the --print-* commands"
+		print ""
+		sys.exit(-1)
+	

@@ -340,8 +340,8 @@ def GenerateAlgorithm3(rank):
 		
 
 for i in range(1,4+1):
-	print '#include "combinedrepresentation.h"'
-	print '#include "../tensorpotential/tensorpotentialmultiply_wrapper.h"'
+	print '#include "representation/combinedrepresentation.h"'
+	print '#include "tensorpotential/tensorpotentialmultiply_wrapper.h"'
 	print PrettyPrint(GenerateAlgorithm1(i))
 	print PrettyPrint(GenerateAlgorithm2(i))
 	print PrettyPrint(GenerateAlgorithm3(i))

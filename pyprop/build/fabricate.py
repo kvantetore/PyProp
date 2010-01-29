@@ -694,6 +694,7 @@ class Builder(object):
                 # make sure this dependency or output hasn't changed
                 newhash = self.hasher(dep)
                 if newhash is None or newhash != oldhash:
+                    print "File %s changed oldhash = %s, newhash = %s" % (dep, oldhash, newhash)
                     break
             else:
                 # all dependencies are unchanged

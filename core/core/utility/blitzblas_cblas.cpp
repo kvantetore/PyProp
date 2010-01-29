@@ -4,7 +4,7 @@
  * it is to be used
  */
 
-#include "../krylov/piram/piram/blitzblas.h"
+#include "blaswrapper.h"
 
 const int blitz::linalg::MatrixTranspose::None; 
 const int blitz::linalg::MatrixTranspose::Transpose;

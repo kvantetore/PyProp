@@ -4,6 +4,7 @@ import os
 def set_options(opt):
 	print('--> Options from core')
 	opt.sub_options("core")
+	opt.add_option("--pyste", action="store_true", dest="PysteEnabled", default=False)
 
 def configure(conf):
 	print('--> Configuring core')

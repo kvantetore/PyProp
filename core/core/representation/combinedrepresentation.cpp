@@ -1,8 +1,12 @@
 #include "combinedrepresentation.h"
-#include "cartesianrepresentation.h"
 #include "../utility/blitztricks.h"
 #include "../utility/blitzblas.h"
 #include "distributedoverlapmatrix.h"
+
+extern void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 1> potential, double scaling, blitz::Array<cplx, 1> &source, blitz::Array<cplx, 1> &dest);
+extern void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 2> potential, double scaling, blitz::Array<cplx, 2> &source, blitz::Array<cplx, 2> &dest);
+extern void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 3> potential, double scaling, blitz::Array<cplx, 3> &source, blitz::Array<cplx, 3> &dest);
+extern void TensorPotentialMultiply_Rank1_Band(int rank, blitz::Array<cplx, 4> potential, double scaling, blitz::Array<cplx, 4> &source, blitz::Array<cplx, 4> &dest);
 
 template<int Rank>
 CombinedRepresentation<Rank>::CombinedRepresentation() 
@@ -507,7 +511,7 @@ cplx CombinedRepresentation<Rank>::InnerProductImpl_Algo2(DataArray d1, DataArra
 }
 
 //Include the generated implementations
-#include "combinedrepresentation_generated.cpp"
+//#include "combinedrepresentation_generated.cpp"
 
 template class CombinedRepresentation<1>;
 template class CombinedRepresentation<2>;

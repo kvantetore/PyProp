@@ -2,7 +2,7 @@
 
 #include "../utility/blitzlapack.h"
 #include "../utility/blitztricks.h"
-#include "../krylov/piram/piram/blitzblas.h"
+#include "../utility/blaswrapper.h"
 
 using namespace blitz::linalg;
 
