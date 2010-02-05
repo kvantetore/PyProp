@@ -266,8 +266,7 @@ def init_link(self):
 
 @extension(".cpp")
 def extension_cpp(self, node):
-	#print "Generating cpp task %s" % node
-	
+	#Create task to compile .cpp -> .o
 	tsk = self.create_task('cpp')
 	tsk.set_inputs(node)
 	outputNode = node.change_ext(".o")
@@ -275,10 +274,15 @@ def extension_cpp(self, node):
 	tsk.always = True
 	tsk.additional_includes = [self.path.srcpath(self.env), self.path.bldpath(self.env)]
 	
+	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
+
+	#return task, in case someone wants to add options
+	return tsk
 
 @extension(".f90")
 def extension_f90(self, node):
+	#Create task to compile .f90 -> .o
 	tsk = self.create_task('f90')
 	tsk.set_inputs(node)
 	outputNode = node.change_ext(".o")
@@ -286,7 +290,11 @@ def extension_f90(self, node):
 	tsk.always = True
 	tsk.additional_includes = [self.path.srcpath(self.env), self.path.bldpath(self.env)]
 	
+	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
+
+	#return task, in case someone wants to add options
+	return tsk
 
 
 
@@ -330,10 +338,16 @@ def detect(conf):
 @conftest
 def check_fortran(conf):
 	print "Detecting Fortran90"
-	conf.env.FORTRAN_F90FLAGS = ["-ffree-form", "-fimplicit-none", "-ffree-line-length-none", "-Wall", "-fPIC"]
+	conf.env.FORTRAN_F90FLAGS = ["-Wall",]
+	#free form
+	conf.env.FORTRAN_F90FLAGS += ["-ffree-form", "-fimplicit-none", "-ffree-line-length-none",]
+	#shared module on 64 bit systems
+	conf.env.FORTRAN_F90FLAGS += ["-fPIC",]
+	#debug
 	#conf.env.FORTRAN_F90FLAGS += ["-fbounds-check"]
+	#optimization
 	#conf.env.FORTRAN_F90FLAGS += ["-O2", "-g"]
-	conf.env.FORTRAN_LIB   = ["mpi_f90", "mpi_f77", "gfortran"]
+	conf.env.FORTRAN_LIB   = ["mpi_f90", "mpi_f77", "gfortran",]
 
 @conftest
 def check_blas_lapack(conf):

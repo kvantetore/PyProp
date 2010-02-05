@@ -1,0 +1,9 @@
+#Representations for the angular part of the spherical representation
+AngularRepresentation = Class("AngularRepresentation", "representation/spherical/angularrepresentation.h")
+no_virtual(AngularRepresentation)
+use_shared_ptr(AngularRepresentation)
+
+SphericalHarmonicRepresentation = Class("SphericalHarmonicRepresentation", "representation/spherical/sphericalharmonicrepresentation.h")
+no_virtual(SphericalHarmonicRepresentation)
+use_shared_ptr(SphericalHarmonicRepresentation)
+

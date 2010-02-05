@@ -2,12 +2,13 @@
 #define BASIS_FINITEDIFFERENCE_H
 
 #include "../common.h"
+#include "../utility/blitztricks.h"
 
 template<class TBase, int Rank>
-void RepresentPotentialInBasisFiniteDifference( Array<TBase, 2> differenceMatrixBandedBlas, Array<TBase, Rank> source, Array<TBase, Rank> dest, Array<int, 2> indexPair, int rank )
+void RepresentPotentialInBasisFiniteDifference( blitz::Array<TBase, 2> differenceMatrixBandedBlas, blitz::Array<TBase, Rank> source, blitz::Array<TBase, Rank> dest, blitz::Array<int, 2> indexPair, int rank )
 {
-	typedef Array<TBase, 3> Array3D;
-	typedef Array<TBase, 1> Array1D;
+	typedef blitz::Array<TBase, 3> Array3D;
+	typedef blitz::Array<TBase, 1> Array1D;
 	Array3D source3d = MapToRank3(source, rank, 1);
 	Array3D dest3d = MapToRank3(dest, rank, 1);
 

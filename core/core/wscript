@@ -2,16 +2,16 @@ from Configure import conftest
 from TaskGen import feature, extension, before, after
 
 sources = [
-	"representation/combinedrepresentation_generator.py",
 	"tensorpotential/tensorpotentialmultiply_generator.py",
+	"representation/combinedrepresentation_generator.py",
 	"representation/overlapmatrix.cpp",
 	"utility/blitzblas.cpp",
 	"utility/gamma.cpp",
 	"wavefunction.cpp",
 	"representation/combinedrepresentation.cpp",
+	"representation/customgridrepresentation.cpp",
 	"configuration.cpp",
 	"mpi/distributedmodel.cpp",
-#	"finitediff/exponentialfinitedifference.cpp",
 	"utility/timer.cpp",
 	"utility/matrix_conversion.cpp",
 	"trilinos/pyprop_epetra.cpp",
@@ -22,6 +22,22 @@ sources = [
 pyste_module = "libcore"
 pyste_sources = [
 	"python/wavefunction.pyste",	
+	"python/arrayfunctions.pyste",
+	"python/blitzblas.pyste",                 
+	"python/overlapmatrix.pyste",
+	"python/blitzwrapper.pyste",              
+	"python/papi.pyste",
+	"python/representation.pyste",
+	"python/combinedrepresentation.pyste",    
+	"python/configurationwrapper.pyste",      
+	"python/staticpotential.pyste",
+	"python/tensorpotential_basis.pyste",
+	"python/customgridrepresentation.pyste",  
+	"python/tensorpotential.pyste",
+	"python/databuffer.pyste",                
+	"python/vectorrepresentation.pyste",
+	"python/distributedmodel.pyste",          
+	"python/distributedoverlapmatrix.pyste",
 ]
 
 #------------------ Custom Extensions ---------------------------
@@ -45,14 +61,24 @@ def extension_tensorpotential_generator(taskGen, node):
 	#make Node from input
 	node = taskGen.path.find_resource(node)
 
+	outNodes = []
 	splitCount = 5
 	for i in range(splitCount):
+		#create task to generate f90
 		outputNode = taskGen.path.find_or_declare("tensorpotential/tensorpotentialmultiply_%i.f90" % i)
 		task = taskGen.create_task("python_generate_fortran")
 		task.set_inputs(node)
 		task.set_outputs(outputNode)
 		task.params = ["--print-fortran", "--split-count=%i" % splitCount, "--split-index=%i" % i]
-		taskGen.allnodes.append(outputNode)
+		outNodes.append(outputNode)
+		
+		#create task to compile f90
+		ext = taskGen.get_hook(outputNode.suffix())
+		compTask = ext(taskGen, outputNode)
+
+		if i > 0:
+			#all tasks depend on the first one, in order to generate indextricks.mod
+			compTask.deps_nodes.append(outNodes[0])
 
 	outputNode = taskGen.path.find_or_declare("tensorpotential/tensorpotentialmultiply_wrapper.h")
 	task = taskGen.create_task("python_generate_cpp")

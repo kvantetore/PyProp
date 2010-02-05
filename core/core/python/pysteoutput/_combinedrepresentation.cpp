@@ -5,8 +5,6 @@
 
 // Includes ====================================================================
 #include <representation/combinedrepresentation.h>
-#include <representation/spherical/angularrepresentation.h>
-#include <representation/spherical/sphericalharmonicrepresentation.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -168,42 +166,6 @@ void Export_python_combinedrepresentation()
         .def("MultiplySqrtOverlap", &CombinedRepresentation<4>::MultiplySqrtOverlap)
         .def("SolveSqrtOverlap", &CombinedRepresentation<4>::SolveSqrtOverlap)
     ;
-
-    scope* AngularRepresentation_scope = new scope(
-    class_< AngularRepresentation, bases< Representation<1> >  >("AngularRepresentation", init<  >())
-        .def(init< const AngularRepresentation& >())
-        .def_readwrite("Range", &AngularRepresentation::Range)
-        .def("Copy", &AngularRepresentation::Copy)
-        .def("SetupRepresentation", &AngularRepresentation::SetupRepresentation)
-        .def("GetFullShape", &AngularRepresentation::GetFullShape)
-        .def("InnerProduct", &AngularRepresentation::InnerProduct)
-        .def("GetGlobalGrid", &AngularRepresentation::GetGlobalGrid)
-        .def("GetGlobalWeights", &AngularRepresentation::GetGlobalWeights)
-        .def("GetGlobalExpandedGrid", &AngularRepresentation::GetGlobalExpandedGrid)
-        .def("ApplyConfigSection", &AngularRepresentation::ApplyConfigSection)
-        .def("GetLocalExpandedGrid", &CompressedRepresentation::GetLocalExpandedGrid)
-        .def("GetGlobalOverlapMatrix", &OrthogonalRepresentation::GetGlobalOverlapMatrix)
-    );
-    register_ptr_to_python< boost::shared_ptr< AngularRepresentation > >();
-    delete AngularRepresentation_scope;
-
-    scope* SphericalHarmonicRepresentation_scope = new scope(
-    class_< SphericalHarmonicRepresentation, bases< Representation<1> >  >("SphericalHarmonicRepresentation", init<  >())
-        .def(init< const SphericalHarmonicRepresentation& >())
-        .def_readwrite("Range", &SphericalHarmonicRepresentation::Range)
-        .def("Copy", &SphericalHarmonicRepresentation::Copy)
-        .def("SetupRepresentation", &SphericalHarmonicRepresentation::SetupRepresentation)
-        .def("GetFullShape", &SphericalHarmonicRepresentation::GetFullShape)
-        .def("InnerProduct", &SphericalHarmonicRepresentation::InnerProduct)
-        .def("GetGlobalWeights", &SphericalHarmonicRepresentation::GetGlobalWeights)
-        .def("GetGlobalGrid", &SphericalHarmonicRepresentation::GetGlobalGrid)
-        .def("GetGlobalExpandedGrid", &SphericalHarmonicRepresentation::GetGlobalExpandedGrid)
-        .def("ApplyConfigSection", &SphericalHarmonicRepresentation::ApplyConfigSection)
-        .def("GetLocalExpandedGrid", &CompressedRepresentation::GetLocalExpandedGrid)
-        .def("GetGlobalOverlapMatrix", &OrthogonalRepresentation::GetGlobalOverlapMatrix)
-    );
-    register_ptr_to_python< boost::shared_ptr< SphericalHarmonicRepresentation > >();
-    delete SphericalHarmonicRepresentation_scope;
 
 }
 

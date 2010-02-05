@@ -1103,7 +1103,7 @@ class SnippetGeneratorBandedDistributed(SnippetGeneratorBase):
 						!i.e. row indexes the max strided rank
 						!     col indexes the min strided rank
 						!in fortran packed(col, row) gives the expected value
-						call MapRowToColPacked(globalRow%(rank)i, globalCol%(rank)i, globalSize%(rank)i, bands%(rank)i, globalPackedRow%(rank)i, globalPackedCol%(rank)i)
+						call MapRowToColPacked(globalRow%(rank)i, globalCol%(rank)i, bands%(rank)i, globalPackedRow%(rank)i, globalPackedCol%(rank)i)
 						
 						localPackedRow%(rank)i = globalPackedRow%(rank)i - globalStartIndex%(rank)i
 						localPackedCol%(rank)i = globalPackedCol%(rank)i
@@ -1536,9 +1536,9 @@ def PrintFortranCode(curPart, partCount):
 		str = """
 			module IndexTricks
 				contains
-				subroutine MapRowToColPacked(row, col, fullSize, bands, packedRow, packedCol)
+				subroutine MapRowToColPacked(row, col, bands, packedRow, packedCol)
 					implicit none
-					integer, intent(in) :: row, col, fullSize, bands
+					integer, intent(in) :: row, col, bands
 					integer, intent(out) :: packedRow, packedCol
 	
 					packedRow = col
@@ -1548,9 +1548,9 @@ def PrintFortranCode(curPart, partCount):
 				function GetLocalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
 					implicit none
 					integer, intent(in) :: fullSize, procCount, procId
-					integer :: rest, paddedSize, globalStartIndex, distribSize, firstSmallRank, distrPaddedSize
+					integer :: rest, paddedSize, globalStartIndex, firstSmallRank, distrPaddedSize
 	
-					paddedSize	= fullSize
+					paddedSize = fullSize
 					rest = mod(fullSize, procCount)
 					if (rest .ne. 0) then
 						paddedSize = paddedSize + procCount - rest
@@ -1640,9 +1640,10 @@ def PrintFortranCode(curPart, partCount):
 		"""
 		print PrettyPrintFortran(str)
 
-	#try to split the permutation list into partCount even lists
-	for generator in generatorPermutationList[curPart::partCount]:
-		print generator.GetFortranCode()
+	if curPart > 0:
+		#try to split the permutation list into partCount-1 even lists
+		for generator in generatorPermutationList[(curPart-1)::(partCount-1)]:
+			print generator.GetFortranCode()
 
 def PrintWrapperCode():
 	str = """

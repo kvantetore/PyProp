@@ -4,7 +4,6 @@
 #include "../common.h"
 #include "../mpi/distributedmodel.h"
 #include "orthogonalrepresentation.h"
-#include "cartesianrange.h"
 #include "../utility/blitzblas.h"
 
 class VectorRepresentation : public OrthogonalRepresentation
