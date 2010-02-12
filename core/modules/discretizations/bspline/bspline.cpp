@@ -1,7 +1,8 @@
+#include <core/utility/blitztricks.h>
+//#include "../../utility/blitzblas.h"
+//#include "../../krylov/piram/piram/blitzblas.h"
+
 #include "bspline.h"
-#include "../../utility/blitzblas.h"
-#include "../../krylov/piram/piram/blitzblas.h"
-#include "../../utility/blitztricks.h"
 
 namespace BSpline
 {

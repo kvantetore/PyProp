@@ -1,5 +1,6 @@
+#include <core/utility/blitztricks.h>
+
 #include "bsplinetransform.h"
-#include "../../utility/blitztricks.h"
 
 template<int Rank> class CombinedRepresentation;
 

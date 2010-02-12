@@ -1,10 +1,11 @@
 #ifndef BSPLINEGRID_REPERESENTATION_H
 #define BSPLINEGRID_REPRESENTATION_H
 
-#include "../../common.h"
-#include "../orthogonalrepresentation.h"
-#include "../../utility/boostpythonhack.h"
-#include "../../transform/bspline/bspline.h"
+#include <core/common.h>
+#include <core/representation/orthogonalrepresentation.h>
+#include <core/utility/boostpythonhack.h>
+
+#include "../bspline.h"
 
 namespace BSpline
 {

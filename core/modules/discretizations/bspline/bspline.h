@@ -1,9 +1,9 @@
 #ifndef BSPLINES_H
 #define BSPLINES_H
 
-#include "../../utility/blitzlapack.h"
-#include "../../utility/boostpythonhack.h"
-#include "../../representation/overlapmatrix.h"
+#include <core/utility/blitzlapack.h>
+#include <core/utility/boostpythonhack.h>
+#include <core/representation/overlapmatrix.h>
 
 namespace BSpline
 {

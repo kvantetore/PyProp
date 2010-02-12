@@ -1,9 +1,9 @@
 #ifndef BSPLINEPROPAGATOR_H
 #define BSPLINEPROPAGATOR_H
 
-#include "../../common.h"
-#include "../../wavefunction.h"
-#include "bspline.h"
+#include <core/common.h>
+#include <core/wavefunction.h>
+#include "../bspline.h"
 
 namespace BSpline
 {

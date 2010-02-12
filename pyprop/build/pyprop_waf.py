@@ -12,7 +12,6 @@ import os
 
 
 curdir = os.path.abspath(os.path.curdir)
-print "CURDIR = %s" % curdir
 fab.setup(dirs=[curdir], )
 
 #------------------------------ Tasks ---------------------------------------
@@ -75,14 +74,19 @@ def pyste_multiple(self):
 	if not os.path.exists(output_folder):
 		os.makedirs(output_folder)
 
+	includes = [self.path.abspath()]
+	includes += self.env.INCLUDE
+	includes += self.env.PYSTE_INCLUDE
+	includes += getattr(self, "additional_includes", [])
+
 	#run pyste
-	fab.shell(self.env.PYSTE,
-		["-I%s" %i for i in [self.path.abspath()]+self.env.INCLUDE],
+	fab.run(self.env.PYSTE,
+		["-I%s" %i for i in includes],
+		["-D%s" %i for i in self.env.DEFINES],
 		"--multiple",
 		"--out=%s" % output_folder,
 		"--module=%s" % self.pyste_module,
 		[s.srcpath(self.env) for s in self.inputs],
-		silent=False
 	)
 
 	#copy output files back into src folder for keeping in git
@@ -171,7 +175,28 @@ cls = Task.task_type_from_func("python_generate_fortran", run_python_generate, e
 
 #------------------------------ Features ---------------------------------------
 
+@feature("compile")
+@before("init_compile")
+def init_compile_variables(self):
+	self.additional_includes = []
+
+
+@feature("pyprop")
+@after("init_compile_variables")
+@before("apply_core")
+def init_pyprop(self):
+	"""
+	Feature for pyprop modules depending on core.
+	Uses the following variables from the taskgen constructor
+		pyprop_path    -   relative path from wscript to pyprop base dir
+
+	"""
+	pypropAbsPath = os.path.abspath(os.path.join(self.path.abspath(), self.pyprop_path, "core"))
+	self.additional_includes += [pypropAbsPath]
+
+
 @feature('pyste')
+@after("init_compile_variables")
 @before('apply_core')
 def init_pyste(self):
 	"""
@@ -184,21 +209,28 @@ def init_pyste(self):
 	will be picked up by apply_core and sent to the corresponding extension
 	"""
 
-	print "Init Pyste"
-
 	pysteFiles = Utils.to_list(self.pyste_files)
 	if len(pysteFiles) == 0:
 		return
 
 	#Set up nodes for the generated boost::python wrappers 
-	pysteOutput = "python/pysteoutput"
+	modulePath = self.path.abspath(self.env)
 	wrapperNodes = []
 	for f in Utils.to_list(self.pyste_files):
 		pysteNode = self.path.find_resource(f)
+		if not pysteNode:
+			raise Exception("pyste file %s not found" % f)
+
+		#pyste output path is the path to the current node + pysteoutput
+		relativeNodePath = pysteNode.dir(self.env)[len(modulePath)+1:]
+		pysteOutput = os.path.join(relativeNodePath, "pysteoutput")
+
 		wrapperFilename = "_" + pysteNode.change_ext(".cpp").file()
-		wrapperNode = self.path.find_or_declare(os.path.join(pysteOutput, wrapperFilename))
+		wrapperPath = os.path.join(pysteOutput, wrapperFilename)
+		wrapperNode = self.path.find_or_declare(wrapperPath)
 		if wrapperNode == None:
-			raise Exception("None! %s" % wrapperFile)
+			raise Exception("None! %s" % wrapperPath)
+
 		wrapperNodes.append(wrapperNode)
 
 	#main wrapper file
@@ -210,8 +242,10 @@ def init_pyste(self):
 
 	#check whether pyste is enabled, and create the corresponding tasks
 	import Options
-	if Options.options.PysteEnabled:
+	pysteForce = getattr(self, "pyste_force", False)
+	if Options.options.PysteEnabled or pysteForce:
 		tskGenerateWrapper = self.create_task("pyste_multiple")
+		tskGenerateWrapper.additional_includes = self.additional_includes
 		tskGenerateMain = self.create_task("pyste_multiple_generate_main")
 	else:
 		#if pyste is not enabled, we create placeholder tasks, 
@@ -272,7 +306,10 @@ def extension_cpp(self, node):
 	outputNode = node.change_ext(".o")
 	tsk.set_outputs(outputNode)
 	tsk.always = True
-	tsk.additional_includes = [self.path.srcpath(self.env), self.path.bldpath(self.env)]
+	additional_includes = list(self.additional_includes)
+	additional_includes += [self.path.srcpath(self.env), self.path.bldpath(self.env)]
+	print "ADDITIONAL_INCLUDES ", additional_includes
+	tsk.additional_includes = additional_includes
 	
 	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
@@ -288,7 +325,9 @@ def extension_f90(self, node):
 	outputNode = node.change_ext(".o")
 	tsk.set_outputs(outputNode)
 	tsk.always = True
-	tsk.additional_includes = [self.path.srcpath(self.env), self.path.bldpath(self.env)]
+	additional_includes = list(self.additional_includes)
+	additional_includes += [self.path.srcpath(self.env), self.path.bldpath(self.env)]
+	tsk.additional_includes = additional_includes
 	
 	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
@@ -351,7 +390,7 @@ def check_fortran(conf):
 
 @conftest
 def check_blas_lapack(conf):
-	print "Deteting BLAS/LAPACK"
+	print "Detecting BLAS/LAPACK"
 	conf.env.BLAS_LAPACK_LIB = ["mkl", "guide", "mkl_core", "mkl_lapack", "pthread",]
 	conf.env.BLAS_LAPACK_LIBPATH = ["/opt/intel/mkl/10.0.1.014/lib/em64t",]
 	conf.env.BLAS_LAPACK_INC = ["/opt/intel/mkl/10.0.1.014/include",]
@@ -423,5 +462,6 @@ def check_pyste(conf):
 	conf.env.GCCXML_FLAGS = ""
 	curpath = os.path.abspath(os.path.curdir)
 	conf.env.PYSTE = conf.find_program([curpath + "/extern/pyste/pyste.py"], mandatory=True)
+	conf.env.PYSTE_INCLUDE = ["/usr/lib/openmpi/include"]
 
 

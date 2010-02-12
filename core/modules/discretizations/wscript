@@ -1,0 +1,18 @@
+import os.path
+import os
+
+subdirs = "bspline"
+
+def set_options(opt):
+	print('----> Options from discretizations')
+	opt.sub_options(subdirs)
+
+def configure(conf):
+	print('----> Configuring discretizations')
+	conf.sub_config(subdirs)
+
+def build(bld):
+	bld.add_subdirs(subdirs) 
+
+
+

@@ -1,11 +1,12 @@
 #ifndef BSPLINEREPRESENTATION_H
 #define BSPLINEREPRESENTATION_H
 
-#include "../../common.h"
-#include "../representation.h"
-#include "../../utility/boostpythonhack.h"
-#include "../../transform/bspline/bspline.h"
-#include "../../utility/blitzblas.h"
+#include <core/common.h>
+#include <core/representation/representation.h>
+#include <core/utility/boostpythonhack.h>
+#include <core/utility/blitzblas.h>
+
+#include "../bspline.h"
 
 namespace BSpline
 {

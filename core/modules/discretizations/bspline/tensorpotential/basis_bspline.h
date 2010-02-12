@@ -1,9 +1,10 @@
 #ifndef BASIS_BSPLINE_H
 #define BASIS_BSPLINE_H
 
-#include "../common.h"
-#include "../transform/bspline/bspline.h"
-#include "../utility/blitztricks.h"
+#include <core/common.h>
+#include <core/utility/blitztricks.h>
+
+#include "../bspline.h"
 
 using namespace blitz;
 

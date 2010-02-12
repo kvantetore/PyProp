@@ -458,7 +458,7 @@ class StraceRunner(Runner):
             elif stat64_match:
                 match = stat64_match
             elif execve_match:
-                cwds.append(cwd)
+                #cwds.append(cwd)
                 match = execve_match
             elif mkdir_match:
                 match = mkdir_match
@@ -485,7 +485,7 @@ class StraceRunner(Runner):
 
             match = self._exit_group_re.match(line)
             if match:
-                cwd = cwds.pop()
+                #cwd = cwds.pop()
                 status = int(match.group(1))
 
         return status, list(deps), list(outputs)

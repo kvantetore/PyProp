@@ -14,7 +14,7 @@ BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(python_streambuf)
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libredirect)
+void Export_core_modules_redirect_wrapper()
 {
     def("redirect_cout", &redirect_cout, return_value_policy< return_opaque_pointer >());
     def("restore_cout", &restore_cout);

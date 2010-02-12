@@ -4,20 +4,13 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <../representation/bspline/bsplinegridrepresentation.h>
-#include <../representation/bspline/bsplinerepresentation.h>
-#include <../transform/bspline/bspline.h>
-#include <../transform/bspline/bsplinepropagator.h>
-#include <../transform/bspline/bsplinesolver.h>
-#include <../transform/bspline/bsplinetransform.h>
+#include <combinedpropagator/bsplinepropagator.h>
+#include <combinedpropagator/bsplinetransform.h>
 
 // Using =======================================================================
 using namespace boost::python;
 
 // Declarations ================================================================
-#include "../tensorpotential/basis_bspline.h"
-
-
 namespace  {
 
 void (BSpline::Propagator<1>::*BSpline__Propagator_1___Setupconststd__complex_double___constWavefunction_1___boost__shared_ptr_BSpline__BSpline__int)(const std::complex<double>&, const Wavefunction<1>&, boost::shared_ptr<BSpline::BSpline>, int)  = &BSpline::Propagator<1>::Setup;
@@ -36,95 +29,13 @@ void (BSpline::Propagator<4>::*BSpline__Propagator_4___Setupconststd__complex_do
 
 void (BSpline::Propagator<4>::*BSpline__Propagator_4___Setupconststd__complex_double___constWavefunction_4___boost__shared_ptr_BSpline__BSpline__blitz__Array_double_1__int)(const std::complex<double>&, const Wavefunction<4>&, boost::shared_ptr<BSpline::BSpline>, blitz::Array<double,1>, int)  = &BSpline::Propagator<4>::Setup;
 
-double (BSpline::BSpline::*BSpline__BSpline__BSplineOverlapIntegralint_int)(int, int)  = &BSpline::BSpline::BSplineOverlapIntegral;
-
-double (BSpline::BSpline::*BSpline__BSpline__BSplineOverlapIntegralblitz__Array_double_1__int_int)(blitz::Array<double,1>, int, int)  = &BSpline::BSpline::BSplineOverlapIntegral;
-
-blitz::Array<std::complex<double>,1> (BSpline::BSpline::*BSpline__BSpline__ExpandFunctionInBSplinesboost__python__object)(boost::python::object)  = &BSpline::BSpline::ExpandFunctionInBSplines;
-
-void (BSpline::BSpline::*BSpline__BSpline__ExpandFunctionInBSplinesblitz__Array_std__complex_double__1__blitz__Array_std__complex_double__1_)(blitz::Array<std::complex<double>,1>, blitz::Array<std::complex<double>,1>)  = &BSpline::BSpline::ExpandFunctionInBSplines;
-
-blitz::Array<std::complex<double>,1> (BSpline::BSpline::*BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1_)(blitz::Array<std::complex<double>,1>)  = &BSpline::BSpline::ConstructFunctionFromBSplineExpansion;
-
-blitz::Array<std::complex<double>,1> (BSpline::BSpline::*BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1__blitz__Array_double_1_)(blitz::Array<std::complex<double>,1>, blitz::Array<double,1>)  = &BSpline::BSpline::ConstructFunctionFromBSplineExpansion;
-
-void (BSpline::BSpline::*BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1__blitz__Array_double_1__blitz__Array_std__complex_double__1_)(blitz::Array<std::complex<double>,1>, blitz::Array<double,1>, blitz::Array<std::complex<double>,1>)  = &BSpline::BSpline::ConstructFunctionFromBSplineExpansion;
-
 
 }// namespace 
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libbspline)
+void Export_core_modules_discretizations_bspline_pyste_bsplinetransform()
 {
-    class_< BSpline::BSplineSolver<1>, boost::noncopyable >("BSpline_BSplineSolver_1", init<  >())
-        .def_readwrite("MatrixData", &BSpline::BSplineSolver<1>::MatrixData)
-        .def_readwrite("PotentialData", &BSpline::BSplineSolver<1>::PotentialData)
-        .def_readwrite("PivotData", &BSpline::BSplineSolver<1>::PivotData)
-        .def("AddTensorPotential", &BSpline::BSplineSolver<1>::AddTensorPotential)
-        .def("Setup", &BSpline::BSplineSolver<1>::Setup)
-        .def("Solve", &BSpline::BSplineSolver<1>::Solve)
-    ;
-
-    class_< BSpline::BSplineSolver<2>, boost::noncopyable >("BSpline_BSplineSolver_2", init<  >())
-        .def_readwrite("MatrixData", &BSpline::BSplineSolver<2>::MatrixData)
-        .def_readwrite("PotentialData", &BSpline::BSplineSolver<2>::PotentialData)
-        .def_readwrite("PivotData", &BSpline::BSplineSolver<2>::PivotData)
-        .def("AddTensorPotential", &BSpline::BSplineSolver<2>::AddTensorPotential)
-        .def("Setup", &BSpline::BSplineSolver<2>::Setup)
-        .def("Solve", &BSpline::BSplineSolver<2>::Solve)
-    ;
-
-    class_< BSpline::BSplineSolver<3>, boost::noncopyable >("BSpline_BSplineSolver_3", init<  >())
-        .def_readwrite("MatrixData", &BSpline::BSplineSolver<3>::MatrixData)
-        .def_readwrite("PotentialData", &BSpline::BSplineSolver<3>::PotentialData)
-        .def_readwrite("PivotData", &BSpline::BSplineSolver<3>::PivotData)
-        .def("AddTensorPotential", &BSpline::BSplineSolver<3>::AddTensorPotential)
-        .def("Setup", &BSpline::BSplineSolver<3>::Setup)
-        .def("Solve", &BSpline::BSplineSolver<3>::Solve)
-    ;
-
-    class_< BSpline::BSplineSolver<4>, boost::noncopyable >("BSpline_BSplineSolver_4", init<  >())
-        .def_readwrite("MatrixData", &BSpline::BSplineSolver<4>::MatrixData)
-        .def_readwrite("PotentialData", &BSpline::BSplineSolver<4>::PotentialData)
-        .def_readwrite("PivotData", &BSpline::BSplineSolver<4>::PivotData)
-        .def("AddTensorPotential", &BSpline::BSplineSolver<4>::AddTensorPotential)
-        .def("Setup", &BSpline::BSplineSolver<4>::Setup)
-        .def("Solve", &BSpline::BSplineSolver<4>::Solve)
-    ;
-
-    scope* BSpline_BSplineRepresentation_scope = new scope(
-    class_< BSpline::BSplineRepresentation, bases< Representation<1> >  >("BSplineRepresentation", init<  >())
-        .def(init< const BSpline::BSplineRepresentation& >())
-        .def("Copy", &BSpline::BSplineRepresentation::Copy)
-        .def("GetFullShape", &BSpline::BSplineRepresentation::GetFullShape)
-        .def("InnerProduct", &BSpline::BSplineRepresentation::InnerProduct)
-        .def("GetGlobalWeights", &BSpline::BSplineRepresentation::GetGlobalWeights)
-        .def("GetGlobalGrid", &BSpline::BSplineRepresentation::GetGlobalGrid)
-        .def("GetGlobalOverlapMatrix", &BSpline::BSplineRepresentation::GetGlobalOverlapMatrix)
-        .def("ApplyConfigSection", &BSpline::BSplineRepresentation::ApplyConfigSection)
-        .def("SetupRepresentation", &BSpline::BSplineRepresentation::SetupRepresentation)
-        .def("GetBSplineObject", &BSpline::BSplineRepresentation::GetBSplineObject)
-    );
-    register_ptr_to_python< boost::shared_ptr< BSpline::BSplineRepresentation > >();
-    delete BSpline_BSplineRepresentation_scope;
-
-    scope* BSpline_BSplineGridRepresentation_scope = new scope(
-    class_< BSpline::BSplineGridRepresentation, bases< Representation<1> >  >("BSplineGridRepresentation", init<  >())
-        .def(init< const BSpline::BSplineGridRepresentation& >())
-        .def("Copy", &BSpline::BSplineGridRepresentation::Copy)
-        .def("GetFullShape", &BSpline::BSplineGridRepresentation::GetFullShape)
-        .def("InnerProduct", &BSpline::BSplineGridRepresentation::InnerProduct)
-        .def("GetGlobalGrid", &BSpline::BSplineGridRepresentation::GetGlobalGrid)
-        .def("GetGlobalWeights", &BSpline::BSplineGridRepresentation::GetGlobalWeights)
-        .def("SetupRepresentation", &BSpline::BSplineGridRepresentation::SetupRepresentation)
-        .def("GetBSplineObject", &BSpline::BSplineGridRepresentation::GetBSplineObject)
-        .def("ApplyConfigSection", &BSpline::BSplineGridRepresentation::ApplyConfigSection)
-        .def("GetGlobalOverlapMatrix", &OrthogonalRepresentation::GetGlobalOverlapMatrix)
-    );
-    register_ptr_to_python< boost::shared_ptr< BSpline::BSplineGridRepresentation > >();
-    delete BSpline_BSplineGridRepresentation_scope;
-
     class_< BSpline::Propagator<1>, boost::noncopyable >("BSplinePropagator_1", init<  >())
         .def("ApplyConfigSection", &BSpline::Propagator<1>::ApplyConfigSection)
         .def("Setup", BSpline__Propagator_1___Setupconststd__complex_double___constWavefunction_1___boost__shared_ptr_BSpline__BSpline__int)
@@ -241,65 +152,5 @@ BOOST_PYTHON_MODULE(libbspline)
         .def("SetBaseRank", &BSpline::BSplineTransform<4>::SetBaseRank)
     ;
 
-    scope* BSpline_BSpline_scope = new scope(
-    class_< BSpline::BSpline, boost::noncopyable >("BSpline", init<  >())
-        .def_readwrite("NumberOfBSplines", &BSpline::BSpline::NumberOfBSplines)
-        .def_readwrite("MaxSplineOrder", &BSpline::BSpline::MaxSplineOrder)
-        .def_readwrite("ProjectionAlgorithm", &BSpline::BSpline::ProjectionAlgorithm)
-        .def_readwrite("LapackAlgorithm", &BSpline::BSpline::LapackAlgorithm)
-        .def("GetBreakpointSequence", &BSpline::BSpline::GetBreakpointSequence)
-        .def("GetContinuitySequence", &BSpline::BSpline::GetContinuitySequence)
-        .def("GetKnotSequence", &BSpline::BSpline::GetKnotSequence)
-        .def("GetKnotGridIndexMap", &BSpline::BSpline::GetKnotGridIndexMap)
-        .def("GetTopKnotMap", &BSpline::BSpline::GetTopKnotMap)
-        .def("GetWeights", &BSpline::BSpline::GetWeights)
-        .def("GetNodes", &BSpline::BSpline::GetNodes)
-        .def("GetQuadratureGrid", &BSpline::BSpline::GetQuadratureGrid)
-        .def("GetQuadratureGridGlobal", &BSpline::BSpline::GetQuadratureGridGlobal)
-        .def("GetQuadratureWeightsGlobal", &BSpline::BSpline::GetQuadratureWeightsGlobal)
-        .def("GetOverlap", &BSpline::BSpline::GetOverlap)
-        .def("ResizeBreakpointSequence", &BSpline::BSpline::ResizeBreakpointSequence)
-        .def("ResizeContinuitySequence", &BSpline::BSpline::ResizeContinuitySequence)
-        .def("ResizeKnotSequence", &BSpline::BSpline::ResizeKnotSequence)
-        .def("ResizeKnotGridIndexMap", &BSpline::BSpline::ResizeKnotGridIndexMap)
-        .def("ResizeTopKnotMap", &BSpline::BSpline::ResizeTopKnotMap)
-        .def("ResizeWeights", &BSpline::BSpline::ResizeWeights)
-        .def("ResizeNodes", &BSpline::BSpline::ResizeNodes)
-        .def("ResizeQuadratureGridGlobal", &BSpline::BSpline::ResizeQuadratureGridGlobal)
-        .def("ResizeQuadratureWeightsGlobal", &BSpline::BSpline::ResizeQuadratureWeightsGlobal)
-        .def("EvaluateBSpline", &BSpline::BSpline::EvaluateBSpline)
-        .def("EvaluateBSplineDerivative1", &BSpline::BSpline::EvaluateBSplineDerivative1)
-        .def("EvaluateBSplineDerivative2", &BSpline::BSpline::EvaluateBSplineDerivative2)
-        .def("EvaluateBSplineOnGrid", &BSpline::BSpline::EvaluateBSplineOnGrid)
-        .def("GetBSpline", &BSpline::BSpline::GetBSpline)
-        .def("GetBSplineDerivative1", &BSpline::BSpline::GetBSplineDerivative1)
-        .def("GetBSplineDerivative2", &BSpline::BSpline::GetBSplineDerivative2)
-        .def("BSplineOverlapIntegral", BSpline__BSpline__BSplineOverlapIntegralint_int)
-        .def("BSplineOverlapIntegral", BSpline__BSpline__BSplineOverlapIntegralblitz__Array_double_1__int_int)
-        .def("ProjectOnBSpline", &BSpline::BSpline::ProjectOnBSpline)
-        .def("BSplineDerivative2OverlapIntegral", &BSpline::BSpline::BSplineDerivative2OverlapIntegral)
-        .def("SolveForOverlapMatrix", &BSpline::BSpline::SolveForOverlapMatrix)
-        .def("BSplineGlobalOverlapIntegral", &BSpline::BSpline::BSplineGlobalOverlapIntegral_double)
-        .def("BSplineGlobalOverlapIntegral", &BSpline::BSpline::BSplineGlobalOverlapIntegral_cplx)
-        .def("CreateBSplineTable", &BSpline::BSpline::CreateBSplineTable)
-        .def("CreateBSplineDerivativeTable", &BSpline::BSpline::CreateBSplineDerivativeTable)
-        .def("SetupOverlap", &BSpline::BSpline::SetupOverlap)
-        .def("ExpandFunctionInBSplines", BSpline__BSpline__ExpandFunctionInBSplinesboost__python__object)
-        .def("ExpandFunctionInBSplines", BSpline__BSpline__ExpandFunctionInBSplinesblitz__Array_std__complex_double__1__blitz__Array_std__complex_double__1_)
-        .def("ConstructFunctionFromBSplineExpansion", BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1_)
-        .def("ConstructFunctionFromBSplineExpansion", BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1__blitz__Array_double_1_)
-        .def("ConstructFunctionFromBSplineExpansion", BSpline__BSpline__ConstructFunctionFromBSplineExpansionblitz__Array_std__complex_double__1__blitz__Array_double_1__blitz__Array_std__complex_double__1_)
-        .def("ComputeStartIndex", &BSpline::BSpline::ComputeStartIndex)
-        .def("ComputeStopIndex", &BSpline::BSpline::ComputeStopIndex)
-        .def("ComputeIndexShift", &BSpline::BSpline::ComputeIndexShift)
-        .def("GetGridIndex", &BSpline::BSpline::GetGridIndex)
-        .def("ScaleAndTranslate", &BSpline::BSpline::ScaleAndTranslate)
-    );
-    register_ptr_to_python< boost::shared_ptr< BSpline::BSpline > >();
-    delete BSpline_BSpline_scope;
-
-def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 1>);
-def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 2>);
-def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 3>);
 }
 

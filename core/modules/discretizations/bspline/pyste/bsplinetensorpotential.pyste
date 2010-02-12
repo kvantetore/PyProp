@@ -1,0 +1,14 @@
+#bspline solver
+BSplineSolver = Template("BSpline::BSplineSolver", "tensorpotential/bsplinesolver.h")
+BSplineSolver("1")
+BSplineSolver("2")
+BSplineSolver("3")
+BSplineSolver("4")
+
+#Evaluation of potentials in BSplines
+declaration_code('#include "tensorpotential/basis_bspline.h"\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 1>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 2>);\n')
+module_code('def("RepresentPotentialInBasisBSpline", RepresentPotentialInBasisBSpline<cplx, 3>);\n')
+
+

@@ -1,10 +1,11 @@
-#include "bsplinepropagator.h"
-#include "../representation/representation.h"
-#include "../representation/reducedspherical/reducedsphericalharmonicrepresentation.h"
-#include "../../utility/blitzblas.h"
-#include "../../utility/blitztricks.h"
-#include "../../utility/blitzlapack.h"
 #include <cmath>
+
+#include <core/representation/representation.h>
+#include <core/utility/blitzblas.h>
+#include <core/utility/blitztricks.h>
+#include <core/utility/blitzlapack.h>
+
+#include "bsplinepropagator.h"
 
 
 namespace BSpline
