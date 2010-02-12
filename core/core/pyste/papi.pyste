@@ -1,0 +1,4 @@
+Include("pyste/papi_wrapper.cpp")
+
+module_code('ExportPapi();\n')
+

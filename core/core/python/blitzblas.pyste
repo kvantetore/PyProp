@@ -1,4 +1,0 @@
-Include("python/blitzblas_wrapper.cpp")
-
-module_code('ExportBlitzBlas();\n')
-

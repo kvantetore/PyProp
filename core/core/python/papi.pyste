@@ -1,4 +1,0 @@
-Include("python/papi_wrapper.cpp")
-
-module_code('ExportPapi();\n')
-

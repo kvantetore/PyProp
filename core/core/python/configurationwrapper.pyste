@@ -1,3 +1,0 @@
-
-Include("python/configuration_wrapper.cpp")
-module_code("create_configsection_converter();\n")
