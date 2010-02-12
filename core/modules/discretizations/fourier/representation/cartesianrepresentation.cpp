@@ -1,6 +1,7 @@
+#include <core/wavefunction.h>
+#include <core/utility/blitzblas.h>
+
 #include "cartesianrepresentation.h"
-#include "../wavefunction.h"
-#include "../utility/blitzblas.h"
 
 //Implementation of the Representation interface.
 template<int Rank>

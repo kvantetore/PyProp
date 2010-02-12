@@ -1,7 +1,7 @@
 #ifndef CARTESIANKINETICENERGYPOTENTIAL_H
 #define CARTESIANKINETICENERGYPOTENTIAL_H
 
-#include "dynamicpotentialevaluator.h"
+#include <core/potential/dynamicpotentialevaluator.h>
 
 /* 
 Dynamic potential for evaluation of the kinetic energy potential for CartesianFFTEvaluator

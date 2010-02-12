@@ -1,8 +1,9 @@
 #ifndef CARTESIANABSORBER_H
 #define CARTESIANABSORBER_H
 
-#include "../common.h"
-#include "../wavefunction.h"
+#include <core/common.h>
+#include <core/wavefunction.h>
+
 #include "../representation/cartesianrepresentation.h"
 
 /*

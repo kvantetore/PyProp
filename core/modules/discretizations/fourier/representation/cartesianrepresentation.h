@@ -1,10 +1,11 @@
 #ifndef CARTESIANREPRESENTATION_H
 #define CARTESIANREPRESENTATION_H
 
-#include "../common.h"
-#include "../mpi/distributedmodel.h"
+#include <core/common.h>
+#include <core/representation/representation.h>
+#include <core/mpi/distributedmodel.h>
+
 #include "cartesianrange.h"
-#include "representation.h"
 
 template<int Rank>
 class CartesianRepresentation : public Representation<Rank>

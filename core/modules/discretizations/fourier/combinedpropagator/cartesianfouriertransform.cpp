@@ -1,5 +1,4 @@
 #include "cartesianfouriertransform.h"
-#include "../representation/representation.h"
 #include "../representation/cartesianrepresentation.h"
 
 template<int Rank>

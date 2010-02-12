@@ -1,7 +1,7 @@
 #ifndef FOURIERTRANSFORM_H
 #define FOURIERTRANSFORM_H
 
-#include "../common.h"
+#include <core/common.h>
 
 #define FFT_FORWARD -1
 #define FFT_BACKWARD 1

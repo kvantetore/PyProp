@@ -1,8 +1,9 @@
 #ifndef CARTESIANFOURIERTRANSFORM_H
 #define CARTESIANFOURIERTRANSFORM_H
 
-#include "../common.h"
-#include "../wavefunction.h"
+#include <core/common.h>
+#include <core/wavefunction.h>
+
 #include "fouriertransform.h"
 #include "../representation/cartesianrepresentation.h"
 

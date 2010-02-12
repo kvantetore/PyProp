@@ -1,8 +1,8 @@
 #ifndef CARTESIANRANGE_H
 #define CARTESIANRANGE_H
 
-#include "../common.h"
-#include "overlapmatrix.h"
+#include <core/common.h>
+#include <core/representation/overlapmatrix.h>
 
 class CartesianRange
 {

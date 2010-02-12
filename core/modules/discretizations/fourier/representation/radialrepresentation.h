@@ -1,8 +1,10 @@
 #ifndef RADIALREPRESENTATION_H
 #define RADIALREPRESENTATION_H
 
-#include "../common.h"
+#include <core/common.h>
+
 #include "cartesianrepresentation.h"
+
 
 class RadialRepresentation : public CartesianRepresentation<1>
 {

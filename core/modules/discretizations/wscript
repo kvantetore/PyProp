@@ -1,7 +1,7 @@
 import os.path
 import os
 
-subdirs = "bspline"
+subdirs = "bspline fourier"
 
 def set_options(opt):
 	print('----> Options from discretizations')

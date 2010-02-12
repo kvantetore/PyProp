@@ -1,12 +1,9 @@
 #ifndef RADIALTRANSFORM_H
 #define RADIALTRANSFORM_H
 
-#include "../common.h"
-#include "../wavefunction.h"
+#include <core/common.h>
+#include <core/wavefunction.h>
 
-/**
-@author Tore Birkeland
-*/
 template <int Rank>
 class RadialTransform{
 public:

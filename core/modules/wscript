@@ -12,6 +12,7 @@ def set_options(opt):
 
 	add_boolean_option("--module-bspline", dest="EnableModuleBSpline", default=True)
 	add_boolean_option("--module-redirect", dest="EnableModuleRedirect", default=True)
+	add_boolean_option("--module-fourier", dest="EnableModuleFourier", default=True)
 
 	opt.sub_options(subdirs)
 

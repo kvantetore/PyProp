@@ -299,7 +299,6 @@ def init_compile(self):
 	files to self.compiled_files, which will be processed by the linker
 	after apply_core
 	"""
-	print "Init Compile"
 	self.compiled_files = []
 
 @feature('link')
@@ -343,8 +342,6 @@ def apply_local_libs(self):
 		tsk.deps_nodes.append(libnode)
 		tsk.local_lib_nodes.append(libnode)
 
-	print "Linking files %s" % self.compiled_files
-
 
 #------------------------ Extension Mapping----------------------------------
 
@@ -359,7 +356,6 @@ def extension_cpp(self, node):
 	tsk.always = True
 	additional_includes = list(self.additional_includes)
 	additional_includes += [self.path.srcpath(self.env), self.path.bldpath(self.env)]
-	print "ADDITIONAL_INCLUDES ", additional_includes
 	tsk.additional_includes = additional_includes
 	
 	#Add .o to list of compiled files for linking
@@ -393,7 +389,7 @@ def extension_f90(self, node):
 
 @conftest
 def detect(conf):
-	print "Detecting PyProp"
+	print "  Detecting PyProp"
 
 	def consolidate_conf(prefix):
 		conf.env.INCLUDE += getattr(conf.env, prefix + "_INC")
@@ -408,9 +404,6 @@ def detect(conf):
 	check_fortran(conf)
 	consolidate_conf("FORTRAN")
 
-	check_blas_lapack(conf)
-	consolidate_conf("BLAS_LAPACK")
-
 	check_python(conf)
 	consolidate_conf("PYTHON")
 
@@ -423,11 +416,17 @@ def detect(conf):
 	check_trilinos(conf)
 	consolidate_conf("TRILINOS")
 
+	check_blas_lapack(conf)
+	consolidate_conf("BLAS_LAPACK")
+
+	check_fftw(conf)
+	consolidate_conf("FFTW")
+
 	check_pyste(conf)
 
 @conftest
 def check_fortran(conf):
-	print "Detecting Fortran90"
+	print "  - Detecting Fortran90"
 	conf.env.FORTRAN_F90FLAGS = ["-Wall",]
 	#free form
 	conf.env.FORTRAN_F90FLAGS += ["-ffree-form", "-fimplicit-none", "-ffree-line-length-none",]
@@ -441,7 +440,7 @@ def check_fortran(conf):
 
 @conftest
 def check_blas_lapack(conf):
-	print "Detecting BLAS/LAPACK"
+	print "  - Detecting BLAS/LAPACK"
 	conf.env.BLAS_LAPACK_LIB = ["mkl", "guide", "mkl_core", "mkl_lapack", "pthread",]
 	conf.env.BLAS_LAPACK_LIBPATH = ["/opt/intel/mkl/10.0.1.014/lib/em64t",]
 	conf.env.BLAS_LAPACK_INC = ["/opt/intel/mkl/10.0.1.014/include",]
@@ -452,7 +451,7 @@ def check_blas_lapack(conf):
 
 @conftest
 def check_python(conf):
-	print "Detecting python"
+	print "  - Detecting python"
 	import distutils.sysconfig
 	import sys
 	conf.env.PYTHON_EXEC = sys.executable
@@ -466,7 +465,7 @@ def check_python(conf):
 
 @conftest
 def check_boost_python(conf):
-	print "Detecting boost::python"
+	print "  - Detecting boost::python"
 	conf.env.BOOST_PYTHON_LIB = ["boost_python-mt"]
 	conf.env.BOOST_PYTHON_LIBPATH = ["/opt/boost/lib"]
 	conf.env.BOOST_PYTHON_INC = ["/opt/boost/include"]
@@ -476,7 +475,7 @@ def check_boost_python(conf):
 
 @conftest
 def check_blitz(conf):
-	print "Detecting blitz"
+	print "  - Detecting blitz"
 	blitz_path = "/home/torebi/prog/pyprop/extern/blitz/build"
 	conf.env.BLITZ_LIB = ["blitz"]
 	conf.env.BLITZ_LIBPATH = [os.path.join(blitz_path, "lib")]
@@ -486,7 +485,7 @@ def check_blitz(conf):
 
 @conftest
 def check_trilinos(conf):
-	print "Detecting Trilinos"
+	print "  - Detecting Trilinos"
 	trilinos_path = "/opt/trilinos"
 	conf.env.TRILINOS_LIB = ["epetra", "teuchos", "ifpack", "anasazi"]
 	conf.env.TRILINOS_LIBPATH = [os.path.join(trilinos_path, "lib")]
@@ -497,8 +496,20 @@ def check_trilinos(conf):
 
 
 @conftest
+def check_fftw(conf):
+	print "  - Detecting fftw"
+	conf.env.FFTW_LIB = ["fftw3"]
+	conf.env.FFTW_LIBPATH = []
+	conf.env.FFTW_INC = []
+	conf.env.FFTW_DEFINES = []
+	
+	#TODO add compile tests
+
+
+
+@conftest
 def check_mpi(conf):
-	print "Detecting MPI compilers"
+	print "  - Detecting MPI compilers"
 	conf.env.MPICXX = "mpicxx"
 	conf.env.MPIF90 = "mpif90"
 	conf.env.MPIRUN = "mpirun"
@@ -508,7 +519,7 @@ def check_mpi(conf):
 
 @conftest
 def check_pyste(conf):
-	print "Detecting pyste"
+	print "  - Detecting pyste"
 	conf.env.GCCXML = conf.find_program(["gccxml"], mandatory=True)
 	conf.env.GCCXML_FLAGS = ""
 	curpath = os.path.abspath(os.path.curdir)
