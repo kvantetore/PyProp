@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_python_arrayfunctions()
+void Export_core_core_python_arrayfunctions()
 {
 def("SetWavefunctionFromGridFunction_1", SetWavefunctionFromGridFunction<1>);
 def("SetWavefunctionFromGridFunction_2", SetWavefunctionFromGridFunction<2>);

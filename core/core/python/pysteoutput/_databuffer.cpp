@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_python_databuffer()
+void Export_core_core_python_databuffer()
 {
     scope* DataBuffer_1_scope = new scope(
     class_< DataBuffer<1> >("DataBuffer_1", init<  >())

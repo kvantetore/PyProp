@@ -12,7 +12,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_python_blitzwrapper()
+void Export_core_core_python_blitzwrapper()
 {
 import_array();
 create_array_converter<double, 1>();

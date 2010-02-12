@@ -11,7 +11,7 @@ using namespace boost::python;
 
 
 // Module ======================================================================
-void Export_python_tensorpotential_basis()
+void Export_core_core_python_tensorpotential_basis()
 {
 def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 1>);
 def("RepresentPotentialInBasisFiniteDifference", RepresentPotentialInBasisFiniteDifference<cplx, 2>);

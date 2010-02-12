@@ -49,7 +49,7 @@ void (DistributedOverlapMatrix<4>::*DistributedOverlapMatrix_4___SolveOverlapRan
 
 
 // Module ======================================================================
-void Export_python_distributedoverlapmatrix()
+void Export_core_core_python_distributedoverlapmatrix()
 {
     class_< DistributedOverlapMatrix<1>, boost::noncopyable >("DistributedOverlapMatrix_1", init<  >())
         .def("SetupRank", &DistributedOverlapMatrix<1>::SetupRank)

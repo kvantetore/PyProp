@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_python_staticpotential()
+void Export_core_core_python_staticpotential()
 {
     scope* StaticPotential_1_scope = new scope(
     class_< StaticPotential<1>, boost::noncopyable >("StaticPotential_1", init<  >())

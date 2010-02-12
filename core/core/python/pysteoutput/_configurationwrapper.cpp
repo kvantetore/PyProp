@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_python_configurationwrapper()
+void Export_core_core_python_configurationwrapper()
 {
 create_configsection_converter();
 }
