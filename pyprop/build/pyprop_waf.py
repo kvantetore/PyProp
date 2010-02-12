@@ -53,12 +53,33 @@ def run_link(self):
 	"""
 	Task function for linking pyprop
 	"""
+
+	#Get the local libraries
+	localLibs = []
+	localLibPaths = []
+	for lib in self.local_lib_nodes:
+		#get the path where the lib is built
+		libPath = lib.parent.abspath(self.env)
+		localLibPaths.append(libPath)
+
+		#get the name without the postfixing .so
+		baseLibName = os.path.splitext(lib.name)[0]
+
+		#get the name with out the prefixing lib
+		if not baseLibName.startswith("lib"):
+			raise Exception("Shared library %s does not start with lib!" % lib) 
+		localLibs.append(baseLibName[3:])
+
+
 	fab.run(self.env.MPICXX,
 		"-shared",
 		"-o", self.outputs[0].bldpath(self.env),
 		[i.srcpath(self.env) for i in self.inputs],
+		["-L%s" %i for i in localLibPaths],
 		["-L%s" %i for i in self.env.LIBPATH],
+		["-l%s" %i for i in localLibs],
 		["-l%s" %i for i in self.env.LIB],
+		["-Wl,-rpath=%s" % i for i in localLibPaths]
 	)
 
 cls = Task.task_type_from_func('link', run_link, color='BLUE', ext_in='.o')
@@ -281,7 +302,6 @@ def init_compile(self):
 	print "Init Compile"
 	self.compiled_files = []
 
-
 @feature('link')
 @after('apply_core')
 def init_link(self):
@@ -292,6 +312,37 @@ def init_link(self):
 	tsk = self.create_task("link")
 	tsk.set_inputs(self.compiled_files)
 	tsk.set_outputs(self.path.find_or_declare("%s.so" % self.pyste_module))
+	self.link_task = tsk
+
+
+@feature('link')
+@after("init_link")
+def apply_local_libs(self):
+	"""
+	Applies local library dependencies. This is done after
+	init_link to allow all link-tasks to be created, and thus all
+	library nodes to be declared. They can then be found by find_resource
+	"""
+	#get the pyprop path so we know where to look for the libs
+	pyprop_path = os.path.join(getattr(self, "pyprop_path", "./"), "core")
+
+	#get task
+	tsk = self.link_task
+	tsk.local_lib_nodes = []
+
+	#Get the local libs
+	libs = getattr(self, "local_libraries", "")
+	for lib in Utils.to_list(libs):
+		#find the node of the library path
+		libpath = os.path.join(pyprop_path, "%s.so" % lib)
+		libnode = self.path.find_resource(libpath)
+		if libnode == None:
+			raise Exception("Could not find library %s (%s)" % (lib, libnode))
+
+		#add dependency
+		tsk.deps_nodes.append(libnode)
+		tsk.local_lib_nodes.append(libnode)
+
 	print "Linking files %s" % self.compiled_files
 
 
