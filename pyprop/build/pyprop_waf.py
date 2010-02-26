@@ -212,7 +212,7 @@ def init_pyprop(self):
 		pyprop_path    -   relative path from wscript to pyprop base dir
 
 	"""
-	pypropAbsPath = os.path.abspath(os.path.join(self.path.abspath(), self.pyprop_path, "core"))
+	pypropAbsPath = os.path.abspath(os.path.join(self.path.abspath(), self.pyprop_path, "pyprop"))
 	self.additional_includes += [pypropAbsPath]
 
 
@@ -323,7 +323,7 @@ def apply_local_libs(self):
 	library nodes to be declared. They can then be found by find_resource
 	"""
 	#get the pyprop path so we know where to look for the libs
-	pyprop_path = os.path.join(getattr(self, "pyprop_path", "./"), "core")
+	pyprop_path = os.path.join(getattr(self, "pyprop_path", "./"), "pyprop")
 
 	#get task
 	tsk = self.link_task

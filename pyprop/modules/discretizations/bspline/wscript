@@ -1,0 +1,39 @@
+from Configure import conftest
+from TaskGen import feature, extension, before, after
+import Options
+
+sources = [
+	"src/bspline.cpp",
+	"src/combinedpropagator/bsplinepropagator.cpp",
+	"src/combinedpropagator/bsplinetransform.cpp",
+	"src/representation/bsplinerepresentation.cpp",
+	"src/representation/bsplinegridrepresentation.cpp",
+]
+
+pyste_module = "libbspline"
+pyste_sources = [
+	"src/pyste/bsplinemain.pyste",
+	"src/pyste/bsplinetensorpotential.pyste",
+	"src/pyste/bsplinerepresentation.pyste",
+	"src/pyste/bsplinetransform.pyste",
+]
+
+def set_options(opt):
+	pass
+
+def configure(conf):
+	print("-----> Configuring bspline")
+
+
+def build(bld):
+	if Options.options.EnableModuleBSpline:
+		tskgen = bld.new_task_gen(
+			features="pyprop pyste compile link",
+			source=sources,
+			local_libraries="core/libcore",
+			pyste_files=pyste_sources,
+			pyste_module=pyste_module,
+			pyste_force=True,
+			pyprop_path="../../../../",
+		)
+

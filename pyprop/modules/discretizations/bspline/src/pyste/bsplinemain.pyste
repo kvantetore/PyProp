@@ -1,0 +1,7 @@
+#bspline main class
+BSpline = Class("BSpline::BSpline", "src/bspline.h")
+rename(BSpline.BSplineGlobalOverlapIntegral_cplx, "BSplineGlobalOverlapIntegral")
+rename(BSpline.BSplineGlobalOverlapIntegral_double, "BSplineGlobalOverlapIntegral")
+use_shared_ptr(BSpline)
+
+

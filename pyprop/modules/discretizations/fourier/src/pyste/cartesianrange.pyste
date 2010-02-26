@@ -1,0 +1,13 @@
+
+
+CartesianRepresentation = Template("CartesianRepresentation", "src/representation/cartesianrepresentation.h")
+no_virtual(CartesianRepresentation)
+use_shared_ptr(CartesianRepresentation)
+CartesianRepresentation("1")
+CartesianRepresentation("2")
+CartesianRepresentation("3")
+CartesianRepresentation("4")
+
+CartesianRange = Class("CartesianRange", "src/representation/cartesianrange.h")
+set_policy(CartesianRange.GetGrid, return_value_policy(return_by_value))
+set_policy(CartesianRange.GetWeights, return_value_policy(return_by_value))

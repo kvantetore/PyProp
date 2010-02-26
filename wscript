@@ -22,7 +22,7 @@ def set_options(opt):
 	opt.add_option("--pyste", action="store_true", dest="PysteEnabled", default=False)
 
 	#options from subfolders
-	opt.sub_options("core")
+	opt.sub_options("pyprop")
 
 
 def configure(conf):
@@ -33,10 +33,10 @@ def configure(conf):
 	conf.check_tool("pyprop_waf", tooldir="./pyprop/build")
 
 	#configure modules
-	conf.sub_config("core")
+	conf.sub_config("pyprop")
 
 
 def build(bld):
-	bld.add_subdirs("core") 
+	bld.add_subdirs("pyprop") 
 
 
