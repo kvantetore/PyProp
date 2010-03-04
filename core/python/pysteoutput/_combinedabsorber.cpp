@@ -52,22 +52,22 @@ void Export_python_combinedabsorber()
     register_ptr_to_python< boost::shared_ptr< AbsorberModel > >();
     delete AbsorberModel_scope;
 
-    class_< CombinedAbsorberPotential<1>, boost::noncopyable >("CombinedAbsorberPotential_1", no_init)
+    class_< CombinedAbsorberPotential<1>, boost::noncopyable >("CombinedAbsorberPotential_1", init<  >())
         .def("AddAbsorber", &CombinedAbsorberPotential<1>::AddAbsorber)
         .def("ApplyPotential", &CombinedAbsorberPotential<1>::ApplyPotential)
     ;
 
-    class_< CombinedAbsorberPotential<2>, boost::noncopyable >("CombinedAbsorberPotential_2", no_init)
+    class_< CombinedAbsorberPotential<2>, boost::noncopyable >("CombinedAbsorberPotential_2", init<  >())
         .def("AddAbsorber", &CombinedAbsorberPotential<2>::AddAbsorber)
         .def("ApplyPotential", &CombinedAbsorberPotential<2>::ApplyPotential)
     ;
 
-    class_< CombinedAbsorberPotential<3>, boost::noncopyable >("CombinedAbsorberPotential_3", no_init)
+    class_< CombinedAbsorberPotential<3>, boost::noncopyable >("CombinedAbsorberPotential_3", init<  >())
         .def("AddAbsorber", &CombinedAbsorberPotential<3>::AddAbsorber)
         .def("ApplyPotential", &CombinedAbsorberPotential<3>::ApplyPotential)
     ;
 
-    class_< CombinedAbsorberPotential<4>, boost::noncopyable >("CombinedAbsorberPotential_4", no_init)
+    class_< CombinedAbsorberPotential<4>, boost::noncopyable >("CombinedAbsorberPotential_4", init<  >())
         .def("AddAbsorber", &CombinedAbsorberPotential<4>::AddAbsorber)
         .def("ApplyPotential", &CombinedAbsorberPotential<4>::ApplyPotential)
     ;
