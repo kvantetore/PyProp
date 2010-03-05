@@ -228,6 +228,7 @@ def CreateContext():
     context['no_init'] = infos.no_init
     context['no_virtual'] = infos.no_virtual
     context['export_values'] = infos.export_values
+    context['baseclass'] = infos.baseclass
     # policies
     context['return_internal_reference'] = return_internal_reference
     context['with_custodian_and_ward'] = with_custodian_and_ward

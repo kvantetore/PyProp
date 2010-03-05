@@ -224,6 +224,12 @@ class ClassExporter(Exporter):
                     exported.append(base.name)
             if exported:
                 break
+
+        #explicit baseclass
+        if self.info.baseclass:
+            if self.info.baseclass not in exported:
+                exported.append(self.info.baseclass)
+
         if exported:
             code = namespaces.python + 'bases< %s > ' %  (', '.join(exported))
             self.Add('template', code)         
@@ -258,10 +264,10 @@ class ClassExporter(Exporter):
         # inserting no_init in the declaration, which would not allow
         # even subclasses to be instantiated.
         self.constructors = constructors[:]
-		
+        
         if self.info.no_init:
             constructors = []
-		
+        
         if self.class_.abstract:
             for cons in constructors:
                 if cons.IsCopy():

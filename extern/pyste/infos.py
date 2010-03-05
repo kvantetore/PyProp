@@ -255,10 +255,13 @@ def final(info):
     info._Attribute('no_override', True)
 
 def no_init(info):
-	info._Attribute('no_init', True)
+    info._Attribute('no_init', True)
 
 def no_virtual(info):
-	info._Attribute('no_virtual', True)
+    info._Attribute('no_virtual', True)
 
 def export_values(info):
     info._Attribute('export_values', True)
+
+def baseclass(info, baseclass):
+    info._Attribute("baseclass", baseclass)
