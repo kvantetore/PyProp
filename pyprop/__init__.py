@@ -1,6 +1,9 @@
 import sys
 import os
 import time
+import os.path as path
+
+import config
 
 #import mpi
 try:
@@ -41,6 +44,14 @@ else:
 		print "Warning: unable to load mpi."
 
 
+#Find out whether we running from a source or installed pyprop
+IsRunningFromSource = not path.exists(path.join(__path__[0], "core", "libcore.so"))
+
+if IsRunningFromSource:
+	#find out which build kind we are
+	BuildKind = os.environ.get("PYPROP_BUILD_KIND", "default")
+	BuildPath = path.abspath(path.join(__path__[0], "..", "build", BuildKind, "pyprop"))
+
 
 import core
 if __DisableMPI:
@@ -60,9 +71,8 @@ if core.LOAD_CORE_OK:
 #import plotting
 #reload(plotting)
 
-execfile(__path__[0] + "/Absorber.py")
+#execfile(__path__[0] + "/Absorber.py")
 execfile(__path__[0] + "/CreateInstance.py")
-execfile(__path__[0] + "/Config.py")
 execfile(__path__[0] + "/Distribution.py")
 execfile(__path__[0] + "/Enum.py")
 execfile(__path__[0] + "/Potential.py")
@@ -72,9 +82,9 @@ execfile(__path__[0] + "/Problem.py")
 execfile(__path__[0] + "/Utility.py")
 #execfile(__path__[0] + "/Redirect.py")
 execfile(__path__[0] + "/Interrupt.py")
-execfile(__path__[0] + "/Timer.py")
+#execfile(__path__[0] + "/Timer.py")
 
-execfile(__path__[0] + "/BasisExpansion.py")
+#execfile(__path__[0] + "/BasisExpansion.py")
 #execfile(__path__[0] + "/CoupledSphericalHarmonics.py")
 #
 #execfile(__path__[0] + "/bspline/BSpline.py")

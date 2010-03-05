@@ -18,6 +18,8 @@ except:
 import pyprop
 if pyprop.IsRunningFromSource:
 	sys.path.append(os.path.join(pyprop.BuildPath, "core"))
+else:
+	sys.path.append(os.path.join(__path__[0], "core"))
 
 #import core c++ module
 try:

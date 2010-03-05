@@ -20,6 +20,56 @@ the user must call the UpdateStaticPotential method. This may be changed in the
 future.
 """
 
+class PotentialType:
+	Static = 1
+	Dynamic = 3
+	FiniteDifference = 4
+	CrankNicholson = 5
+	Matrix = 6
+	RankOne = 7
+
+
+def CreatePotential(config, potentialName, psi):
+	"""
+	Finds the section corresponding to potentialName in config, and 
+	creates a potential based on that configsection
+	"""
+	potentialConfig = config.GetSection(potentialName)
+	return CreatePotentialFromSection(potentialConfig, potentialName, psi)
+
+
+def CreatePotentialFromSection(potentialConfig, potentialName, psi):
+	"""
+	Creates a potential based on a configsection a potential name 
+	and a wavefunction
+	"""
+	potential = None
+	if potentialConfig.type == PotentialType.Static:
+		potential = StaticPotentialWrapper(psi)
+
+	elif potentialConfig.type == PotentialType.Dynamic:
+		potential = DynamicPotentialWrapper(psi)
+	
+	elif potentialConfig.type == PotentialType.FiniteDifference:
+		potential = FiniteDifferencePotentialWrapper(psi)
+		
+	elif potentialConfig.type == PotentialType.CrankNicholson:
+		potential = CrankNicholsonPotentialWrapper(psi)
+	
+	elif potentialConfig.type == PotentialType.Matrix:
+		potential = MatrixPotentialWrapper(psi)
+	
+	elif potentialConfig.type == PotentialType.RankOne:
+		potential = RankOnePotentialWrapper(psi)
+	
+	else:
+		raise "Unknown potential type", potentialConfig.type
+
+	potentialConfig.Apply(potential)
+	potential.Name = potentialName
+	return potential
+
+
 def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None):
 	"""
 	Create an instance of a PotentialEvaluator. Tries to guess

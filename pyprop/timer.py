@@ -65,7 +65,8 @@ class Timers(dict):
 		for key, timer in self.iteritems():
 			str += "    %s = %s\n" % (key, timer)
 		return str
-	
+
+
 class Counters(dict):
 	"""
 	Dictionary of counters

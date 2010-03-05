@@ -2,6 +2,20 @@ import signal
 
 RedirectInterrupt = False
 
+
+class InitialConditionType:
+	Function = 1
+	File = 2
+	Class = 3
+	Custom = 4
+
+class WavefunctionFileFormat:
+	Ascii  = 1
+	Binary = 2
+	HDF    = 3
+
+
+
 def CreateWavefunction(config):
 	"""
 	Creates a Wavefunction from a config file. Use this function if
