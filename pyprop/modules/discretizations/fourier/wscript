@@ -11,6 +11,7 @@ sources = [
 
 pyste_module = "libfourier"
 pyste_sources = [
+	"src/pyste/radialtransform.pyste",
 	"src/pyste/cartesianabsorber.pyste",
 	"src/pyste/cartesianfouriertransform.pyste",
 	"src/pyste/cartesiankineticpotential.pyste",

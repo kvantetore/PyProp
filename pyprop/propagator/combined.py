@@ -1,5 +1,6 @@
 import pyprop.propagator.base as base
 from numpy import array, zeros
+from ..distribution import GetAnotherDistribution2
 
 class CombinedPropagator(base.PropagatorBase):
 	__Base = base.PropagatorBase
@@ -46,7 +47,7 @@ class CombinedPropagator(base.PropagatorBase):
 			curRank = prop.TransformRank
 
 			#parallelization
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				if distrModel.IsDistributedRank(curRank) and not prop.SupportsParallelPropagation():
 					#Get the current distribution	
 					distribIndex = self.RankDistributionMap[curRank]
@@ -81,15 +82,16 @@ class CombinedPropagator(base.PropagatorBase):
 			prop.SetupStepConjugate(dt/2.)
 
 			#parallelization:
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
 
 	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
+		distrModel = srcPsi.GetRepresentation().GetDistributedModel()
 		#first halfstep
 		for prop in self.SubPropagators:
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				self.Transpose(curRank, self.TransposeForward, srcPsi)
 				self.Transpose(curRank, self.TransposeForward, destPsi)
 
@@ -105,7 +107,7 @@ class CombinedPropagator(base.PropagatorBase):
 			prop.MultiplyHamiltonianConjugate(srcPsi, destPsi, t, dt/2.)
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, srcPsi)
 				self.Transpose(curRank, self.TransposeBackward, destPsi)
 
@@ -127,12 +129,13 @@ class CombinedPropagator(base.PropagatorBase):
 
 	def AdvanceStep(self, t, dt):
 		#Advance one step using strang splitting
+		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 
 		#first halfstep
 		for prop in self.SubPropagators:
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				self.Transpose(curRank, self.TransposeForward, self.psi)
 
 			#advance step
@@ -147,7 +150,7 @@ class CombinedPropagator(base.PropagatorBase):
 			prop.AdvanceStepConjugate(t, dt/2.)
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				self.Transpose(curRank, self.TransposeBackward, self.psi)
 
 	def Transpose(self, curRank, direction, psi):
@@ -232,12 +235,13 @@ class CombinedPropagator(base.PropagatorBase):
 		'gridFunction' is applied, and finally the wavefunction is transformed 
 		back to the basis representation.
 		"""
+		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 
 		#Transform to grid
 		for prop in self.SubPropagators:
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				for psi in wavefunctionList:
 					self.Transpose(curRank, self.TransposeForward, psi)
 
@@ -256,7 +260,7 @@ class CombinedPropagator(base.PropagatorBase):
 
 			#parallelization
 			curRank = prop.TransformRank
-			if not IsSingleProc():
+			if not distrModel.IsSingleProc():
 				for psi in wavefunctionList:
 					self.Transpose(curRank, self.TransposeBackward, psi)
 

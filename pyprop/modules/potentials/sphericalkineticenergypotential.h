@@ -36,28 +36,6 @@ public:
 	}
 };
 
-/*
- * Radial Kinetic Energy potential for the reduced wavefunction
- */
-template<int Rank>
-class RadialKineticEnergyPotential : public PotentialBase<Rank>
-{
-public:
-	double Mass;
-	int RadialRank;
-
-	void ApplyConfigSection(const ConfigSection &config)
-	{
-		config.Get("mass", Mass);
-		config.Get("radial_rank", RadialRank);
-	}
-
-	inline double GetPotentialValue(const blitz::TinyVector<double, Rank> &pos )
-	{
-		return sqr(pos(RadialRank))/(2*Mass);
-	}
-};
-
 
 #endif
 

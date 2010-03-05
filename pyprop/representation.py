@@ -1,4 +1,4 @@
-
+import core
 	
 def CreateRepresentation(config, distribution):
 	#Create instance

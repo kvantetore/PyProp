@@ -1,0 +1,4 @@
+RadialTransform = Template("RadialTransform", "src/combinedpropagator/radialtransform.h")
+RadialTransform("1")
+RadialTransform("2")
+RadialTransform("3")

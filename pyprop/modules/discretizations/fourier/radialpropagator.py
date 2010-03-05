@@ -1,4 +1,5 @@
 import pyprop.potential
+from pyprop.potential import PotentialType, StaticStorageModel
 from fourierpropagator import FourierPropagatorBase
 import libfourier
 

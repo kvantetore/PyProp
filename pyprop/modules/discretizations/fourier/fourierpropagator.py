@@ -2,6 +2,7 @@ import pyprop.config as config
 from pyprop.propagator.subpropagator import SubPropagatorBase
 from pyprop.createinstance import CreateInstanceRank
 import libfourier
+from numpy import imag
 
 class FourierPropagatorBase(SubPropagatorBase):
 	__BASE = SubPropagatorBase
