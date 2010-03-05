@@ -1,3 +1,7 @@
+import pyprop.potential
+from fourierpropagator import FourierPropagatorBase
+import libfourier
+
 
 class CartesianRadialPropagator(FourierPropagatorBase):
 	__BASE = FourierPropagatorBase
@@ -16,11 +20,11 @@ class CartesianRadialPropagator(FourierPropagatorBase):
 			print "Found force_origin_zero = ", self.ForceOriginZero
 
 	def CreateDefaultFourierPotential(self):
-		fourierPotentialConf = self.StaticEnergyConf(PotentialType.Static, "core.RadialKineticEnergyPotential")
+		fourierPotentialConf = self.StaticEnergyConf(PotentialType.Static, "libfourier.RadialKineticEnergyPotential")
 		fourierPotentialConf.mass = self.Mass
 		fourierPotentialConf.radial_rank = self.TransformRank
 		fourierPotentialConf.storage_model = StaticStorageModel.StorageBoth
-		fourierPot = CreatePotentialFromSection(fourierPotentialConf, "RadialKineticEnergy", self.psi)
+		fourierPot = pyprop.potential.CreatePotentialFromSection(fourierPotentialConf, "RadialKineticEnergy", self.psi)
 
 		return fourierPot
 

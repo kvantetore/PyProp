@@ -77,7 +77,7 @@ void (Representation<4>::*Representation_4___MultiplyOverlapstd__complex_double_
 void Export_pyprop_modules_discretizations_fourier_src_pyste_cartesianrange()
 {
     scope* CartesianRepresentation_1_scope = new scope(
-    class_< CartesianRepresentation<1>, boost::noncopyable >("CartesianRepresentation_1", init<  >())
+    class_< CartesianRepresentation<1>, bases< Representation<1> > , boost::noncopyable >("CartesianRepresentation_1", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,1>& >())
         .def_readwrite("Range", &CartesianRepresentation<1>::Range)
@@ -114,7 +114,7 @@ void Export_pyprop_modules_discretizations_fourier_src_pyste_cartesianrange()
     delete CartesianRepresentation_1_scope;
 
     scope* CartesianRepresentation_2_scope = new scope(
-    class_< CartesianRepresentation<2>, boost::noncopyable >("CartesianRepresentation_2", init<  >())
+    class_< CartesianRepresentation<2>, bases< Representation<2> > , boost::noncopyable >("CartesianRepresentation_2", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,2>& >())
         .def_readwrite("Range", &CartesianRepresentation<2>::Range)
@@ -151,7 +151,7 @@ void Export_pyprop_modules_discretizations_fourier_src_pyste_cartesianrange()
     delete CartesianRepresentation_2_scope;
 
     scope* CartesianRepresentation_3_scope = new scope(
-    class_< CartesianRepresentation<3>, boost::noncopyable >("CartesianRepresentation_3", init<  >())
+    class_< CartesianRepresentation<3>, bases< Representation<3> > , boost::noncopyable >("CartesianRepresentation_3", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,3>& >())
         .def_readwrite("Range", &CartesianRepresentation<3>::Range)
@@ -188,7 +188,7 @@ void Export_pyprop_modules_discretizations_fourier_src_pyste_cartesianrange()
     delete CartesianRepresentation_3_scope;
 
     scope* CartesianRepresentation_4_scope = new scope(
-    class_< CartesianRepresentation<4>, boost::noncopyable >("CartesianRepresentation_4", init<  >())
+    class_< CartesianRepresentation<4>, bases< Representation<4> > , boost::noncopyable >("CartesianRepresentation_4", init<  >())
         .def(init< CartesianRange& >())
         .def(init< blitz::TinyVector<CartesianRange,4>& >())
         .def_readwrite("Range", &CartesianRepresentation<4>::Range)

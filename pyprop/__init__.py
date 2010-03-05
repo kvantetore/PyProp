@@ -1,48 +1,6 @@
 import sys
 import os
-import time
 import os.path as path
-
-import config
-
-#import mpi
-try:
-	import pylab
-	#from pylab import *
-except:
-	print "Warning: Unable to load matplotlib. Plotting will not be available"
-
-try:
-	import tables
-except:
-	print "Warning: Could not load module tables (pytables). Serialization to HDF files will not be available"
-
-import numpy
-#from numpy import *
-
-##The main namespace used for accessing functions defined in the "main"
-##project (i.e. example.py) file from configuration files and the like. 
-##Must be overridden if the main project is not in the __main__ namespace 
-##(i.e. when using IPython1)
-#
-#ProjectNamespace = sys.modules["__main__"].__dict__
-
-__DisableMPI = False
-if 'PYPROP_SINGLEPROC' in os.environ:
-	__DisableMPI = bool(os.environ['PYPROP_SINGLEPROC'])
-
-ProcId = 0
-ProcCount = 1
-if __DisableMPI:
-	print "MPI Disabled"
-else:
-	try:
-		import pypar
-		ProcId = pypar.rank()
-		ProcCount = pypar.size()
-	except:
-		print "Warning: unable to load mpi."
-
 
 #Find out whether we running from a source or installed pyprop
 IsRunningFromSource = not path.exists(path.join(__path__[0], "core", "libcore.so"))
@@ -52,48 +10,6 @@ if IsRunningFromSource:
 	BuildKind = os.environ.get("PYPROP_BUILD_KIND", "default")
 	BuildPath = path.abspath(path.join(__path__[0], "..", "build", BuildKind, "pyprop"))
 
-
 import core
-if __DisableMPI:
-	for name, obj in core.__dict__.iteritems():
-		if name.startswith("DistributedModel_"):
-			obj.ForceSingleProc()
-
-if core.LOAD_CORE_OK:
-	StaticStorageModel = core.StaticPotential_1.StorageModel
-
-#import utilities
-#reload(utilities)
-#
-#import serialization
-#reload(serialization)
-#
-#import plotting
-#reload(plotting)
-
-#execfile(__path__[0] + "/Absorber.py")
-execfile(__path__[0] + "/CreateInstance.py")
-execfile(__path__[0] + "/Distribution.py")
-execfile(__path__[0] + "/Enum.py")
-execfile(__path__[0] + "/Potential.py")
-execfile(__path__[0] + "/Problem.py")
-
-#execfile(__path__[0] + "/Plot.py")
-execfile(__path__[0] + "/Utility.py")
-#execfile(__path__[0] + "/Redirect.py")
-execfile(__path__[0] + "/Interrupt.py")
-#execfile(__path__[0] + "/Timer.py")
-
-#execfile(__path__[0] + "/BasisExpansion.py")
-#execfile(__path__[0] + "/CoupledSphericalHarmonics.py")
-#
-#execfile(__path__[0] + "/bspline/BSpline.py")
-#
-#execfile(__path__[0] + "/GridGeneration.py")
-
-#Load propagators
-#execfile(__path__[0] + "/propagator/init.py")
-#execfile(__path__[0] + "/solver/init.py")
-#execfile(__path__[0] + "/tensorpotential/init.py")
-
-
+import config
+from distribution import ProcId, ProcCount

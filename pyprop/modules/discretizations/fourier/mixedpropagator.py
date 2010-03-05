@@ -1,3 +1,4 @@
+from cartesianpropagator import CartesianPropagator
 
 class CartesianMixedPropagator(CartesianPropagator):
 	__Base = CartesianPropagator

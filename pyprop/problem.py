@@ -1,4 +1,11 @@
-import signal
+from interrupt import InterruptHandler
+from modules.redirect import Redirect
+import core
+import wavefunction
+import config
+import propagator.base 
+import serialization
+from createinstance import FindObjectStack
 
 RedirectInterrupt = False
 
@@ -8,64 +15,6 @@ class InitialConditionType:
 	File = 2
 	Class = 3
 	Custom = 4
-
-class WavefunctionFileFormat:
-	Ascii  = 1
-	Binary = 2
-	HDF    = 3
-
-
-
-def CreateWavefunction(config):
-	"""
-	Creates a Wavefunction from a config file. Use this function if
-	you only need a wavefunction and not a complete proapagator.
-
-	The wavefunction will have one data buffer allocated, and the content
-	is unspecified.
-
-	ex:
-	conf = pyprop.Load("config.ini")
-	psi = CreateWavefunction(config)
-	x = psi.GetData().GetRepresentation().GetLocalGrid(0)
-	psi.GetData()[:] = x * exp(- x**2)
-	"""
-
-	print "Creating DistributionModel..."
-	distribution = CreateDistribution(config)
-
-	print "Creating Representation..."
-	representation = CreateRepresentation(config, distribution)
-
-	print "Creating Wavefunction..."
-	psi = CreateWavefunctionInstance(representation)
-
-	return psi
-
-
-def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
-	f = tables.openFile(filename, "r")
-	try:
-		dataset = serialization.GetExistingDataset(f, datasetPath)
-		conf = Config(dataset._v_attrs.configObject)
-
-	finally:
-		f.close()
-
-	return conf
-	
-
-def CreateWavefunctionFromFile(filename, datasetPath="/wavefunction"):
-	"""
-	Loads a wavefunction directly from a HDF5-file. The config object
-	is read from the attribute configObject on the node specified by
-	datasetPath
-	"""
-	conf = LoadConfigFromFile(filename, datasetPath)
-	psi = CreateWavefunction(conf)
-	serialization.LoadWavefunctionHDF(filename, datasetPath, psi)
-
-	return psi
 
 
 #----------------------------------------------------------------------------------------------------
@@ -90,10 +39,10 @@ class Problem:
 			Redirect.Enable(self.Silent)
 		
 			#Create wavefunction
-			self.psi = CreateWavefunction(config)
+			self.psi = wavefunction.CreateWavefunction(config)
 		
 			print "Creating Propagator..."
-			self.Propagator = CreatePropagator(config, self.psi)
+			self.Propagator = propagator.base.CreatePropagator(config, self.psi)
 		
 			#apply propagation config
 			config.Propagation.Apply(self)
@@ -357,17 +306,13 @@ class Problem:
 	def SetupWavefunctionClass(self, config, psi):
 		classname = config.InitialCondition.classname
 		
-	  	#Create globals
-		glob = dict(ProjectNamespace)
-		glob.update(globals())	
-	
 		#try to
 		evaluator = None
-		try: evaluator = eval(classname + "()", glob)
+		try: evaluator = FindObjectStack(classname + "()")
 		except: pass
 
 		if evaluator == None:
-			try: evaluator = eval(classname + "_" + str(psi.GetRank()) + "()", glob)
+			try: evaluator = FindObjectStack(classname + "_" + str(psi.GetRank()) + "()")
 			except: pass
 
 		if evaluator == None:
@@ -424,11 +369,11 @@ class Problem:
 		format   = config.InitialCondition.format
 		filename = config.InitialCondition.filename
 		
-		if format == WavefunctionFileFormat.Ascii:
+		if format == wavefunction.WavefunctionFileFormat.Ascii:
 			self.LoadWavefunctionAscii(filename)
-		elif format == WavefunctionFileFormat.Binary:
+		elif format == wavefunction.WavefunctionFileFormat.Binary:
 			self.LoadWavefunctionPickle(filename)
-		elif format == WavefunctionFileFormat.HDF:
+		elif format == wavefunction.WavefunctionFileFormat.HDF:
 			datasetPath = str(config.InitialCondition.dataset)
 			self.LoadWavefunctionHDF(filename, datasetPath)
 		else:

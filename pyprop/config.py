@@ -1,8 +1,35 @@
 import os
 import ConfigParser
+try:
+	import tables
+except:
+	pass
+
+from createinstance import FindObjectStack
+
+#Import some common objects such that they are found
+#by FindObjectStack when loading config files
+from potential import PotentialType, StaticStorageModel
+from problem import InitialConditionType
+from numpy import array
+
+
+def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
+	"""
+	Load config from a HDF5 file
+	"""
+	f = tables.openFile(filename, "r")
+	try:
+		dataset = serialization.GetExistingDataset(f, datasetPath)
+		conf = Config(dataset._v_attrs.configObject)
+
+	finally:
+		f.close()
+
+	return conf
+	
 
 class Section:
-
 	def __init__(self, name, cfg=None):
 		self.name = name
 		if cfg != None:
@@ -17,15 +44,7 @@ class Section:
 				self.SetOptionString(optionName, cfg.get(name, optionName))
 			
 	def SetOptionString(self, optionName, optionString):
-		glob = dict(ProjectNamespace)
-		glob.update(globals())
-		try:
-			optionValue = eval(optionString, glob, self.__dict__)
-		except:
-			print "Locals:", self.__dict__
-			print "Option:", optionString
-			raise 
-				
+		optionValue = FindObjectStack(optionString)
 		self.Set(optionName, optionValue)
 		
 	def Set(self, optionName, optionValue):

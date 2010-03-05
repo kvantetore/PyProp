@@ -1,4 +1,71 @@
+import os
+
 import core
+from createinstance import CreateInstanceRank
+from numpy import where, array, r_
+
+
+#Load mpi unless it is disabled
+__DisableMPI = False
+if 'PYPROP_SINGLEPROC' in os.environ:
+	__DisableMPI = bool(os.environ['PYPROP_SINGLEPROC'])
+
+ProcId = 0
+ProcCount = 1
+if __DisableMPI:
+	print "MPI Disabled"
+else:
+	try:
+		import pypar
+		ProcId = pypar.rank()
+		ProcCount = pypar.size()
+	except:
+		print "Warning: unable to load mpi."
+
+if __DisableMPI:
+	for name, obj in core.__dict__.iteritems():
+		if name.startswith("DistributedModel_"):
+			obj.ForceSingleProc()
+
+
+# ------------- Convenience functions for printing out in parallel: -------------------
+
+def Linearize(printProcId=False):
+	"""
+	Generator for performing a task on all processors serially, 
+	usually for printing out stuff from all processors
+	
+	if run on 4 processors:
+	>>> for i in Linearize():
+	        print "Hello from proc %i" % ProcId
+	Hello from proc 0
+	Hello from proc 1
+	Hello from proc 2
+	Hello from proc 3
+	"""
+	for i in range(ProcCount):
+		if pympi.rank == i:
+			if printProcId:
+				print "Process ", i, ": "
+			yield i
+		pypar.barrier()
+
+def IsMaster():
+	return ProcId == 0
+	
+def IsSingleProc():
+	return ProcCount == 1
+	
+def ReshapeArray(array, newShape):
+	return ndarray.__new__(array.__class__, dtype=array.dtype, shape=newShape, buffer=array.data)
+
+def PrintOut(str=""):
+	if IsMaster():
+		print str
+
+
+# ------------- Redistribution -------------------
+
 
 def CreateDistribution(config, rank=None):
 	#Instance Distribution class which is templated over rank
@@ -46,7 +113,7 @@ def GetAnotherDistribution2(distrib, curRank, rank):
 		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
 
 	#find out which procRank curRank is distributed on
-	curProcRank = find(array(distrib) == curRank)[0]
+	curProcRank = where(array(distrib) == curRank)[0][0]
 
 	#Ranks available for distribution
 	availableRanks = [j for j in r_[0:rank] if j not in distrib]

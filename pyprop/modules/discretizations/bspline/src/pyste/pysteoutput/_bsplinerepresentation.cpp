@@ -30,7 +30,7 @@ void Export_pyprop_modules_discretizations_bspline_src_pyste_bsplinerepresentati
     delete BSpline_BSplineRepresentation_scope;
 
     scope* BSpline_BSplineGridRepresentation_scope = new scope(
-    class_< BSpline::BSplineGridRepresentation, bases< Representation<1> >  >("BSplineGridRepresentation", init<  >())
+    class_< BSpline::BSplineGridRepresentation, bases< Representation<1>, OrthogonalRepresentation >  >("BSplineGridRepresentation", init<  >())
         .def(init< const BSpline::BSplineGridRepresentation& >())
         .def("Copy", &BSpline::BSplineGridRepresentation::Copy)
         .def("GetFullShape", &BSpline::BSplineGridRepresentation::GetFullShape)

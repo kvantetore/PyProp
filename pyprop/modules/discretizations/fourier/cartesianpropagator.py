@@ -1,27 +1,11 @@
-def GetAnotherDistribution(distrib, rank):
-	if rank <= len(distrib):
-		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
+from numpy import r_, array
 
-	ranks = [j for j in r_[0:rank] if j not in distrib]
-	return array([min(ranks)], dtype=int)
-
-def GetAnotherDistribution2(distrib, curRank, rank):
-	if rank <= len(distrib):
-		raise Exception("Can not have distribution with length (%i) >= rank (%i)" % (rank, len(distrib)))
-
-	#find out which procRank curRank is distributed on
-	curProcRank = find(array(distrib) == curRank)[0]
-
-	#Ranks available for distribution
-	availableRanks = [j for j in r_[0:rank] if j not in distrib]
-
-	#The new distrib is similar to the old distrib, only with the distribution 
-	#curProcRank changed
-	newDistrib = array(distrib)
-	newDistrib[curProcRank] = min(availableRanks)
-
-	return newDistrib
-
+import pyprop.config as config
+from pyprop.propagator.base import PropagatorBase
+from pyprop.createinstance import CreateInstanceRank
+from pyprop.potential import PotentialType, StaticStorageModel, CreatePotentialFromSection
+import pyprop.distribution
+import libfourier
 
 #----------------------------------------------------------------------------------------------------
 # Cartesian FFT Evaluator
@@ -34,7 +18,7 @@ class CartesianPropagator(PropagatorBase):
 		PropagatorBase.__init__(self, psi)
 
 		rank = psi.GetRank()
-		self.FFTTransform = CreateInstanceRank("core.CartesianFourierTransform", rank)
+		self.FFTTransform = CreateInstanceRank("libfourier.CartesianFourierTransform", rank)
 		self.__WavefunctionData = {}
 
 	def ApplyConfig(self, config): 
@@ -69,7 +53,8 @@ class CartesianPropagator(PropagatorBase):
 
 	def TransformForward(self, psi):
 		# transform into fourier space
-		if IsSingleProc():
+		distr = psi.GetRepresentation().GetDistributedModel()
+		if distr.IsSingleProc():
 			self.FFTTransform.ForwardTransform(psi)
 		else:
 			stage = 0
@@ -84,7 +69,8 @@ class CartesianPropagator(PropagatorBase):
 
 	def TransformInverse(self, psi):
 		# transform back into real space
-		if IsSingleProc():
+		distr = psi.GetRepresentation().GetDistributedModel()
+		if distr.IsSingleProc():
 			self.FFTTransform.InverseTransform(psi)
 		else:
 			stage = len(self.DistribList)-1
@@ -123,11 +109,11 @@ class CartesianPropagator(PropagatorBase):
 
 	def SetupKineticPotential(self, dt):
 		#create config
-		class staticEnergyConf(Section):
+		class staticEnergyConf(config.Section):
 			def __init__(self, type, classname):
 				self.type = type
 				self.classname = classname
-		conf = staticEnergyConf(PotentialType.Static, "CartesianKineticEnergyPotential")
+		conf = staticEnergyConf(PotentialType.Static, "libfourier.CartesianKineticEnergyPotential")
 		conf.mass = self.Mass
 		conf.storage_model = StaticStorageModel.StorageValue
 
@@ -159,7 +145,7 @@ class CartesianPropagator(PropagatorBase):
 				startDistrib, startShape = distribs[i] 
 
 				#Find the next distribution
-				finalDistrib = GetAnotherDistribution2(startDistrib, curRank, self.psi.GetRank())
+				finalDistrib = pyprop.distribution.GetAnotherDistribution2(startDistrib, curRank, self.psi.GetRank())
 		
 				#Find shape of the next distribution
 				transpose = distrModel.GetTranspose()

@@ -1,20 +1,21 @@
+import pyprop.propagator.base as base
 
 #----------------------------------------------------------------------------------------------------
 # Propagator for Vector Representation
 #----------------------------------------------------------------------------------------------------
-class VectorPropagator(PropagatorBase):
+class VectorPropagator(base.PropagatorBase):
 	def __init__(self, psi):
 		self.Psi = psi
-		PropagatorBase.__init__(self, psi)
+		base.PropagatorBase.__init__(self, psi)
 
 	def ApplyConfig(self, config): 
-		PropagatorBase.ApplyConfig(self, config)
+		base.PropagatorBase.ApplyConfig(self, config)
 		
 	def ApplyConfigSection(self, configSection): 
-		PropagatorBase.ApplyConfigSection(self, configSection)
+		base.PropagatorBase.ApplyConfigSection(self, configSection)
 
 	def SetupStep(self, dt):
-		PropagatorBase.SetupStep(self, dt)
+		base.PropagatorBase.SetupStep(self, dt)
 
 	def AdvanceStep(self, t, dt):
 		raise NotImplementedException("Only MultiplyHamiltonian-base propagators are implemented for VectorPropagator")

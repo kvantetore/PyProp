@@ -1,3 +1,14 @@
+try:
+	import tables
+except:
+	pass
+
+from createinstance import CreateInstanceRank, FindObjectStack
+
+import core
+if core.LOAD_CORE_OK:
+	StaticStorageModel = core.StaticPotential_1.StorageModel
+
 """
 This file contains python functions for all potentials. 
 A potential is usually based on a C++ class implementing the GetPotentialValue 
@@ -70,7 +81,7 @@ def CreatePotentialFromSection(potentialConfig, potentialName, psi):
 	return potential
 
 
-def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None):
+def CreatePotentialInstance(name, rank, evaluatorPrefix, potentialRank=None):
 	"""
 	Create an instance of a PotentialEvaluator. Tries to guess
 	the python name of the class from a descriptive classname.
@@ -85,34 +96,39 @@ def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None
 	if potentialRank == None:
 		potentialRank = rank
 
-	glob = dict(ProjectNamespace)
-	glob.update(globals())
-	
+	dotpos = name.rfind(".")
+	if dotpos == -1:
+		modulePrefix = ""
+		className = name
+	else:
+		modulePrefix = name[:dotpos+1]
+		className = name[dotpos+1:]
+
 	potential = None
-	longClassName = evaluatorPrefix + "_" + className + "_" + str(potentialRank) + "_" + str(rank)
+	longClassName = modulePrefix + evaluatorPrefix + "_" + className + "_" + str(potentialRank) + "_" + str(rank)
 	try:
-		potential = eval(longClassName + "()", glob)
+		potential = FindObjectStack(longClassName + "()")
 	except: pass
 	
 	if potential == None:
-		shortClassName = evaluatorPrefix + className + "_" + str(rank)
+		shortClassName = modulePrefix + evaluatorPrefix + className + "_" + str(rank)
 		try:
-			potential = eval(shortClassName + "()", glob)
+			potential = FindObjectStack(shortClassName + "()")
 		except: pass
 
 	if potential == None:
-		shortClassName = className + "_" + str(rank)
+		shortClassName2 = modulePrefix + className + "_" + str(rank)
 		try:
-			potential = eval(shortClassName + "()", glob)
+			potential = FindObjectStack(shortClassName2 + "()")
 		except: pass
 
 	if potential == None:
 		try:
-			potential = eval(className + "()", glob)
+			potential = FindObjectStack(modulePrefix + className + "()")
 		except: pass
 			
 	if potential == None:
-		raise "Unknown potential", className 
+		raise Exception("Unknown potential", longClassName, shortClassName, shortClassName2, modulePrefix + className)
 
 	return potential
 
@@ -216,7 +232,7 @@ class StaticPotentialWrapper(PotentialWrapper):
 				
 
 		elif hasattr(self.ConfigSection, "classname"):
-			evaluatorPrefix = "core.DynamicPotentialEvaluator"
+			evaluatorPrefix = "DynamicPotentialEvaluator"
 			potentialEvaluator = CreatePotentialInstance(self.ConfigSection.classname, self.psi.GetRank(), evaluatorPrefix)
 			self.ConfigSection.Apply(potentialEvaluator)
 			self.PotentialEvaluator = potentialEvaluator
@@ -291,7 +307,7 @@ class DynamicPotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 		rank = self.psi.GetRank()
 
-		evaluatorPrefix = "core.DynamicPotentialEvaluator"
+		evaluatorPrefix = "DynamicPotentialEvaluator"
 		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
 		configSection.Apply(self.Evaluator)
 	
@@ -319,7 +335,7 @@ class RankOnePotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 		rank = self.psi.GetRank()
 	
-		evaluatorPrefix = "core.RankOnePotentialEvaluator"
+		evaluatorPrefix = "RankOnePotentialEvaluator"
 		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix, potentialRank=1)
 		configSection.Apply(self.Evaluator)
 	
@@ -341,7 +357,7 @@ class FiniteDifferencePotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 		rank = self.psi.GetRank()
 
-		evaluatorPrefix = "core.ExponentialFiniteDifferenceEvaluator"
+		evaluatorPrefix = "ExponentialFiniteDifferenceEvaluator"
 		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
 		configSection.Apply(self.Evaluator)
 	
@@ -360,7 +376,7 @@ class CrankNicholsonPotentialWrapper(PotentialWrapper):
 		PotentialWrapper.ApplyConfigSection(self, configSection)
 		rank = self.psi.GetRank()
 
-		evaluatorPrefix = "core.CrankNicholsonEvaluator"
+		evaluatorPrefix = "CrankNicholsonEvaluator"
 		self.Evaluator = CreatePotentialInstance(configSection.classname, rank, evaluatorPrefix)
 		configSection.Apply(self.Evaluator)
 	
@@ -370,12 +386,12 @@ class CrankNicholsonPotentialWrapper(PotentialWrapper):
 	def MultiplyPotential(self, srcPsi, dstPsi, t, dt):
 		self.Evaluator.MultiplyOperator(srcPsi, dstPsi, t, dt)
 
-
-class SparseMatrixParticle(tables.IsDescription):
-	RowIndex = tables.Int32Col(pos=1)
-	ColIndex = tables.Int32Col(pos=2)
-	MatrixElement = tables.ComplexCol(itemsize=16, pos=3)
-
+if "tables" in globals():
+	class SparseMatrixParticle(tables.IsDescription):
+		RowIndex = tables.Int32Col(pos=1)
+		ColIndex = tables.Int32Col(pos=2)
+		MatrixElement = tables.ComplexCol(itemsize=16, pos=3)
+	
 class MatrixType:
 	Sparse = "Sparse"
 	Dense = "Dense"

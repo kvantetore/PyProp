@@ -1,3 +1,7 @@
+import pyprop.config as config
+from pyprop.propagator.subpropagator import SubPropagatorBase
+from pyprop.createinstance import CreateInstanceRank
+import libfourier
 
 class FourierPropagatorBase(SubPropagatorBase):
 	__BASE = SubPropagatorBase
@@ -8,8 +12,8 @@ class FourierPropagatorBase(SubPropagatorBase):
 		rank = psi.GetRank()	
 
 		#instantiate transforms		
-		self.FFTTransform = CreateInstanceRank("core.CartesianFourierTransform", 1)
-		self.FourierTransform = CreateInstanceRank("core.RadialTransform", rank)
+		self.FFTTransform = CreateInstanceRank("libfourier.CartesianFourierTransform", 1)
+		self.FourierTransform = CreateInstanceRank("libfourier.RadialTransform", rank)
 
 	def ApplyConfigSection(self, configSection):
 		self.Mass = configSection.mass
@@ -154,7 +158,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 		return exp( 1.0j * k * x )
 
 	# Helper class for kinetic energy potentials
-	class StaticEnergyConf(Section):
+	class StaticEnergyConf(config.Section):
 		def __init__(self, type, classname):
 			self.type = type
 			self.classname = classname

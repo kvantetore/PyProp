@@ -1,3 +1,17 @@
+from pyprop.potential import CreatePotential
+
+def CreatePropagator(config, psi):
+	#Create instance
+	propagator = None
+	if hasattr(config.Propagation, "propagator"):
+		propagator = config.Propagation.propagator(psi)
+		config.Apply(propagator)
+		config.Propagation.Apply(propagator)
+	else:
+		print "WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy."
+	
+	return propagator
+
 
 #----------------------------------------------------------------------------------------------------
 # Basic Propagator
@@ -36,7 +50,7 @@ class PropagatorBase:
 		pass
 
 	def AdvanceStep(self, t, dt):
-		ApplyPotential(self.TimeStep)
+		self.ApplyPotential(t, dt)
 
 		#check if we should renormalize
 		if self.RenormalizeActive:
@@ -78,3 +92,4 @@ class PropagatorBase:
 
 	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
 		raise Exception("Must be implemented on subpropagator")
+

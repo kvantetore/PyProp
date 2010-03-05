@@ -32,7 +32,7 @@ def build(bld):
 			local_libraries="core/libcore",
 			pyste_files=pyste_sources,
 			pyste_module=pyste_module,
-			pyste_force=True,
+			pyste_force=False,
 			pyprop_path="../../../../",
 		)
 

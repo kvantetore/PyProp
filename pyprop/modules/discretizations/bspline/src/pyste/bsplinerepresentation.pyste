@@ -2,7 +2,9 @@
 BSplineRepresentation = Class("BSpline::BSplineRepresentation", "src/representation/bsplinerepresentation.h")
 no_virtual(BSplineRepresentation)
 use_shared_ptr(BSplineRepresentation)
+baseclass(BSplineRepresentation, "Representation<1>")
 
 BSplineGridRepresentation = Class("BSpline::BSplineGridRepresentation", "src/representation/bsplinegridrepresentation.h")
 no_virtual(BSplineGridRepresentation)
 use_shared_ptr(BSplineGridRepresentation)
+baseclass(BSplineGridRepresentation, "OrthogonalRepresentation")

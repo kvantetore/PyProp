@@ -1,6 +1,8 @@
+import pyprop.propagator.base as base
+from numpy import array, zeros
 
-class CombinedPropagator(PropagatorBase):
-	__Base = PropagatorBase
+class CombinedPropagator(base.PropagatorBase):
+	__Base = base.PropagatorBase
 
 	TransposeForward = 1
 	TransposeBackward = -1
