@@ -1,11 +1,23 @@
 import core
+from createinstance import FindObjectStack
+from distribution import PrintOut
 	
 def CreateRepresentation(config, distribution):
-	#Create instance
-	representation = config.Representation.type()
+	rank = config.Representation.rank
+
+	#Create instance of representation, if it is a string, find the
+	#corresponding type
+	reprType = config.Representation.type
+	if type(reprType) == str:
+		repr = None
+		try:
+			repr = FindObjectStack(reprType)
+		except:
+			repr = FindObjectStack("%s_%i" % (reprType, rank))
+		reprType = repr
+	representation = reprType()
 
 	#Set distribution model
-	print "setting distributed model"
 	representation.SetDistributedModel(distribution)
 	
 	#Apply configuration section
@@ -18,7 +30,7 @@ def CreateRepresentation(config, distribution):
 		combinedRepr = eval("core.CombinedRepresentation_" + str(config.Representation.rank))
 	except:
 		pass
-	if combinedRepr != None and combinedRepr in config.Representation.type.__mro__:
+	if combinedRepr != None and combinedRepr in reprType.__mro__:
 		CreateSubRepresentations(representation, config)
 	
 	return representation
@@ -27,13 +39,25 @@ def CreateSubRepresentations(combinedRepr, config):
 	rank = config.Representation.rank
 	for i in range(rank):
 		sectionName = config.Representation.Get("representation" + str(i))
-		print "ConfigSection for rank %i is %s" % (i, sectionName)
 		section = config.GetSection(sectionName)
 
+		subRank = getattr(section, "rank", 1)
+		if subRank != 1:
+			raise Exception("Only representations of rank 1 is supported as sub-representations")
+		section.rank = subRank
+
 		#create instance
-		repr = section.type()
+		reprType = section.type
+		if type(reprType) == str:
+			r = None
+			try:
+				r = FindObjectStack(reprType)
+			except:
+				r = FindObjectStack("%s_%i" % (reprType, subRank))
+			reprType = r
+		repr = reprType()
 		repr.SetBaseRank(i)
-		print "Representation for rank %i is %s" % (i, repr)
+		PrintOut("Representation for rank %i is %s" % (i, repr))
 
 		#set distributed model
 		fullDistrib = combinedRepr.GetDistributedModel()
