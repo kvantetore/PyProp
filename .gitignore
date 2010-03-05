@@ -11,3 +11,4 @@
 build/
 .lock-wscript
 .waf*
+extern/blitz/blitz-configure/
