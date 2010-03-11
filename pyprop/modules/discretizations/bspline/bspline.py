@@ -5,7 +5,7 @@ import breakpointsequences as bps
 import libbspline
 
 def InitBSpline(conf):
-	bspline = BSPLINE()
+	bspline = BSplineObject()
 	bspline.ApplyConfigSection(conf)
 	bspline.CreateBSplineTable()
 	bspline.CreateBSplineDerivativeTable()
@@ -13,7 +13,7 @@ def InitBSpline(conf):
 	return bspline
 
 
-class BSPLINE(libbspline.BSpline):
+class BSplineObject(libbspline.BSpline):
 
 	def ApplyConfigSection(self, conf):
 		"""
