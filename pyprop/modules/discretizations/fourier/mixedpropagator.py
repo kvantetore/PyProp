@@ -1,3 +1,6 @@
+from numpy import r_
+
+import pyprop.potential as potential
 from cartesianpropagator import CartesianPropagator
 
 class CartesianMixedPropagator(CartesianPropagator):
@@ -39,7 +42,7 @@ class CartesianMixedPropagator(CartesianPropagator):
 			#Set up the mixed potential dependant on p_{rank} and 
 			#optionally, all grid coordinates except from x_{rank}
 			repr = self.psi.GetRepresentation()
-			potential = CreatePotential(self.Config, "MixedPotential_" + str(rank), self.psi)
+			potential = potential.CreatePotential(self.Config, "MixedPotential_" + str(rank), self.psi)
 			self.MixedPotentials[repr] = potential
 			potential.SetupStep(dt)
 	

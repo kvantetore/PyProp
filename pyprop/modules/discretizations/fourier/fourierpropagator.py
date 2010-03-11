@@ -1,8 +1,12 @@
+from numpy import imag, exp, where
+
 import pyprop.config as config
+import pyprop.potential as potential
 from pyprop.propagator.subpropagator import SubPropagatorBase
 from pyprop.createinstance import CreateInstanceRank
+
+#Required for CreateInstanceRank
 import libfourier
-from numpy import imag
 
 class FourierPropagatorBase(SubPropagatorBase):
 	__BASE = SubPropagatorBase
@@ -23,7 +27,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 		config = configSection.Config
 		if hasattr(configSection, 'fourier_potentials'):
 			potentialNames = configSection.fourier_potentials
-			self.FourierPotentials = [CreatePotential(config, name, self.psi) for name in potentialNames]
+			self.FourierPotentials = [potential.CreatePotential(config, name, self.psi) for name in potentialNames]
 		else:
 			self.FourierPotentials = []
 
@@ -121,7 +125,7 @@ class FourierPropagatorBase(SubPropagatorBase):
 		data = self.psi.GetData()
 
 		#Create a slice object for all ranks except TransformRank
-		index = [slice(None) for i in range(self.psi.GetRank())]
+		index = [slice(None) for _ in range(self.psi.GetRank())]
 		index[self.TransformRank] = rankIndex
 
 		data[index] = value
