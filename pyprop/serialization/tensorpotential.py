@@ -1,4 +1,8 @@
-from . import hdf
+from numpy import array, asarray, diff, r_, s_, all
+import tables
+import time
+
+import hdf
 
 """
 (De)Serialization routines for Tensor Potentials
@@ -7,6 +11,8 @@ use the methods SaveTensorPotential and LoadTensorPotential
 to load and save tensor potentials instead of regenerating
 them every time
 """
+
+DEBUG = False
 
 
 def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=None):
@@ -35,7 +41,7 @@ def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=N
 	distr = distributedModel
 	localData = potential.PotentialData
 	localShape = localData.shape
-	localSlab = tuple(map(hdf.GetLocalBasisPairSlice, potential.GeometryList))
+	localSlab = tuple(map(GetLocalBasisPairSlice, potential.GeometryList))
 	fullShape = tuple(distr.GetGlobalShape(array(localShape)))
 
 	datasetPath = groupPath + "/potential"
@@ -47,7 +53,7 @@ def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=N
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
 		hdf.SaveConfigObject(filename, groupPath, conf)
-		hdf.SaveGeometryInfo(filename, groupPath, potential.GeometryList)
+		SaveGeometryInfo(filename, groupPath, potential.GeometryList)
 
 	else:
 		#let the processors save their part one by one
@@ -59,11 +65,11 @@ def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=N
 		for i in range(procCount):
 			if procId == i:
 				if procId == 0:
-					RemoveExistingDataset(filename, groupPath)
+					hdf.RemoveExistingDataset(filename, groupPath)
 
 				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
-				SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+				hdf.SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 				t += time.time()
 				if DEBUG: print "    Duration: %.10fs" % t
 
@@ -73,7 +79,7 @@ def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=N
 		#proc 0 save attribs
 		if procId == 0:
 			#config object
-			SaveConfigObject(filename, groupPath, conf)
+			hdf.SaveConfigObject(filename, groupPath, conf)
 			#basis pairs
 			SaveGeometryInfo(filename, groupPath, potential.GeometryList)
 
@@ -151,7 +157,7 @@ def CheckLocalSlab(filename, groupPath, geometryList, localSlab):
 	for i, (origGlobalBasisPairs, localIndices, geomInfo) in enumerate(zip(globalBasisPairList, localSlab, geometryList)):
 		newBasisPairs = geomInfo.GetGlobalBasisPairs()[localIndices]
 		origBasisPairs = origGlobalBasisPairs[localIndices]
-		if not numpy.all(newBasisPairs == origBasisPairs):
+		if not all(newBasisPairs == origBasisPairs):
 			newLen = len(geomInfo.GetGlobalBasisPairs())
 			origLen = len(origGlobalBasisPairs)
 			print "BASISPAIRDIFF(%i) (%i, %i) = %s != %s" % (i, newLen, origLen, newBasisPairs, origBasisPairs)

@@ -1,4 +1,9 @@
-from . import hdf
+from numpy import zeros
+import time
+
+import hdf
+
+DEBUG = False
 
 def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	"""
@@ -45,7 +50,7 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	if distr.IsSingleProc():
 		t = - time.time()
 		hdf.RemoveExistingDataset(filename, datasetPath)
-		hdf.SaveLocalWavefunctionSlab(filename, datasetPath, psi)
+		SaveLocalWavefunctionSlab(filename, datasetPath, psi)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
 		hdf.SaveConfigObject(filename, datasetPath, conf)
@@ -64,7 +69,7 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 
 				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
-				hdf.SaveLocalWavefunctionSlab(filename, datasetPath, psi)
+				SaveLocalWavefunctionSlab(filename, datasetPath, psi)
 				t += time.time()
 				if DEBUG: print "    Duration: %.10fs" % t
 
@@ -88,7 +93,7 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 
 	distr = psi.GetRepresentation().GetDistributedModel()
 	if distr.IsSingleProc():
-		hdf.LoadLocalWavefunctionSlab(filename, datasetPath, psi)
+		LoadLocalWavefunctionSlab(filename, datasetPath, psi)
 
 	else:
 		#let the processors save their part one by one
@@ -97,14 +102,14 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 		for i in range(procCount):
 			if procId == i:
 				if DEBUG: print "Loading slab in proc ", procId
-				hdf.LoadLocalWavefunctionSlab(filename, datasetPath, psi)
+				LoadLocalWavefunctionSlab(filename, datasetPath, psi)
 			distr.GlobalBarrier();
 	
 
 def SaveLocalWavefunctionSlab(filename, datasetPath, psi):
 	#get hyperslab for this proc
 	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	fileSlab = hdf.GetFileSlab(psi)
+	fileSlab = GetFileSlab(psi)
 	#save data
 	hdf.SaveLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
 
@@ -112,7 +117,7 @@ def SaveLocalWavefunctionSlab(filename, datasetPath, psi):
 def LoadLocalWavefunctionSlab(filename, datasetPath, psi):
 	#get hyperslab for this proc
 	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	fileSlab = hdf.GetFileSlab(psi)
+	fileSlab = GetFileSlab(psi)
 	#load data	
 	hdf.LoadLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
 
@@ -129,7 +134,7 @@ def GetFileSlab(psi):
 	localShape = tuple(psi.GetData().shape)
 
 	#get StartIndex
-	localStartIndex = numpy.zeros(len(fullShape), dtype=int)
+	localStartIndex = zeros(len(fullShape), dtype=int)
 	rank = len(fullShape)
 	for i in range(rank):
 		localStartIndex[i] = distr.GetLocalStartIndex(int(fullShape[i]), i)

@@ -1,7 +1,5 @@
 import os
-import time
-import numpy 
-from numpy import r_, s_, all, diff, array, asarray
+from numpy import all
 try:
 	import tables
 except:
@@ -87,9 +85,9 @@ def CreateDataset(f, datasetPath, fullShape):
 		curPath += "/%s" % curGroupName
 		if not f.__contains__(curPath):
 			if prevPath == "":
-				newGroup = f.createGroup("/", curGroupName)
+				f.createGroup("/", curGroupName)
 			else:
-				newGroup = f.createGroup(prevPath, curGroupName)
+				f.createGroup(prevPath, curGroupName)
 
 	#Finally, save the data set
 	atom = tables.ComplexAtom(itemsize=16)
@@ -118,7 +116,6 @@ def SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 	f = tables.openFile(filename, "a")
 	try:
 		#get dataset
-		localShape = localData.shape
 		dataset = GetExistingDataset(f, datasetPath)
 		if dataset == None:
 			#create new dataset
@@ -161,7 +158,6 @@ def LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape):
 	f = tables.openFile(filename, "r")
 	try:
 		#get dataset
-		localShape = localData.shape
 		dataset = GetExistingDataset(f, datasetPath)
 		if dataset == None:
 			raise Exception("Dataset '%s' not found in file '%s'" % (datasetPath, filename))

@@ -1,4 +1,3 @@
-import numpy
 import cPickle as pickle
 
 def SavePickleArray(fb, array):
