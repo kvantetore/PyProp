@@ -1,4 +1,7 @@
+import sys
 import warnings
+
+import libredirect
 
 class StdOut:
 	def __init__(self, stdout, silent):
@@ -21,12 +24,12 @@ class RedirectClass:
 				warnings.warn("Already redirected", RuntimeWarning)
 			sys.stdout.flush()
 			self.redirect_stdout = StdOut(sys.stdout, silent)
-			self.redirect_cout = core.redirect_cout()
+			self.redirect_cout = libredirect.redirect_cout()
 			sys.stdout = self.redirect_stdout
 
 	def Disable(self):
 		if self.redirect_stdout != None:	
-			core.restore_cout(self.redirect_cout)
+			libredirect.restore_cout(self.redirect_cout)
 			sys.stdout = self.redirect_stdout.stdout 
 	
 			self.redirect_stdout = None
