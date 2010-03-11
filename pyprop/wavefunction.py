@@ -1,7 +1,9 @@
 import core
-import distribution as distrib
-import representation as repr
+import distribution
+import representation
+import config
 from createinstance import CreateInstanceRank
+from serialization.wavefunction  import LoadWavefunctionHDF
 
 class WavefunctionFileFormat:
 	Ascii  = 1
@@ -25,13 +27,13 @@ def CreateWavefunction(config):
 	"""
 
 	print "Creating DistributionModel..."
-	distribution = distrib.CreateDistribution(config)
+	distr = distribution.CreateDistribution(config)
 
 	print "Creating Representation..."
-	representation = repr.CreateRepresentation(config, distribution)
+	rep = representation.CreateRepresentation(config, distr)
 
 	print "Creating Wavefunction..."
-	psi = CreateWavefunctionInstance(representation)
+	psi = CreateWavefunctionInstance(rep)
 
 	return psi
 
@@ -44,7 +46,7 @@ def CreateWavefunctionFromFile(filename, datasetPath="/wavefunction"):
 	"""
 	conf = config.LoadConfigFromFile(filename, datasetPath)
 	psi = CreateWavefunction(conf)
-	serialization.LoadWavefunctionHDF(filename, datasetPath, psi)
+	LoadWavefunctionHDF(filename, datasetPath, psi)
 
 	return psi
 
