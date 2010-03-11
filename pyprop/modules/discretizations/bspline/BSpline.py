@@ -1,6 +1,8 @@
-from numpy import *
-execfile(__path__[0] + "/bspline/gausslegendrequadrature.py")
-execfile(__path__[0] + "/bspline/breakpointsequences.py")
+from numpy import array, ones
+
+import gausslegenderquadrature as quadr
+import breakpointsequences as bps
+import libbspline
 
 def InitBSpline(conf):
 	bspline = BSPLINE()
@@ -11,7 +13,7 @@ def InitBSpline(conf):
 	return bspline
 
 
-class BSPLINE(core.BSpline):
+class BSPLINE(libbspline.BSpline):
 
 	def ApplyConfigSection(self, conf):
 		"""
@@ -50,26 +52,26 @@ class BSPLINE(core.BSpline):
 
 		if(conf.bpstype == 'linear'):
 
-			bpsSeq = LinearBreakpointSequence(conf.xmin, \
+			bpsSeq = bps.LinearBreakpointSequence(conf.xmin, \
 			                                  conf.xmax, \
 			                                  conf.xsize) \
 
 		elif(conf.bpstype == 'exponential'):
 
-			bpsSeq = ExponentialBreakpointSequence(conf.xmin, \
+			bpsSeq = bps.ExponentialBreakpointSequence(conf.xmin, \
 			                                       conf.xmax, \
 			                                       conf.xsize, \
 			                                       conf.gamma)
 
 		elif(conf.bpstype == 'quadraticlinear'):
 
-			bpsSeq = QuadraticLinearBreakpointSequence(conf.xmin, \
+			bpsSeq = bps.QuadraticLinearBreakpointSequence(conf.xmin, \
 			                                           conf.xmax, \
 			                                           conf.xsize, \
 			                                           conf.joinpoint)
 		elif(conf.bpstype == 'exponentiallinear'):
 
-			bpsSeq = ExponentialLinearBreakpointSequence(conf.xmin, \
+			bpsSeq = bps.ExponentialLinearBreakpointSequence(conf.xmin, \
 			                                           conf.xpartition, \
 			                                           conf.xmax, \
 			                                           conf.xsize, \
@@ -77,7 +79,7 @@ class BSPLINE(core.BSpline):
 
 		elif(conf.bpstype == 'centerexponentiallinear'):
 
-			bpsSeq = CenterExponentialLinearBreakpointSequence(conf.xmin, \
+			bpsSeq = bps.CenterExponentialLinearBreakpointSequence(conf.xmin, \
 			                                           conf.xpartition, \
 			                                           conf.xmax, \
 			                                           conf.xsize, \
@@ -146,7 +148,7 @@ class BSPLINE(core.BSpline):
 		for i in range(n_):
 			knotPointMultiplicity = self.MaxSplineOrder - self.GetContinuitySequence()[i]
 			knotIndex += knotPointMultiplicity
-			for j in range(knotPointMultiplicity):
+			for _ in range(knotPointMultiplicity):
 				knotSequence.append(self.GetBreakpointSequence()[i])
 				topKnotMap.append(knotIndex)
 				#topKnotMap.append(knotIndex)
@@ -169,7 +171,7 @@ class BSPLINE(core.BSpline):
 	
 		# Get points&weights
 		quadOrder = conf.Get("quad_order_additional") + conf.Get("order")
-		quadrule = GaussQuadratureRule(ruleOrder = quadOrder);
+		quadrule = quadr.GaussQuadratureRule(ruleOrder = quadOrder);
 
 		# Set storage vectors to correct size
 		self.ResizeWeights( len(quadrule.Weights) );
@@ -213,7 +215,7 @@ class BSPLINE(core.BSpline):
 			# Take knot point multiplicity into account.
 			# Degenerate knots map to the same grid index.
 			knotPointMultiplicity = self.MaxSplineOrder - self.GetContinuitySequence()[j]
-			for k in range(knotPointMultiplicity):
+			for _ in range(knotPointMultiplicity):
 				knotToGridIndexMap.append(gridPointCounter)
 
 			for i in range(numberOfNodes):

@@ -1,4 +1,4 @@
-from numpy import *
+from numpy import sqrt, diag, array, argsort, linalg
 
 class GaussQuadratureRule:
 	"""

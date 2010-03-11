@@ -1,5 +1,9 @@
-from numpy import *
-from scipy.optimize import fsolve
+from numpy import exp, ceil
+from pylab import frange
+try:
+	from scipy.optimize import fsolve
+except:
+	pass
 
 DEBUG = False
 		
@@ -48,7 +52,7 @@ def QuadraticLinearBreakpointSequence(rmin, rmax, n, joinPoint):
 	"""
 	
 	#joinPoint = joinPoint + 1
-	jointPoint = float(joinPoint)
+	joinPoint = float(joinPoint)
 	rmin = float(rmin)
 	rmax = float(rmax)
 
