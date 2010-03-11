@@ -1,3 +1,4 @@
+from . import hdf
 
 def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	"""
@@ -43,11 +44,11 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 	distr = psi.GetRepresentation().GetDistributedModel()
 	if distr.IsSingleProc():
 		t = - time.time()
-		RemoveExistingDataset(filename, datasetPath)
-		SaveLocalWavefunctionSlab(filename, datasetPath, psi)
+		hdf.RemoveExistingDataset(filename, datasetPath)
+		hdf.SaveLocalWavefunctionSlab(filename, datasetPath, psi)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
-		SaveConfigObject(filename, datasetPath, conf)
+		hdf.SaveConfigObject(filename, datasetPath, conf)
 
 	else:
 		#let the processors save their part one by one
@@ -59,11 +60,11 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 		for i in range(procCount):
 			if procId == i:
 				if procId == 0:
-					RemoveExistingDataset(filename, datasetPath)
+					hdf.RemoveExistingDataset(filename, datasetPath)
 
 				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
-				SaveLocalWavefunctionSlab(filename, datasetPath, psi)
+				hdf.SaveLocalWavefunctionSlab(filename, datasetPath, psi)
 				t += time.time()
 				if DEBUG: print "    Duration: %.10fs" % t
 
@@ -72,7 +73,7 @@ def SaveWavefunctionHDF(hdfFile, datasetPath, psi, conf=None):
 
 		#proc 0 save config object
 		if procId == 0:
-			SaveConfigObject(filename, datasetPath, conf)
+			hdf.SaveConfigObject(filename, datasetPath, conf)
 
 def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 	"""
@@ -87,7 +88,7 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 
 	distr = psi.GetRepresentation().GetDistributedModel()
 	if distr.IsSingleProc():
-		LoadLocalWavefunctionSlab(filename, datasetPath, psi)
+		hdf.LoadLocalWavefunctionSlab(filename, datasetPath, psi)
 
 	else:
 		#let the processors save their part one by one
@@ -96,24 +97,24 @@ def LoadWavefunctionHDF(hdfFile, datasetPath, psi):
 		for i in range(procCount):
 			if procId == i:
 				if DEBUG: print "Loading slab in proc ", procId
-				LoadLocalWavefunctionSlab(filename, datasetPath, psi)
+				hdf.LoadLocalWavefunctionSlab(filename, datasetPath, psi)
 			distr.GlobalBarrier();
 	
 
 def SaveLocalWavefunctionSlab(filename, datasetPath, psi):
 	#get hyperslab for this proc
 	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	fileSlab = GetFileSlab(psi)
+	fileSlab = hdf.GetFileSlab(psi)
 	#save data
-	SaveLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
+	hdf.SaveLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
 
 
 def LoadLocalWavefunctionSlab(filename, datasetPath, psi):
 	#get hyperslab for this proc
 	fullShape = tuple(psi.GetRepresentation().GetFullShape())
-	fileSlab = GetFileSlab(psi)
+	fileSlab = hdf.GetFileSlab(psi)
 	#load data	
-	LoadLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
+	hdf.LoadLocalSlab(filename, datasetPath, psi.GetData(), fileSlab, fullShape)
 
 
 def GetFileSlab(psi):

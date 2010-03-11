@@ -1,3 +1,5 @@
+from . import hdf
+
 """
 (De)Serialization routines for Tensor Potentials
 
@@ -33,19 +35,19 @@ def SaveTensorPotential(filename, groupPath, potential, distributedModel, conf=N
 	distr = distributedModel
 	localData = potential.PotentialData
 	localShape = localData.shape
-	localSlab = tuple(map(GetLocalBasisPairSlice, potential.GeometryList))
+	localSlab = tuple(map(hdf.GetLocalBasisPairSlice, potential.GeometryList))
 	fullShape = tuple(distr.GetGlobalShape(array(localShape)))
 
 	datasetPath = groupPath + "/potential"
 
 	if distr.IsSingleProc():
 		t = - time.time()
-		RemoveExistingDataset(filename, groupPath)
-		SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+		hdf.RemoveExistingDataset(filename, groupPath)
+		hdf.SaveLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
-		SaveConfigObject(filename, groupPath, conf)
-		SaveGeometryInfo(filename, groupPath, potential.GeometryList)
+		hdf.SaveConfigObject(filename, groupPath, conf)
+		hdf.SaveGeometryInfo(filename, groupPath, potential.GeometryList)
 
 	else:
 		#let the processors save their part one by one
@@ -101,7 +103,7 @@ def LoadTensorPotential(filename, groupPath, potential, distributedModel):
 
 	if distr.IsSingleProc():
 		t = - time.time()
-		LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+		hdf.LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 		t += time.time()
 		if DEBUG: print "Duration: %.10fs" % t
 
@@ -116,7 +118,7 @@ def LoadTensorPotential(filename, groupPath, potential, distributedModel):
 			if procId == i:
 				if DEBUG: print "    Process %i writing hyperslab of %iMB" % (procId, localSize)
 				t = - time.time()
-				LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
+				hdf.LoadLocalSlab(filename, datasetPath, localData, localSlab, fullShape)
 				t += time.time()
 				if DEBUG: print "    Duration: %.10fs" % t
 
@@ -141,8 +143,8 @@ def CheckLocalSlab(filename, groupPath, geometryList, localSlab):
 	rank = len(localSlab)
 	f = tables.openFile(filename, "r")
 	try:
-		node = GetExistingDataset(f, groupPath)
-		globalBasisPairList = map(lambda i: GetExistingDataset(f, groupPath + "/basisPairs%i" % i)[:], r_[:rank])
+		node = hdf.GetExistingDataset(f, groupPath)
+		globalBasisPairList = map(lambda i: hdf.GetExistingDataset(f, groupPath + "/basisPairs%i" % i)[:], r_[:rank])
 	finally:
 		f.close()
 
@@ -160,7 +162,7 @@ def CheckLocalSlab(filename, groupPath, geometryList, localSlab):
 def SaveGeometryInfo(filename, groupPath, geometryList):
 	f = tables.openFile(filename, "a")
 	try:
-		node = GetExistingDataset(f, groupPath)
+		node = hdf.GetExistingDataset(f, groupPath)
 		for i, geom in enumerate(geometryList):
 			curBasisPairNode = f.createArray(node, "basisPairs%i" % i, geom.GetGlobalBasisPairs())
 			setattr(curBasisPairNode._v_attrs, "storageId%i" % i, geom.GetStorageId())

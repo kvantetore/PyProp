@@ -1,8 +1,12 @@
-import numpy 
 import os
 import time
-
+import numpy 
 from numpy import r_, s_, all, diff, array, asarray
+try:
+	import tables
+except:
+	print "Failed to import tables. HDF5 support is not available"
+
 
 DEBUG = False
 
