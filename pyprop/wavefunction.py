@@ -1,9 +1,12 @@
-import core
 import distribution
 import representation
 import config
 from createinstance import CreateInstanceRank
 from serialization.wavefunction  import LoadWavefunctionHDF
+
+#imports for CreateInstanceRank to work properly
+import core
+
 
 class WavefunctionFileFormat:
 	Ascii  = 1

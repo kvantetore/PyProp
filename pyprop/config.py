@@ -6,28 +6,14 @@ except:
 	pass
 
 from createinstance import FindObjectStack
+from serialization import hdf
 
 #Import some common objects such that they are found
 #by FindObjectStack when loading config files
+from numpy import array
 from potential import PotentialType, StaticStorageModel
 from problem import InitialConditionType
-from numpy import array
 
-
-def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
-	"""
-	Load config from a HDF5 file
-	"""
-	f = tables.openFile(filename, "r")
-	try:
-		dataset = serialization.GetExistingDataset(f, datasetPath)
-		conf = Config(dataset._v_attrs.configObject)
-
-	finally:
-		f.close()
-
-	return conf
-	
 
 class Section:
 	def __init__(self, name, cfg=None):
@@ -136,3 +122,19 @@ def Load(fileName, silent=True):
 	parsedConfig = Config(cfg)
 
 	return parsedConfig
+
+
+def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
+	"""
+	Load config from a HDF5 file
+	"""
+	f = tables.openFile(filename, "r")
+	try:
+		dataset = hdf.GetExistingDataset(f, datasetPath)
+		conf = Config(dataset._v_attrs.configObject)
+
+	finally:
+		f.close()
+
+	return conf
+	

@@ -1,7 +1,10 @@
+from numpy import array, zeros
+import core
+from createinstance import CreateInstanceRank
 
 def OuterProduct(curFuncs, outData):
 	rank = len(curFuncs)
-	outerProductFunction = eval("core.OuterProduct_%s" % rank)
+	outerProductFunction = CreateInstanceRank("core.OuterProduct", rank)
 	outerProductFunction(curFuncs, outData)
 
 def InnerProduct(a, b):

@@ -2,7 +2,7 @@ import os
 
 import core
 from createinstance import CreateInstanceRank
-from numpy import where, array, r_
+from numpy import where, array, r_, ndarray
 
 
 #Load mpi unless it is disabled
@@ -44,7 +44,7 @@ def Linearize(printProcId=False):
 	Hello from proc 3
 	"""
 	for i in range(ProcCount):
-		if pympi.rank == i:
+		if ProcId == i:
 			if printProcId:
 				print "Process ", i, ": "
 			yield i

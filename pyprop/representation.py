@@ -1,6 +1,9 @@
-import core
 from createinstance import FindObjectStack
 from distribution import PrintOut
+
+#imports for FindObjectStack to work properly
+import core
+
 	
 def CreateRepresentation(config, distribution):
 	rank = config.Representation.rank

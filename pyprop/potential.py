@@ -10,6 +10,7 @@ import core
 if core.LOAD_CORE_OK:
 	StaticStorageModel = core.StaticPotential_1.StorageModel
 
+
 """
 This file contains python functions for all potentials. 
 A potential is usually based on a C++ class implementing the GetPotentialValue 

@@ -18,7 +18,7 @@ def FindObjectStack(name, startdepth=0, maxdepth=100):
 		try:
 			obj = eval(name, f.f_globals, f.f_locals)
 			return obj
-		except Exception, ex:
+		except Exception:
 			pass
 
 	raise Exception("Exceeded maxdepth (%s) while traversing stack" % maxdepth)

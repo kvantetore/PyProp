@@ -1,3 +1,5 @@
+from numpy import array, double, exp, log, r_, sign, sqrt
+
 """
 Grid generation for CustomGridRepresentation
 

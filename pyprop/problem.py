@@ -1,12 +1,17 @@
+import numpy
+from numpy import sign, isreal, imag, log
+
+import wavefunction
+import propagator.base 
 from interrupt import InterruptHandler
 from modules.redirect import Redirect
-import core
-import wavefunction
-import config
-import propagator.base 
-import serialization
 from createinstance import FindObjectStack
+from serialization.wavefunction import LoadWavefunctionHDF, SaveWavefunctionHDF
 
+#imports for FindObjectStack to work properly
+import core
+
+#Debug constants
 RedirectInterrupt = False
 
 
@@ -301,7 +306,7 @@ class Problem:
 		elif type == None:
 			pass
 		else:
-			raise "Invalid InitialConditionType: " + config.InitialCondition.type
+			raise "Invalid InitialConditionType: " + type
 			
 	def SetupWavefunctionClass(self, config, psi):
 		classname = config.InitialCondition.classname
@@ -369,11 +374,7 @@ class Problem:
 		format   = config.InitialCondition.format
 		filename = config.InitialCondition.filename
 		
-		if format == wavefunction.WavefunctionFileFormat.Ascii:
-			self.LoadWavefunctionAscii(filename)
-		elif format == wavefunction.WavefunctionFileFormat.Binary:
-			self.LoadWavefunctionPickle(filename)
-		elif format == wavefunction.WavefunctionFileFormat.HDF:
+		if format == wavefunction.WavefunctionFileFormat.HDF:
 			datasetPath = str(config.InitialCondition.dataset)
 			self.LoadWavefunctionHDF(filename, datasetPath)
 		else:
@@ -400,23 +401,11 @@ class Problem:
 			raise "Invalid shape on loaded wavefunction, got " + str(newdata.shape) + " expected " + str(data.shape)
 		data[:] = newdata
 		
-	def SaveWavefunctionPickle(self, filename):
-		serialization.SavePickleArray(filename, self.psi.GetData())
-	
-	def LoadWavefunctionPickle(self, filename):
-		arr = serialization.LoadPickleArray(filename)
-		self.LoadWavefunctionData(arr)
-
 	def LoadWavefunctionHDF(self, filename, datasetPath):
-		serialization.LoadWavefunctionHDF(filename, datasetPath, self.psi)
+		LoadWavefunctionHDF(filename, datasetPath, self.psi)
 
 	def SaveWavefunctionHDF(self, filename, datasetPath):
-		serialization.SaveWavefunctionHDF(filename, datasetPath, self.psi, conf=self.Config)
-
-	def SaveWavefunctionAscii(self, filename):
-		psiData = self.psi.GetData()
-		assert(len(psiData.shape) <= 1)
-		pylab.save(filename, transpose((psiData.real ,psiData.imag)), delimiter=' ')	
+		SaveWavefunctionHDF(filename, datasetPath, self.psi, conf=self.Config)
 
 	def SaveWavefunctionFortran(self, filename):
 		psiData = self.psi.GetData()
@@ -426,10 +415,6 @@ class Problem:
 			fh.write("(%s, %s) " % (psiData[i].real, psiData[i].imag) )
 		fh.close()
 
-	def LoadWavefunctionAscii(self, filename):
-		r, c = pylab.load(filename, unpack=True)
-		arr = r + 1.0j*c
-		self.LoadWavefunctionData(arr)
-		
+	
 	
 
