@@ -1,3 +1,5 @@
+from basispropagator import BasisPropagator
+
 class BasisPropagatorEpetra(BasisPropagator):
 	"""
 	EpetraPropagator uses Trilinos::Epetra matrices to store potential matrices in
@@ -63,6 +65,6 @@ class BasisPropagatorEpetra(BasisPropagator):
 
 	
 	def MultiplyHamiltonianBalancedOverlap(self, srcPsi, destPsi, t, dt):
-		raise NotImplementedException("BasisPropagatorEpetra does not support MultiplyHamiltonianBalancedOverlap!")
+		raise Exception("BasisPropagatorEpetra does not support MultiplyHamiltonianBalancedOverlap!")
 
 

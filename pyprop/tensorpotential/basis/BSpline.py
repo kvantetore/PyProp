@@ -1,9 +1,16 @@
+from numpy import int32, zeros, r_
+
+import pyprop.core as core
+import pyprop.tensorpotential.GeometryInfo as geometryinfo
+from pyprop.debug import PrintOut
+
+
 #------------------------------------------------------------------------------------
 #                       BSpline
 #------------------------------------------------------------------------------------
 
 
-class GeometryInfoBSplineBanded(GeometryInfoBase):
+class GeometryInfoBSplineBanded(geometryinfo.GeometryInfoBase):
 	"""
 	Geometry information for BSpline geometries
 	using a very straight forward index-pair map.
@@ -26,8 +33,6 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 
 		
 	def GetBasisPairs(self):
-		count = self.GetGlobalBasisPairCount()
-
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
@@ -42,7 +47,7 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 				index+=1
 
 		if index != pairs.shape[0]:
-			raise Execption()
+			raise Exception()
 
 		return pairs
 	
@@ -54,7 +59,7 @@ class GeometryInfoBSplineBanded(GeometryInfoBase):
 			self.BasisPairs = self.GetBasisPairs()
 		return [self.BasisPairs]
 
-class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
+class GeometryInfoBSplineBandedBlas(geometryinfo.GeometryInfoBase):
 	"""
 	Geometry information for BSpline geometries, the potential
 	is stored in the BLAS hermitian banded format such that 
@@ -74,8 +79,6 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 
 		
 	def GetBasisPairs(self):
-		count = self.GetGlobalBasisPairCount()
-
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 
@@ -96,7 +99,7 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 				index+=1
 
 		if index != pairs.shape[0]:
-			raise Exeption()
+			raise Exception()
 
 		return pairs
 	
@@ -107,13 +110,13 @@ class GeometryInfoBSplineBandedBlas(GeometryInfoBase):
 		return []
 
 
-class GeometryInfoBsplineBandedDistributed(GeometryInfoDistributedBase):
+class GeometryInfoBsplineBandedDistributed(geometryinfo.GeometryInfoDistributedBase):
 	"""
 	Geometry for a banded B-spline matrix with support for parallel
 	matvec through Epetra.
 	"""
 	def __init__(self, repr, useGrid):
-		GeometryInfoDistributedBase.__init__(self)
+		geometryinfo.GeometryInfoDistributedBase.__init__(self)
 		#Set member variables 
 		self.UseGrid = useGrid
 		self.BaseRank = repr.GetBaseRank()
@@ -133,8 +136,6 @@ class GeometryInfoBsplineBandedDistributed(GeometryInfoDistributedBase):
 		rank = self.Representation.GetBaseRank()
 		localRange = distr.GetLocalIndexRange(self.GetGlobalBasisPairCount(), rank)
 
-		count = self.GetGlobalBasisPairCount()
-
 		N = self.BSplineObject.NumberOfBSplines
 		k = self.BSplineObject.MaxSplineOrder
 		pairs = zeros((self.GetGlobalBasisPairCount(), 2), dtype=int32)
@@ -149,7 +150,7 @@ class GeometryInfoBsplineBandedDistributed(GeometryInfoDistributedBase):
 				index+=1
 
 		if index != pairs.shape[0]:
-			raise Execption()
+			raise Exception()
 
 		#store pairs
 		self.GlobalIndexPairs = pairs
@@ -168,7 +169,7 @@ class GeometryInfoBsplineBandedDistributed(GeometryInfoDistributedBase):
 		raise Exception("SetupTempArrays not implemented, use Epetra for matvec!")
 
 
-class BasisfunctionBSpline(BasisfunctionBase):
+class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for BSplines
 	see BasisfunctionBase for details
@@ -200,21 +201,21 @@ class BasisfunctionBSpline(BasisfunctionBase):
 
 		if geom == "identity":
 			PrintOut( "WARNING: Identity geometry might not do what you expect for BSplines" )
-			return GeometryInfoCommonIdentity(True)
+			return geometryinfo.GeometryInfoCommonIdentity(True)
 		elif geom == "banded-nonhermitian":
-			return GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
+			return geometryinfo.GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
 		elif geom == "banded-packed":
-			return GeometryInfoBSplineBanded(self.BSplineObject)
+			return geometryinfo.GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded-hermitian":
-			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
+			return geometryinfo.GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
-			return GeometryInfoCommonDense(BasisSize, True)
+			return geometryinfo.GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "hermitian":
-			return GeometryInfoCommonDense(BasisSize, True)
+			return geometryinfo.GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "banded-bspline-distributed":
-			return GeometryInfoBsplineBandedDistributed(self.Representation, True)
+			return geometryinfo.GeometryInfoBsplineBandedDistributed(self.Representation, True)
 		else:
-			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
+			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		pairs = geometryInfo.GetGlobalBasisPairs()

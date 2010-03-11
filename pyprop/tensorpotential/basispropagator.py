@@ -1,3 +1,8 @@
+from pyprop.propagator.base import PropagatorBase
+import pyprop.debug as debug
+from pyprop.distribution import PrintOut
+
+
 class BasisPropagator(PropagatorBase):
 	"""
 	Propagator that does not transform the wavefunction to the grid basis, but rather applies the potentials
@@ -30,11 +35,11 @@ class BasisPropagator(PropagatorBase):
 
 	def GeneratePotential(self, configSection):
 		#Create TensorPotential
-		PrintMemoryUsage("Before Generate Potential %s" % configSection.name)
+		debug.PrintMemoryUsage("Before Generate Potential %s" % configSection.name)
 		potential = TensorPotential(self.psi)
 		configSection.Apply(potential)
 		#SerialPrint("PotentialShape = %s" % (potential.PotentialData.shape, ))
-		PrintMemoryUsage("After Potential %s" % configSection.name)
+		debug.PrintMemoryUsage("After Potential %s" % configSection.name)
 
 		return potential
 
@@ -159,10 +164,10 @@ class BasisPropagator(PropagatorBase):
 		RestorePsi()
 
 	def AdvanceStep(self, t, dt):
-		raise NotImplementedException("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")
+		raise Exception("BasisPropagator does not support AdvanceStep. Use it as a base for explicit propagators")
 
 	def GetBasisFunction(self, rank, basisIndex):
-		raise NotImplementedException("Implement GetBasisFunction...")
+		raise Exception("Implement GetBasisFunction...")
 
 
 

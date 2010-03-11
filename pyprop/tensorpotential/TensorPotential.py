@@ -1,6 +1,17 @@
+from numpy import array, prod
+
+import pyprop.potential as potential
+import pyprop.serialization.tensorpotential as serialization
+from pyprop.debug import PrintOut
+from pyprop.createinstance import CreateInstanceRank
+from pyprop.exceptions import NotImplementedException
+from TensorPotentialGenerator import TensorPotentialGenerator
+
+#imports for FindObjectStack to work properly
+import pyprop.core as core
 
 
-class TensorPotential(PotentialWrapper):
+class TensorPotential(potential.PotentialWrapper):
 	"""
 	Potential wrapper for TensorPotentials. See PotentialWrapper for more information on the
 	PotentialWrapper interface
@@ -90,8 +101,6 @@ class TensorPotential(PotentialWrapper):
 		raise NotImplementedException("TensorPotentials can not be exponentiated directly")
 
 	def MultiplyPotential(self, srcPsi, destPsi, t, timestep):
-		rank = srcPsi.GetRank()
-		
 		source = srcPsi.GetData()
 		dest = destPsi.GetData()
 
@@ -105,7 +114,7 @@ class TensorPotential(PotentialWrapper):
 		#Default parameters
 		argList = [self.PotentialData, timeScaling, source, dest]
 		#Parameters for each storage
-		for i, geom in enumerate(self.GeometryList):
+		for _, geom in enumerate(self.GeometryList):
 			argList += geom.GetMultiplyArguments(srcPsi)
 
 		#Perform multiplication

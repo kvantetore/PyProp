@@ -1,3 +1,5 @@
+from numpy import array, asarray, int32, ones
+
 """
 Global Matrix is N-by-N sparse matrix 
 

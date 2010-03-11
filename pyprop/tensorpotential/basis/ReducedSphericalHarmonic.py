@@ -1,8 +1,13 @@
+from numpy import zeros, int32
+
+import pyprop.core as core
+import pyprop.tensorpotential.GeometryInfo as geometryinfo
+
 #------------------------------------------------------------------------------------
 #                       Reduced Spherical Harmonic
 #------------------------------------------------------------------------------------
 
-class GeometryInfoReducedSphHarmSelectionRule(GeometryInfoBase):
+class GeometryInfoReducedSphHarmSelectionRule(geometryinfo.GeometryInfoBase):
 	"""
 	Geometry information for Reduced spherical harmonic geometries
 	with delta l = +- 1 symetry, that is for potentials on the form
@@ -126,17 +131,17 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 
 		#Select geometry info
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(useGrid)
+			return geometryinfo.GeometryInfoCommonIdentity(useGrid)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.Representation, False) #diagonal potentials are always in basis repr
+			return geometryinfo.GeometryInfoCommonDiagonal(self.Representation, False) #diagonal potentials are always in basis repr
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.LMax+1-self.M, useGrid)
+			return geometryinfo.GeometryInfoCommonDense(self.LMax+1-self.M, useGrid)
 		elif geom == "dipoleselectionrule":
-			return GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject, useGrid)
+			return geometryinfo.GeometryInfoReducedSphHarmSelectionRule(self.SphericalHarmonicObject, useGrid)
 		elif geom == "bandeddistributed":
-			return GeometryInfoCommonBandedDistributed(self.Representation, 1, useGrid)
+			return geometryinfo.GeometryInfoCommonBandedDistributed(self.Representation, 1, useGrid)
 		else:
-			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		pairs = geometryInfo.GetGlobalBasisPairs()

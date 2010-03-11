@@ -1,3 +1,15 @@
+from numpy import array, int32
+
+import pyprop.distribution as distribution
+import pyprop.potential as potential
+import pyprop.wavefunction as wavefunction
+from pyprop.debug import PrintOut
+from pyprop.createinstance import CreateInstanceRank
+
+#imports for FindObjectStack to work properly
+import pyprop.core as core
+
+
 #------------------------------------------------------------------------------------
 #                       TensorPotentialGenerator main
 #------------------------------------------------------------------------------------
@@ -25,7 +37,7 @@ def CreateBasisFromRepresentation(representation):
 		basis.SetupBasis(representation)
 
 	else:
-		raise NotImplementedException("Unknown representation %s" % representation)
+		raise Exception("Unknown representation %s" % representation)
 
 	return basis
 
@@ -59,7 +71,7 @@ class TensorPotentialGenerator(object):
 			rankSection.Apply(basisObject)
 			self.BasisList.append(basisObject)
 		
-		self.OrigDistribution = CreateDistribution(config)
+		self.OrigDistribution = distribution.CreateDistribution(config)
 
 	def SetupBasisFromRepresentation(self, representation):
 		self.BasisList = []
@@ -89,7 +101,7 @@ class TensorPotentialGenerator(object):
 		#2) Create a wavefunction in the potential representation. 
 		#This will be used to hold the and representation in order 
 		#to use the existing potential evaluator framework in pyprop
-		psi = CreateWavefunctionInstance(repr)
+		psi = wavefunction.CreateWavefunctionInstance(repr)
 
 		#3) Create potential evaluator
 		potentialEvaluator = self.SetupPotentialEvaluator(configSection, psi)
@@ -313,7 +325,7 @@ class TensorPotentialGenerator(object):
 	def SetupPotentialEvaluator(self, configSection, psi):
 		evaluatorPrefix = "core.DynamicPotentialEvaluator"
 		classname = configSection.classname
-		potentialEvaluator = CreatePotentialInstance(classname, self.Rank, evaluatorPrefix)
+		potentialEvaluator = potential.CreatePotentialInstance(classname, self.Rank, evaluatorPrefix)
 		configSection.Apply(potentialEvaluator)
 		if hasattr(potentialEvaluator, "Setup"):
 			potentialEvaluator.Setup(psi)

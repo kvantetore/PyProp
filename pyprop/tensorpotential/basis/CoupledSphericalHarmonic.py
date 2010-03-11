@@ -1,8 +1,15 @@
+from numpy import array, int32, zeros
+
+import pyprop.core as core
+import pyprop.tensorpotential.GeometryInfo as geometryinfo
+import pyprop.tensorpotential.SimpleDistributed as simpledistributed
+
+
 #------------------------------------------------------------------------------------
 #                       Coupled Spherical Harmonic
 #------------------------------------------------------------------------------------
 
-class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
+class GeometryInfoCoupledSphericalHarmonic(geometryinfo.GeometryInfoBase):
 	"""
 	Geometry information for coupled spherical harmonic geometries
 	The selection CoupledSphericalHarmonicRepresentation and a 
@@ -32,7 +39,7 @@ class GeometryInfoCoupledSphericalHarmonic(GeometryInfoBase):
 		return [self.GetBasisPairs()]
 
 
-class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoDistributedBase):
+class GeometryInfoCoupledSphericalHarmonicDistributed(geometryinfo.GeometryInfoDistributedBase):
 	"""
 	Geometry information for coupled spherical harmonic geometries using distributed matvec.
 	The CoupledSphericalHarmonicRepresentation and a 
@@ -40,7 +47,7 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoDistributedBas
 
 	"""
 	def __init__(self, representation, selectionRule):
-		GeometryInfoDistributedBase.__init__(self)
+		geometryinfo.GeometryInfoDistributedBase.__init__(self)
 
 		self.SelectionRule = selectionRule
 		self.Representation = representation
@@ -71,12 +78,12 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoDistributedBas
 		rank = self.Representation.GetBaseRank()
 		globalSize = self.Representation.GetFullShape()[0]
 	
-		distribIndexList = SetupDistributedIndexList(globalSize, indexPairs, distrib, rank)
+		distribIndexList = simpledistributed.SetupDistributedIndexList(globalSize, indexPairs, distrib, rank)
 		self.LocalBasisPairIndices = array(distribIndexList[distrib.ProcId])
-		stepList = SetupStepList(globalSize, indexPairs, distribIndexList, distrib, rank)
+		stepList = simpledistributed.SetupStepList(globalSize, indexPairs, distribIndexList, distrib, rank)
 		self.MaxRecvCount = max([len(step.RecvProcList) for step in stepList])
 
-		self.StepArguments = [int(globalSize)] + list(StepListToArray(stepList))
+		self.StepArguments = [int(globalSize)] + list(simpledistributed.StepListToArray(stepList))
 		self.LocalIndexPairs = array([[step.GlobalRow, step.GlobalCol] for step in stepList if step.LocalMatrixIndex!=-1], dtype=int32)
 
 	def SetupTempArrays(self, psi):
@@ -94,7 +101,7 @@ class GeometryInfoCoupledSphericalHarmonicDistributed(GeometryInfoDistributedBas
 		self.TempArrays = [recvTemp, sendTemp]
 
 
-class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
+class BasisfunctionCoupledSphericalHarmonic(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for coupled spherical harmonics Y{L,M,l1,l1} 
 
@@ -133,12 +140,12 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(False)
+			return geometryinfo.GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
 			selectionRule = core.CoupledSphericalSelectionRuleDiagonal()
 			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.BasisSize, False)
+			return geometryinfo.GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "r12":
@@ -153,7 +160,7 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 
 			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
 		else:
-			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
+			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")

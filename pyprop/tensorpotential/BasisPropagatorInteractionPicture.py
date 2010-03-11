@@ -1,3 +1,8 @@
+from numpy import array, exp
+import tables
+
+from basispropagator import BasisPropagator
+
 class BasisPropagatorInteractionPicture(BasisPropagator):
 	"""
 	Specialization of BasisPropagator for interaction picture calculations.

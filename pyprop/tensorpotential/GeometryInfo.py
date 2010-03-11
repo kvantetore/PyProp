@@ -1,4 +1,6 @@
+from numpy import int32, r_, zeros
 
+from pyprop.exceptions import NotImplementedException
 
 #------------------------------------------------------------------------------------
 #                       Interfaces

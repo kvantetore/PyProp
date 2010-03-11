@@ -1,5 +1,10 @@
+import pyprop.potential as potential
+from pyprop.createinstance import CreateInstanceRank
 
-class EpetraPotential(PotentialWrapper):
+#Required for CreateInstanceRank
+import core
+
+class EpetraPotential(potential.PotentialWrapper):
 	"""
 	Potential wrapper for EpetraPotential. See PotentialWrapper for more information on the
 	PotentialWrapper interface

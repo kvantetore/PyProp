@@ -1,0 +1,3 @@
+
+class NotImplementedException(Exception):
+	pass

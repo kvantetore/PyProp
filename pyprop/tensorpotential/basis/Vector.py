@@ -1,8 +1,10 @@
+import pyprop.tensorpotential.GeometryInfo as geometryinfo
+
 #------------------------------------------------------------------------------------
 #                       Vector
 #------------------------------------------------------------------------------------
 
-class BasisfunctionVector(BasisfunctionBase):
+class BasisfunctionVector(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for Vector
 	see BasisfunctionBase for details
@@ -25,18 +27,18 @@ class BasisfunctionVector(BasisfunctionBase):
 		geom = geometryName.lower().strip()
 
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(False)
+			return geometryinfo.GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.BasisRepresentation, False)
+			return geometryinfo.GeometryInfoCommonDiagonal(self.BasisRepresentation, False)
 		elif geom.startswith("banded-nonhermitian"):
 			BandCount = int(geom.split("-")[2])
-			return GeometryInfoCommonBandedNonHermitian(self.BasisSize, BandCount, False)
+			return geometryinfo.GeometryInfoCommonBandedNonHermitian(self.BasisSize, BandCount, False)
 		elif geom == "dense":
-			return GeometryInfoCommonDense(self.BasisSize, False)
+			return geometryinfo.GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom == "hermitian":
-			return GeometryInfoCommonDense(self.BasisSize, False)
+			return geometryinfo.GeometryInfoCommonDense(self.BasisSize, False)
 		else:
-			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionVector" % geometryName)
+			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionVector" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		raise Exception("Vector basis already in a basis and should not be integrated")

@@ -1,10 +1,16 @@
+from numpy import ones
+import re
+
+import pyprop.core as core
+import pyprop.tensorpotential.GeometryInfo as geometryinfo
+
 
 #------------------------------------------------------------------------------------
 #                       Finite Difference Basis Function
 #------------------------------------------------------------------------------------
 
 
-class BasisfunctionFiniteDifference(BasisfunctionBase):
+class BasisfunctionFiniteDifference(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for finite differences. 
 
@@ -34,24 +40,24 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
-			return GeometryInfoCommonIdentity(True)
+			return geometryinfo.GeometryInfoCommonIdentity(True)
 		elif geom == "diagonal":
-			return GeometryInfoCommonDiagonal(self.Representation, True)
+			return geometryinfo.GeometryInfoCommonDiagonal(self.Representation, True)
 		else:
 			diffOrderSearch =  re.search("-\d+", geom)
 			if not diffOrderSearch:
-				raise  UnsupportedGeometryException("BasisfunctionFiniteDifference requires specification of difference order, you said %s" % geometryName)
+				raise  geometryinfo.UnsupportedGeometryException("BasisfunctionFiniteDifference requires specification of difference order, you said %s" % geometryName)
 
 			self.DifferenceOrder =  eval(diffOrderSearch.group()[1:])
 			self.BandCount = (self.DifferenceOrder - 1) / 2
 			if geom.startswith == "dense":
-				return GeometryInfoCommonDense(self.GridSize, True)
+				return geometryinfo.GeometryInfoCommonDense(self.GridSize, True)
 			elif re.search("banded-nonhermitian", geom) or re.search("banded", geom):
-				return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
+				return geometryinfo.GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
 			elif re.search("bandeddistributed", geom):
-				return GeometryInfoCommonBandedDistributed(self.Representation, self.BandCount, True)
+				return geometryinfo.GeometryInfoCommonBandedDistributed(self.Representation, self.BandCount, True)
 			else:
-				raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
+				raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		if differentiation == 0:
