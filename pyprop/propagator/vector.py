@@ -1,4 +1,5 @@
 import pyprop.propagator.base as base
+from pyprop.exceptions import NotImplementedException
 
 #----------------------------------------------------------------------------------------------------
 # Propagator for Vector Representation
