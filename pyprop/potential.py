@@ -1,3 +1,4 @@
+from numpy import exp, real, log
 try:
 	import tables
 except:
@@ -207,7 +208,7 @@ class StaticPotentialWrapper(PotentialWrapper):
 		self.HasTimeFunction = False
 		if hasattr(self.ConfigSection, "time_function"):
 			if self.Storage == self.Potential.StorageModel.StorageExpValue:
-				raise RunTimeException("Cannot have both time_function and StorageExpValue!")
+				raise RuntimeError("Cannot have both time_function and StorageExpValue!")
 			else:
 				self.TimeFunction = self.ConfigSection.time_function
 				self.HasTimeFunction = True
@@ -486,3 +487,6 @@ class MatrixPotentialWrapper(PotentialWrapper):
 	def GetTimeValue(self, t):
 		return self.TimeFunction(self.ConfigSection, t)
 
+
+class NotImplementedException(Exception):
+	pass
