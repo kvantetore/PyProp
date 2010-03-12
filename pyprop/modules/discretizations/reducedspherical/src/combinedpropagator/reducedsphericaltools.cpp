@@ -1,11 +1,23 @@
+#include <core/utility/blitztricks.h>
+#include <core/utility/blitzblas.h>
+#include <core/utility/orthogonalpolynomial.h>
+
 #include "reducedsphericaltools.h"
-#include "../spherical/shtools.h"
-#include "../../utility/blitztricks.h"
-#include "../../utility/blitzblas.h"
-#include "../../utility/orthogonalpolynomial.h"
+
 
 namespace ReducedSpherical
 {
+
+inline int MapLmIndex(int l, int m)
+{
+	return l * (l + 1) + m;
+}
+
+inline double Factorial(double i)
+{
+	if (i <= 1) return 1;
+	return i * Factorial(i-1);
+}
 
 int ReducedSphericalTools::GetAlgorithm(int preCout, int postCount)
 {

@@ -5,7 +5,7 @@
 #ifndef SHTOOLS_H
 #define SHTOOLS_H
 
-#include "../../common.h"
+#include "../common.h"
 
 inline int MapLmIndex(int l, int m)
 {

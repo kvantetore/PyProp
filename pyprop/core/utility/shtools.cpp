@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include "shtools.h"
-#include "../fouriertransform.h"
-#include "../../utility/blitztricks.h"
+#include "fouriertransform.h"
+#include "blitztricks.h"
 
 template<int Rank> void SphericalTransformTensorGrid::ForwardTransform(blitz::Array<cplx, Rank> input, blitz::Array<cplx, Rank> output, int omegaRank)
 {
