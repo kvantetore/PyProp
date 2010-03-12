@@ -14,7 +14,7 @@ using namespace boost::python;
 void Export_pyprop_modules_discretizations_coupledspherical_src_pyste_coupledsphericalharmonicrepresentation()
 {
     scope* CoupledSpherical_CoupledSphericalHarmonicRepresentation_scope = new scope(
-    class_< CoupledSpherical::CoupledSphericalHarmonicRepresentation, bases< Representation<1>, OrthogonalRepresentation >  >("CoupledSphericalHarmonicRepresentation", init<  >())
+    class_< CoupledSpherical::CoupledSphericalHarmonicRepresentation, bases< Representation<1> >  >("CoupledSphericalHarmonicRepresentation", init<  >())
         .def(init< const CoupledSpherical::CoupledSphericalHarmonicRepresentation& >())
         .def_readwrite("Range", &CoupledSpherical::CoupledSphericalHarmonicRepresentation::Range)
         .def("Copy", &CoupledSpherical::CoupledSphericalHarmonicRepresentation::Copy)

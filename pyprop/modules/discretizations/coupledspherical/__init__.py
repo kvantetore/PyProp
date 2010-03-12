@@ -3,7 +3,7 @@ import os
 
 import pyprop
 if pyprop.IsRunningFromSource:
-	sys.path.append(os.path.join(pyprop.BuildPath, "modules", "discretizations", "bspline"))
+	sys.path.append(os.path.join(pyprop.BuildPath, "modules", "discretizations", "coupledspherical"))
 import libcoupledspherical
 
 from libcoupledspherical import *

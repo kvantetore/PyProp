@@ -2,7 +2,7 @@
 Repr = Class("CoupledSpherical::CoupledSphericalHarmonicRepresentation", "src/representation/coupledsphericalharmonicrepresentation.h")
 no_virtual(Repr)
 use_shared_ptr(Repr)
-baseclass(Repr, "OrthogonalRepresentation")
+baseclass(Repr, "Representation<1>")
 
 #Range-class for mananging quantum numbers
 CoupledRange = Class("CoupledSpherical::CoupledRange", "src/representation/coupledrange.h")

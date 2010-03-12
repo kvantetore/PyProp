@@ -421,7 +421,10 @@ def detect(conf):
 
 	check_fftw(conf)
 	consolidate_conf("FFTW")
-
+	
+	check_gsl(conf)
+	consolidate_conf("GSL")
+	
 	check_pyste(conf)
 
 @conftest
@@ -526,4 +529,11 @@ def check_pyste(conf):
 	conf.env.PYSTE = conf.find_program([curpath + "/extern/pyste/pyste.py"], mandatory=True)
 	conf.env.PYSTE_INCLUDE = ["/usr/lib/openmpi/include"]
 
+@conftest
+def check_gsl(conf):
+	print "  - Detecting gsl"
+	conf.env.GSL_LIB = ["gsl"]
+	conf.env.GSL_LIBPATH = []
+	conf.env.GSL_INC = []
+	conf.env.GSL_DEFINES = ["PYPROP_USE_TRILINOS"]
 
