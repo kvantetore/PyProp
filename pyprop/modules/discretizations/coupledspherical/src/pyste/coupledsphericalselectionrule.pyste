@@ -1,0 +1,7 @@
+
+Class("CoupledSphericalSelectionRule", "src/tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleR12", "src/tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleR12Old", "src/tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleLinearPolarizedField", "src/tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleDiagonal", "src/tensorpotential/coupledsphericalselectionrule.h")
+

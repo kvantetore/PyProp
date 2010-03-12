@@ -1,7 +1,7 @@
 #ifndef COUPLEDSPHERICALSELECTIONRULE_H
 #define COUPLEDSPHERICALSELECTIONRULE_H
 
-#include <core/representation/coupledspherical/coupledsphericalharmonicrepresentation.h>
+#include "src/representation/coupledsphericalharmonicrepresentation.h"
 
 using namespace CoupledSpherical;
 

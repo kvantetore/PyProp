@@ -1,0 +1,32 @@
+from Configure import conftest
+from TaskGen import feature, extension, before, after
+import Options
+
+sources = [
+	"src/representation/coupledsphericalharmonicrepresentation.cpp",
+]
+
+pyste_module = "libcoupledspherical"
+pyste_sources = [
+	"src/pyste/coupledsphericalharmonicrepresentation.pyste",
+	"src/pyste/coupledsphericalselectionrule.pyste",
+]
+
+def set_options(opt):
+	pass
+
+def configure(conf):
+	print("-----> Configuring bspline")
+
+
+def build(bld):
+	tskgen = bld.new_task_gen(
+		features="pyprop pyste compile link",
+		source=sources,
+		local_libraries="core/libcore",
+		pyste_files=pyste_sources,
+		pyste_module=pyste_module,
+		pyste_force=False,
+		pyprop_path="../../../../",
+	)
+

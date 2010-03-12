@@ -1,8 +1,8 @@
 #ifndef COUPLEDSPHERICALHARMONICREPRESENTATION_H
 #define COUPLEDSPHERICALHARMONICREPRESENTATION_H
 
-#include "../../common.h"
-#include "../orthogonalrepresentation.h"
+#include <core/common.h>
+#include <core/representation/orthogonalrepresentation.h>
 #include "coupledrange.h"
 
 namespace CoupledSpherical

@@ -6,8 +6,7 @@
 //#include <boost/hash.hpp>
 //#include <boost/foreach.hpp>
 
-#include "../../common.h"
-#include "../orthogonalrepresentation.h"
+#include <core/common.h>
 #include <gsl/gsl_sf_coupling.h>
 
 
