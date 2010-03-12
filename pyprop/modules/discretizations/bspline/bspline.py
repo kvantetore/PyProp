@@ -1,6 +1,6 @@
 from numpy import array, ones
 
-import gausslegenderquadrature as quadr
+import gausslegendrequadrature as quadr
 import breakpointsequences as bps
 import libbspline
 
