@@ -1,4 +1,5 @@
-from basispropagator import BasisPropagator
+from ..tensorpotential.epetrapotential import EpetraPotential
+from .basispropagator import BasisPropagator
 
 class BasisPropagatorEpetra(BasisPropagator):
 	"""

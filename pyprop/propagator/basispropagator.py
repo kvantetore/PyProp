@@ -1,6 +1,7 @@
-from pyprop.propagator.base import PropagatorBase
 import pyprop.debug as debug
 from pyprop.distribution import PrintOut
+from pyprop.tensorpotential.tensorpotential import TensorPotential
+from .base import PropagatorBase
 
 
 class BasisPropagator(PropagatorBase):

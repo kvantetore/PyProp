@@ -5,7 +5,7 @@ import pyprop.serialization.tensorpotential as serialization
 from pyprop.debug import PrintOut
 from pyprop.createinstance import CreateInstanceRank
 from pyprop.exceptions import NotImplementedException
-from TensorPotentialGenerator import TensorPotentialGenerator
+from pyprop.tensorpotential.tensorpotentialgenerator import TensorPotentialGenerator
 
 #imports for FindObjectStack to work properly
 import pyprop.core as core

@@ -1,4 +1,4 @@
-import pyprop.tensorpotential.GeometryInfo as geometryinfo
+import pyprop.tensorpotential.geometryinfo as geometryinfo
 
 #------------------------------------------------------------------------------------
 #                       Vector

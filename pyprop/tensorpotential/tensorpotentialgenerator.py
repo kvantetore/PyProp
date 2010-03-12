@@ -13,33 +13,64 @@ import pyprop.core as core
 #------------------------------------------------------------------------------------
 #                       TensorPotentialGenerator main
 #------------------------------------------------------------------------------------
+_BasisRepresentationMap = {}
+
+def RegisterBasisfunction(representationClass):
+	"""
+	Class decorator for registering a basisfunction class to a representation class
+
+	Example:
+	@RegisterBasisfunction(libbspline.BSplineRepresentation)
+	class BSplineBasisfunction(BasisfunctionBase):
+		...
+		
+	alternatively, to support Python2.5:
+	class BSplineBasisfunction(BasisfunctionBase):
+		...
+	BSplineBasisfunction = RegisterBasisfunction(libbspline.BSplineRepresentation)(BSplineBasisfunction) 
+
+	"""	
+	def regBasisfun(basisfunctionClass):
+		_BasisRepresentationMap[representationClass] = basisfunctionClass
+		return basisfunctionClass
+	return regBasisfun
+
 
 def CreateBasisFromRepresentation(representation):
-	if representation.__class__ == core.BSplineRepresentation:
-		basis = BasisfunctionBSpline()
-		#basis.SetupBasis(representation.GetBSplineObject())
-		basis.SetupBasis(representation)
+	cls = representation.__class__
+	basisClass = _BasisRepresentationMap.get(cls, None) 
+	if basisClass == None:
+		raise Exception("Representation %s does not have a registered basis function class. Currently registered representations: %s" % (cls, _BasisRepresentationMap) )
 	
-	elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
-		basis = BasisfunctionReducedSphericalHarmonic()
-		basis.SetupBasis(representation)
+	basis = basisClass()
+	basis.SetupBasis(representation)
+	return basis 
 	
-	elif representation.__class__ == core.CoupledSphericalHarmonicRepresentation:
-		basis = BasisfunctionCoupledSphericalHarmonic()
-		basis.SetupBasis(representation)
-
-	elif representation.__class__ == core.CustomGridRepresentation:
-		basis = BasisfunctionFiniteDifference()
-		basis.SetupBasis(representation)
-	
-	elif representation.__class__ == core.VectorRepresentation:
-		basis = BasisfunctionVector()
-		basis.SetupBasis(representation)
-
-	else:
-		raise Exception("Unknown representation %s" % representation)
-
-	return basis
+	#if representation.__class__ == core.BSplineRepresentation:
+	#	basis = BasisfunctionBSpline()
+	#	#basis.SetupBasis(representation.GetBSplineObject())
+	#	basis.SetupBasis(representation)
+	#
+	#elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
+	#	basis = BasisfunctionReducedSphericalHarmonic()
+	#	basis.SetupBasis(representation)
+	#
+	#elif representation.__class__ == core.CoupledSphericalHarmonicRepresentation:
+	#	basis = BasisfunctionCoupledSphericalHarmonic()
+	#	basis.SetupBasis(representation)
+	#
+	#elif representation.__class__ == core.CustomGridRepresentation:
+	#	basis = BasisfunctionFiniteDifference()
+	#	basis.SetupBasis(representation)
+	#
+	#elif representation.__class__ == core.VectorRepresentation:
+	#	basis = BasisfunctionVector()
+	#	basis.SetupBasis(representation)
+	#
+	#else:
+	#	raise Exception("Unknown representation %s" % representation)
+	#
+	#return basis
 
 
 
