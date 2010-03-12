@@ -194,7 +194,7 @@ void (DistributedModel<4>::*DistributedModel_4___GetGlobalSumblitz__Array_std__c
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_distributedmodel()
+void Export_pyprop_core_pyste_distributedmodel()
 {
     scope* ArrayTranspose_1_scope = new scope(
     class_< ArrayTranspose<1>, boost::noncopyable >("ArrayTranspose_1", init< int >())

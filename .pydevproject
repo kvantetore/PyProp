@@ -7,5 +7,10 @@
 <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
 <path>/pyprop/pyprop</path>
 <path>/pyprop</path>
+<path>/pyprop/build/default/pyprop/core</path>
+<path>/pyprop/build/default/pyprop/modules/redirect</path>
+<path>/pyprop/build/default/pyprop/modules/discretizations/bspline</path>
+<path>/pyprop/build/default/pyprop/modules/discretizations/coupledspherical</path>
+<path>/pyprop/build/default/pyprop/modules/discretizations/fourier</path>
 </pydev_pathproperty>
 </pydev_project>

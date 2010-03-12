@@ -11,4 +11,3 @@ from cartesianpropagator import CartesianPropagator
 from fourierpropagator import FourierPropagatorBase
 from mixedpropagator import CartesianMixedPropagator
 from radialpropagator import CartesianRadialPropagator
-

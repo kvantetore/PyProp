@@ -29,7 +29,7 @@ void (OverlapMatrix::*OverlapMatrix__MultiplyOverlapTensorblitz__Array_std__comp
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_overlapmatrix()
+void Export_pyprop_core_pyste_overlapmatrix()
 {
     scope* OverlapMatrix_scope = new scope(
     class_< OverlapMatrix, boost::noncopyable >("OverlapMatrix", init< int, int, const OverlapMatrixEvaluator& >())

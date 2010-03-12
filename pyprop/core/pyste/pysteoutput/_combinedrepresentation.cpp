@@ -73,7 +73,7 @@ void (CombinedRepresentation<4>::*CombinedRepresentation_4___MultiplyOverlapWave
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_combinedrepresentation()
+void Export_pyprop_core_pyste_combinedrepresentation()
 {
     class_< CombinedRepresentation<1>, bases< Representation<1> > , boost::noncopyable >("CombinedRepresentation_1", init<  >())
         .def_readwrite("Algorithm", &CombinedRepresentation<1>::Algorithm)

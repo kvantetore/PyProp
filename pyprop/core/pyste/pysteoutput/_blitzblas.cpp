@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_core_core_src_pyste_blitzblas()
+void Export_pyprop_core_pyste_blitzblas()
 {
 ExportBlitzBlas();
 }

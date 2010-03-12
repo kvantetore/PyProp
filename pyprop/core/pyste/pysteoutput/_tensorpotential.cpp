@@ -11,7 +11,7 @@ namespace TensorPotential { extern void export_tensorpotentialmultiply(); }
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_tensorpotential()
+void Export_pyprop_core_pyste_tensorpotential()
 {
 TensorPotential::export_tensorpotentialmultiply();
 }

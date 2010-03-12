@@ -73,7 +73,7 @@ void (Representation<4>::*Representation_4___MultiplyOverlapWavefunction_4__)(Wa
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_representation()
+void Export_pyprop_core_pyste_representation()
 {
     scope* Representation_1_scope = new scope(
     class_< Representation<1>, boost::noncopyable >("Representation_1", no_init)

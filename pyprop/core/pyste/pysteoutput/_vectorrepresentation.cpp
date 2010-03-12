@@ -31,7 +31,7 @@ void (DenseMatrixPotentialEvaluator<2>::*DenseMatrixPotentialEvaluator_2___Multi
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_vectorrepresentation()
+void Export_pyprop_core_pyste_vectorrepresentation()
 {
     scope* VectorRepresentation_scope = new scope(
     class_< VectorRepresentation, bases< Representation<1> >  >("VectorRepresentation", init<  >())

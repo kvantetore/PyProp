@@ -10,7 +10,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-void Export_core_core_src_pyste_customgridrepresentation()
+void Export_pyprop_core_pyste_customgridrepresentation()
 {
     scope* CustomGridRepresentation_scope = new scope(
     class_< CustomGridRepresentation, bases< Representation<1> >  >("CustomGridRepresentation", init<  >())

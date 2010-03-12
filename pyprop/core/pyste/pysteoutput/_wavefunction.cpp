@@ -66,7 +66,7 @@ void (Wavefunction<4>::*Wavefunction_4___AllocateData)()  = &Wavefunction<4>::Al
 
 
 // Module ======================================================================
-void Export_core_core_src_pyste_wavefunction()
+void Export_pyprop_core_pyste_wavefunction()
 {
     scope* Wavefunction_1_scope = new scope(
     class_< Wavefunction<1>, boost::noncopyable >("Wavefunction_1", init<  >())

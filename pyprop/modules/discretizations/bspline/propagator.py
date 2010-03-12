@@ -1,13 +1,28 @@
+from numpy import double, zeros
+
+import pyprop.potential as potential
+from pyprop.propagator.subpropagator import SubPropagatorBase
+from pyprop.createinstance import CreateInstanceRank
+
+#other modules that can be used if they are available
+try:
+	import pyprop.modules.discretizations.reducedspherical as reducedspherical
+except:
+	pass
+
+#required by CreateInstanceRank
+import libbspline
+
 class BSplinePropagator(SubPropagatorBase):
 	__BASE = SubPropagatorBase
 
 	def __init__(self, psi, transformRank):
 		self.__BASE.__init__(self, psi, transformRank)
 
-		self.Propagator = CreateInstanceRank("core.BSplinePropagator", psi.GetRank())
+		self.Propagator = CreateInstanceRank("libbspline.BSplinePropagator", psi.GetRank())
 		self.TransformRank = transformRank
 
-		self.Transform = CreateInstanceRank("core.BSplineTransform", psi.GetRank())
+		self.Transform = CreateInstanceRank("libbspline.BSplineTransform", psi.GetRank())
 
 		self.RepresentationBSpline = psi.GetRepresentation().GetRepresentation(transformRank)
 		self.BSplineObject = self.RepresentationBSpline.GetBSplineObject()
@@ -17,7 +32,7 @@ class BSplinePropagator(SubPropagatorBase):
 		if hasattr(configSection, "propagation_algorithm"):
 			if configSection.propagation_algorithm == 1:
 				rank1repr = self.psi.GetRepresentation().GetRepresentation(1)
-				if not isinstance(rank1repr, core.ReducedSphericalHarmonicRepresentation):
+				if not isinstance(rank1repr, reducedspherical.ReducedSphericalHarmonicRepresentation):
 					raise Exception("Specified propagation_algorithm only works with ReducedSphericalRepresentation!")
 
 		if hasattr(configSection, "centrifugal_potential"):
@@ -31,7 +46,7 @@ class BSplinePropagator(SubPropagatorBase):
 	def SetupStep(self, dt):
 	
 		# Set up b-spline grid representation
-		self.RepresentationGrid = core.BSplineGridRepresentation()
+		self.RepresentationGrid = libbspline.BSplineGridRepresentation()
 		self.RepresentationGrid.SetBaseRank(self.TransformRank)
 		self.RepresentationGrid.SetupRepresentation(self.BSplineObject)
 		self.RepresentationGrid.SetDistributedModel(self.RepresentationBSpline.GetDistributedModel())
@@ -63,7 +78,7 @@ class BSplinePropagator(SubPropagatorBase):
 		if hasattr(self.ConfigSection, "centrifugal_potential"):
 			centrifugalPotentialName = self.ConfigSection.Get("centrifugal_potential")
 			centrifugalPotentialSection = self.ConfigSection.Config.GetSection(centrifugalPotentialName)
-			centrifugalPotential = CreatePotentialFromSection(centrifugalPotentialSection, centrifugalPotentialName, self.psi)
+			centrifugalPotential = potential.CreatePotentialFromSection(centrifugalPotentialSection, centrifugalPotentialName, self.psi)
 			centrifugalPotential.SetupStep(dt)
 			centrifugalVector = zeros(globalGridSize, dtype=double)
 			centrifugalVector[:] = centrifugalPotential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
@@ -75,7 +90,7 @@ class BSplinePropagator(SubPropagatorBase):
 		if hasattr(self.ConfigSection, "potential"):
 			potentialName = self.ConfigSection.Get("potential")
 			potentialSection = self.ConfigSection.Config.GetSection(potentialName)
-			potential = CreatePotentialFromSection(potentialSection, potentialName, self.psi)
+			potential = potential.CreatePotentialFromSection(potentialSection, potentialName, self.psi)
 			potential.SetupStep(dt)
 			potentialVector[:] = potential.Evaluator.GetPotential(self.psi, dt, 0).real[:]
 

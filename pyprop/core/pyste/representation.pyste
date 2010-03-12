@@ -1,3 +1,4 @@
+from Pyste.infos import use_shared_ptr
 Representation = Template("Representation", "representation/representation.h")
 no_init(Representation)
 no_virtual(Representation)
@@ -6,4 +7,5 @@ Representation("1")
 Representation("2")
 Representation("3")
 Representation("4")
+
 
