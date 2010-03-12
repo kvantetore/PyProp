@@ -7,3 +7,4 @@ if pyprop.IsRunningFromSource:
 import libcoupledspherical
 
 from libcoupledspherical import *
+from .coupledindex import DefaultCoupledIndexIterator

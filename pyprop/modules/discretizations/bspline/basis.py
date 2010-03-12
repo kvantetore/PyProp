@@ -1,9 +1,11 @@
 from numpy import int32, zeros, r_
 
-import pyprop.core as core
-import pyprop.tensorpotential.GeometryInfo as geometryinfo
+import pyprop.tensorpotential.geometryinfo as geometryinfo
+from pyprop.tensorpotential.tensorpotentialgenerator import RegisterBasisfunction
 from pyprop.debug import PrintOut
 
+from .bspline import InitBSpline
+import libbspline
 
 #------------------------------------------------------------------------------------
 #                       BSpline
@@ -169,6 +171,7 @@ class GeometryInfoBsplineBandedDistributed(geometryinfo.GeometryInfoDistributedB
 		raise Exception("SetupTempArrays not implemented, use Epetra for matvec!")
 
 
+
 class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for BSplines
@@ -184,12 +187,12 @@ class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 		self.BSplineObject = repr.GetBSplineObject()
 
 	def GetGridRepresentation(self):
-		repr = core.BSplineGridRepresentation()
+		repr = libbspline.BSplineGridRepresentation()
 		repr.SetupRepresentation(self.BSplineObject)
 		return repr
 
 	def GetBasisRepresentation(self):
-		repr = core.BSplineRepresentation()
+		repr = libbspline.BSplineRepresentation()
 		repr.SetupRepresentation(self.BSplineObject)
 		return repr
 
@@ -229,7 +232,7 @@ class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 			sourceSlice[rank] = slice(0, 1, None)
 			dest[:] = source[sourceSlice]
 		else:
-			core.RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, storageId, rank, differentiation)
-
+			libbspline.RepresentPotentialInBasisBSpline(self.BSplineObject, source, dest, pairs, storageId, rank, differentiation)
+BasisfunctionBSpline = RegisterBasisfunction(libbspline.BSplineRepresentation)(BasisfunctionBSpline)
 
 

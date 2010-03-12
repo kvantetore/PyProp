@@ -6,11 +6,10 @@ def CoupledIndexIter(self):
 	yield self.L
 	yield self.M
 
-if core.LOAD_CORE_OK:
-	from core import CoupledIndex
-	CoupledIndex.__str__ = lambda self: "l1=%i, l2=%i, L=%i, M=%i" % (self.l1, self.l2, self.L, self.M)
-	CoupledIndex.__repr__ = lambda self: "sys.modules['pyprop'].CoupledIndex(%i, %i, %i, %i)" % (self.l1, self.l2, self.L, self.M)	
-	CoupledIndex.__iter__ = CoupledIndexIter
+from libcoupledspherical import CoupledIndex
+CoupledIndex.__str__ = lambda self: "l1=%i, l2=%i, L=%i, M=%i" % (self.l1, self.l2, self.L, self.M)
+CoupledIndex.__repr__ = lambda self: "sys.modules['pyprop'].CoupledIndex(%i, %i, %i, %i)" % (self.l1, self.l2, self.L, self.M)	
+CoupledIndex.__iter__ = CoupledIndexIter
 
 class DefaultCoupledIndexIterator:
 	"""

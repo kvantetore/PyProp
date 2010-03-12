@@ -1,9 +1,9 @@
 from numpy import array, int32, zeros
 
-import pyprop.core as core
-import pyprop.tensorpotential.GeometryInfo as geometryinfo
-import pyprop.tensorpotential.SimpleDistributed as simpledistributed
+import pyprop.tensorpotential.geometryinfo as geometryinfo
+from pyprop.tensorpotential.tensorpotentialgenerator import RegisterBasisfunction
 
+import libcoupledspherical
 
 #------------------------------------------------------------------------------------
 #                       Coupled Spherical Harmonic
@@ -142,19 +142,19 @@ class BasisfunctionCoupledSphericalHarmonic(geometryinfo.BasisfunctionBase):
 		if geom == "identity":
 			return geometryinfo.GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			selectionRule = core.CoupledSphericalSelectionRuleDiagonal()
+			selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleDiagonal()
 			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
 		elif geom == "dense":
 			return geometryinfo.GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "r12":
-				selectionRule = core.CoupledSphericalSelectionRuleR12Old()
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleR12Old()
 			elif selectionRuleName[:3] == "r12":
 				multipoleCutoff = int(selectionRuleName[4:])
-				selectionRule = core.CoupledSphericalSelectionRuleR12(multipoleCutoff)
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleR12(multipoleCutoff)
 			elif selectionRuleName == "linearpolarizedfield":
-				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedField()
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleLinearPolarizedField()
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 
@@ -164,4 +164,5 @@ class BasisfunctionCoupledSphericalHarmonic(geometryinfo.BasisfunctionBase):
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
 		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")
+BasisfunctionCoupledSphericalHarmonic = RegisterBasisfunction(libcoupledspherical.CoupledSphericalHarmonicRepresentation)(BasisfunctionCoupledSphericalHarmonic)
 
