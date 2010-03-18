@@ -9,6 +9,8 @@ IfPack("2")
 IfPack("3")
 
 EpetraPotential = Template("EpetraPotential", "epetrapotential.h")
+exclude(EpetraPotential.GetProcessorMap)
+exclude(EpetraPotential.GetEpetraMatrix)
 EpetraPotential("1")
 EpetraPotential("2")
 EpetraPotential("3")
