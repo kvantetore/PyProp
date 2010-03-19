@@ -122,6 +122,9 @@ public:
 		double l3Sum = 0.0;
 		for (int l3=minL3; l3<=maxL3; l3++)
 		{
+			double l3SumInner = 0.0;
+			double l3Coeff = cg(l1p, l1, 0, 0, l3, 0);
+			l3Coeff *= cg(l2p, l2, 0, 0, l3, 0);
 			int lStop = std::max(std::max(l1, l1p), std::max(l2, l2p));
 			for (int m1p=-lStop; m1p<=lStop; m1p++)
 			{
@@ -136,9 +139,11 @@ public:
 					cur *= cg(l1p, l1, -m1p, m1, l3, m3);
 					cur *= cg(l2p, l2, -m2p, m2, l3, -m3);
 					cur *= std::pow(-1., m1p + m2p + m3);
-					l3Sum += cur;
+					l3SumInner += cur;
 				}
 			}
+			l3Sum += l3SumInner * l3Coeff;
+			//l3Sum += l3SumInner;
 		}
 
 		return nonzero && (std::abs(l3Sum) > 1e-14);

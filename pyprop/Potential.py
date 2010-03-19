@@ -62,7 +62,7 @@ def CreatePotentialInstance(className, rank, evaluatorPrefix, potentialRank=None
 		except: pass
 			
 	if potential == None:
-		raise "Unknown potential", className 
+		raise Exception("Unknown potential", className)
 
 	return potential
 

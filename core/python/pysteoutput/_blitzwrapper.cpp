@@ -4,6 +4,7 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
+#include <python/array_scalar_wrapper.cpp>
 #include <python/array_wrapper.cpp>
 #include <python/range_wrapper.cpp>
 #include <python/tinyvector_wrapper.cpp>
@@ -40,5 +41,6 @@ create_tinyvector_converter<double, 2>();
 create_tinyvector_converter<double, 3>();
 create_tinyvector_converter<double, 4>();
 create_range_converter();
+create_array_scalar_converter();
 }
 

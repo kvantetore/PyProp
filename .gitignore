@@ -8,6 +8,7 @@
 *.so
 *.pyc
 *.swp
+*.mod
 build/
 .lock-wscript
 .waf*
