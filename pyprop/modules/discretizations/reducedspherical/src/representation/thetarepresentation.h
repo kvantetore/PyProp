@@ -1,8 +1,8 @@
 #ifndef REDUCEDSPHERICAL_THETAREPRESENTATION_H
 #define REDUCEDSPHERICAL_THETAREPRESENTATION_H
 
-#include "../../common.h"
-#include "../orthogonalrepresentation.h"
+#include <core/common.h>
+#include <core/representation/orthogonalrepresentation.h>
 #include "thetarange.h"
 
 namespace ReducedSpherical

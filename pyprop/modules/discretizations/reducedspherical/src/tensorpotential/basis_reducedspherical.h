@@ -1,9 +1,9 @@
 #ifndef BASIS_REDUCEDSPHERICAL_H
 #define BASIS_REDUCEDSPHERICAL_H
 
-#include "../common.h"
-#include "../transform/reducedspherical/reducedsphericaltools.h"
-#include "../utility/blitztricks.h"
+#include <core/common.h>
+#include <core/utility/blitztricks.h>
+#include "../combinedpropagator/reducedsphericaltools.h"
 
 typedef ReducedSpherical::ReducedSphericalTools::Ptr ReducedSphericalToolsPtr;
 using namespace blitz;

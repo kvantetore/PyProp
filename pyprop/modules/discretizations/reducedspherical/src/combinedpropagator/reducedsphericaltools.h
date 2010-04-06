@@ -4,7 +4,7 @@
 #ifndef REDUCED_SPHERICAL_SPHERICALTOOLS_H
 #define REDUCED_SPHERICAL_SPHERICALTOOLS_H
 
-#include "../../common.h"
+#include <core/common.h>
 
 //TODO: Implement support for different values of m. Right now only m=0 is implemented.
 

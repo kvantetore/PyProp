@@ -1,8 +1,8 @@
 #ifndef LMREPRESENTATION_H
 #define LMREPRESENTATION_H
 
-#include "../../common.h"
-#include "../orthogonalrepresentation.h"
+#include <core/common.h>
+#include <core/representation/orthogonalrepresentation.h>
 #include "lrange.h"
 
 namespace ReducedSpherical

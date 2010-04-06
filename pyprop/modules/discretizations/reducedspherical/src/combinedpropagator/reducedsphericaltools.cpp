@@ -1,6 +1,7 @@
 #include <core/utility/blitztricks.h>
 #include <core/utility/blitzblas.h>
 #include <core/utility/orthogonalpolynomial.h>
+#include <core/utility/shtools.h>
 
 #include "reducedsphericaltools.h"
 

@@ -1,10 +1,7 @@
 #ifndef REDUCEDSPHERICALKINETICPOTENTIAL_H
 #define REDUCEDSPHERICALKINETICPOTENTIAL_H
 
-#include "../common.h"
-#include "../wavefunction.h"
-#include "dynamicpotentialevaluator.h"
-
+#include <core/potential/dynamicpotentialevaluator.h>
 
 /*
  * Angular Kinetic Energy potential L**2/(2 m r**2) for spherical representation

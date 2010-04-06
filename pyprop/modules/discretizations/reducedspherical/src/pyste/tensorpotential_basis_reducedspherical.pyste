@@ -1,6 +1,6 @@
 
 #Evaluation of potentials in Reduced Spherical Harmonics
-declaration_code('#include "tensorpotential/basis_reducedspherical.h"\n')
+declaration_code('#include "src/tensorpotential/basis_reducedspherical.h"\n')
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 1>);\n')
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 2>);\n')
 module_code('def("RepresentPotentialInBasisReducedSphericalHarmonic", RepresentPotentialInBasisReducedSphericalHarmonic<cplx, 3>);\n')

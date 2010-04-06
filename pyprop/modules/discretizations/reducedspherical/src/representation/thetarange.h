@@ -1,8 +1,8 @@
 #ifndef REDUCEDSPHERICAL_OMEGARANGE_H
 #define REDUCEDSPHERICAL_OMEGARANGE_H
 
-#include "../../common.h"
-#include "../../transform/reducedspherical/reducedsphericaltools.h"
+#include <core/common.h>
+#include "../combinedpropagator/reducedsphericaltools.h"
 
 namespace ReducedSpherical
 {

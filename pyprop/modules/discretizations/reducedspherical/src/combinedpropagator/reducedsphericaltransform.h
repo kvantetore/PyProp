@@ -1,11 +1,12 @@
 #ifndef REDUCEDSPHERICALTRANSFORM_H
 #define REDUCEDSPHERICALTRANSFORM_H
 
-#include "../../common.h"
-#include "../../wavefunction.h"
-#include "../../representation/combinedrepresentation.h"
-#include "../../representation/reducedspherical/thetarepresentation.h"
-#include "../../representation/reducedspherical/reducedsphericalharmonicrepresentation.h"
+#include <core/common.h>
+#include <core/wavefunction.h>
+#include <core/representation/combinedrepresentation.h>
+
+#include "../representation/thetarepresentation.h"
+#include "../representation/reducedsphericalharmonicrepresentation.h"
 #include "reducedsphericaltools.h"
 
 namespace ReducedSpherical

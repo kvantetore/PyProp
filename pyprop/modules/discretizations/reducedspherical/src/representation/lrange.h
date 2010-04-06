@@ -1,7 +1,7 @@
 #ifndef REDUCEDSPHERICAL_LRANGE_H
 #define REDUCEDSPHERICAL_LRANGE_H
 
-#include "../../common.h"
+#include <core/common.h>
 
 namespace ReducedSpherical
 {
