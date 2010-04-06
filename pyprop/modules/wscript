@@ -4,20 +4,11 @@ import os
 subdirs = "discretizations redirect"
 
 def set_options(opt):
-	print('---> Options from core')
-
-	def add_boolean_option(name, dest, default, **args):
-		opt.add_option(name + "-enabled", action="store_true", dest=dest, default=default, **args)
-		opt.add_option(name + "-disabled", action="store_false", dest=dest, default=default, **args)
-
-	add_boolean_option("--module-bspline", dest="EnableModuleBSpline", default=True)
-	add_boolean_option("--module-redirect", dest="EnableModuleRedirect", default=True)
-	add_boolean_option("--module-fourier", dest="EnableModuleFourier", default=True)
-
+	print('---> Options from modules')
 	opt.sub_options(subdirs)
 
 def configure(conf):
-	print('---> Configuring core modules')
+	print('---> Configuring modules')
 	conf.sub_config(subdirs)
 
 def build(bld):

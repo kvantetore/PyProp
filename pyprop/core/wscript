@@ -105,12 +105,13 @@ def configure(conf):
 
 
 def build(bld):
-	tskgen = bld.new_task_gen(
-		features="pyste compile link",
-		source=sources,
-		pyste_files=pyste_sources,
-		pyste_module=pyste_module,
-	)
+	if bld.is_module_enabled("core"):
+		tskgen = bld.new_task_gen(
+			features="pyste compile link",
+			source=sources,
+			pyste_files=pyste_sources,
+			pyste_module=pyste_module,
+		)
 
 
 	

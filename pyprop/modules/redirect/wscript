@@ -19,7 +19,7 @@ def configure(conf):
 
 
 def build(bld):
-	if Options.options.EnableModuleRedirect:
+	if bld.is_module_enabled("redirect"):
 		tskgen = bld.new_task_gen(
 			features="pyprop pyste compile link",
 			source=sources,

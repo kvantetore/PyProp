@@ -25,7 +25,7 @@ def configure(conf):
 
 
 def build(bld):
-	if Options.options.EnableModuleFourier:
+	if bld.is_module_enabled("fourier"):
 		tskgen = bld.new_task_gen(
 			features="pyprop pyste compile link",
 			source=sources,

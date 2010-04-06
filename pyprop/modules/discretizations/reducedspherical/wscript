@@ -24,13 +24,14 @@ def configure(conf):
 
 
 def build(bld):
-	tskgen = bld.new_task_gen(
-		features="pyprop pyste compile link",
-		source=sources,
-		local_libraries="core/libcore",
-		pyste_files=pyste_sources,
-		pyste_module=pyste_module,
-		pyste_force=False,
-		pyprop_path="../../../../",
-	)
+	if bld.is_module_enabled("reducedspherical"):
+		tskgen = bld.new_task_gen(
+			features="pyprop pyste compile link",
+			source=sources,
+			local_libraries="core/libcore",
+			pyste_files=pyste_sources,
+			pyste_module=pyste_module,
+			pyste_force=False,
+			pyprop_path="../../../../",
+		)
 

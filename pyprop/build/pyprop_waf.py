@@ -4,6 +4,7 @@ from TaskGen import feature, extension, before, after
 import Task
 import Utils
 import Build
+import Options 
 
 import fabricate as fab
 
@@ -537,3 +538,25 @@ def check_gsl(conf):
 	conf.env.GSL_INC = []
 	conf.env.GSL_DEFINES = ["PYPROP_USE_TRILINOS"]
 
+
+def is_module_enabled(self, moduleName):
+	"""
+	Checks whether a module is enabled or disabled from the command line
+	
+	"""
+	enabled = True
+	
+	# If enable-modules is specified, only the explicitly enabled modules 
+	# are enabled
+	if Options.options.EnableModules != "":
+		enabled = moduleName in Options.options.EnableModules.split()
+		
+	# If the module is mentioned in disable-modules, it is disabled regardless
+	if moduleName in Options.options.DisableModules.split():
+		enabled = False
+		
+	return enabled 
+
+
+import Build
+Build.BuildContext.is_module_enabled = is_module_enabled 

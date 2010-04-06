@@ -26,7 +26,7 @@ def configure(conf):
 
 
 def build(bld):
-	if Options.options.EnableModuleBSpline:
+	if bld.is_module_enabled("bspline"):
 		tskgen = bld.new_task_gen(
 			features="pyprop pyste compile link",
 			source=sources,

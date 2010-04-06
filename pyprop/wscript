@@ -4,13 +4,8 @@ import Options
 
 def set_options(opt):
 	print('--> Options from pyprop')
-	def add_boolean_option(name, dest, default, **args):
-		opt.add_option(name + "-enabled", action="store_true", dest=dest, default=default, **args)
-		opt.add_option(name + "-disabled", action="store_false", dest=dest, default=default, **args)
-
-	add_boolean_option("--modules", dest="EnableModules", default=True)
-	add_boolean_option("--core", dest="EnableCore", default=True)
-
+	opt.add_option("--enable-modules", action="store", dest="EnableModules", default="")
+	opt.add_option("--disable-modules", action="store", dest="DisableModules", default="")
 	opt.sub_options("core modules")
 
 def configure(conf):
@@ -22,14 +17,12 @@ def configure(conf):
 		conf.sub_config("modules")
 
 def build(bld):
-	if Options.options.EnableCore:
+	if bld.is_module_enabled("core"):
 		bld.add_group("core")
 		bld.add_subdirs("core")
 
-	print "MODULES ENABLED: %s" % Options.options.EnableModules
-	if Options.options.EnableModules:
-		bld.add_group("modules")
-		bld.add_subdirs("modules")
+	bld.add_group("modules")
+	bld.add_subdirs("modules")
 
 
 
