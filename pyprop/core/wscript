@@ -17,6 +17,8 @@ sources = [
 	"trilinos/pyprop_epetra.cpp",
 	"trilinos/pyprop_tpetra.cpp",
 	"representation/distributedoverlapmatrix.cpp",
+	"utility/shtools.cpp",
+	"utility/fouriertransform.cpp",
 ]
 
 pyste_module = "libcore"

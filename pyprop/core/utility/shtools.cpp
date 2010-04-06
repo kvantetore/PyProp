@@ -1,6 +1,7 @@
 // shtools.cpp file
 
 #include <iostream>
+
 #include "shtools.h"
 #include "fouriertransform.h"
 #include "blitztricks.h"

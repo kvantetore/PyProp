@@ -4,7 +4,6 @@
 #include <core/common.h>
 #include <core/wavefunction.h>
 
-#include "fouriertransform.h"
 #include "../representation/cartesianrepresentation.h"
 
 template<int Rank> class CartesianRepresentation;

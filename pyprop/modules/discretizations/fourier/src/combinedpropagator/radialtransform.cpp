@@ -1,7 +1,7 @@
 #include <core/representation/representation.h>
 
 #include "radialtransform.h"
-#include "fouriertransform.h"
+#include <core/utility/fouriertransform.h>
 
 using namespace blitz;
 

@@ -4,7 +4,6 @@ import Options
 
 sources = [
 	"src/combinedpropagator/cartesianfouriertransform.cpp",
-	"src/combinedpropagator/fouriertransform.cpp",
 	"src/combinedpropagator/radialtransform.cpp",
 	"src/representation/cartesianrepresentation.cpp",
 ]

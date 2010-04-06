@@ -1,6 +1,9 @@
 #include "cartesianfouriertransform.h"
 #include "../representation/cartesianrepresentation.h"
 
+#include <core/utility/fouriertransform.h>
+
+
 template<int Rank>
 void CartesianFourierTransform<Rank>::TransformRank(Wavefunction<Rank> &psi, int rank, int direction)
 {
