@@ -246,6 +246,8 @@ def init_pyste(self):
 		#pyste output path is the path to the current node + pysteoutput
 		relativeNodePath = pysteNode.dir(self.env)[len(modulePath)+1:]
 		pysteOutput = os.path.join(relativeNodePath, "pysteoutput")
+		if not os.path.exists(pysteOutput):
+			os.makedirs(pysteOutput)
 
 		wrapperFilename = "_" + pysteNode.change_ext(".cpp").file()
 		wrapperPath = os.path.join(pysteOutput, wrapperFilename)
