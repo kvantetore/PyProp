@@ -115,6 +115,9 @@ def pyste_multiple(self):
 	for o in self.outputs:
 		src = o.abspath(self.env)
 		dst = os.path.join(self.path.srcpath(), o.relpath_gen(self.path))
+		dst_folder, dst_name = os.path.split(dst)
+		if not os.path.exists(dst_folder):
+			os.makedirs(dst_folder)
 		fab.shell("cp", src, dst)
 
 
@@ -143,6 +146,9 @@ def pyste_multiple_generate_main(self):
 	for o in self.outputs:
 		src = o.abspath(self.env)
 		dst = os.path.join(self.path.srcpath(), o.relpath_gen(self.path))
+		dst_folder, dst_name = os.path.split(dst)
+		if not os.path.exists(dst_folder):
+			os.makedirs(dst_folder)
 		fab.shell("cp", src, dst)
 
 
