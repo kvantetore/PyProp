@@ -208,15 +208,15 @@ class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 		elif geom == "banded-nonhermitian":
 			return geometryinfo.GeometryInfoCommonBandedNonHermitian(BasisSize, BandCount, True)
 		elif geom == "banded-packed":
-			return geometryinfo.GeometryInfoBSplineBanded(self.BSplineObject)
+			return GeometryInfoBSplineBanded(self.BSplineObject)
 		elif geom == "banded-hermitian":
-			return geometryinfo.GeometryInfoBSplineBandedBlas(self.BSplineObject)
+			return GeometryInfoBSplineBandedBlas(self.BSplineObject)
 		elif geom == "dense":
 			return geometryinfo.GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "hermitian":
 			return geometryinfo.GeometryInfoCommonDense(BasisSize, True)
 		elif geom == "banded-bspline-distributed":
-			return geometryinfo.GeometryInfoBsplineBandedDistributed(self.Representation, True)
+			return GeometryInfoBsplineBandedDistributed(self.Representation, True)
 		else:
 			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
