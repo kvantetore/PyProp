@@ -1,0 +1,9 @@
+
+#Cartesian Potentials
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator", "src/potential.h")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<1> 1")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<2> 2")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<3> 3")
+DynamicPotentialEvaluator("HarmonicOscillatorPotential<4> 4")
+
+
