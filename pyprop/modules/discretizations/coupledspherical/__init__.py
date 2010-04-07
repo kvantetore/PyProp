@@ -8,3 +8,4 @@ import libcoupledspherical
 
 from libcoupledspherical import *
 from .coupledindex import DefaultCoupledIndexIterator
+from .basis import BasisfunctionCoupledSphericalHarmonic

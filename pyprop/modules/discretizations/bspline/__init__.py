@@ -9,3 +9,4 @@ import libbspline
 from libbspline import *
 from .bspline import InitBSpline
 from .propagator import BSplinePropagator
+from .basis import BasisfunctionBSpline
