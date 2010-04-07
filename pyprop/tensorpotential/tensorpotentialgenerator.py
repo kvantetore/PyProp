@@ -354,7 +354,7 @@ class TensorPotentialGenerator(object):
 		return repr
 
 	def SetupPotentialEvaluator(self, configSection, psi):
-		evaluatorPrefix = "core.DynamicPotentialEvaluator"
+		evaluatorPrefix = "DynamicPotentialEvaluator"
 		classname = configSection.classname
 		potentialEvaluator = potential.CreatePotentialInstance(classname, self.Rank, evaluatorPrefix)
 		configSection.Apply(potentialEvaluator)
