@@ -1,7 +1,7 @@
 import os.path
 import os
 
-subdirs = "oscillator"
+subdirs = "oscillator tensorpotentialbase"
 
 def set_options(opt):
 	opt.sub_options(subdirs)
