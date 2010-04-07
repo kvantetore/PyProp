@@ -167,7 +167,7 @@ public:
 private:
 	CartesianRepresentation<1>::Ptr GetRepresentation(Wavefunction<Rank> &psi)
 	{
-		return dynamic_pointer_cast< CartesianRepresentation<1> >(psi.GetRepresentation());
+		return pyprop_dynamic_cast< CartesianRepresentation<1> >(psi.GetRepresentation());
 	}
 
 	void SolveForward(DataArray &diag, DataArray &upperDiag, DataArray &lowerDiag, DataArray &in, DataArray &out)

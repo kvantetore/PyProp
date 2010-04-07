@@ -7,3 +7,4 @@ if pyprop.IsRunningFromSource:
 import libreducedspherical
 
 from libreducedspherical import *
+from reducedsphericalpropagator import ReducedSphericalPropagator

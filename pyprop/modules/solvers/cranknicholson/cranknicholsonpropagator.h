@@ -253,8 +253,8 @@ private:
 	 */
 	CartesianRepresentation<1>::Ptr GetRepresentation(Wavefunction<Rank> &psi)
 	{
-		typename CombinedRepresentation<Rank>::Ptr combinedRepr = dynamic_pointer_cast< CombinedRepresentation<Rank> >(psi.GetRepresentation());
-		return dynamic_pointer_cast< CartesianRepresentation<1> >(combinedRepr->GetRepresentation(TransformRank));
+		typename CombinedRepresentation<Rank>::Ptr combinedRepr = pyprop_dynamic_cast< CombinedRepresentation<Rank> >(psi.GetRepresentation());
+		return pyprop_dynamic_cast< CartesianRepresentation<1> >(combinedRepr->GetRepresentation(TransformRank));
 	}
 
 	/* 

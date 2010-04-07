@@ -52,7 +52,7 @@ public:
 	void ApplyPotential(Wavefunction<Rank> &psi, cplx timeStep, double curTime)
 	{
 		//Set up grid
-		typename CombinedRepresentation<Rank>::Ptr repr = dynamic_pointer_cast< CombinedRepresentation<Rank> >(psi.GetRepresentation());
+		typename CombinedRepresentation<Rank>::Ptr repr = pyprop_dynamic_cast< CombinedRepresentation<Rank> >(psi.GetRepresentation());
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > scaling;

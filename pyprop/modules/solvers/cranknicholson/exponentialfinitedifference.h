@@ -34,7 +34,7 @@ public:
 	void UpdateWavefunction(Wavefunction<Rank> &psi, double t, cplx dt, int parity)
 	{
 		//Get dx
-		typename CartesianRepresentation<1>::Ptr repr = dynamic_pointer_cast< CartesianRepresentation<1> >(psi.GetRepresentation());	
+		typename CartesianRepresentation<1>::Ptr repr = pyprop_dynamic_cast< CartesianRepresentation<1> >(psi.GetRepresentation());
 		double dx = repr->GetRange(0).Dx;
 		double startx = repr->GetRange(0).Min;
 

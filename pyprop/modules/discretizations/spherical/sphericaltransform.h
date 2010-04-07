@@ -29,8 +29,8 @@ public:
 		// uses the representation of the wavefunction to get MaxL
 		typedef CombinedRepresentation<Rank> CombRepr;
 		typedef SphericalHarmonicRepresentation SphHarmRepr;
-		typename CombRepr::Ptr reprSphere = dynamic_pointer_cast<CombRepr>(psi.GetRepresentation());
-		SphHarmRepr::Ptr reprAngular = dynamic_pointer_cast<SphHarmRepr>(reprSphere->GetRepresentation(TransformRank));
+		typename CombRepr::Ptr reprSphere = pyprop_dynamic_cast<CombRepr>(psi.GetRepresentation());
+		SphHarmRepr::Ptr reprAngular = pyprop_dynamic_cast<SphHarmRepr>(reprSphere->GetRepresentation(TransformRank));
 		if (reprAngular == 0) 
 		{
 			std::cout << "Invalid wavefunction representation, must be SphericalHarmonicRepresentation" << std::endl;

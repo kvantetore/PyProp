@@ -2,23 +2,24 @@ from Configure import conftest
 from TaskGen import feature, extension, before, after
 
 sources = [
+    "wavefunction.cpp",
+    "configuration.cpp",
 	"tensorpotential/tensorpotentialmultiply_generator.py",
 	"representation/combinedrepresentation_generator.py",
 	"representation/overlapmatrix.cpp",
-	"utility/blitzblas.cpp",
-	"utility/gamma.cpp",
-	"wavefunction.cpp",
 	"representation/combinedrepresentation.cpp",
 	"representation/customgridrepresentation.cpp",
-	"configuration.cpp",
+    "representation/distributedoverlapmatrix.cpp",
 	"mpi/distributedmodel.cpp",
-	"utility/timer.cpp",
-	"utility/matrix_conversion.cpp",
 	"trilinos/pyprop_epetra.cpp",
 	"trilinos/pyprop_tpetra.cpp",
-	"representation/distributedoverlapmatrix.cpp",
+    "utility/blitzblas.cpp",
+    "utility/gamma.cpp",
+    "utility/timer.cpp",
+    "utility/matrix_conversion.cpp",
 	"utility/shtools.cpp",
 	"utility/fouriertransform.cpp",
+    "utility/orthogonalpolynomial.cpp",
 ]
 
 pyste_module = "libcore"

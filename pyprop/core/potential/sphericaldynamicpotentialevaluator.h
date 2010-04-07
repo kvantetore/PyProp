@@ -9,24 +9,6 @@
 #include "potentialbase.h"
 #include "potentialaction.h"
 
-template<class DestType, class SourceType>
-shared_ptr<DestType> pyprop_cast(shared_ptr<SourceType> sourcePtr)
-{
-#ifdef BZ_DEBUG
-	shared_ptr<DestType> destPtr = dynamic_pointer_cast<DestType>(sourcePtr);
-	if (destPtr == 0)
-	{
-		cout 
-			<< "WARNING: Could not cast " << typeid(*sourcePtr).name() 
-			<< " to " << typeid(DestType).name() << " safely" << endl;
-		destPtr = boost::static_pointer_cast<DestType>(sourcePtr);
-	}
-	return destPtr;
-#else
-	return boost::static_pointer_cast<DestType>(sourcePtr);
-#endif
-}
-
 // The class inherits from DynamicPotentialClass and ActionClass
 // DynamicPotentialClass defines the potential
 // ActionClass defines the how the potential is to be applied to the data
@@ -46,9 +28,9 @@ public:
 		potential.CurTimeUpdated();
 
 		//Get representations
-		typename CombRepr::Ptr repr = pyprop_cast< CombRepr >(psi.GetRepresentation());
+		typename CombRepr::Ptr repr = pyprop_dynamic_cast< CombRepr >(psi.GetRepresentation());
 		BZPRECONDITION(repr != 0);
-		typename CompressedRepresentation::Ptr angularRepr = pyprop_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
+		typename CompressedRepresentation::Ptr angularRepr = pyprop_dynamic_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
 		BZPRECONDITION(angularRepr != 0);
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank-1 > grid;
@@ -163,8 +145,8 @@ public:
 		Potential.CurTimeUpdated();
 
 		//Get representations
-		typename CombRepr::Ptr repr = dynamic_pointer_cast< CombRepr >(psi.GetRepresentation());
-		typename CompressedRepresentation::Ptr angularRepr = dynamic_pointer_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
+		typename CombRepr::Ptr repr = pyprop_dynamic_cast< CombRepr >(psi.GetRepresentation());
+		typename CompressedRepresentation::Ptr angularRepr = pyprop_dynamic_cast< CompressedRepresentation >(repr->GetRepresentation(Rank-1));
 		BZPRECONDITION(angularRepr != 0);
 
 		blitz::TinyVector< blitz::Array<double, 1>, Rank > grid;
