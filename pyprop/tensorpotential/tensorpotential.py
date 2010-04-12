@@ -164,7 +164,7 @@ class TensorPotential(potential.PotentialWrapper):
 
 		if canConsolidate:
 			for rank in range(self.Rank):
-				if any(self.GeometryList[rank].GetBasisPairs() != otherPot.GeometryList[rank].GetBasisPairs()):
+				if (self.GeometryList[rank].GetBasisPairs() != otherPot.GeometryList[rank].GetBasisPairs()).any():
 					canConsolidate = False
 					break
 
