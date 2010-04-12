@@ -1,6 +1,12 @@
 from pyprop.propagator.base import PropagatorBase
 from pyprop.createinstance import CreateInstanceRank
 
+import libkrylov
+
+class ExponentiationMethod:
+	Pade = 0
+	Eigenvector = 1
+
 
 class PamPropagator(PropagatorBase):
 	__Base = PropagatorBase
@@ -9,7 +15,7 @@ class PamPropagator(PropagatorBase):
 		self.__Base.__init__(self, psi)
 		self.Rank = psi.GetRank()
 		
-		self.PampWrapper = CreateInstanceRank("core.krylov_PampWrapper", self.Rank)
+		self.PampWrapper = CreateInstanceRank("libkrylov.krylov_PampWrapper", self.Rank)
 
 	def ApplyConfig(self, config):
 		self.__Base.ApplyConfig(self, config)

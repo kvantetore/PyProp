@@ -1,6 +1,7 @@
 from pyprop.timer import Timers, Counters
 from pyprop.createinstance import CreateInstanceRank
 
+import libkrylov
 
 
 class GMRESShiftInvertSolver:
@@ -30,23 +31,23 @@ class GMRESShiftInvertSolver:
 	def __init__(self, prop):
 		self.BaseProblem = prop
 		self.Rank = prop.psi.GetRank()
-		self.Config = self.BaseProblem.Config.GMRES
+		self.ConfigSection = self.BaseProblem.Config.GMRES
 		self.psi = prop.psi
 		self.TempPsi = prop.psi.Copy()
 		self.TempPsi2 = prop.psi.Copy()
-		self.Shift = self.Config.shift
+		self.Shift = self.ConfigSection.shift
 		self.Timers = Timers()
 		self.Counters = Counters()
 	
 		self.Timers["Setup"].Start()
 		#Set up GMRES
-		self.Solver = CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
-		prop.Config.GMRES.Apply(self.Solver)
+		self.Solver = CreateInstanceRank("libkrylov.krylov_GmresWrapper", self.Rank)
+		self.ConfigSection.Apply(self.Solver)
 		self.Solver.Setup(self.psi)
 
 		#Setup preconditioner
 		config = prop.Config
-		preconditionerName = self.Config.preconditioner
+		preconditionerName = self.ConfigSection.preconditioner
 		if preconditionerName:
 			self.Timers["PreconditionerSetup"].Start()
 			preconditionerSection = config.GetSection(preconditionerName)

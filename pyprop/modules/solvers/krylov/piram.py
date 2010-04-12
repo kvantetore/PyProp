@@ -6,6 +6,8 @@ from pyprop.createinstance import CreateInstanceRank
 from pyprop.debug import PrintOut
 import pyprop.distribution
 
+import libkrylov
+
 class PiramSolver:
 	"""
 	Pyprop wrapper for pIRAM, a homegrown IRAM implementation. 
@@ -34,7 +36,7 @@ class PiramSolver:
 		self.TempPsi = prop.psi.CopyDeep()
 
 		#Set up pIRAM Solver
-		self.Solver = CreateInstanceRank("core.krylov_PiramSolver", self.Rank)
+		self.Solver = CreateInstanceRank("libkrylov.krylov_PiramSolver", self.Rank)
 
 		configSection = prop.Config.Arpack
 		configSection.Apply(self.Solver)
