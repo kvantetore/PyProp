@@ -4,13 +4,13 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <pampwrapper.h>
+#include <src/pamp/pampwrapper.h>
 
 // Using =======================================================================
 using namespace boost::python;
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpamp)
+void Export_pyprop_modules_solvers_krylov_src_pyste_pamp()
 {
     class_< krylov::PampWrapper<1>, boost::noncopyable >("krylov_PampWrapper_1", init<  >())
         .def("ApplyConfigSection", &krylov::PampWrapper<1>::ApplyConfigSection)

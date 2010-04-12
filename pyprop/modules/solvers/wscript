@@ -1,14 +1,12 @@
 import os.path
 import os
 
-subdirs = "discretizations redirect potentials solvers"
+subdirs = "krylov"
 
 def set_options(opt):
-	print('---> Options from modules')
 	opt.sub_options(subdirs)
 
 def configure(conf):
-	print('---> Configuring modules')
 	conf.sub_config(subdirs)
 
 def build(bld):

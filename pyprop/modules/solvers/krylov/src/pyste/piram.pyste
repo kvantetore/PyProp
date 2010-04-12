@@ -1,4 +1,4 @@
-ArpackPropagator = Template("krylov::PiramSolver", "piramsolver.h");
+ArpackPropagator = Template("krylov::PiramSolver", "src/piram/piramsolver.h");
 no_virtual(ArpackPropagator)
 ArpackPropagator("1");
 ArpackPropagator("2");

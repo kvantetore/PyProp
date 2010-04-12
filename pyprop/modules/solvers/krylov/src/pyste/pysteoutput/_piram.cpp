@@ -4,13 +4,13 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <piramsolver.h>
+#include <src/piram/piramsolver.h>
 
 // Using =======================================================================
 using namespace boost::python;
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpiram)
+void Export_pyprop_modules_solvers_krylov_src_pyste_piram()
 {
     class_< krylov::PiramSolver<1>, boost::noncopyable >("krylov_PiramSolver_1", init<  >())
         .def("ApplyConfigSection", &krylov::PiramSolver<1>::ApplyConfigSection)

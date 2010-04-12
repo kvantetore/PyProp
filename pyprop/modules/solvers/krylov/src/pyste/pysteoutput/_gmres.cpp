@@ -4,13 +4,13 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <gmreswrapper.h>
+#include <src/gmres/gmreswrapper.h>
 
 // Using =======================================================================
 using namespace boost::python;
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libgmres)
+void Export_pyprop_modules_solvers_krylov_src_pyste_gmres()
 {
     class_< krylov::GmresWrapper<1>, boost::noncopyable >("krylov_GmresWrapper_1", init<  >())
         .def("ApplyConfigSection", &krylov::GmresWrapper<1>::ApplyConfigSection)

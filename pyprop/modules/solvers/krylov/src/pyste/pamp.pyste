@@ -1,4 +1,4 @@
-PampWrapper = Template("krylov::PampWrapper", "pampwrapper.h");
+PampWrapper = Template("krylov::PampWrapper", "src/pamp/pampwrapper.h");
 no_virtual(PampWrapper)
 PampWrapper("1");
 PampWrapper("2");
