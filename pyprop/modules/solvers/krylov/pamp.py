@@ -1,3 +1,6 @@
+from pyprop.propagator.base import PropagatorBase
+from pyprop.createinstance import CreateInstanceRank
+
 
 class PamPropagator(PropagatorBase):
 	__Base = PropagatorBase

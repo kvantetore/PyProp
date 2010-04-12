@@ -1,5 +1,11 @@
 import sys
 
+from numpy import where, reshape
+
+from pyprop.createinstance import CreateInstanceRank
+from pyprop.debug import PrintOut
+import pyprop.distribution
+
 class PiramSolver:
 	"""
 	Pyprop wrapper for pIRAM, a homegrown IRAM implementation. 
@@ -40,8 +46,7 @@ class PiramSolver:
 		matrixSize = prop.psi.GetData().size
 		basisSize = configSection.krylov_basis_size
 		memoryUsage = self.Solver.EstimateMemoryUsage(matrixSize, basisSize)
-		if ProcId == 0:
-			print "Approximate pIRAM memory usage = %.2fMB" % memoryUsage
+		PrintOut("Approximate pIRAM memory usage = %.2fMB" % memoryUsage)
 		self.Solver.Setup(prop.psi)
 
 		self.Debug = False
@@ -83,15 +88,15 @@ class PiramSolver:
 		self.ApplyMatrix(psi, tempPsi, 0, 0)
 
 		self.Count += 1
-		if self.Debug and ProcId == 0:
+		if self.Debug and pyprop.distribution.ProcId == 0:
 			if self.Count % 100 == 0:
 				print ""
 				print "Count = ", self.Count
-				print "EV = ", real(self.Solver.GetEigenvalues())
+				print "EV = ", float(self.Solver.GetEigenvalues())
 				print "Error = ", self.Solver.GetErrorEstimates()
 				print "Convergence = ", self.Solver.GetConvergenceEstimates()
 
-		if (not self.Silent) and self.CounterOn and ProcId == 0:
+		if (not self.Silent) and self.CounterOn and pyprop.distribution.ProcId == 0:
 
 			if self.Count == 1:
 				infoStr = "Progress:   0 %"
@@ -136,7 +141,7 @@ class PiramSolver:
 		if normalize == True, psi will be normalized
 		"""
 		shape = psi.GetData().shape
-		psi.GetData()[:] = numpy.reshape(self.GetEigenvector(eigenvectorIndex), shape)
+		psi.GetData()[:] = reshape(self.GetEigenvector(eigenvectorIndex), shape)
 		if normalize:
 			psi.Normalize()
 
