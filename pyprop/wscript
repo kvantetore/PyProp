@@ -4,17 +4,25 @@ import Options
 
 def set_options(opt):
 	print('--> Options from pyprop')
-	opt.add_option("--enable-modules", action="store", dest="EnableModules", default="")
-	opt.add_option("--disable-modules", action="store", dest="DisableModules", default="")
+	
+	gr = opt.pyprop_build_options
+	
+	enableModuleHelp = "If specified, only the modules listed in this option are compiled. If not specified, all modules are compiled"
+	gr.add_option("--enable-modules", action="store", dest="EnableModules", default="", help=enableModuleHelp)
+
+	disableModuleHelp = "If specified, the modules listed in this option are not compiled. If these options are set on the configure command, they are stored and form the default settings for build and other commands. They can also be overridden on the build command to only compile certain modules."
+	gr.add_option("--disable-modules", action="store", dest="DisableModules", default="", help=disableModuleHelp)
+	
 	opt.sub_options("core modules")
 
 def configure(conf):
 	print('--> Configuring pyprop')
-	if Options.options.EnableCore:
-		conf.sub_config("core")
-
-	if Options.options.EnableModules:
-		conf.sub_config("modules")
+	
+	conf.env.EnableModules = Options.options.EnableModules
+	conf.env.DisableModules = Options.options.DisableModules
+	
+	conf.sub_config("core")
+	conf.sub_config("modules")
 
 def build(bld):
 	if bld.is_module_enabled("core"):

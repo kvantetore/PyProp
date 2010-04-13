@@ -12,5 +12,6 @@
 <path>/pyprop/build/default/pyprop/modules/discretizations/bspline</path>
 <path>/pyprop/build/default/pyprop/modules/discretizations/coupledspherical</path>
 <path>/pyprop/build/default/pyprop/modules/discretizations/fourier</path>
+<path>/pyprop/pyprop/modules</path>
 </pydev_pathproperty>
 </pydev_project>

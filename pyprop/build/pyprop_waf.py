@@ -498,12 +498,15 @@ def check_blitz(conf):
 
 @conftest
 def check_trilinos(conf):
-	print "  - Detecting Trilinos"
-	trilinos_path = "/opt/trilinos"
-	conf.env.TRILINOS_LIB = ["epetra", "teuchos", "ifpack", "anasazi"]
-	conf.env.TRILINOS_LIBPATH = [os.path.join(trilinos_path, "lib")]
-	conf.env.TRILINOS_INC = [os.path.join(trilinos_path, "include")]
-	conf.env.TRILINOS_DEFINES = ["PYPROP_USE_TRILINOS"]
+	if Options.options.PypropUseTrilinos:
+		print "  - Detecting Trilinos"
+		trilinos_path = "/opt/trilinos"
+		conf.env.TRILINOS_LIB = ["epetra", "teuchos", "ifpack", "anasazi"]
+		conf.env.TRILINOS_LIBPATH = [os.path.join(trilinos_path, "lib")]
+		conf.env.TRILINOS_INC = [os.path.join(trilinos_path, "include")]
+		conf.env.TRILINOS_DEFINES = ["PYPROP_USE_TRILINOS"]
+		if Options.options.PypropUseTrilinosTpetra:
+			conf.env.TRILINOS_DEFINES.append("PYPROP_USE_TRILINOS_TPETRA")
 	
 	#TODO add compile tests
 
@@ -545,7 +548,7 @@ def check_gsl(conf):
 	conf.env.GSL_LIB = ["gsl"]
 	conf.env.GSL_LIBPATH = []
 	conf.env.GSL_INC = []
-	conf.env.GSL_DEFINES = ["PYPROP_USE_TRILINOS"]
+	conf.env.GSL_DEFINES = []
 
 
 def is_module_enabled(self, moduleName):
@@ -555,13 +558,24 @@ def is_module_enabled(self, moduleName):
 	"""
 	enabled = True
 	
+	#defaults to the options set at config time
+	enableModules = self.env.EnableModules
+	disableModules = self.env.DisableModules
+	
+	#overridden now?
+	if Options.options.EnableModules != "":
+		enableModules = Options.options.EnableModules
+	if Options.options.DisableModules != "":
+		disableModules = Options.options.DisableModules
+
+	
 	# If enable-modules is specified, only the explicitly enabled modules 
 	# are enabled
-	if Options.options.EnableModules != "":
-		enabled = moduleName in Options.options.EnableModules.split()
+	if enableModules != "":
+		enabled = moduleName in enableModules.split()
 		
 	# If the module is mentioned in disable-modules, it is disabled regardless
-	if moduleName in Options.options.DisableModules.split():
+	if moduleName in disableModules.split():
 		enabled = False
 		
 	return enabled 
