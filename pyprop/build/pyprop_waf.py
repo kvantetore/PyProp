@@ -396,6 +396,17 @@ def extension_f90(self, node):
 
 #----------------------------- Configure ------------------------------------
 
+def set_options(opt):
+	options_mpi(opt)
+	options_fortran(opt)
+	options_python(opt)
+	options_boost_python(opt)
+	options_blitz(opt)
+	options_trilinos(opt)
+	options_blas_lapack(opt)
+	options_fftw(opt)
+	options_gsl(opt)
+	options_pyste(opt)
 
 @conftest
 def detect(conf):
@@ -437,118 +448,217 @@ def detect(conf):
 	
 	check_pyste(conf)
 
+
+def add_option_flags(opt, optName, variableName, **args):
+	opt.add_option(optName, action="store", dest=variableName, default="mpif90", **args)
+	opt.add_option(optName + "-disable-default", action="store_true", dest=variableName + "DisableDefault", default=False)	
+
+def set_option_flags(conf, variableName, flagName):
+	optVar = getattr(Options.options, variableName)
+	disableDefault = getattr(Options.options, variableName + "DisableDefault")
+	
+	if not disableDefault:
+		flagValue = getattr(conf.env, flagName)
+	else:
+		flagValue = []
+	flagValue += optVar.split(" ")	
+	
+	setattr(conf.env, flagName, flagValue)
+
+def add_options_lib(opt, libname, defaultLib, defaultPath="", defaultDefines=""):
+	l1 = libname.lower().replace("_","-")
+	l2 = libname.upper()
+	
+	opt.add_option("--%s-lib" % l1, action="store", dest="%s_LIB" % l2, default=defaultLib, help="List of Libraries from %s to link against, default=%s" % (l1, defaultLib))			
+	opt.add_option("--%s-path" % l1, action="store", dest="%s_PATH" % l2, default=defaultPath, help="Path to %s, default=%s" % (l1, defaultPath))			
+	opt.add_option("--%s-libpath" % l1, action="store", dest="%s_LIBPATH" % l2, default="lib", help="Path to the libraries of %s, default=lib" % l1)			
+	opt.add_option("--%s-inc" % l1, action="store", dest="%s_INC" % l2, default="include", help="Path to the include files of %s, default=include" % l1)			
+	opt.add_option("--%s-defines" % l1, action="store", dest="%s_DEFINES" % l2, default=defaultDefines, help="Extra defines required by %s, default=%s" % (l1, defaultDefines))			
+
+def split_names(namestring):
+	return namestring.replace(",", " ").replace(";", " ").split()
+	
+
+def set_options_lib(conf, libname):
+	path = getattr(Options.options, "%s_PATH" % libname.upper())
+
+	libpath = getattr(Options.options, "%s_LIBPATH" % libname.upper())
+	if not os.path.isabs(libpath):
+		if path == "":
+			libpath = []
+		else:
+			libpath = [os.path.join(path, libpath)]
+	setattr(conf.env, "%s_LIBPATH" % libname.upper(), libpath)
+
+	inc = getattr(Options.options, "%s_INC" % libname.upper())	
+	if not os.path.isabs(inc):
+		if path == "":
+			inc = []
+		else:
+			inc = [os.path.join(path, inc)]
+	setattr(conf.env, "%s_INC" % libname.upper(), inc)
+
+	lib = getattr(Options.options, "%s_LIB" % libname.upper())
+	setattr(conf.env, "%s_LIB" % libname.upper(), split_names(lib))
+	
+	defines = getattr(Options.options, "%s_DEFINES" % libname.upper())
+	setattr(conf.env, "%s_LIB" % libname.upper(), split_names(defines))
+	
+
+def options_fortran(opt):
+	opt = opt.parser.add_option_group("Fortran options")
+	opt.add_option("--fortran-compiler", action="store", dest="FortranCompiler", default="mpif90", help="Fortran compiler to use")
+	add_option_flags(opt, "--fortarn-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
+	
 @conftest
 def check_fortran(conf):
 	print "  - Detecting Fortran90"
+
 	conf.env.FORTRAN_F90FLAGS = ["-Wall",]
 	#free form
 	conf.env.FORTRAN_F90FLAGS += ["-ffree-form", "-fimplicit-none", "-ffree-line-length-none",]
 	#shared module on 64 bit systems
 	conf.env.FORTRAN_F90FLAGS += ["-fPIC",]
+	set_option_flags(conf, "FortranFlags", "FORTRAN_F90FLAGS")
 	#debug
 	#conf.env.FORTRAN_F90FLAGS += ["-fbounds-check"]
 	#optimization
 	#conf.env.FORTRAN_F90FLAGS += ["-O2", "-g"]
 	conf.env.FORTRAN_LIB   = ["mpi_f90", "mpi_f77", "gfortran",]
 
+def options_blas_lapack(opt):
+	opt = opt.parser.add_option_group("BLAS/LAPACK options")
+	add_options_lib(opt, "blas_lapack", "mkl, guide, mkl_core, mkl_lapack, pthread", )
+
 @conftest
 def check_blas_lapack(conf):
 	print "  - Detecting BLAS/LAPACK"
-	conf.env.BLAS_LAPACK_LIB = ["mkl", "guide", "mkl_core", "mkl_lapack", "pthread",]
-	conf.env.BLAS_LAPACK_LIBPATH = ["/opt/intel/mkl/10.0.1.014/lib/em64t",]
-	conf.env.BLAS_LAPACK_INC = ["/opt/intel/mkl/10.0.1.014/include",]
-	conf.env.BLAS_LAPACK_DEFINES = ["PYPROP_USE_BLAS"]
+	set_options_lib(conf, "blas_lapack")
+	conf.env.BLAS_LAPACK_DEFINES.append("PYPROP_USE_BLAS")
 
 	#TODO add compile tests
 
+
+def options_python(opt):
+	opt = opt.parser.add_option_group("python options")
+	import distutils.sysconfig
+	import sys
+	opt.add_option("--python-exec", action="store", dest="PYTHON_EXEC", default=sys.executable)
+	opt.add_option("--python-libpath", action="store", dest="PYTHON_LIBPATH", default=distutils.sysconfig.get_python_lib())
+	opt.add_option("--python-inc", action="store", dest="PYTHON_INC", default=distutils.sysconfig.get_python_lib())
+	opt.add_option("--python-lib", action="store", dest="PYTHON_LIB", default="")
+	opt.add_option("--python-cxxflags", action="store", dest="PYTHON_CXXFLAGS", default="-fPIC")
+	
 
 @conftest
 def check_python(conf):
 	print "  - Detecting python"
-	import distutils.sysconfig
-	import sys
-	conf.env.PYTHON_EXEC = sys.executable
-	conf.env.PYTHON_LIBPATH = [distutils.sysconfig.get_python_lib()]
-	conf.env.PYTHON_INC = [distutils.sysconfig.get_python_inc()]
-	conf.env.PYTHON_LIB = []
-	conf.env.PYTHON_CXXFLAGS = ["-fPIC"]
+	conf.env.PYTHON_EXEC = Options.options.PYTHON_EXEC
+	conf.env.PYTHON_LIBPATH = split_names(Options.options.PYTHON_LIBPATH)
+	conf.env.PYTHON_INC = split_names(Options.options.PYTHON_INC)
+	conf.env.PYTHON_LIB =  split_names(Options.options.PYTHON_LIB)
+	conf.env.PYTHON_CXXFLAGS = split_names(Options.options.PYTHON_CXXFLAGS)
 	
 	#TODO add compile tests
 
+
+def options_boost_python(opt):
+	opt = opt.parser.add_option_group("boost::python options")
+	add_options_lib(opt, "boost_python", "boost_python-mt", "/opt/boost")
 
 @conftest
 def check_boost_python(conf):
 	print "  - Detecting boost::python"
-	conf.env.BOOST_PYTHON_LIB = ["boost_python-mt"]
-	conf.env.BOOST_PYTHON_LIBPATH = ["/opt/boost/lib"]
-	conf.env.BOOST_PYTHON_INC = ["/opt/boost/include"]
+	set_options_lib(conf, "boost_python")
 	
 	#TODO add compile tests
 
 
+def options_blitz(opt):
+	opt = opt.parser.add_option_group("blitz options")
+	add_options_lib(opt, "blitz", "blitz", os.path.abspath("./extern/blitz/build"))
+
 @conftest
 def check_blitz(conf):
-	print "  - Detecting blitz"
-	blitz_path = "/home/torebi/prog/pyprop/extern/blitz/build"
-	conf.env.BLITZ_LIB = ["blitz"]
-	conf.env.BLITZ_LIBPATH = [os.path.join(blitz_path, "lib")]
-	conf.env.BLITZ_INC = [os.path.join(blitz_path, "include")]
+	print "  - Detecting blitz "  
+	set_options_lib(conf, "blitz")
 
 
+
+def options_trilinos(opt):
+	opt = opt.parser.add_option_group("trilinos options")
+	add_options_lib(opt, "trilinos", "epetra, teuchos, ifpack, anasazi", "/opt/trilinos")
 
 @conftest
 def check_trilinos(conf):
 	if Options.options.PypropUseTrilinos:
 		print "  - Detecting Trilinos"
-		trilinos_path = "/opt/trilinos"
-		conf.env.TRILINOS_LIB = ["epetra", "teuchos", "ifpack", "anasazi"]
-		conf.env.TRILINOS_LIBPATH = [os.path.join(trilinos_path, "lib")]
-		conf.env.TRILINOS_INC = [os.path.join(trilinos_path, "include")]
-		conf.env.TRILINOS_DEFINES = ["PYPROP_USE_TRILINOS"]
+		set_options_lib(conf, "trilinos")
+		
+		conf.env.TRILINOS_DEFINES.append("PYPROP_USE_TRILINOS")
 		if Options.options.PypropUseTrilinosTpetra:
 			conf.env.TRILINOS_DEFINES.append("PYPROP_USE_TRILINOS_TPETRA")
 	
 	#TODO add compile tests
 
 
+def options_fftw(opt):
+	opt = opt.parser.add_option_group("fftw options")
+	add_options_lib(opt, "fftw", "fftw3")
+
 @conftest
 def check_fftw(conf):
 	print "  - Detecting fftw"
-	conf.env.FFTW_LIB = ["fftw3"]
-	conf.env.FFTW_LIBPATH = []
-	conf.env.FFTW_INC = []
-	conf.env.FFTW_DEFINES = []
+	set_options_lib(conf, "fftw")
 	
 	#TODO add compile tests
 
+
+def options_mpi(opt):
+	opt = opt.parser.add_option_group("mpi options")
+	opt.add_option("--fortran-compiler", action="store", dest="MPIF90", default="mpif90", help="Fortran compiler to use")
+	opt.add_option("--cxx-compiler", action="store", dest="MPICXX", default="mpicxx", help="C++ compiler to use")
+	opt.add_option("--mpirun", action="store", dest="MPIRUN", default="mpirun", help="Command to start parallel jobs")
+	opt.add_option("--mpirun-flag-numprocs", action="store", dest="MPIRUN_FLAG_NUMPROCS", default="-n %i", help="Parameters to mpirun")
 
 
 @conftest
 def check_mpi(conf):
 	print "  - Detecting MPI compilers"
-	conf.env.MPICXX = "mpicxx"
-	conf.env.MPIF90 = "mpif90"
-	conf.env.MPIRUN = "mpirun"
-	conf.env.MPIRUN_FLAG_NUMPROCS = "-n %i"
+	
+	testprogram = "int main(int argc, char** argv) { return 0; }"
+	
+	conf.env.MPICXX = conf.find_program(Options.options.MPICXX, mandatory=True)
+	conf.env.MPIF90 = conf.find_program(Options.options.MPIF90, mandatory=True)
+	conf.env.MPIRUN = conf.find_program(Options.options.MPIRUN, mandatory=False)
+	conf.env.MPIRUN_FLAG_NUMPROCS = Options.options.MPIRUN_FLAG_NUMPROCS
 	#TODO add compile tests
 
+
+def options_pyste(opt):
+	opt = opt.parser.add_option_group("pyste options")
+	pyste = os.path.abspath("./extern/pyste/pyste.py")
+	opt.add_option("--gccxml", action="store", dest="GCCXML", default="gccxml", help="Command to run gccxml")
+	opt.add_option("--gccxml-flags", action="store", dest="GCCXML_FLAGS", default="", help="Flags for gccxml")
+	opt.add_option("--pyste",  action="store", dest="PYSTE", default=pyste, help="Command to run pyste")
+	opt.add_option("--pyste-include", action="store", dest="PYSTE_INCLUDE", default="/usr/lib/openmpi/include", help="Extra include paths for pyste")
 
 @conftest
 def check_pyste(conf):
 	print "  - Detecting pyste"
-	conf.env.GCCXML = conf.find_program(["gccxml"], mandatory=True)
-	conf.env.GCCXML_FLAGS = ""
+	conf.env.GCCXML = conf.find_program(Options.options.GCCXML, mandatory=True)
+	conf.env.GCCXML_FLAGS = Options.options.GCCXML_FLAGS
 	curpath = os.path.abspath(os.path.curdir)
-	conf.env.PYSTE = conf.find_program([curpath + "/extern/pyste/pyste.py"], mandatory=True)
-	conf.env.PYSTE_INCLUDE = ["/usr/lib/openmpi/include"]
+	conf.env.PYSTE = conf.find_program(Options.options.PYSTE, mandatory=True)
+	conf.env.PYSTE_INCLUDE = split_names(Options.options.PYSTE_INCLUDE)
+
+def options_gsl(opt):
+	add_options_lib(opt, "gsl", "gsl")
 
 @conftest
 def check_gsl(conf):
 	print "  - Detecting gsl"
-	conf.env.GSL_LIB = ["gsl"]
-	conf.env.GSL_LIBPATH = []
-	conf.env.GSL_INC = []
-	conf.env.GSL_DEFINES = []
+	set_options_lib(conf, "gsl")
 
 
 def is_module_enabled(self, moduleName):
@@ -581,5 +691,4 @@ def is_module_enabled(self, moduleName):
 	return enabled 
 
 
-import Build
 Build.BuildContext.is_module_enabled = is_module_enabled 

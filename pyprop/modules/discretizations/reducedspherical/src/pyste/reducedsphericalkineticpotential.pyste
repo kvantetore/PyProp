@@ -1,4 +1,4 @@
-DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator","potential/reducedsphericalkineticpotential.h")
+DynamicPotentialEvaluator = Template("DynamicPotentialEvaluator","src/potential/reducedsphericalkineticpotential.h")
 
 DynamicPotentialEvaluator("ReducedAngularKineticEnergyPotential<2> 2", "ReducedAngularKineticEnergyPotential_2")
 DynamicPotentialEvaluator("ReducedAngularKineticEnergyPotential<3> 3", "ReducedAngularKineticEnergyPotential_3")
