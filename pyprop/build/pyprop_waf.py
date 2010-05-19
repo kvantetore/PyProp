@@ -449,8 +449,8 @@ def detect(conf):
 	check_pyste(conf)
 
 
-def add_option_flags(opt, optName, variableName, **args):
-	opt.add_option(optName, action="store", dest=variableName, default="mpif90", **args)
+def add_option_flags_fortran(opt, optName, variableName, **args):
+	opt.add_option(optName, action="store", dest=variableName, default=None, **args)
 	opt.add_option(optName + "-disable-default", action="store_true", dest=variableName + "DisableDefault", default=False)	
 
 def set_option_flags(conf, variableName, flagName):
@@ -461,7 +461,9 @@ def set_option_flags(conf, variableName, flagName):
 		flagValue = getattr(conf.env, flagName)
 	else:
 		flagValue = []
-	flagValue += optVar.split(" ")	
+
+	if not optVar is None:
+		flagValue += optVar.split(" ")	
 	
 	setattr(conf.env, flagName, flagValue)
 
@@ -488,6 +490,8 @@ def set_options_lib(conf, libname):
 			libpath = []
 		else:
 			libpath = [os.path.join(path, libpath)]
+	else:
+		libpath = [libpath]
 	setattr(conf.env, "%s_LIBPATH" % libname.upper(), libpath)
 
 	inc = getattr(Options.options, "%s_INC" % libname.upper())	
@@ -496,19 +500,21 @@ def set_options_lib(conf, libname):
 			inc = []
 		else:
 			inc = [os.path.join(path, inc)]
+	else:
+		inc = [inc]
 	setattr(conf.env, "%s_INC" % libname.upper(), inc)
 
 	lib = getattr(Options.options, "%s_LIB" % libname.upper())
 	setattr(conf.env, "%s_LIB" % libname.upper(), split_names(lib))
 	
 	defines = getattr(Options.options, "%s_DEFINES" % libname.upper())
-	setattr(conf.env, "%s_LIB" % libname.upper(), split_names(defines))
+	setattr(conf.env, "%s_DEFINES" % libname.upper(), split_names(defines))
 	
 
 def options_fortran(opt):
 	opt = opt.parser.add_option_group("Fortran options")
 	opt.add_option("--fortran-compiler", action="store", dest="FortranCompiler", default="mpif90", help="Fortran compiler to use")
-	add_option_flags(opt, "--fortarn-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
+	add_option_flags_fortran(opt, "--fortarn-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
 	
 @conftest
 def check_fortran(conf):
@@ -534,7 +540,7 @@ def options_blas_lapack(opt):
 def check_blas_lapack(conf):
 	print "  - Detecting BLAS/LAPACK"
 	set_options_lib(conf, "blas_lapack")
-	conf.env.BLAS_LAPACK_DEFINES.append("PYPROP_USE_BLAS")
+	conf.env.BLAS_LAPACK_DEFINES += ["PYPROP_USE_BLAS"]
 
 	#TODO add compile tests
 
@@ -545,7 +551,7 @@ def options_python(opt):
 	import sys
 	opt.add_option("--python-exec", action="store", dest="PYTHON_EXEC", default=sys.executable)
 	opt.add_option("--python-libpath", action="store", dest="PYTHON_LIBPATH", default=distutils.sysconfig.get_python_lib())
-	opt.add_option("--python-inc", action="store", dest="PYTHON_INC", default=distutils.sysconfig.get_python_lib())
+	opt.add_option("--python-inc", action="store", dest="PYTHON_INC", default=distutils.sysconfig.get_python_inc())
 	opt.add_option("--python-lib", action="store", dest="PYTHON_LIB", default="")
 	opt.add_option("--python-cxxflags", action="store", dest="PYTHON_CXXFLAGS", default="-fPIC")
 	
@@ -560,7 +566,6 @@ def check_python(conf):
 	conf.env.PYTHON_CXXFLAGS = split_names(Options.options.PYTHON_CXXFLAGS)
 	
 	#TODO add compile tests
-
 
 def options_boost_python(opt):
 	opt = opt.parser.add_option_group("boost::python options")
@@ -594,10 +599,10 @@ def check_trilinos(conf):
 	if Options.options.PypropUseTrilinos:
 		print "  - Detecting Trilinos"
 		set_options_lib(conf, "trilinos")
-		
-		conf.env.TRILINOS_DEFINES.append("PYPROP_USE_TRILINOS")
+		conf.env.TRILINOS_DEFINES += ["PYPROP_USE_TRILINOS"]
+
 		if Options.options.PypropUseTrilinosTpetra:
-			conf.env.TRILINOS_DEFINES.append("PYPROP_USE_TRILINOS_TPETRA")
+			conf.env.TRILINOS_DEFINES += ["PYPROP_USE_TRILINOS_TPETRA"]
 	
 	#TODO add compile tests
 
