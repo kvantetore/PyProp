@@ -12,3 +12,6 @@
 build/
 .lock-wscript
 .waf*
+.deps*
+Makefile.platform
+*.h5
