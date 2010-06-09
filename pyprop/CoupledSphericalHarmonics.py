@@ -1,4 +1,4 @@
-
+from numpy import unique
 #Import CoupledIndex from core, and add a pretty print to it
 def CoupledIndexIter(self):
 	yield self.l1
@@ -28,8 +28,14 @@ class DefaultCoupledIndexIterator:
 		2) an iterator yielding the values of M
 
 	yields a CoupledIndex(l1, l2, L, M) for every permissible combination of 
-	l1, l2, L, M such that |l1-l2| <= L <= l1+l2. For combinations not satisfying
-	this criterion, y{l1,l2,L,M} is zero and can therefore safely be removed
+	l1, l2, L, M such that
+	 
+	    |l1-l2| <= L <= l1+l2. (Triangle inequality),
+	    M = m1+ m2,
+	    -L <= M <= L (See Mathworld, Wigner 3j symbol section)
+	     
+	For combinations not satisfying	these criteria, y{l1,l2,L,M} is zero 
+	and can therefore safely be removed.
 
 	This generator is most likely used in a configuration file like
 
@@ -48,6 +54,10 @@ class DefaultCoupledIndexIterator:
 			L = [L]
 		if not hasattr(L, "__iter__"):
 			M = [M]
+			
+		#Make sure L and M are unique
+		M = unique(M).tolist()
+		L = unique(L).tolist()
 
 		self.L = L
 		self.M = M
@@ -58,6 +68,8 @@ class DefaultCoupledIndexIterator:
 		#Iterate through all permutations
 		for curM in self.M:
 			for curL in self.L:
+				if (abs(curM) > curL) and (not self.FullTensor):
+					continue
 				for l1 in range(self.lmax+1):
 					for l2 in range(self.lmax+1):
 						#Only yield if l1, l2, L satisfies clebsch gordan condition
