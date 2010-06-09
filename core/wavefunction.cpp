@@ -38,10 +38,12 @@ int Wavefunction<Rank>::AllocateData(blitz::TinyVector<int, Rank> shape)
 		throw std::runtime_error("Wavefunction too large");
 	}
 
+	#ifdef PYPROP_DEBUG
 	std::cout 
 		<< "Creating wavefunctions of shape " << shape
 		<< " (~ " << byteCount / (1024*1024) << "MB)"
 		<< std::endl;
+	#endif
 	
 	DataBuffer<Rank> data(shape);
 	int newName = WavefunctionData.size();

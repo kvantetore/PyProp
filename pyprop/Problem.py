@@ -17,13 +17,13 @@ def CreateWavefunction(config):
 	psi.GetData()[:] = x * exp(- x**2)
 	"""
 
-	print "Creating DistributionModel..."
+	PrintOut("Creating DistributionModel...")
 	distribution = CreateDistribution(config)
 
-	print "Creating Representation..."
+	PrintOut("Creating Representation...")
 	representation = CreateRepresentation(config, distribution)
 
-	print "Creating Wavefunction..."
+	PrintOut("Creating Wavefunction...")
 	psi = CreateWavefunctionInstance(representation)
 
 	return psi
@@ -78,7 +78,7 @@ class Problem:
 			#Create wavefunction
 			self.psi = CreateWavefunction(config)
 		
-			print "Creating Propagator..."
+			PrintOut("Creating Propagator...")
 			self.Propagator = CreatePropagator(config, self.psi)
 		
 			#apply propagation config
@@ -121,16 +121,16 @@ class Problem:
 			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
 			
-			print "Starting setup timestep..."
-			print "    Setting up Propagator."
+			PrintOut("Starting setup timestep...")
+			PrintOut("    Setting up Propagator.")
 			if self.Propagator != None:
 				self.Propagator.SetupStep(self.TimeStep)
 
-			print "    Setting up initial wavefunction"
+			PrintOut("    Setting up initial wavefunction")
 			if not skipWavefunctionSetup:
 				self.SetupWavefunction()
 			
-			print "Setup timestep complete."
+			PrintOut("Setup timestep complete.")
 	
 			#Disable redirect
 			if not redirectStateOld:

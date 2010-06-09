@@ -51,7 +51,9 @@ void DistributedModel<Rank>::SetupMPI()
 	{
 		MPI_Comm_rank(MPI_COMM_WORLD, &this->ProcId);
 		MPI_Comm_size(MPI_COMM_WORLD, &this->ProcCount);
-		std::cout << "Proc " << (1+ProcId) << "/" << ProcCount << std::endl;
+		#ifdef PYPROP_DEBUG
+			std::cout << "Proc " << (1+ProcId) << "/" << ProcCount << std::endl;
+		#endif
 	}
 }
 
