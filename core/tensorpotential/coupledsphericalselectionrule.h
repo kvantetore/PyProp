@@ -97,7 +97,9 @@ public:
 	CoupledSphericalSelectionRuleR12(int multipoleCutoff)
 	{
 		MultipoleCutoff = multipoleCutoff;
+		#ifdef PYPROP_DEBUG
 		std::cout << "Multipole cutoff = " << MultipoleCutoff << std::endl;
+		#endif
 	}
 
 	virtual ~CoupledSphericalSelectionRuleR12() {}
