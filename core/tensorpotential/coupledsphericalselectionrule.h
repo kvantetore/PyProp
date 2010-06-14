@@ -216,5 +216,32 @@ public:
 	}
 };
 
+/*
+ * Selection rule for linearly polarized field perpendicular at an angle to the z-axis.
+ */
+class CoupledSphericalSelectionRuleLinearPolarizedFieldAngle  : public CoupledSphericalSelectionRule
+{
+public:
+	CoupledSphericalSelectionRuleLinearPolarizedFieldAngle() {}
+	virtual ~CoupledSphericalSelectionRuleLinearPolarizedFieldAngle() {}
+
+	virtual bool SelectionRule(CoupledIndex const& left, CoupledIndex const& right)
+	{
+		if ( (std::abs(left.L - right.L) == 1) && (std::abs(left.M - right.M) <= 1))
+		{
+			if ( (std::abs(left.l1 - right.l1) == 1) && left.l2 == right.l2 )
+			{
+				return true;
+			}
+
+			if ( (std::abs(left.l2 - right.l2) == 1) && left.l1 == right.l1 )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+};
+
 #endif
 

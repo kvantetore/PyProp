@@ -5,4 +5,5 @@ Class("CoupledSphericalSelectionRuleR12Old", "tensorpotential/coupledsphericalse
 Class("CoupledSphericalSelectionRuleLinearPolarizedField", "tensorpotential/coupledsphericalselectionrule.h")
 Class("CoupledSphericalSelectionRuleDiagonal", "tensorpotential/coupledsphericalselectionrule.h")
 Class("CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular", "tensorpotential/coupledsphericalselectionrule.h")
+Class("CoupledSphericalSelectionRuleLinearPolarizedFieldAngle", "tensorpotential/coupledsphericalselectionrule.h")
 
