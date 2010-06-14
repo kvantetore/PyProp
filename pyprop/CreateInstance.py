@@ -44,7 +44,7 @@ def CreateRepresentation(config, distribution):
 	representation = config.Representation.type()
 
 	#Set distribution model
-	pyprop.PrintOut("Setting distributed model")
+	PrintOut("Setting distributed model")
 	representation.SetDistributedModel(distribution)
 	
 	#Apply configuration section
