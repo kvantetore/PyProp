@@ -3,7 +3,7 @@ def CreateInstanceRank(className, rank, globals=globals(), locals=locals()):
 	try:
 		return eval("%s_%i()" % (className, rank), globals, locals)
 	except Exception:
-		print "Could not create instance of class ", className, "with rank ", rank
+		PrintOut("Could not create instance of class ", className, "with rank ", rank)
 		raise
 		
 def CreateDistribution(config, rank=None):
@@ -31,7 +31,7 @@ def CreateDistribution(config, rank=None):
 		distrSection.initial_distribution = array([0], dtype=int)
 
 	if distrSection.initial_distribution[0] != 0:
-		print "WARNING: Not distributing first rank of wavefunction. Consider removing [Distribution] from the config file"
+		PrintOut("WARNING: Not distributing first rank of wavefunction. Consider removing [Distribution] from the config file")
 
 	#apply configuration
 	distrib.ApplyConfigSection(distrSection)
@@ -44,7 +44,7 @@ def CreateRepresentation(config, distribution):
 	representation = config.Representation.type()
 
 	#Set distribution model
-	print "setting distributed model"
+	pyprop.PrintOut("Setting distributed model")
 	representation.SetDistributedModel(distribution)
 	
 	#Apply configuration section
@@ -66,13 +66,13 @@ def CreateSubRepresentations(combinedRepr, config):
 	rank = config.Representation.rank
 	for i in range(rank):
 		sectionName = config.Representation.Get("representation" + str(i))
-		print "ConfigSection for rank %i is %s" % (i, sectionName)
+		PrintOut("ConfigSection for rank %i is %s" % (i, sectionName))
 		section = config.GetSection(sectionName)
 
 		#create instance
 		repr = section.type()
 		repr.SetBaseRank(i)
-		print "Representation for rank %i is %s" % (i, repr)
+		PrintOut("Representation for rank %i is %s" % (i, repr))
 
 		#set distributed model
 		fullDistrib = combinedRepr.GetDistributedModel()
@@ -88,17 +88,17 @@ def CreateSubRepresentations(combinedRepr, config):
 	
 def CreateWavefunctionInstance(representation, allocateData=True):
 	#Create instance
-	print "    Creating instance"
+	PrintOut("    Creating instance")
 	rank = len(representation.GetFullShape())
 	psi = CreateInstanceRank("core.Wavefunction", rank)
 	
 	#Set reresentation
-	print "    Setting representation"
+	PrintOut("    Setting representation")
 	psi.SetRepresentation(representation)
 	
 	#Allocate data
 	if allocateData:
-		print "    Allocating data"
+		PrintOut("    Allocating data")
 		psi.AllocateData()
 	
 	return psi
@@ -112,7 +112,7 @@ def CreatePropagator(config, psi):
 		config.Apply(propagator)
 		config.Propagation.Apply(propagator)
 	else:
-		print "WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy."
+		PrintOut("WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy.")
 	
 	return propagator
 	
