@@ -131,11 +131,11 @@ class StaticPotentialWrapper(PotentialWrapper):
 	
 	def SetupStep(self, timeStep):
 		#Determine storage model
-		print "Setting up static potential %s" % self
+		PrintOut("Setting up static potential %s" % self)
 		self.Storage = self.Potential.StorageModel.StorageExpValue
 		if hasattr(self.ConfigSection, "storage_model"):
 			self.Storage = self.Potential.StorageModel(self.ConfigSection.storage_model)
-			print "Using static potential storage model %s" % self.Storage
+			PrintOut("Using static potential storage model %s" % self.Storage)
 
 		#Get time function if defined; check for correct storage model
 		self.HasTimeFunction = False
