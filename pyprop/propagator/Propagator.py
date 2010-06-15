@@ -16,7 +16,7 @@ class PropagatorBase:
 
 	def ApplyConfig(self, config): 
 		#Create list of potentials.
-		print "Creating Potentials..."
+		PrintOut("Creating Potentials...")
 		potentialNames = config.Propagation.potential_evaluation
 		self.PotentialList = [CreatePotential(config, name, self.psi) for name in potentialNames]
 		
@@ -25,7 +25,7 @@ class PropagatorBase:
 				
 	#Propagator interface. Should most likely be overridden by inheriting classes
 	def SetupStep(self, dt):
-		print "    Setting up Potentials."
+		PrintOut("    Setting up Potentials.")
 		self.SetupPotential(dt)
 	
 	def RestartPropagation(self, timestep, startTime, propagationTime):
@@ -48,7 +48,7 @@ class PropagatorBase:
 	#Basic functionality that inheriting classes should use.
 	def SetupPotential(self, dt):
 		for potential in self.PotentialList:
-			print "    Setting up potential ", potential.Name
+			PrintOut("    Setting up potential ", potential.Name)
 			potential.SetupStep(dt)
 
 	def ApplyPotential(self, t, dt):

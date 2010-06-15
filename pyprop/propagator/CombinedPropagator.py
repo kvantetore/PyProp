@@ -21,7 +21,7 @@ class CombinedPropagator(PropagatorBase):
 
 				#Create sub-propagator
 				prop = section.propagator(self.psi, i)
-				print "Propagator for rank %i is %s" % (i, prop)
+				PrintOut("Propagator for rank %i is %s" % (i, prop))
 			
 				#Apply config to sub propagator
 				config.Apply(prop)

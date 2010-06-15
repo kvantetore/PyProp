@@ -23,7 +23,7 @@ void CoupledSphericalHarmonicRepresentation::ApplyConfigSection(const ConfigSect
 	}
 	Range.EndIndexList();
 
-	cout << "Setup CoupledSphericalHarmonicRepresentation complete (" << Range.Count() << ")" << endl;
+	//cout << "Setup CoupledSphericalHarmonicRepresentation complete (" << Range.Count() << ")" << endl;
 }	
 
 } //namespace
