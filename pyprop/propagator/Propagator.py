@@ -48,7 +48,7 @@ class PropagatorBase:
 	#Basic functionality that inheriting classes should use.
 	def SetupPotential(self, dt):
 		for potential in self.PotentialList:
-			PrintOut("    Setting up potential ", potential.Name)
+			PrintOut("    Setting up potential %s" % potential.Name)
 			potential.SetupStep(dt)
 
 	def ApplyPotential(self, t, dt):

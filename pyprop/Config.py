@@ -95,7 +95,7 @@ def Load(fileName, silent=True):
 		absFile = os.path.abspath(os.path.expanduser(os.path.expandvars(localFile)))
 		absDir = os.path.dirname(absFile)
 		if not silent:
-			PrintOut("Using config file", absFile)
+			PrintOut("Using config file %s" % absFile)
 		configFiles.insert(0, absFile)
 		
 		#find Import statements from curFile
