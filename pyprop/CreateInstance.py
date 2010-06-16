@@ -3,7 +3,7 @@ def CreateInstanceRank(className, rank, globals=globals(), locals=locals()):
 	try:
 		return eval("%s_%i()" % (className, rank), globals, locals)
 	except Exception:
-		PrintOut("Could not create instance of class %s with rank ", % (className, rank))
+		PrintOut("Could not create instance of class %s with rank " % (className, rank))
 		raise
 		
 def CreateDistribution(config, rank=None):
