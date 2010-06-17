@@ -2,6 +2,8 @@
 #                       BSpline
 #------------------------------------------------------------------------------------
 
+#restore some builtin functions in this namespace 
+from __builtin__ import min, max
 
 class GeometryInfoBSplineBanded(GeometryInfoBase):
 	"""
