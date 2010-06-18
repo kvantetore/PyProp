@@ -142,6 +142,9 @@ def SetupDistributedIndexList(globalSize, indexPairs, distrib, rank):
 			raise Exception("what!?")
 
 		distribIndexList[foundProc].append(i)
+		
+	#check that every proc got at least one element
+	assert (len((filter(lambda x: len(x)>0, distribIndexList))) == len(distribIndexList))
 
 	#For each processor, start with local part of the matrix. 
 	#this gives a better load balancing
