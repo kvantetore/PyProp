@@ -86,7 +86,7 @@ def ExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 
 	#Setup outer/linear region
 	h = xi[-1] - xi[-2]
-	xi += [x for x in frange(rpartition + h, rmax, h)]
+	xi += [x for x in arange(rpartition + h, rmax+h, h)]
 
 	return xi
 
@@ -110,7 +110,7 @@ def CenterExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 
 	#Setup outer/linear region
 	h = xi[-1] - xi[-2]
-	xi += [x for x in frange(rpartition + h, rmax, h)]
+	xi += [x for x in arange(rpartition + h, rmax+h, h)]
 
 	#
 	# Mirror to get left part of grid
