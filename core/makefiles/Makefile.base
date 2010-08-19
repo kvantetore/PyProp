@@ -47,6 +47,7 @@ PYSTEFILES = \
 	python/customgridrepresentation.pyste \
 	python/overlapmatrix.pyste \
 	python/coupledsphericalharmonicrepresentation.pyste \
+	python/sphericalharmonicbasisrepresentation.pyste \
 	python/coupledsphericalselectionrule.pyste \
 	python/tensorpotential_basis.pyste \
 	python/databuffer.pyste \
@@ -63,6 +64,7 @@ STATIC_MAIN_GENERATOR := utility/python_main.py
 #C++ source files
 SOURCES= \
 	representation/coupledspherical/coupledsphericalharmonicrepresentation.cpp \
+	representation/sphericalbasis/sphericalharmonicbasisrepresentation.cpp \
 	representation/overlapmatrix.cpp \
 	transform/orthopol/orthopoltools.cpp \
 	transform/orthopol/orthopolpropagator.cpp \
