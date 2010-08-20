@@ -49,6 +49,7 @@ PYSTEFILES = \
 	python/coupledsphericalharmonicrepresentation.pyste \
 	python/sphericalharmonicbasisrepresentation.pyste \
 	python/coupledsphericalselectionrule.pyste \
+	python/sphericalbasisselectionrule.pyste \
 	python/tensorpotential_basis.pyste \
 	python/databuffer.pyste \
 	python/distributedoverlapmatrix.pyste \

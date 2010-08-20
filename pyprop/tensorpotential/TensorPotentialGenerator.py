@@ -11,7 +11,11 @@ def CreateBasisFromRepresentation(representation):
 	elif representation.__class__ == core.ReducedSphericalHarmonicRepresentation:
 		basis = BasisfunctionReducedSphericalHarmonic()
 		basis.SetupBasis(representation)
-	
+
+	elif representation.__class__ == core.SphericalHarmonicBasisRepresentation:
+		basis = BasisfunctionSphericalHarmonic()
+		basis.SetupBasis(representation)	
+
 	elif representation.__class__ == core.CoupledSphericalHarmonicRepresentation:
 		basis = BasisfunctionCoupledSphericalHarmonic()
 		basis.SetupBasis(representation)
@@ -25,7 +29,7 @@ def CreateBasisFromRepresentation(representation):
 		basis.SetupBasis(representation)
 
 	else:
-		raise NotImplementedException("Unknown representation %s" % representation)
+		raise NotImplementedError("Unknown representation %s" % representation)
 
 	return basis
 
