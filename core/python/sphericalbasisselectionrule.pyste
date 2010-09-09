@@ -1,0 +1,7 @@
+#Selection rules for potential representations in a spherical basis (l,m)
+Class("SphericalBasisSelectionRule", "tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedField", "tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleDiagonal", "tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular", "tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedFieldAngle", "tensorpotential/sphericalbasisselectionrule.h")
+
