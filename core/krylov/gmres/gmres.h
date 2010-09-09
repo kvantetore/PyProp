@@ -60,11 +60,13 @@ public:
 	GMRES() 
 	{	
 		//Default Params
-		MaxOrthogonalizationCount = 3;
+		MaxOrthogonalizationCount = 5;
 		CommBase = MPI_COMM_WORLD;
 		DisableMPI = false;
 
-		Tolerance = sqrt(std::numeric_limits<NormType>::epsilon());
+		//Tolerance = sqrt(std::numeric_limits<NormType>::epsilon());
+		//"Arpack-default", perhaps the best accuracy we may hope for(?)
+		Tolerance = std::pow(std::numeric_limits<NormType>::epsilon(), 2.0/3.0);
 		PerformDoubleOrthogonalization = true;
 	}
 
@@ -218,9 +220,11 @@ void GMRES<T>::Setup()
 		ProcCount = 1;
 	}
 
-	double minTol = std::pow(std::numeric_limits<NormType>::epsilon(), 2.0/3.0);
+	//double minTol = std::pow(std::numeric_limits<NormType>::epsilon(), 2.0/3.0);
+	double minTol = 1.0e-13;
 	if (Tolerance < minTol)
 	{
+		cout << "GMRES: Setting default minimum tolerance: " << minTol << endl;
 		Tolerance = minTol;
 	}
 
