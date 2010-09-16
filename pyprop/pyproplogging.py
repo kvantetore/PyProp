@@ -25,6 +25,6 @@ def GetFunctionLogger():
 	calling function, and create the appropriate logger.
 	"""
 	callerFrame = inspect.stack()[1]
-	moduleName = inspect.getmodule(callerFrame[0]).__name__
+	moduleName = getattr(inspect.getmodule(callerFrame[0]), "__name__", "nomodule")
 	functionName = callerFrame[3]
 	return logging.getLogger("%s.%s" % (moduleName, functionName))

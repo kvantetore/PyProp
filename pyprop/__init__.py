@@ -84,6 +84,8 @@ execfile(__path__[0] + "/bspline/BSpline.py")
 
 execfile(__path__[0] + "/GridGeneration.py")
 
+execfile(__path__[0] + "/pyproplogging.py")
+
 #Load propagators
 execfile(__path__[0] + "/propagator/init.py")
 execfile(__path__[0] + "/solver/init.py")
