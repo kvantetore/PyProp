@@ -310,7 +310,7 @@ class Problem:
 			self.PropagatedTime = 0
 			self.StartTime = 0
 			if hasattr(configSection, "start_time"):
-				self.StartTime = configSection["start_time"]
+				self.StartTime = configSection.start_time
 				self.PropagatedTime = self.StartTime
 
 
