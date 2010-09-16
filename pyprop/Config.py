@@ -117,3 +117,40 @@ def Load(fileName, silent=True):
 	parsedConfig = Config(cfg)
 
 	return parsedConfig
+
+
+def UpdateConfig(conf, updateParams):
+	"""
+	Update Pyprop config object with values given in updateParams.
+
+	Input
+	-----
+	conf: pyprop config object
+	updateParams: list of tuples, [('section', 'param', 'value'), ...]
+	
+	
+	Returns
+	-------
+	Updated pyprop config object
+	
+	
+	Note: Section references (i.e. through 'base') will be updated as well.
+
+	"""
+	tmpConf = Config(conf.cfgObj)
+	logger = GetFunctionLogger()
+	
+	#Update config
+	for section, param, val in updateParams:
+		if not hasattr(tmpConf, section):
+			cfg = tmpConf.cfgObj
+			cfg._dict = dict
+			cfg.add_section(section)
+			tmpConf = pyprop.Config(cfg)
+		logger.debug("Updating config: %s(%s): %s" % (section, param, val))
+		tmpConf.SetValue(section, param, val)
+
+	#Update config object from possible changed ConfigParser object
+	newConf = Config(tmpConf.cfgObj)
+	
+	return newConf
