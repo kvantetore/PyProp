@@ -11,7 +11,7 @@ CoupledIndex.__str__ = lambda self: "l1=%i, l2=%i, L=%i, M=%i" % (self.l1, self.
 CoupledIndex.__repr__ = lambda self: "sys.modules['pyprop'].CoupledIndex(%i, %i, %i, %i)" % (self.l1, self.l2, self.L, self.M)	
 CoupledIndex.__iter__ = CoupledIndexIter
 
-class DefaultCoupledIndexIterator:
+class DefaultCoupledIndexIterator(object):
 	"""
 	Creates an iterator for giving all possible values of l1, l2, L, M to
 	the CoupledSphericalHarmonicRepresentation
@@ -81,3 +81,30 @@ class DefaultCoupledIndexIterator:
 	def __repr__(self):
 		return "sys.modules['pyprop'].DefaultCoupledIndexIterator(%s, L=%s, M=%s, fullTensor=%s)" % \
 			(self.lmax, self.L, self.M, self.FullTensor)
+			
+			
+class EssentialStateCoupledIndexIterator(DefaultCoupledIndexIterator):
+	"""
+	Creates an iterator for yielding values of l1, l2, L, M that fullfill
+	l1+l1 < lcutoff, to the CoupledSphericalHarmonicRepresentation
+
+	lcutoff gives the maximum value of l1+l2
+	
+	Otherwise identical to DefaultCoupledIndexIterator, see that class for more
+	information.
+	 
+	"""
+	def __init__(self, lmax, lcutoff, L=None, M=[0], fullTensor=False):
+		self.lcutoff = lcutoff
+		super(EssentialStateCoupledIndexIterator, self).__init__(lmax, L, M, fullTensor)
+
+
+	def __iter__(self):
+		for cpldIdx in super(EssentialStateCoupledIndexIterator, self).__iter__():
+			if (cpldIdx.l1 + cpldIdx.l2 < self.lcutoff):
+				yield cpldIdx
+	
+
+	def __repr__(self):
+		return "sys.modules['pyprop'].EssentialStateCoupledIndexIterator(%s, %s, L=%s, M=%s, fullTensor=%s)" % \
+			(self.lmax, self.lcutoff, self.L, self.M, self.FullTensor)
