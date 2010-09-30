@@ -269,7 +269,7 @@ class TensorPotentialGenerator(object):
 		
 	def GetGeometryList(self, configSection):
 		"""
-		Creates a list of geometry infos for each basos on the
+		Creates a list of geometry infos for each basis on the
 		the given potential (configSection)
 		"""
 		geometryList = []
