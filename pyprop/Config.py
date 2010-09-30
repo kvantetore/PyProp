@@ -119,7 +119,7 @@ def Load(fileName, silent=True):
 	return parsedConfig
 
 
-def UpdateConfig(conf, updateParams):
+def UpdateConfig(conf, updateParams, addMissingSections=False):
 	"""
 	Update Pyprop config object with values given in updateParams.
 
@@ -142,11 +142,12 @@ def UpdateConfig(conf, updateParams):
 	
 	#Update config
 	for section, param, val in updateParams:
-		if not hasattr(tmpConf, section):
+		if not hasattr(tmpConf, section) and addMissingSections:
+			logging.info("Config object did not contain section: %s, creating it now." % section)
 			cfg = tmpConf.cfgObj
 			cfg._dict = dict
 			cfg.add_section(section)
-			tmpConf = pyprop.Config(cfg)
+			tmpConf = Config(cfg)
 		logger.debug("Updating config: %s(%s): %s" % (section, param, val))
 		tmpConf.SetValue(section, param, val)
 
