@@ -1,0 +1,25 @@
+This is an example for solving 1D problems,
+where the potential is given on a grid, in
+stead of as an analytical function. It acceps
+the potential on the format
+    x_0	    V(x_0)
+    x_1	    V(x_1)
+    x_2	    V(x_2)
+    x_3	    V(x_3)
+    x_4	    V(x_4)
+    osv...  osv...
+
+in a txt-file ('Pot_2p_R100_sigurd.txt' was 
+used when submitting this). Supply the filename 
+in the config file.
+
+Start
+-----
+To get the show on the road, create a softlink to 
+pyprop:
+    ln -s /path/to/pyprop/ pyprop
+and then write
+    make
+to compile and wrap the potential(s).
+
+
