@@ -1,9 +1,11 @@
 import os
 import ConfigParser
+import pyproplogging
 
 class Section:
 
 	def __init__(self, name, cfg=None):
+		self.Logger = pyproplogging.GetClassLogger(self)
 		self.name = name
 		if cfg != None:
 			self.LoadConfig(name, cfg)
@@ -21,13 +23,12 @@ class Section:
 		glob.update(globals())
 		try:
 			optionValue = eval(optionString, glob, self.__dict__)
+			self.Set(optionName, optionValue)
 		except:
-			print "Locals:", self.__dict__
-			print "Option:", optionString
-			raise 
+			self.Logger.error("Missing from namespace: %s" % optionString)
+			self.Logger.debug("Locals: %s" % self.__dict__)
+			#raise 
 				
-		self.Set(optionName, optionValue)
-		
 	def Set(self, optionName, optionValue):
 		if optionName in ["name", "SetOptionString", "Set", "Get"]:
 			raise Exception, "Invalid optionName %s" % optionName
