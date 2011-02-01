@@ -47,7 +47,8 @@ class Section:
 
 class Config:
 
-	def __init__(self, cfg):
+	def __init__(self, cfg):	
+		self.Logger = pyproplogging.GetClassLogger(self)
 		for sectionName in cfg.sections():
 			if sectionName in ["GetSection"]:
 				raise Exception, "Invalid sectionName %s" % sectionName
@@ -80,8 +81,7 @@ class Config:
 		self.cfgObj.set(section, optionName, repr(value))
 		self.__dict__[section].Set(optionName, value)
 
-		if infoLevel > 0:
-			print "Changing %s.%s to %s" % (section, optionName, value)
+		self.Logger.debug("Changing %s.%s to %s" % (section, optionName, value))
 
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
