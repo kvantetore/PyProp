@@ -1,5 +1,32 @@
 import time
 
+
+def FormatDuration(self, t):
+	"""Format time (in seconds) as days, hours, minutes (and seconds)
+
+	Only displays days and hours if non-zero.
+
+	Input
+	-----
+	t: (float) time in seconds
+
+	Returns: Formatted time string
+
+	"""
+
+	days, remainder = divmod(t, 24 * 60 * 60)
+	hours, remainder = divmod(remainder, 60 * 60)
+	minutes, seconds = divmod(remainder, 60)
+	if days > 0:
+		timeStr = "%id %ih" % (days, hours)
+	elif hours > 0:
+		timeStr = "%ih %im" % (hours, minutes)
+	else:
+		timeStr = "%im %is" % (minutes, seconds)
+		
+	return timeStr
+
+
 class Timer(object):
 	def __init__(self):
 		self.Duration = 0
