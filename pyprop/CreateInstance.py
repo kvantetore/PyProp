@@ -1,12 +1,16 @@
- 
+from pyproplogging import GetFunctionLogger
+
 def CreateInstanceRank(className, rank, globals=globals(), locals=locals()):
+	logger = GetFunctionLogger()
 	try:
 		return eval("%s_%i()" % (className, rank), globals, locals)
 	except Exception:
-		PrintOut("Could not create instance of class %s with rank " % (className, rank))
+		logger.error("Could not create instance of class %s with rank " % (className, rank))
 		raise
 		
 def CreateDistribution(config, rank=None):
+	logger = GetFunctionLogger()
+
 	#Instance Distribution class which is templated over rank
 	if rank == None:
 		rank = config.Representation.rank
@@ -31,7 +35,7 @@ def CreateDistribution(config, rank=None):
 		distrSection.initial_distribution = array([0], dtype=int)
 
 	if distrSection.initial_distribution[0] != 0:
-		PrintOut("WARNING: Not distributing first rank of wavefunction. Consider removing [Distribution] from the config file")
+		logger.warning("Not distributing first rank of wavefunction. Consider removing [Distribution] from the config file")
 
 	#apply configuration
 	distrib.ApplyConfigSection(distrSection)
@@ -40,11 +44,12 @@ def CreateDistribution(config, rank=None):
 	
 	
 def CreateRepresentation(config, distribution):
+	logger = GetFunctionLogger()
 	#Create instance
 	representation = config.Representation.type()
 
 	#Set distribution model
-	PrintOut("Setting distributed model")
+	logger.debug("Setting distributed model")
 	representation.SetDistributedModel(distribution)
 	
 	#Apply configuration section
@@ -63,16 +68,17 @@ def CreateRepresentation(config, distribution):
 	return representation
 
 def CreateSubRepresentations(combinedRepr, config):
+	logger = GetFunctionLogger()
 	rank = config.Representation.rank
 	for i in range(rank):
 		sectionName = config.Representation.Get("representation" + str(i))
-		PrintOut("ConfigSection for rank %i is %s" % (i, sectionName))
+		logger.debug("ConfigSection for rank %i is %s" % (i, sectionName))
 		section = config.GetSection(sectionName)
 
 		#create instance
 		repr = section.type()
 		repr.SetBaseRank(i)
-		PrintOut("Representation for rank %i is %s" % (i, repr))
+		logger.debug("Representation for rank %i is %s" % (i, repr))
 
 		#set distributed model
 		fullDistrib = combinedRepr.GetDistributedModel()
@@ -87,18 +93,19 @@ def CreateSubRepresentations(combinedRepr, config):
 
 	
 def CreateWavefunctionInstance(representation, allocateData=True):
+	logger = GetFunctionLogger()
 	#Create instance
-	PrintOut("    Creating instance")
+	logger.debug("    Creating instance")
 	rank = len(representation.GetFullShape())
 	psi = CreateInstanceRank("core.Wavefunction", rank)
 	
 	#Set reresentation
-	PrintOut("    Setting representation")
+	logger.debug("    Setting representation")
 	psi.SetRepresentation(representation)
 	
 	#Allocate data
 	if allocateData:
-		PrintOut("    Allocating data")
+		logger.debug("    Allocating data")
 		psi.AllocateData()
 	
 	return psi
@@ -112,7 +119,7 @@ def CreatePropagator(config, psi):
 		config.Apply(propagator)
 		config.Propagation.Apply(propagator)
 	else:
-		PrintOut("WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy.")
+		logger.warning("No propagator specified in config file. Make sure your potential evaluator includes kinetic energy.")
 	
 	return propagator
 	

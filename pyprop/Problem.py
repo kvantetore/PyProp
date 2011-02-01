@@ -1,4 +1,5 @@
 import signal
+from pyproplogging import GetClassLogger, GetFunctionLogger
 
 RedirectInterrupt = False
 
@@ -16,14 +17,15 @@ def CreateWavefunction(config):
 	x = psi.GetData().GetRepresentation().GetLocalGrid(0)
 	psi.GetData()[:] = x * exp(- x**2)
 	"""
+	logger = GetFunctionLogger()
 
-	PrintOut("Creating DistributionModel...")
+	logger.debug("Creating DistributionModel...")
 	distribution = CreateDistribution(config)
 
-	PrintOut("Creating Representation...")
+	logger.debug("Creating Representation...")
 	representation = CreateRepresentation(config, distribution)
 
-	PrintOut("Creating Wavefunction...")
+	logger.debug("Creating Wavefunction...")
 	psi = CreateWavefunctionInstance(representation)
 
 	return psi
@@ -66,6 +68,7 @@ class Problem:
 	def __init__(self, config):
 		self.TempPsi = None
 		self.Config = config
+		self.Logger = GetClassLogger(self)
 		try:
 			#Enable redirect
 			if hasattr(config.Propagation, "silent"):
@@ -78,7 +81,7 @@ class Problem:
 			#Create wavefunction
 			self.psi = CreateWavefunction(config)
 		
-			PrintOut("Creating Propagator...")
+			self.Logger.debug("Creating Propagator...")
 			self.Propagator = CreatePropagator(config, self.psi)
 		
 			#apply propagation config
@@ -121,16 +124,16 @@ class Problem:
 			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
 			
-			PrintOut("Starting setup timestep...")
-			PrintOut("    Setting up Propagator.")
+			self.Logger.debug("Starting setup timestep...")
+			self.Logger.debug("    Setting up Propagator.")
 			if self.Propagator != None:
 				self.Propagator.SetupStep(self.TimeStep)
 
-			PrintOut("    Setting up initial wavefunction")
+			self.Logger.debug("    Setting up initial wavefunction")
 			if not skipWavefunctionSetup:
 				self.SetupWavefunction()
 			
-			PrintOut("Setup timestep complete.")
+			self.Logger.info("Setup timestep complete.")
 	
 			#Disable redirect
 			if not redirectStateOld:
@@ -271,7 +274,7 @@ class Problem:
 		#Check that the energy is real
 		if not hasattr(self, "IgnoreWarningRealEnergy"):
 			if abs(imag(energy)) > 1e-10:
-				print "Warning: Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy)
+				self.Logger.warning("Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy))
 				self.IgnoreWarningRealEnergy = True
 		return energy.real
 	
@@ -281,7 +284,7 @@ class Problem:
 		we can then find the energy by looking at the norm of the decaying
 		wavefunction.
 
-		This will only work when negaive imaginary time is used to propagate
+		This will only work when negative imaginary time is used to propagate
 		to the groundstate, and will only give a good estimate for the ground
 		state energy when the wavefunction is well converged to the ground state.
 
