@@ -341,7 +341,7 @@ class Problem:
 		elif type == None:
 			pass
 		else:
-			raise "Invalid InitialConditionType: " + config.InitialCondition.type
+			raise "Invalid InitialConditionType: " + self.Config.InitialCondition.type
 			
 	def SetupWavefunctionClass(self, config, psi):
 		classname = config.InitialCondition.classname
