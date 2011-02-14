@@ -152,6 +152,10 @@ class BasisfunctionCoupledSphericalHarmonic(BasisfunctionBase):
 				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular()
 			elif selectionRuleName == "linearpolarizedfieldangle":
 				selectionRule = core.CoupledSphericalSelectionRuleLinearPolarizedFieldAngle()
+			#Added ------------------------------------------------------------
+			elif selectionRuleName == "diatomiccoulomb":
+				selectionRule = core.CoupledSphericalSelectionRuleDiatomicCoulomb()
+			#adding ended -----------------------------------------------------
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 
