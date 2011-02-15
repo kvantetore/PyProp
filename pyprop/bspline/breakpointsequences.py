@@ -37,6 +37,16 @@ def LinearBreakpointSequence(rmin, rmax, n):
 
 	return xi
 
+def LinearBreakpointSequenceRegions(rmin,rmax,n,rcutoff,ratioinner):
+	"""
+	Compute linear breakpoint sequence on the interval [rmin, rmax] with n points.
+	It splits the region at cuttoff and puts ratioinner on the inner intervall
+	"""
+	innern = int(n*ratioinner)
+	outern = n - innern + 1
+	xi1 = LinearBreakpointSequence(rmin,rcutoff,innern)
+	xi2 = LinearBreakpointSequence(rcutoff,rmax,outern)
+	return xi1 + xi2[1:]
 
 def QuadraticLinearBreakpointSequence(rmin, rmax, n, joinPoint):
 	"""

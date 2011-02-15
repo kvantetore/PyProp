@@ -54,6 +54,13 @@ class BSPLINE(core.BSpline):
 			                                  conf.xmax, \
 			                                  conf.xsize) \
 
+		if(conf.bpstype == 'linearregions'):
+			bpsSeq = LinearBreakpointSequenceRegions(conf.xmin, \
+											  conf.xmax, \
+											  conf.xsize, \
+											  conf.xcutoff, \
+											  conf.gamma)
+
 		elif(conf.bpstype == 'exponential'):
 
 			bpsSeq = ExponentialBreakpointSequence(conf.xmin, \
