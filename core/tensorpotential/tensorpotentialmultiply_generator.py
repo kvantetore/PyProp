@@ -1544,28 +1544,42 @@ def PrintFortranCode(curPart, partCount):
 					packedRow = col
 					packedCol = bands - col + row
 				end subroutine
-	
+
 				function GetLocalStartIndex(fullSize, procCount, procId) result(globalStartIndex)
+				!
+				! Compute local start index when array is distributed across multiple procs.
+				!
+				! It is assumed that if rest = fullsize % procCount != 0, every proc up to
+				! procId < rest has been assigned an extra element.
+				!
+				! See also CreateDistributedShape() in blitztranspose.h
+				!
 					implicit none
 					integer, intent(in) :: fullSize, procCount, procId
 					integer :: rest, paddedSize, globalStartIndex, distribSize, firstSmallRank, distrPaddedSize
 	
 					paddedSize	= fullSize
 					rest = mod(fullSize, procCount)
-					if (rest .ne. 0) then
-						paddedSize = paddedSize + procCount - rest
-					endif
-					distrPaddedSize = paddedSize/procCount
-
-					firstSmallRank = fullSize / distrPaddedSize
-					if (mod(fullSize, distrPaddedSize) .eq. 0) then
-						firstSmallRank = firstSmallRank - 1
-					endif
-					if (procId .le. firstSmallRank) then
-						globalStartIndex = (paddedSize / procCount) * procId
+					if (procId .lt. rest) then
+						globalStartIndex = (fullSize / procCount) * procId + procId
 					else
-						globalStartIndex = fullSize - (procCount - procId)
+						globalStartIndex = (fullSize / procCount) * procId + rest
 					endif
+
+					!if (rest .ne. 0) then
+					!	paddedSize = paddedSize + procCount - rest
+					!endif
+					!distrPaddedSize = paddedSize/procCount
+
+					!firstSmallRank = fullSize / distrPaddedSize
+					!if (mod(fullSize, distrPaddedSize) .eq. 0) then
+					!	firstSmallRank = firstSmallRank - 1
+					!endif
+					!if (procId .le. firstSmallRank) then
+					!	globalStartIndex = (paddedSize / procCount) * procId
+					!else
+					!	globalStartIndex = fullSize - (procCount - procId)
+					!endif
 	
 					return
 				end function	
