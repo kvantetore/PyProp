@@ -218,7 +218,8 @@ class BasisfunctionBSpline(BasisfunctionBase):
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		pairs = geometryInfo.GetGlobalBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 

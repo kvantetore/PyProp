@@ -11,3 +11,4 @@ CNPropagator("3", "CrankNicholsonPropagator_3")
 CNPropagator("4", "CrankNicholsonPropagator_4")
 
 Class("FiniteDifferenceHelper", "finitediff/finitedifferencehelper.h")
+Class("FiniteDifferenceHelperCustomBoundary", "finitediff/finitedifferencehelper.h")

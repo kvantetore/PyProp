@@ -62,12 +62,16 @@ public:
 	FiniteDifferenceHelper() {}
 	~FiniteDifferenceHelper() {}
 
-	
 	void Setup(GridType grid, int differenceOrder)
 	{
 		GlobalGrid.reference(grid);
 		GlobalGridSize = GlobalGrid.extent(0);
 		DifferenceOrder = differenceOrder;
+	}
+
+	int GetDifferenceOrder()
+	{
+		return DifferenceOrder;
 	}
 
 
@@ -178,6 +182,54 @@ private:
 		return (x < 2) ? (1) : ((double)x * Factorial(x-1));
 	}
 
+};
+
+
+/*
+ * Boundary condition scaling for order 5 FD
+ *
+ * To optimize for wavefunction behavior near the origin, we use
+ * the following d2/dx2 rule for the first grid point:
+ *
+ * D2f(dr) = C*a1*f(dr) + a3*f(dr) + a4*f(2*dr) + a5*f(3*dr)
+ *         = (C*a1 + a3)*f(dr) + a4*f(2*dr) + a5*f(3*dr)
+ *
+ * c.f. Smyth et. al. 1998. 
+ *
+ * Note: We have assumed that the x=0 point is not included, which
+ * corresponds to zero boundary condition.
+*/
+class FiniteDifferenceHelperCustomBoundary: public FiniteDifferenceHelper
+{
+public:
+	FiniteDifferenceHelperCustomBoundary() {}
+	~FiniteDifferenceHelperCustomBoundary() {}
+
+	
+	void Setup(GridType grid, int differenceOrder, double boundaryScaling)
+	{
+		FiniteDifferenceHelper::Setup(grid, differenceOrder);
+		BoundaryScaling = boundaryScaling;
+	}
+
+	/*
+	 * Find the difference coefficients c_curIndex, that is, set up a row of the difference matrix
+	 */
+	blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
+	{
+		blitz::Array<cplx, 1> differenceCoefficients =
+			FiniteDifferenceHelper::FindDifferenceCoefficients(curIndex);
+		if ((curIndex == 0) && (this->GetDifferenceOrder() == 5))
+		{
+			cplx a3New = BoundaryScaling * differenceCoefficients(0) + differenceCoefficients(2);
+			differenceCoefficients(2) = a3New;
+		}
+
+		return differenceCoefficients;
+	}
+
+private:
+	double BoundaryScaling;
 };
 
 

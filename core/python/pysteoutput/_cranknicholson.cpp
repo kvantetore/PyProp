@@ -13,7 +13,8 @@ using namespace boost::python;
 // Module ======================================================================
 void Export_python_cranknicholson()
 {
-    class_< CrankNicholsonPropagator<1>, boost::noncopyable >("CrankNicholsonPropagator_1", init<  >())
+    class_< CrankNicholsonPropagator<1> >("CrankNicholsonPropagator_1", init<  >())
+        .def(init< const CrankNicholsonPropagator<1>& >())
         .def("MultiplyKineticEnergyOperator", &CrankNicholsonPropagator<1>::MultiplyKineticEnergyOperator)
         .def("AdvanceStep", &CrankNicholsonPropagator<1>::AdvanceStep)
         .def("SetupStep", &CrankNicholsonPropagator<1>::SetupStep)
@@ -24,7 +25,8 @@ void Export_python_cranknicholson()
         .def("GetBackwardPropagationLapackBanded", &CrankNicholsonPropagator<1>::GetBackwardPropagationLapackBanded)
     ;
 
-    class_< CrankNicholsonPropagator<2>, boost::noncopyable >("CrankNicholsonPropagator_2", init<  >())
+    class_< CrankNicholsonPropagator<2> >("CrankNicholsonPropagator_2", init<  >())
+        .def(init< const CrankNicholsonPropagator<2>& >())
         .def("MultiplyKineticEnergyOperator", &CrankNicholsonPropagator<2>::MultiplyKineticEnergyOperator)
         .def("AdvanceStep", &CrankNicholsonPropagator<2>::AdvanceStep)
         .def("SetupStep", &CrankNicholsonPropagator<2>::SetupStep)
@@ -35,7 +37,8 @@ void Export_python_cranknicholson()
         .def("GetBackwardPropagationLapackBanded", &CrankNicholsonPropagator<2>::GetBackwardPropagationLapackBanded)
     ;
 
-    class_< CrankNicholsonPropagator<3>, boost::noncopyable >("CrankNicholsonPropagator_3", init<  >())
+    class_< CrankNicholsonPropagator<3> >("CrankNicholsonPropagator_3", init<  >())
+        .def(init< const CrankNicholsonPropagator<3>& >())
         .def("MultiplyKineticEnergyOperator", &CrankNicholsonPropagator<3>::MultiplyKineticEnergyOperator)
         .def("AdvanceStep", &CrankNicholsonPropagator<3>::AdvanceStep)
         .def("SetupStep", &CrankNicholsonPropagator<3>::SetupStep)
@@ -46,7 +49,8 @@ void Export_python_cranknicholson()
         .def("GetBackwardPropagationLapackBanded", &CrankNicholsonPropagator<3>::GetBackwardPropagationLapackBanded)
     ;
 
-    class_< CrankNicholsonPropagator<4>, boost::noncopyable >("CrankNicholsonPropagator_4", init<  >())
+    class_< CrankNicholsonPropagator<4> >("CrankNicholsonPropagator_4", init<  >())
+        .def(init< const CrankNicholsonPropagator<4>& >())
         .def("MultiplyKineticEnergyOperator", &CrankNicholsonPropagator<4>::MultiplyKineticEnergyOperator)
         .def("AdvanceStep", &CrankNicholsonPropagator<4>::AdvanceStep)
         .def("SetupStep", &CrankNicholsonPropagator<4>::SetupStep)
@@ -57,10 +61,18 @@ void Export_python_cranknicholson()
         .def("GetBackwardPropagationLapackBanded", &CrankNicholsonPropagator<4>::GetBackwardPropagationLapackBanded)
     ;
 
-    class_< FiniteDifferenceHelper, boost::noncopyable >("FiniteDifferenceHelper", init<  >())
+    class_< FiniteDifferenceHelper >("FiniteDifferenceHelper", init<  >())
+        .def(init< const FiniteDifferenceHelper& >())
         .def("Setup", &FiniteDifferenceHelper::Setup)
+        .def("GetDifferenceOrder", &FiniteDifferenceHelper::GetDifferenceOrder)
         .def("FindDifferenceCoefficients", &FiniteDifferenceHelper::FindDifferenceCoefficients)
         .def("SetupLaplacianBlasBanded", &FiniteDifferenceHelper::SetupLaplacianBlasBanded)
+    ;
+
+    class_< FiniteDifferenceHelperCustomBoundary, bases< FiniteDifferenceHelper >  >("FiniteDifferenceHelperCustomBoundary", init<  >())
+        .def(init< const FiniteDifferenceHelperCustomBoundary& >())
+        .def("Setup", &FiniteDifferenceHelperCustomBoundary::Setup)
+        .def("FindDifferenceCoefficients", &FiniteDifferenceHelperCustomBoundary::FindDifferenceCoefficients)
     ;
 
 }

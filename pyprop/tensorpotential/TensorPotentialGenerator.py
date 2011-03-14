@@ -143,7 +143,7 @@ class TensorPotentialGenerator(object):
 		else:
 			origDistribution = list(repr.GetDistributedModel().GetDistribution())
 			distribution = list(repr.GetDistributedModel().GetDistribution())
-		transpose = repr.GetDistributedModel().GetTranspose() 
+		transpose = repr.GetDistributedModel().GetTranspose()
 
 		for distribRank in distribution:
 			geomInfo = geometryList[distribRank]
@@ -215,7 +215,9 @@ class TensorPotentialGenerator(object):
 				dest.ResizeArray(array(destShape))
 
 				#Represent this rank in the basis
-				basis.RepresentPotentialInBasis(source.GetArray(), dest.GetArray(), rank, geometryInfo, differentiation) 
+				basis.RepresentPotentialInBasis(source.GetArray(), \
+					dest.GetArray(), rank, geometryInfo, differentiation, \
+					configSection)
 
 				#Use the destination from this rank as the source to the next
 				del source

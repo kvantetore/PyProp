@@ -1,3 +1,6 @@
+import re
+from numpy import ones
+from pyprop import GetClassLogger, core
 
 #------------------------------------------------------------------------------------
 #                       Finite Difference Basis Function
@@ -17,6 +20,8 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 	def ApplyConfigSection(self, configSection):
 		self.DifferenceOrder = configSection.difference_order
 		self.BandCount = (self.DifferenceOrder - 1) / 2
+		self.BoundaryScaling = 1.0
+		self.Logger = GetClassLogger(self)
 
 	def SetupBasis(self, repr):
 		self.Representation = repr
@@ -24,6 +29,8 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 		self.GridSize = len(self.Representation.GetGlobalGrid(baseRank))
 		self.DifferenceOrder = 1
 		self.BandCount = (self.DifferenceOrder - 1) / 2
+		self.BoundaryScaling = 1.0
+		self.Logger = GetClassLogger(self)
 		
 	def GetGridRepresentation(self):
 		return self.Representation
@@ -53,20 +60,22 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 			else:
 				raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
+		self.BoundaryScaling = getattr(configSection, "boundary_scaling%i" % \
+				rank, self.BoundaryScaling)
+		self.Logger.debug("Using boundary condition scaling for rank %i: %s" %\
+			(rank, self.BoundaryScaling))
 		if differentiation == 0:
 			diffMatrix = ones((self.GridSize, 1), dtype=complex)
 		elif differentiation == 2:
-			fd = core.FiniteDifferenceHelper()
+			fd = core.FiniteDifferenceHelperCustomBoundary()
 			grid = self.Representation.GetGlobalGrid(self.Representation.GetBaseRank())
-			fd.Setup(grid, self.DifferenceOrder)
+			fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling)
 			diffMatrix = fd.SetupLaplacianBlasBanded().copy()
 		else:
 			raise Exception("Finite Difference currently only supports diff of order 2")
 
 		indexPairs = geometryInfo.GetGlobalBasisPairs()
 		core.RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
-
-
-
 

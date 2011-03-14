@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+//#include <boost/log/trivial.hpp>
 
 #include <core/common.h>
 #include <core/mpi/mpitraits.h>
@@ -14,7 +15,6 @@
 
 #include "../../piram/piram/blitzblas.h"
 #include "../../piram/piram/functors.h"
-
 
 namespace pamp
 {
@@ -305,7 +305,8 @@ void pAMP<T>::PerformArnoldiStep()
 	T beta = CalculateGlobalNorm(Residual);
 	if (std::abs(beta) < Tolerance)
 	{
-		cout << "Happy breakdown!" << endl;
+		//cout << "Happy breakdown!" << endl;
+		//BOOST_LOG_TRIVIAL(debug) << "PAMP: Happy breakdown!";
 		HappyBreakdown = true;
 		Timers["Arnoldi Step"].Stop();
 		return;
