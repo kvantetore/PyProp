@@ -78,7 +78,7 @@ public:
 	/*
 	 * Find the difference coefficients c_curIndex, that is, set up a row of the difference matrix
 	 */
-	blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
+	virtual blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
 	{
 		int k = (DifferenceOrder-1)/2;
 
@@ -215,7 +215,7 @@ public:
 	/*
 	 * Find the difference coefficients c_curIndex, that is, set up a row of the difference matrix
 	 */
-	blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
+	virtual blitz::Array<cplx, 1> FindDifferenceCoefficients(int curIndex)
 	{
 		blitz::Array<cplx, 1> differenceCoefficients =
 			FiniteDifferenceHelper::FindDifferenceCoefficients(curIndex);
