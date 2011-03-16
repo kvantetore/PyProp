@@ -303,7 +303,7 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoDistributedBase):
 		assert(repr.GetBaseRank() in [0,1])
 		self.BaseRank = repr.GetBaseRank()
 		self.Representation = repr
-		self.RankCount = int(repr.GetFullShape()[0])
+		self.RankCount = int(repr.GetFullShape()[repr.GetBaseRank()])
 		self.TempArrays = None
 		self.MultiplyArguments = None
 

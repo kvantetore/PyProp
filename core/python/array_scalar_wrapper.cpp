@@ -25,17 +25,17 @@ public:
 	
 	static void* convertible(PyObject* obj)
 	{
-		std::cout << "Type: " << Py_TYPE(obj) << std::endl;
-		std::cout << "Type: " << &PyArray_Type << std::endl;
+		std::cerr << "Type: " << Py_TYPE(obj) << std::endl;
+		std::cerr << "Type: " << &PyArray_Type << std::endl;
 		if (!PyArray_Check(obj))
 		{
-			std::cout << "not a pyarray object" << std::endl;
+			std::cerr << "not a pyarray object" << std::endl;
 			return 0;
 		}
 
 		if (!PyArray_CheckScalar(obj))
 		{
-			std::cout << "not a pyarray scalar" << std::endl;
+			std::cerr << "not a pyarray scalar" << std::endl;
 			return 0;
 		}
 
