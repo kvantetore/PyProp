@@ -25,17 +25,17 @@ public:
 	
 	static void* convertible(PyObject* obj)
 	{
-		std::cerr << "Type: " << Py_TYPE(obj) << std::endl;
-		std::cerr << "Type: " << &PyArray_Type << std::endl;
+		//std::cerr << "Type: " << Py_TYPE(obj) << std::endl;
+		//std::cerr << "Type: " << &PyArray_Type << std::endl;
 		if (!PyArray_Check(obj))
 		{
-			std::cerr << "not a pyarray object" << std::endl;
+			//std::cerr << "not a pyarray object" << std::endl;
 			return 0;
 		}
 
 		if (!PyArray_CheckScalar(obj))
 		{
-			std::cerr << "not a pyarray scalar" << std::endl;
+			//std::cerr << "not a pyarray scalar" << std::endl;
 			return 0;
 		}
 
@@ -49,7 +49,7 @@ public:
 		}
 		else
 		{
-			std::cout << "From Type " << from_type->type_num << " -> " << to_type->type_num << std::endl;
+			//std::cout << "From Type " << from_type->type_num << " -> " << to_type->type_num << std::endl;
 		}
 	
 		if (from_type->elsize == to_type->elsize)
@@ -58,7 +58,7 @@ public:
 		}
 		else
 		{
-			std::cout << "From elsize " << from_type->elsize  << " -> " << to_type->elsize  << std::endl;
+			//std::cout << "From elsize " << from_type->elsize  << " -> " << to_type->elsize  << std::endl;
 		}
 
 		return 0;
