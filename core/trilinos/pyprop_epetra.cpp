@@ -272,6 +272,13 @@ void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blit
 
 		double realVal = real(*it);
 		double imagVal = imag(*it);
+
+		//Skip padded elements (they have negative row/col index)
+		if ((globalRow < 0) || (globalCol < 0))
+		{
+			it++;
+			continue;
+		}
 		
 		/*
 		 * Because epetra does not support complex natively,

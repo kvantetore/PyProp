@@ -1,5 +1,6 @@
 import re
-from numpy import ones
+import textwrap
+from numpy import ones, zeros, int32, array, r_
 from pyprop import GetClassLogger, core
 
 
@@ -20,56 +21,99 @@ class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase)
 		return self.UseGrid
 
 	def GetGlobalBasisPairCount(self):
-		N = int(self.Representation.GetFullShape()[0])
+		"""Return number of global basis pairs
+
+		Padding is added at start and beginning of matrix to simpliy
+		parallelization, that is
+
+		  N_global = numberOfRows * rowSize
+
+		"""
+		numberOfRows = int(self.Representation.GetFullShape()[0])
 		k = self.BandCount
-		return (2 * k + 1) * N - (k*(k+1))
+		rowSize = 2*k + 1
+		return numberOfRows * rowSize
 
 	def SetupBasisPairs(self):
+		"""Setup global and local basis pairs
+
+		"""
+
 		distr = self.Representation.GetDistributedModel()
 		rank = self.Representation.GetBaseRank()
-		localRange = distr.GetLocalIndexRange(self.GetGlobalBasisPairCount(), rank)
 
-		count = self.GetGlobalBasisPairCount()
-
-		N = int(self.Representation.GetFullShape()[0])
+		#Get rowsize and colsize
+		numberOfRows = int(self.Representation.GetFullShape()[0])
 		k = self.BandCount
-		pairs = zeros((count, 2), dtype=int32)
-		pairs[:,0] = 0
-		pairs[:,1] = N-1
+		rowSize = 2*k + 1
+
+		#Get local rows from wavefunction distribution 
+		psiRange = distr.GetLocalIndexRange(numberOfRows, rank)
+
+		#Check that proc number for this rank divides number of rows
+		if distr.IsDistributedRank(rank):
+			procRankIdx = distr.GetDistribution()[rank]
+			numProcRank = distr.GetTranspose().GetProcGridShape()[procRankIdx]
+			infoStr = """
+				Number of procs %i for rank %i does not divide number of 
+				matrix rows (psi shape) %s
+				""".replace("\n", "").replace("\t", "") \
+				% (numProcRank, rank, numberOfRows)
+			assert (numberOfRows % numProcRank == 0), infoStr
 
 		index = 0
-		for i in xrange(N):
-			for j in xrange(max(0, i-k), min(i+k+1, N)):
-				pairs[index, 0] = i
-				pairs[index, 1] = j
+		count = self.GetGlobalBasisPairCount()
+		pairs = zeros((count, 2), dtype=int32)
+		localIdx = []
+		for i in xrange(numberOfRows):
+			#compute start and end column indices
+			colStart = max(0, i-k)
+			colEnd = min(i+k+1, numberOfRows)
+
+			#iterate one full row
+			for j in xrange(colStart, colStart+rowSize):
+			
+				#Check for padded element, if so, set row/col to -1
+				if j >= colEnd:
+					pairs[index, 0] = -1
+					pairs[index, 1] = -1
+				else:
+					pairs[index, 0] = i
+					pairs[index, 1] = j
+
+				#get index if current row is local
+				if i in r_[psiRange]:
+					localIdx += [index]
 				index+=1
 
+		#check that all pairs where assigned
 		if index != pairs.shape[0]:
-			print "Fullshape = %s" % N
+			print "Fullshape = %s" % numberOfRows
 			print pairs
 			raise Exception("All basis pairs where not assigned! index \
 					!= pairs.shape[0] (%s, %s)" % (index, pairs.shape[0]))
 
-		#store pairs
+		#store global and local index pairs
 		self.GlobalIndexPairs = pairs
-		self.LocalBasisPairIndices = r_[localRange]
-		self.LocalIndexPairs = pairs[localRange]
+		self.LocalBasisPairIndices = array(localIdx, dtype=int32)
+		self.LocalIndexPairs = pairs[localIdx]
 
-		return pairs
 
 	def GetStorageId(self):
-		return "Distr"
+		return "BandDistr"
 
 	def GetMultiplyArguments(self, psi):
-		raise Exception("GetMultiplyArguments not implemented, use Epetra for matvec!")
+		raise Exception("GetMultiplyArguments not implemented, use Epetra for \
+			matvec!")
 
 	def SetupTempArrays(self, psi):
-		raise Exception("SetupTempArrays not implemented, use Epetra for matvec!")
+		raise Exception("SetupTempArrays not implemented, use Epetra for \
+			matvec!")
 
 
-#------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #                       Finite Difference Basis Function
-#------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 
 class BasisfunctionFiniteDifference(BasisfunctionBase):
@@ -119,28 +163,30 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 			if geom.startswith == "dense":
 				return GeometryInfoCommonDense(self.GridSize, True)
 			elif re.search("bandeddistributed", geom):
-				#return GeometryInfoCommonBandedDistributed(self.Representation, self.BandCount, True)
 				return GeometryInfoFiniteDifferenceBandedDistributed(self.Representation, self.BandCount, True)
 			elif re.search("banded-nonhermitian", geom) or re.search("banded", geom):
 				return GeometryInfoCommonBandedNonHermitian(self.GridSize, self.BandCount, True)
 			else:
-				raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
+				raise UnsupportedGeometryException("Geometry '%s' not \
+					supported by BasisfunctionFiniteDifference" % geometryName)
 
 	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
 			differentiation, configSection):
 		if differentiation == 0:
 			diffMatrix = ones((self.GridSize, 1), dtype=complex)
 		elif differentiation == 2:
-			self.BoundaryScaling = getattr(configSection, "boundary_scaling%i" % \
-				rank, self.BoundaryScaling)
-			self.Logger.debug("Using boundary condition scaling for rank %i: %s" %\
-				(rank, self.BoundaryScaling))
+			self.BoundaryScaling = getattr(configSection, "boundary_scaling%i"\
+				%  rank, self.BoundaryScaling)
+			self.Logger.debug("Using boundary condition scaling for rank %i: \
+					%s" % (rank, self.BoundaryScaling))
 			fd = core.FiniteDifferenceHelperCustomBoundary()
-			grid = self.Representation.GetGlobalGrid(self.Representation.GetBaseRank())
+			baseRank = self.Representation.GetBaseRank()
+			grid = self.Representation.GetGlobalGrid(baseRank)
 			fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling)
 			diffMatrix = fd.SetupLaplacianBlasBanded().copy()
 		else:
-			raise Exception("Finite Difference currently only supports diff of order 2")
+			raise Exception("Finite Difference currently only supports diff \
+				of order 2")
 
 		indexPairs = geometryInfo.GetGlobalBasisPairs()
 		core.RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
