@@ -129,7 +129,9 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 	def ApplyConfigSection(self, configSection):
 		self.DifferenceOrder = configSection.difference_order
 		self.BandCount = (self.DifferenceOrder - 1) / 2
-		self.BoundaryScaling = 1.0
+		self.BoundaryScaling = \
+				array([.0] * (self.BandCount * (self.BandCount+1) / 2))
+		self.Offset = 0
 		self.Logger = GetClassLogger(self)
 
 	def SetupBasis(self, repr):
@@ -138,7 +140,9 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 		self.GridSize = len(self.Representation.GetGlobalGrid(baseRank))
 		self.DifferenceOrder = 1
 		self.BandCount = (self.DifferenceOrder - 1) / 2
-		self.BoundaryScaling = 1.0
+		self.BoundaryScaling = \
+				array([.0] * (self.BandCount * (self.BandCount+1) / 2))
+		self.Offset = 0
 		self.Logger = GetClassLogger(self)
 		
 	def GetGridRepresentation(self):
@@ -170,19 +174,22 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 				raise UnsupportedGeometryException("Geometry '%s' not \
 					supported by BasisfunctionFiniteDifference" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
-			differentiation, configSection):
+	def RepresentPotentialInBasis(self, source, dest, rank, 
+	                              geometryInfo, differentiation, configSection):
 		if differentiation == 0:
 			diffMatrix = ones((self.GridSize, 1), dtype=complex)
 		elif differentiation == 2:
 			self.BoundaryScaling = getattr(configSection, "boundary_scaling%i"\
 				%  rank, self.BoundaryScaling)
+			self.Offset = getattr(configSection, "offset%i"\
+				%  rank, self.Offset)
 			self.Logger.debug("Using boundary condition scaling for rank %i: \
 					%s" % (rank, self.BoundaryScaling))
 			fd = core.FiniteDifferenceHelperCustomBoundary()
 			baseRank = self.Representation.GetBaseRank()
 			grid = self.Representation.GetGlobalGrid(baseRank)
-			fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling)
+			fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling, \
+					self.Offset)
 			diffMatrix = fd.SetupLaplacianBlasBanded().copy()
 		else:
 			raise Exception("Finite Difference currently only supports diff \
@@ -190,4 +197,5 @@ class BasisfunctionFiniteDifference(BasisfunctionBase):
 
 		indexPairs = geometryInfo.GetGlobalBasisPairs()
 		core.RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
+
 
