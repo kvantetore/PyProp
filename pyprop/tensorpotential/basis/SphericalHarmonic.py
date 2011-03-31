@@ -154,6 +154,7 @@ class BasisfunctionSphericalHarmonic(BasisfunctionBase):
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionSpherical" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		raise Exception("Spherical Harmonics are already in a basis and should not be integrated")
 

@@ -6,7 +6,7 @@
 
 #include <Amesos_ConfigDefs.h>
 #include <Amesos.h>
-#include <Amesos_Superludist.h>
+//#include <Amesos_Superludist.h>
 
 #include <Teuchos_RCP.hpp>
 

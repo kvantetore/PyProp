@@ -7,6 +7,7 @@ Logging utilities for use in any Pyprop project/module
 """
 import logging
 import inspect
+import pyprop
 
 def GetClassLogger(obj):
 	"""Return a logger for 'obj'
@@ -15,7 +16,7 @@ def GetClassLogger(obj):
 	a logger with full path name.
 	"""
 	cls = obj.__class__
-	return logging.getLogger("%s.%s" % (cls.__module__, cls.__name__))
+	return logging.getLogger("Proc%i: %s.%s" % (pyprop.ProcId, cls.__module__, cls.__name__))
 
 
 def GetFunctionLogger():
@@ -27,4 +28,4 @@ def GetFunctionLogger():
 	callerFrame = inspect.stack()[1]
 	moduleName = getattr(inspect.getmodule(callerFrame[0]), "__name__", "nomodule")
 	functionName = callerFrame[3]
-	return logging.getLogger("%s.%s" % (moduleName, functionName))
+	return logging.getLogger("Proc%i: %s.%s" % (pyprop.ProcId, moduleName, functionName))
