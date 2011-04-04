@@ -306,10 +306,14 @@ void CopyTensorPotentialToEpetraMatrix(Epetra_FECrsMatrix_Ptr epetraMatrix, blit
 		if (sqr(imagVal) > sqrCutoff)
 		{
 			int r,c;
+			//Upper row, A_i with minus sign
 			r = 2*globalRow; c = 2*globalCol+1;
 			indexArray(4*linearCount+2, 0) = r;
 			indexArray(4*linearCount+2, 1) = c;
+			imagVal = -imagVal;
 			epetraMatrix->InsertGlobalValues(r, 1, &imagVal, &c);
+
+			//Lower row, A_i without minus sign
 			imagVal = -imagVal;
 			epetraMatrix->InsertGlobalValues(c, 1, &imagVal, &r);
 			indexArray(4*linearCount+3, 0) = c;
