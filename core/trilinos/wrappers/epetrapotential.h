@@ -74,6 +74,26 @@ public:
 		Multiply(srcPsi, destPsi);
 	}
 
+	int NumMyNonzeros()
+	{
+		return Matrix->NumMyNonzeros();
+	}
+
+	int NumGlobalRows()
+	{
+		return Matrix->NumGlobalRows();
+	}
+
+	int NumGlobalCols()
+	{
+		return Matrix->NumGlobalCols();
+	}
+
+	bool StorageOptimizied()
+	{
+		return Matrix->StorageOptimized();
+	}
+
 
 private:
 	Epetra_Map_Ptr ProcessorMap;
