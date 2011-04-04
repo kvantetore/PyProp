@@ -1,3 +1,5 @@
+from pyprop.pyproplogging import GetClassLogger
+
 class BasisPropagatorEpetra(BasisPropagator):
 	"""
 	EpetraPropagator uses Trilinos::Epetra matrices to store potential matrices in
@@ -18,6 +20,8 @@ class BasisPropagatorEpetra(BasisPropagator):
 
 		#Need a wavefunction for later
 		self.Psi = self.psi.Copy()
+
+		self.Logger = GetClassLogger(self)
 
 
 	def GeneratePotentials(self, config):
@@ -45,6 +49,7 @@ class BasisPropagatorEpetra(BasisPropagator):
 				#check if current potential can be consolidated with an existing one
 				for existingPot in self.PotentialList:
 					if existingPot.CanConsolidate(epetraPot):
+						self.Logger.debug("Consolidating %s" % epetraPot.Name)
 						existingPot.AddTensorPotentialData(tensorPot.PotentialData, localBasisPairs, self.CutOff)
 						existingPot.Name += "+" + tensorPot.Name
 						tensorPot = None
@@ -53,6 +58,7 @@ class BasisPropagatorEpetra(BasisPropagator):
 						
 				#add new potential to list
 				if epetraPot != None:
+					self.Logger.debug("New epetra potential %s" % epetraPot.Name)
 					epetraPot.AddTensorPotentialData(tensorPot.PotentialData, localBasisPairs, self.CutOff)
 					self.PotentialList.append(epetraPot)
 					tensorPot = None
@@ -65,4 +71,13 @@ class BasisPropagatorEpetra(BasisPropagator):
 	def MultiplyHamiltonianBalancedOverlap(self, srcPsi, destPsi, t, dt):
 		raise NotImplementedException("BasisPropagatorEpetra does not support MultiplyHamiltonianBalancedOverlap!")
 
+	def MultiplyPotential(self, srcPsi, destPsi, t, dt):
+		self.Psi.Clear()
+		if dt == None:
+			dt = self.TimeStep
+
+		for potential in self.PotentialList:
+			self.Psi.Clear()
+			potential.MultiplyPotential(srcPsi, self.Psi, t, dt)
+			destPsi.GetData()[:] += self.Psi.GetData()
 
