@@ -60,9 +60,6 @@ public:
 		// sets the parameters
 		Preconditioner->SetParameters(Parameters);
 
-		//Tell IFPACK to use transpose when solving (Q: why do we need this?)
-		Preconditioner->SetUseTranspose(true);
-		
 		// initialize the preconditioner. At this point the matrix must
 		// have been FillComplete()'d, but actual values are ignored.
 		Preconditioner->Initialize();
