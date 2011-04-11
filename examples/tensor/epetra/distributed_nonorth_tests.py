@@ -14,8 +14,12 @@ import tables
 
 #from libepetratest import *
 from libpotential import *
+from pyprop.core import EpetraPotential_3
 
 execfile("../helium_stabilization/preconditioner.py")
+execfile("preconditioner.py")
+
+pyprop.ProjectNamespace = globals()
 
 def Print(str="", whichProc = [0]):
 	def printMsg():
@@ -29,6 +33,7 @@ def Print(str="", whichProc = [0]):
 	else:
 		printMsg()
 		
+pyprop.PrintOut = Print
 
 def timeIt(func):
 	t1 = time.time()
@@ -430,7 +435,7 @@ def TestPropagation(inputFile = "groundstate_propagation.h5", **args):
 	#Load initial state
 	Print("Loading intial state...")
 	pyprop.PrintMemoryUsage("Before Loading InitialState")
-	prop.psi.GetData()[:] = 0
+	prop.psi.Clear()
 	pyprop.serialization.LoadWavefunctionHDF(inputFile, "/wavefunction", prop.psi)
 	prop.psi.Normalize()
 	initPsi = prop.psi.Copy()
@@ -479,6 +484,18 @@ def TestPropagation(inputFile = "groundstate_propagation.h5", **args):
 	Print("\n...done!")
 
 
+def TestPreconditioner():
+    prop = SetupProblem(config = "config_propagation_nonorthdistr.ini")
+    prec = TwoElectronPreconditioner(prop.psi)
+    prec.ApplyConfigSection(prop.Config.Preconditioner)
+    dt = prop.Config.Propagation.timestep
+    prec.SetHamiltonianScaling(1.0j * dt / 2.0)
+    prec.SetOverlapScaling(1.0)
+    prec.Setup(prop.Propagator)
+
+    return prec
+
+
 if __name__ == "__main__":
 	#TestMultiplyOverlap()
 	#TestSolveOverlap()
@@ -486,5 +503,5 @@ if __name__ == "__main__":
 	#TestFindEigenvalues()
 	#TestEpetraMatrix()
 	#TestSolveOverlapSpeed()
-	TestEpetraMatvecSpeed()
-	#TestPropagation()
+	#TestEpetraMatvecSpeed()
+	TestPropagation()

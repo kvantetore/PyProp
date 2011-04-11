@@ -3,6 +3,7 @@
 #include <core/representation/representation.h>
 #include <core/trilinos/pyprop_epetra.h>
 #include <core/trilinos/pyprop_tpetra.h>
+#include <core/trilinos/wrappers/epetrapotential.h>
 
 #include <Ifpack.h>
 
@@ -68,6 +69,47 @@ public:
 		// the matrix.
 		Preconditioner->Compute();
 	}
+
+	void Setup(ArrayType vectorData, EpetraPotential<Rank> epetraPot, int overlapLevel)
+	{
+		Epetra_SerialComm comm;
+		blitz::TinyVector<int, Rank> stride = vectorData.stride();
+        Epetra_Map_Ptr map = epetraPot.GetProcessorMap();
+        Matrix = epetraPot.GetEpetraMatrix();
+		//Epetra_LocalMap map(vectorData.size()*2, 0, comm);
+		//Matrix = CreateTensorPotentialEpetraMatrix(map, potentialData, basisPairs, stride, cutoff);
+
+		InVector = Epetra_Vector_Ptr( new Epetra_Vector(View, *map, (double*)vectorData.data()) );
+		OutVector = Epetra_Vector_Ptr( new Epetra_Vector(*map) );
+		
+		// create the preconditioner. For valid PrecType values,
+		string PrecType = "ILU"; // incomplete LU
+		int OverlapLevel = overlapLevel; // must be >= 0. If Comm.NumProc() == 1,
+	         	                      // it is ignored.
+		
+		Ifpack Factory;
+		Preconditioner = Ifpack_Preconditioner_Ptr( Factory.Create(PrecType, Matrix.get(), OverlapLevel) );
+		assert(Preconditioner != 0);
+		
+		// specify parameters for ILU
+		Parameters.set("fact: drop tolerance", 1e-9);
+		Parameters.set("fact: level-of-fill", 1);
+		// the combine mode is on the following:
+		// "Add", "Zero", "Insert", "InsertAdd", "Average", "AbsMax"
+		// Their meaning is as defined in file Epetra_CombineMode.h   
+		//Parameters.set("schwarz: combine mode", "Add");
+		// sets the parameters
+		Preconditioner->SetParameters(Parameters);
+		
+		// initialize the preconditioner. At this point the matrix must
+		// have been FillComplete()'d, but actual values are ignored.
+		Preconditioner->Initialize();
+		
+		// Builds the preconditioners, by looking for the values of 
+		// the matrix.
+		Preconditioner->Compute();
+	}
+
 
 	void Solve(ArrayType data)
 	{

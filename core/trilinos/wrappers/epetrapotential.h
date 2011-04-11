@@ -93,6 +93,23 @@ public:
 	{
 		return Matrix->StorageOptimized();
 	}
+    Epetra_Map_Ptr GetProcessorMap()
+    {
+        return ProcessorMap;
+    }
+
+    Epetra_FECrsMatrix_Ptr GetEpetraMatrix()
+    {
+        return Matrix;
+    }
+
+    /*
+     * Multiply all values in the Epetra potential by a constant value (in place).
+     */
+    void Scale(double scaleConstant)
+    {
+        Matrix->Scale(scaleConstant);
+    }
 
 
 private:
