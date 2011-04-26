@@ -103,6 +103,28 @@ struct SphericalBasisSelectionRuleLinearPolarizedFieldAngle_Wrapper: SphericalBa
     PyObject* py_self;
 };
 
+struct SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper: SphericalBasisSelectionRuleDiatomicCoulomb
+{
+    SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper(PyObject* py_self_, const SphericalBasisSelectionRuleDiatomicCoulomb& p0):
+        SphericalBasisSelectionRuleDiatomicCoulomb(p0), py_self(py_self_) {}
+
+    SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper(PyObject* py_self_):
+        SphericalBasisSelectionRuleDiatomicCoulomb(), py_self(py_self_) {}
+
+    SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper(PyObject* py_self_, int p0):
+        SphericalBasisSelectionRuleDiatomicCoulomb(p0), py_self(py_self_) {}
+
+    bool SelectionRule(const SphericalBasis::LmIndex& p0, const SphericalBasis::LmIndex& p1) {
+        return call_method< bool >(py_self, "SelectionRule", p0, p1);
+    }
+
+    bool default_SelectionRule(const SphericalBasis::LmIndex& p0, const SphericalBasis::LmIndex& p1) {
+        return SphericalBasisSelectionRuleDiatomicCoulomb::SelectionRule(p0, p1);
+    }
+
+    PyObject* py_self;
+};
+
 
 }// namespace 
 
@@ -133,6 +155,21 @@ void Export_python_sphericalbasisselectionrule()
     class_< SphericalBasisSelectionRuleLinearPolarizedFieldAngle, bases< SphericalBasisSelectionRule > , SphericalBasisSelectionRuleLinearPolarizedFieldAngle_Wrapper >("SphericalBasisSelectionRuleLinearPolarizedFieldAngle", init<  >())
         .def(init< const SphericalBasisSelectionRuleLinearPolarizedFieldAngle& >())
         .def("SelectionRule", (bool (SphericalBasisSelectionRuleLinearPolarizedFieldAngle::*)(const SphericalBasis::LmIndex&, const SphericalBasis::LmIndex&) )&SphericalBasisSelectionRuleLinearPolarizedFieldAngle::SelectionRule, (bool (SphericalBasisSelectionRuleLinearPolarizedFieldAngle_Wrapper::*)(const SphericalBasis::LmIndex&, const SphericalBasis::LmIndex&))&SphericalBasisSelectionRuleLinearPolarizedFieldAngle_Wrapper::default_SelectionRule)
+    ;
+
+    class_< SphericalBasisSelectionRuleDiatomicCoulomb, bases< SphericalBasisSelectionRule > , SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper >("SphericalBasisSelectionRuleDiatomicCoulomb", init<  >())
+        .def(init< const SphericalBasisSelectionRuleDiatomicCoulomb& >())
+        .def(init< int >())
+        .def_readwrite("cg", &SphericalBasisSelectionRuleDiatomicCoulomb::cg)
+        .def("SelectionRule", (bool (SphericalBasisSelectionRuleDiatomicCoulomb::*)(const SphericalBasis::LmIndex&, const SphericalBasis::LmIndex&) )&SphericalBasisSelectionRuleDiatomicCoulomb::SelectionRule, (bool (SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper::*)(const SphericalBasis::LmIndex&, const SphericalBasis::LmIndex&))&SphericalBasisSelectionRuleDiatomicCoulomb_Wrapper::default_SelectionRule)
+        .def("Coefficient", &SphericalBasisSelectionRuleDiatomicCoulomb::Coefficient)
+        .def("MultipoleCoeff", &SphericalBasisSelectionRuleDiatomicCoulomb::MultipoleCoeff)
+        .def("CondonShortleyPhase", &SphericalBasisSelectionRuleDiatomicCoulomb::CondonShortleyPhase)
+        .def("kronecker", &SphericalBasisSelectionRuleDiatomicCoulomb::kronecker)
+        .staticmethod("Coefficient")
+        .staticmethod("MultipoleCoeff")
+        .staticmethod("CondonShortleyPhase")
+        .staticmethod("kronecker")
     ;
 
 }

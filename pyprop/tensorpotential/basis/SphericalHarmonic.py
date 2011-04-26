@@ -136,21 +136,29 @@ class BasisfunctionSphericalHarmonic(BasisfunctionBase):
 			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
 			selectionRule = core.SphericalBasisSelectionRuleDiagonal()
-			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
+			return self.GeometryFunction(self.BasisRepresentation, 
+					selectionRule)
 		elif geom == "dense":
 			return GeometryInfoCommonDense(self.BasisSize, False)
 		elif geom.startswith("selectionrule_"):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "linearpolarizedfield":
-				selectionRule = core.SphericalBasisSelectionRuleLinearPolarizedField()
+				selectionRule = \
+					core.SphericalBasisSelectionRuleLinearPolarizedField()
 			elif selectionRuleName == "linearpolarizedfieldperpendicular":
-				selectionRule = core.SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular()
+				selectionRule = \
+					core.SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular()
 			elif selectionRuleName == "linearpolarizedfieldangle":
-				selectionRule = core.SphericalBasisSelectionRuleLinearPolarizedFieldAngle()
+				selectionRule = \
+					core.SphericalBasisSelectionRuleLinearPolarizedFieldAngle()
+			elif selectionRuleName == "diatomiccoulomb":
+				selectionRule = \
+					core.SphericalBasisSelectionRuleDiatomicCoulomb()
 			else:
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 
-			return self.GeometryFunction(self.BasisRepresentation, selectionRule)
+			return self.GeometryFunction(self.BasisRepresentation, 
+					selectionRule)
 		else:
 			raise UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionSpherical" % geometryName)
 
