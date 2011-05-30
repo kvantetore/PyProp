@@ -128,5 +128,106 @@ public:
 	}
 };
 
+
+//
+// Selection rule for diatomic Coulomb potentials
+//
+class SphericalBasisSelectionRuleDiatomicCoulomb : public SphericalBasisSelectionRule
+{
+	private:
+		//a max limit for max l that should correspond to number of terms in
+		//multipole expansion
+		int MultipoleCutoff;  
+	
+	public:
+		//ClebshGordan Coefficent calculator
+		ClebschGordan cg;
+	
+		//constructors
+		SphericalBasisSelectionRuleDiatomicCoulomb() :
+			 MultipoleCutoff(std::numeric_limits<int>::max()) {}
+	
+		SphericalBasisSelectionRuleDiatomicCoulomb(int multipoleCutoff)
+		{
+			MultipoleCutoff = multipoleCutoff;
+			#ifdef PYPROP_DEBUG
+			std::cout << "Multipole cutoff = " << MultipoleCutoff << std::endl;
+			#endif
+		}
+
+		//destructor
+		virtual ~SphericalBasisSelectionRuleDiatomicCoulomb() {}
+		
+		//Method that is called for two coupled indicies left anf rigth
+		//returns true if coupling is non-zero
+		virtual bool SelectionRule(LmIndex const & left,
+			 LmIndex const & right)
+		{
+			int mp = left.m;
+			int lp = left.l;
+			
+			int m = right.m;
+			int l = right.l;
+
+			//checks that the given coupling indices are legal
+			int minL3 = std::abs(l - lp);
+			int maxL3 = l + lp;
+			maxL3 = std::min(MultipoleCutoff, maxL3);
+
+			//Sum of all contributions to the coupling
+			double l3Sumfinal = 0;
+
+			for(int l3 = minL3; l3<=maxL3; l3++)
+			{
+				if(l3 % 2 == 1) continue;
+
+				double l3Coeff = 1.0;
+				l3Coeff *= Coefficient(l,lp);
+				l3Coeff *= cg(l, l3, 0, 0, lp, 0);
+			
+				double l3Sum = 0;
+				
+				for(int m3 = -l3; m3 <= l3; m3++)
+				{
+					double cur = 1; 
+
+					cur *= 2.0;
+					cur *=CondonShortleyPhase(-m3);
+					cur *= MultipoleCoeff(l3);
+						
+					cur *= cg(l,l3,m,m3,lp,mp);
+						
+					l3Sum += cur;
+				}
+				l3Sumfinal += l3Sum*l3Coeff;
+			}
+		return (std::abs(l3Sumfinal) > 1e-14);
+	}
+
+	static double Coefficient(int a, int b)
+	{
+		return std::sqrt((2. *a + 1.) / (2. *b +1.));
+	}
+
+	static double MultipoleCoeff(int c)
+	{
+		return std::sqrt((4. * M_PI) / (2. * c + 1.));
+	}
+	
+	static double CondonShortleyPhase(int m)
+	{
+		if(m < 0) return 1.0;
+		return std::pow(-1.0, m);
+	}
+	
+	static int kronecker(int a, int b)
+	{
+		if(a == b)
+			return 1;
+		else
+			return 0;
+	}
+};
+
 #endif
 

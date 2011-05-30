@@ -4,4 +4,6 @@ Class("SphericalBasisSelectionRuleLinearPolarizedField", "tensorpotential/spheri
 Class("SphericalBasisSelectionRuleDiagonal", "tensorpotential/sphericalbasisselectionrule.h")
 Class("SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular", "tensorpotential/sphericalbasisselectionrule.h")
 Class("SphericalBasisSelectionRuleLinearPolarizedFieldAngle", "tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleDiatomicCoulomb", "tensorpotential/sphericalbasisselectionrule.h")
+
 
