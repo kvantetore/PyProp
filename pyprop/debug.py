@@ -1,7 +1,7 @@
 import sys
 
 import core
-from distribution import ProcCount, ProcId, pypar
+from distribution import ProcCount, ProcId, pypar, PrintOut
 
 
 DEBUG_PRINT_MEMORY_USAGE = False

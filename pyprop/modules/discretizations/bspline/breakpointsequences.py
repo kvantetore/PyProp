@@ -1,4 +1,4 @@
-from numpy import exp, ceil
+from numpy import exp, ceil, arange
 from pylab import frange
 try:
 	from scipy.optimize import fsolve
@@ -6,7 +6,7 @@ except:
 	pass
 
 DEBUG = False
-		
+
 
 def ExponentialBreakpointSequence(rmin, rmax, n, gamma):
 	"""
@@ -15,19 +15,19 @@ def ExponentialBreakpointSequence(rmin, rmax, n, gamma):
 
 			gamma -> 0    =>  linear sequence
 			gamma -> \inf =>  all points exponentially close to rmin
-	
-	
+
+
 	Breakpoints are computed according to
 
 										  exp(gamma*(i-1)/(n-1)) - 1
 			xi_i = rmin + (rmax - rmin) * ---------------------------
 												exp(gamma) - 1
-	 
+
 	"""
 
 	h = rmax - rmin
 	xi = [ rmin + h * ( exp(gamma * float(i - 1) / float(n -1)) - 1 ) / ( exp(gamma) - 1 ) \
-	       for i in range(1, n + 1) ] 
+	       for i in range(1, n + 1) ]
 
 	return xi
 
@@ -55,12 +55,12 @@ def LinearBreakpointSequenceRegions(rmin,rmax,n,rcutoff,ratioinner):
 def QuadraticLinearBreakpointSequence(rmin, rmax, n, joinPoint):
 	"""
 	Compute quadratic/linear breakpoint sequence on the interval [rmin, rmax] with n points.
-	The sequence consists of quadratic and linear sub-sequences, joined at	'joinPoint'. 
+	The sequence consists of quadratic and linear sub-sequences, joined at	'joinPoint'.
 	The quadratic sequence extends from 'rmin' to 'joinPoint'-1, while the linear
-	sequence extends from 'joinPoint' to 'rmax'. This sequence is particularly suited for 
+	sequence extends from 'joinPoint' to 'rmax'. This sequence is particularly suited for
 	problems where both bound and continuum states needs to be resolved.
 	"""
-	
+
 	#joinPoint = joinPoint + 1
 	joinPoint = float(joinPoint)
 	rmin = float(rmin)
@@ -72,10 +72,10 @@ def QuadraticLinearBreakpointSequence(rmin, rmax, n, joinPoint):
 	# Scaling parameters for the two parts
 	alpha = (r0 - rmin) / float(joinPoint - 1)**2
 	beta = (rmax - r0) / float(n - joinPoint)
-	
+
 	# Parabolic part of sequence
 	xi = [rmin + alpha * (i - 1)**2 for i in range(1, joinPoint)]
-	
+
 	# Linear part of sequence
 	xi += [r0 + beta * (i - joinPoint) for i in range(joinPoint, n+1)]
 
@@ -114,7 +114,7 @@ def CenterExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 
 	#
 	# Set up right part of grid
-	# 
+	#
 	centerPoint = (rmax + rmin) / 2.0
 
 	#Setup inner/exponential region
@@ -139,7 +139,7 @@ def CenterExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 #	Same as VarExponentialLinearBreakpointSequence2, but solves a different set of
 #	equations.
 #	"""
-#	
+#
 #	def pointsInner(h):
 #		return int(round(N - (rmax - rmin) / maxSep - h / maxSep - 1))
 #
@@ -184,9 +184,9 @@ def CenterExponentialLinearBreakpointSequence(rmin, rpartition, rmax, n, gamma):
 #	Compute exponential-linear sequence from a different set of parameters: grid extension,
 #	smallest and largest point seperatation, and total number of points. A non-linear system
 #	of equations is solved to find the parameters that best fulfill these conditions (gamma,
-#	number of inner points and extension of the exponential part). 
+#	number of inner points and extension of the exponential part).
 #	"""
-#	
+#
 #	def pointsInner(h):
 #		return int(round(N - (rmax - rmin) / maxSep - h / maxSep - 1))
 #

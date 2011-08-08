@@ -5,6 +5,7 @@ import pyprop.potential as potential
 import pyprop.wavefunction as wavefunction
 from pyprop.debug import PrintOut
 from pyprop.createinstance import CreateInstanceRank
+from pyprop.pyproplogging import GetClassLogger
 
 #imports for FindObjectStack to work properly
 import pyprop.core as core
@@ -23,13 +24,13 @@ def RegisterBasisfunction(representationClass):
 	@RegisterBasisfunction(libbspline.BSplineRepresentation)
 	class BSplineBasisfunction(BasisfunctionBase):
 		...
-		
+
 	alternatively, to support Python2.5:
 	class BSplineBasisfunction(BasisfunctionBase):
 		...
-	BSplineBasisfunction = RegisterBasisfunction(libbspline.BSplineRepresentation)(BSplineBasisfunction) 
+	BSplineBasisfunction = RegisterBasisfunction(libbspline.BSplineRepresentation)(BSplineBasisfunction)
 
-	"""	
+	"""
 	def regBasisfun(basisfunctionClass):
 		_BasisRepresentationMap[representationClass] = basisfunctionClass
 		return basisfunctionClass
@@ -38,14 +39,14 @@ def RegisterBasisfunction(representationClass):
 
 def CreateBasisFromRepresentation(representation):
 	cls = representation.__class__
-	basisClass = _BasisRepresentationMap.get(cls, None) 
+	basisClass = _BasisRepresentationMap.get(cls, None)
 	if basisClass == None:
 		raise Exception("Representation %s does not have a registered basis function class. Currently registered representations: %s" % (cls, _BasisRepresentationMap) )
-	
+
 	basis = basisClass()
 	basis.SetupBasis(representation)
-	return basis 
-	
+	return basis
+
 	#if representation.__class__ == core.BSplineRepresentation:
 	#	basis = BasisfunctionBSpline()
 	#	#basis.SetupBasis(representation.GetBSplineObject())
@@ -78,7 +79,7 @@ class TensorPotentialGenerator(object):
 
 	def __init__(self, **args):
 		self.BasisList = []
-		self.Logger = pyprop.GetClassLogger(self)
+		self.Logger = GetClassLogger(self)
 
 		if "config" in args:
 			config = args["config"]
@@ -86,7 +87,7 @@ class TensorPotentialGenerator(object):
 			self.SetupBasisFromConfig(config)
 
 		elif "representation" in args:
-			representation = args["representation"]	
+			representation = args["representation"]
 			self.Rank = len(representation.GetFullShape())
 			self.SetupBasisFromRepresentation(representation)
 
@@ -102,7 +103,7 @@ class TensorPotentialGenerator(object):
 			basisObject = rankSection.basis()
 			rankSection.Apply(basisObject)
 			self.BasisList.append(basisObject)
-		
+
 		self.OrigDistribution = distribution.CreateDistribution(config)
 
 	def SetupBasisFromRepresentation(self, representation):
@@ -130,14 +131,14 @@ class TensorPotentialGenerator(object):
 		#1) Create Representation:
 		repr = self.SetupRepresentation(geometryList)
 
-		#2) Create a wavefunction in the potential representation. 
-		#This will be used to hold the and representation in order 
+		#2) Create a wavefunction in the potential representation.
+		#This will be used to hold the and representation in order
 		#to use the existing potential evaluator framework in pyprop
 		psi = wavefunction.CreateWavefunctionInstance(repr)
 
 		#3) Create potential evaluator
 		potentialEvaluator = self.SetupPotentialEvaluator(configSection, psi)
-		
+
 		#4) Initialize potential with basis pairs for custom potentials
 		isCustomPotential = hasattr(potentialEvaluator, "SetBasisPairs")
 		potentialShape = list(psi.GetRepresentation().GetInitialShape())
@@ -167,12 +168,12 @@ class TensorPotentialGenerator(object):
 		potentialData = CreateInstanceRank("core.DataBuffer", self.Rank)
 		potentialData.ResizeArray(array(potentialShape))
 		potentialEvaluator.UpdatePotentialData(potentialData.GetArray(), psi, 0, 0)
-		
+
 		# Save a copy of the potential if we're debugging
 		debugPotential = getattr(configSection, "debug_potential", False)
-		if debugPotential:	
+		if debugPotential:
 			self.OriginalPotential = potentialData.GetArray().copy()
-			
+
 		#for parallelization
 		#We only support the first rank initially distributed
 		#assert(repr.GetDistributedModel().GetDistribution()[0] == 0)
@@ -230,7 +231,7 @@ class TensorPotentialGenerator(object):
 
 					#Create shape of transposed function and allocate dest buffer
 					transposedShape = transpose.CreateDistributedShape(fullShape, array(newDistribution, dtype=int32))
-					
+
 					del dest
 					#dest = zeros(transposedshape, dtype=complex)
 					dest = CreateInstanceRank("core.DataBuffer", self.Rank)
@@ -250,7 +251,7 @@ class TensorPotentialGenerator(object):
 
 				#Update full shape
 				fullShape[rank] = geometryInfo.GetGlobalBasisPairCount()
-			
+
 				#Allocate the destination array
 				del dest
 				#dest = zeros(destShape, dtype=complex)
@@ -286,7 +287,7 @@ class TensorPotentialGenerator(object):
 #			distribution = origDistribution
 
 		#Transpose back to the original distribution, changing one pair of ranks at the time, due
-		#to current restrictions in TransposeArray. That is, return to the original distribution 
+		#to current restrictions in TransposeArray. That is, return to the original distribution
 		#is achieved by stepping through the tranposes performed in the potential setup, in reverse
 		#order.
 		if distribution != origDistribution:
@@ -311,7 +312,7 @@ class TensorPotentialGenerator(object):
 		return source
 
 
-		
+
 	def GetGeometryList(self, configSection):
 		"""
 		Creates a list of geometry infos for each basis on the
@@ -334,22 +335,22 @@ class TensorPotentialGenerator(object):
 
 		#Create Combined Representation
 		repr = CreateInstanceRank("core.CombinedRepresentation", self.Rank)
-	
+
 		#Set distributed model
 		#distrib = CreateDistribution(None, rank=self.Rank)
 		distrib = self.OrigDistribution
 		repr.SetDistributedModel(distrib)
-	
+
 		#Setup sub representations
 		for i, basis in enumerate(self.BasisList):
 			geometryInfo = geometryList[i]
-	
+
 			#Create representation
 			if geometryInfo.UseGridRepresentation():
 				subRepr = basis.GetGridRepresentation()
 			else:
 				subRepr = basis.GetBasisRepresentation()
-		
+
 			#Set distributed model
 			subDistrib = distrib.CreateSubDistributedModel()
 			subRepr.SetDistributedModel(subDistrib)
@@ -366,9 +367,9 @@ class TensorPotentialGenerator(object):
 		configSection.Apply(potentialEvaluator)
 		if hasattr(potentialEvaluator, "Setup"):
 			potentialEvaluator.Setup(psi)
-			
+
 		return potentialEvaluator
-		
+
 
 
 	def FindNondistributedRank(self, curRank, distributions):

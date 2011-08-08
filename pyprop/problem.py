@@ -1,10 +1,9 @@
 import numpy
 from numpy import sign, isreal, imag, log
-import signal
-from pyproplogging import GetClassLogger, GetFunctionLogger
+from pyproplogging import GetClassLogger
 
 import wavefunction
-import propagator.base 
+import propagator.base
 from interrupt import InterruptHandler
 from modules.redirect import Redirect
 from createinstance import FindObjectStack
@@ -45,10 +44,10 @@ class Problem:
 				self.Silent = False
 			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
-		
+
 			#Create wavefunction
 			self.psi = wavefunction.CreateWavefunction(config)
-		
+
 			self.Logger.debug("Creating Propagator...")
 			self.Propagator = propagator.base.CreatePropagator(config, self.psi)
 
@@ -63,7 +62,7 @@ class Problem:
 			#Diasable redirect
 			Redirect.Disable()
 			raise
-			
+
 
 	def GetGrid(self):
 		"""
@@ -77,8 +76,8 @@ class Problem:
 		repr = self.psi.GetRepresentation()
 		grid = [repr.GetLocalGrid(i) for i in range(0, self.psi.GetRank())]
 		return grid
-		
-		
+
+
 	#Propagation-------------------------------------------------
 	def SetupStep(self, skipWavefunctionSetup=False):
 		"""
@@ -91,7 +90,7 @@ class Problem:
 			#Enable redirect
 			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
-			
+
 			self.Logger.debug("Starting setup timestep...")
 			self.Logger.debug("    Setting up Propagator.")
 			if self.Propagator != None:
@@ -100,9 +99,9 @@ class Problem:
 			self.Logger.debug("    Setting up initial wavefunction")
 			if not skipWavefunctionSetup:
 				self.SetupWavefunction()
-			
+
 			self.Logger.info("Setup timestep complete.")
-	
+
 			#Disable redirect
 			if not redirectStateOld:
 				Redirect.Disable()
@@ -110,7 +109,7 @@ class Problem:
 		except:
 			#Diasable redirect
 			Redirect.Disable()
-			raise	
+			raise
 
 	def RestartPropagation(self, timestep, startTime, propagationTime):
 		"""
@@ -129,9 +128,9 @@ class Problem:
 	def AdvanceStep(self):
 		"""
 		Advances the wavefunction one timestep.
-	
+
 		most of the work is done in the propagator object. This function
-		is merley to keep a track of propagated time, and provide a simple 
+		is merley to keep a track of propagated time, and provide a simple
 		interface to the user.
 		"""
 		self.Propagator.AdvanceStep(self.PropagatedTime, self.TimeStep )
@@ -152,16 +151,16 @@ class Problem:
 
 	def Advance(self, yieldCount, duration=None, yieldEnd=False):
 		"""
-		Returns a generator for advancing the wavefunction a number of timesteps. 
-		If duration is specified the wavefunction is propagated until propagated 
+		Returns a generator for advancing the wavefunction a number of timesteps.
+		If duration is specified the wavefunction is propagated until propagated
 		time >= duration.
 
-		if yieldCount is a number, it is the number of times this routine will 
-		yield control back to the caller. 
+		if yieldCount is a number, it is the number of times this routine will
+		yield control back to the caller.
 		If is a boolean, yieldCount=True will make this function yield every timestep
 		and yieldCount=False will make it yield one time. (at the last timestep (i think))
 
-		if yieldEnd is True, a yield will be given at the end of propagation, regardless if 
+		if yieldEnd is True, a yield will be given at the end of propagation, regardless if
 		it matches the wanted number of yields
 		"""
 		if duration == None:
@@ -179,7 +178,7 @@ class Problem:
 				InterruptHandler.UnRegister()
 			except: pass
 			InterruptHandler.Register()
-	
+
 		index = 0
 
 		if self.TimeStep.real == 0:
@@ -199,15 +198,15 @@ class Problem:
 			if RedirectInterrupt:
 				if InterruptHandler.IsInterrupted():
 					InterruptHandler.ProcessInterrupt()
-			
+
 			index += 1
 			if index % yieldStep == 0:
 				yield self.PropagatedTime
 				prevYield = self.PropagatedTime
-		
+
 		if yieldEnd and prevYield != self.PropagatedTime:
 			yield self.PropagatedTime
-	
+
 		if RedirectInterrupt:
 			InterruptHandler.UnRegister()
 
@@ -224,7 +223,7 @@ class Problem:
 
 	def GetEnergyExpectationValue(self):
 		"""
-		Calculates the total energy of the problem by finding the expectation value 
+		Calculates the total energy of the problem by finding the expectation value
 		of the Hamiltonian
 		"""
 		self.psi.Normalize()
@@ -245,7 +244,7 @@ class Problem:
 				self.Logger.warning("Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy))
 				self.IgnoreWarningRealEnergy = True
 		return energy.real
-	
+
 	def GetEnergyImTime(self):
 		"""
 		Advance one timestep without normalization and imaginary time.
@@ -256,24 +255,24 @@ class Problem:
 		to the groundstate, and will only give a good estimate for the ground
 		state energy when the wavefunction is well converged to the ground state.
 
-		Because it uses the norm of the wavefunction to measure energy, it will 
+		Because it uses the norm of the wavefunction to measure energy, it will
 		be very sensitive to differences in the shape of the wavefunction.
 		"""
-		
+
 		if isreal(self.TimeStep):
 			raise "Can only find energy for imaginary time propagation"
-		
+
 		renorm = self.Propagator.RenormalizeActive
 		self.psi.Normalize()
 		self.Propagator.RenormalizeActive = False
 		self.AdvanceStep()
 		self.Propagator.RenormalizeActive = renorm
-		
+
 		norm = self.psi.GetNorm()
 		self.psi.GetData()[:] /= norm
 		energy = - log(norm**2) / (2 * abs(self.TimeStep))
 		return energy
-	
+
 	#Initialization-----------------------------------------------
 	def ApplyConfigSection(self, configSection):
 			self.TimeStep = complex(configSection.timestep)
@@ -292,7 +291,7 @@ class Problem:
 		The supported initial condition types are:
 		InitialConditionType.Function
 			see SetupWavefunctionFunction()
-			
+
 		InitialConditionType.File
 			See SetupWavefunctionFile()
 
@@ -310,10 +309,10 @@ class Problem:
 			pass
 		else:
 			raise Exception("Invalid InitialConditionType: " + type)
-			
+
 	def SetupWavefunctionClass(self, config, psi):
 		classname = config.InitialCondition.classname
-		
+
 		#try to
 		evaluator = None
 		try: evaluator = FindObjectStack(classname + "()")
@@ -333,65 +332,65 @@ class Problem:
 	def SetupWavefunctionFunction(self, config):
 		"""
 		Initializes the wavefunction from a function specified in the InitialCondition
-		section of config. The function refrence config.InitialCondition.function 
+		section of config. The function refrence config.InitialCondition.function
 		is evaulated in all grid points of the wavefunction, and the wavefunction is
 		set up accordingly.
 
 		for example. if this is a rank 2 problem, then this will initialize the wavefunction
 		to a 2D gaussian wavepacket.
-		
+
 		def func(x,  conf):
 			return exp(- x[0]**2 + x[1]**2])
-		
+
 		config.InitialCondition.function = func
 		prop.SetupWavefunctionFunction(config)
 
 		REMARK: This function should probably not be called on directly. Use SetupWavefunction()
-		instead. That function will automatically determine the type of initial condition to be used.		
+		instead. That function will automatically determine the type of initial condition to be used.
 		"""
 		func = config.InitialCondition.function
 		conf = config.InitialCondition
-		
+
 		#TODO: We should get this class from Propagator in order to use a different
 		#evaluator for a compressed (i.e. spherical) grid
 		evalfunc = eval("core.SetWavefunctionFromGridFunction_" + str(self.psi.GetRank()))
 		evalfunc(self.psi, func, conf)
-	
+
 	def SetupWavefunctionFile(self, config):
 		"""
 		Initializes the wavefunction from a file specified in the InitialCondition.filename
-		according to the format InitialCondition.format. If InitialCondition.format is not 
-		specified, this routine should automatically try to figure out which format it it, 
+		according to the format InitialCondition.format. If InitialCondition.format is not
+		specified, this routine should automatically try to figure out which format it it,
 		but this is not yet implemented.
 
 		See the functions LoadWavefunction*() SaveWavefunction*() for details on how to
 		load and save wavefunctions
 
 		REMARK: This function should probably not be called on directly. Use SetupWavefunction()
-		instead. That function will automatically determine the type of initial condition to be used.		
+		instead. That function will automatically determine the type of initial condition to be used.
 
-		REMARK2: Currently it is not possible to interpolate a wavefunction between different grids. 
+		REMARK2: Currently it is not possible to interpolate a wavefunction between different grids.
 		this means that exactly the same grid used for saving the wavefunction must be used when loading
 		it
 		"""
 		format   = config.InitialCondition.format
 		filename = config.InitialCondition.filename
-		
+
 		if format == wavefunction.WavefunctionFileFormat.HDF:
 			datasetPath = str(config.InitialCondition.dataset)
 			self.LoadWavefunctionHDF(filename, datasetPath)
 		else:
 			raise "Invalid file format: " + format
-	
+
 	def SetupWavefunctionCustom(self, config):
 		"""
 		Initializes the wavefunction from a function specified in the InitialCondition
-		section of config. The function refrence config.InitialCondition.function 
+		section of config. The function refrence config.InitialCondition.function
 		is evaulated called once, with the wavefunction as the first parameter, and
 		the configSection as the second.
 
 		REMARK: This function should probably not be called on directly. Use SetupWavefunction()
-		instead. That function will automatically determine the type of initial condition to be used.		
+		instead. That function will automatically determine the type of initial condition to be used.
 		"""
 		func = config.InitialCondition.function
 		conf = config.InitialCondition
@@ -403,7 +402,7 @@ class Problem:
 		if newdata.shape != data.shape:
 			raise "Invalid shape on loaded wavefunction, got " + str(newdata.shape) + " expected " + str(data.shape)
 		data[:] = newdata
-		
+
 	def LoadWavefunctionHDF(self, filename, datasetPath):
 		LoadWavefunctionHDF(filename, datasetPath, self.psi)
 
@@ -418,6 +417,6 @@ class Problem:
 			fh.write("(%s, %s) " % (psiData[i].real, psiData[i].imag) )
 		fh.close()
 
-	
-	
+
+
 

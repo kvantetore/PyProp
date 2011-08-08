@@ -1,5 +1,3 @@
-from numpy import array, double, exp, log, r_, sign, sqrt
-
 """
 Grid generation for CustomGridRepresentation
 
@@ -60,7 +58,7 @@ def GetBidirectionalGridExponentialLinear(conf):
 	n = float(count)
 
 	#Setup inner (exponential) region
-	innerGrid = innerBoundary * (exp(gamma*i/n) - 1 ) / ( exp(gamma) - 1 ) 
+	innerGrid = innerBoundary * (exp(gamma*i/n) - 1 ) / ( exp(gamma) - 1 )
 
 	#Setup outer (linear) region
 	h = innerGrid[-1] - innerGrid[-2]
@@ -68,7 +66,7 @@ def GetBidirectionalGridExponentialLinear(conf):
 
 	#Create negative grid values
 	grid = array(list(reversed(-1*positiveGrid))[:-1] + list(positiveGrid))
-	
+
 	return grid
 
 

@@ -3,14 +3,12 @@ import ConfigParser
 
 from createinstance import FindObjectStack
 from distribution import PrintOut
+import pyproplogging
 
 #Import some common objects such that they are found
 #by FindObjectStack when loading config files
 from potential import PotentialType, StaticStorageModel
 from problem import InitialConditionType
-
-import pyproplogging
-
 
 
 class Section:
@@ -142,12 +140,12 @@ def UpdateConfig(conf, updateParams, addMissingSections=False):
 
 	"""
 	tmpConf = Config(conf.cfgObj)
-	logger = GetFunctionLogger()
+	logger = pyproplogging.GetFunctionLogger()
 
 	#Update config
 	for section, param, val in updateParams:
 		if not hasattr(tmpConf, section) and addMissingSections:
-			logging.info("Config object did not contain section: %s, creating it now." % section)
+			logger.info("Config object did not contain section: %s, creating it now." % section)
 			cfg = tmpConf.cfgObj
 			cfg._dict = dict
 			cfg.add_section(section)

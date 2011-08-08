@@ -2,7 +2,7 @@ from numpy import array, prod
 
 import pyprop.potential as potential
 import pyprop.serialization.tensorpotential as serialization
-from pyprop.debug import PrintOut
+from pyprop.distribution import PrintOut
 from pyprop.createinstance import CreateInstanceRank
 from pyprop.exceptions import NotImplementedException
 from pyprop.tensorpotential.tensorpotentialgenerator import TensorPotentialGenerator
@@ -22,7 +22,7 @@ class TensorPotential(potential.PotentialWrapper):
 	basisfunction basis. This means that we must do a matrix vector product to apply the potential.
 
 	in 1D
-	out(i) = sum_j V(i, j) psi(j) 
+	out(i) = sum_j V(i, j) psi(j)
 	in 2D
 	out(i', j') = sum_{i,j} V(i', i, j', j) psi(i', j')
 
@@ -30,7 +30,7 @@ class TensorPotential(potential.PotentialWrapper):
 	into one rank each. This is done in order to easier be able to exploit symmetries in the potentials and
 	bandedness in the basises (such as the dipole selection rule V = 0 for l' != l +/- 1).
 
-	
+
 	"""
 
 	def __init__(self, psi):
@@ -86,7 +86,7 @@ class TensorPotential(potential.PotentialWrapper):
 			self.PotentialDataBuffer = potentialDataBuffer
 			self.PotentialData = potentialDataBuffer.GetArray()
 			self.OriginalPotential = getattr(generator, "OriginalPotential", None)
-		
+
 
 	def SetupStep(self, timestep):
 		self.BasisPairs = [geom.GetBasisPairs() for geom in self.GeometryList]
@@ -96,7 +96,7 @@ class TensorPotential(potential.PotentialWrapper):
 			self.MultiplyFunction = eval(multiplyFuncName)
 		except:
 			print "ERROR: Could not find multiplyfunction for potential: %s" % multiplyFuncName
-		
+
 	def AdvanceStep(self, t, timestep):
 		raise NotImplementedException("TensorPotentials can not be exponentiated directly")
 
@@ -107,8 +107,8 @@ class TensorPotential(potential.PotentialWrapper):
 		timeScaling = 1.0
 		if self.IsTimeDependent:
 			timeScaling = self.TimeFunction(t)
-		
-		#TODO: Implement support for parallelization. 
+
+		#TODO: Implement support for parallelization.
 
 		#Construct argument list
 		#Default parameters
@@ -122,7 +122,7 @@ class TensorPotential(potential.PotentialWrapper):
 
 	#def GetExpectationValue(self, tmpPsi, t, timeStep):
 	#	self.GetExpectationValue(self.psi, tmpPsi, t, timeStep)
-	
+
 	def GetExpectationValue(self, psi, tmpPsi, t, timeStep):
 		tmpPsi.Clear()
 		self.MultiplyPotential(psi, tmpPsi, t, timeStep)
@@ -130,7 +130,7 @@ class TensorPotential(potential.PotentialWrapper):
 		#Solve for all overlap matrices
 		repr = self.psi.GetRepresentation()
 		repr.SolveOverlap(tmpPsi)
-		
+
 		return self.psi.InnerProduct(tmpPsi)
 
 
@@ -154,8 +154,8 @@ class TensorPotential(potential.PotentialWrapper):
 		#don't consolidate debug potentials
 		if canConsolidate and (self.DebugPotential or otherPot.DebugPotential):
 			canConsolidate = False
-			
-		#Both potentials must have the same storage 
+
+		#Both potentials must have the same storage
 		if canConsolidate:
 			for rank in range(self.Rank):
 				if self.GeometryList[rank].GetStorageId() != otherPot.GeometryList[rank].GetStorageId():
@@ -169,4 +169,4 @@ class TensorPotential(potential.PotentialWrapper):
 					break
 
 
-		return canConsolidate		
+		return canConsolidate
