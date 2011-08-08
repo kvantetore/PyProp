@@ -143,7 +143,8 @@ class BasisfunctionReducedSphericalHarmonic(BasisfunctionBase):
 		else:
 			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		pairs = geometryInfo.GetGlobalBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 		if (storageId == "Band" or storageId == "Herm") and differentiation % 1 == 1:

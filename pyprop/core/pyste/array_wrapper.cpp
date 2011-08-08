@@ -44,7 +44,9 @@ public:
 		int refCount = array.getReferenceCount();
 		if (refCount <= 2 && refCount != -1) 
 		{
+			#ifdef PYPROP_DEBUG
 			std::cout << "Returning python-owning copy of array (" << array.getReferenceCount() << ")" << std::endl;
+			#endif
 			
 			//Create a copy of the array (perhaps there is a more elegant way?)
 			PyObject* newObject = PyArray_FromAny(wrappedObject, type_descr, 0, 0, NPY_ENSURECOPY, 0);

@@ -49,7 +49,9 @@ void DistributedModel<Rank>::ApplyConfigSection(const ConfigSection &cfg)
 template<int Rank>
 blitz::TinyVector<int, Rank> DistributedModel<Rank>::CreateInitialShape(const blitz::TinyVector<int, Rank> &fullShape)
 {
-	cout << "Creating distributed shape to " << fullShape;
+	#ifdef PYPROP_DEBUG
+		cout << "Creating distributed shape to " << fullShape;
+	#endif
 	return fullShape;
 }
 

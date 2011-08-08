@@ -1,5 +1,6 @@
 import os
 import ConfigParser
+
 try:
 	import tables
 except:
@@ -14,9 +15,13 @@ from numpy import array
 from potential import PotentialType, StaticStorageModel
 from problem import InitialConditionType
 
+import pyproplogging
+
+
 
 class Section:
 	def __init__(self, name, cfg=None):
+		self.Logger = pyproplogging.GetClassLogger(self)
 		self.name = name
 		if cfg != None:
 			self.LoadConfig(name, cfg)
@@ -51,7 +56,8 @@ class Section:
 
 class Config:
 
-	def __init__(self, cfg):
+	def __init__(self, cfg):	
+		self.Logger = pyproplogging.GetClassLogger(self)
 		for sectionName in cfg.sections():
 			if sectionName in ["GetSection"]:
 				raise Exception, "Invalid sectionName %s" % sectionName
@@ -84,8 +90,7 @@ class Config:
 		self.cfgObj.set(section, optionName, repr(value))
 		self.__dict__[section].Set(optionName, value)
 
-		if infoLevel > 0:
-			print "Changing %s.%s to %s" % (section, optionName, value)
+		self.Logger.debug("Changing %s.%s to %s" % (section, optionName, value))
 
 def Load(fileName, silent=True):
 	#Find all imported files in the config files
@@ -100,7 +105,7 @@ def Load(fileName, silent=True):
 		absFile = os.path.abspath(os.path.expanduser(os.path.expandvars(localFile)))
 		absDir = os.path.dirname(absFile)
 		if not silent:
-			print "Using config file", absFile
+			PrintOut("Using config file %s" % absFile)
 		configFiles.insert(0, absFile)
 		
 		#find Import statements from curFile
@@ -124,17 +129,39 @@ def Load(fileName, silent=True):
 	return parsedConfig
 
 
-def LoadConfigFromFile(filename, datasetPath="/wavefunction"):
+def UpdateConfig(conf, updateParams, addMissingSections=False):
 	"""
-	Load config from a HDF5 file
-	"""
-	f = tables.openFile(filename, "r")
-	try:
-		dataset = hdf.GetExistingDataset(f, datasetPath)
-		conf = Config(dataset._v_attrs.configObject)
+	Update Pyprop config object with values given in updateParams.
 
-	finally:
-		f.close()
-
-	return conf
+	Input
+	-----
+	conf: pyprop config object
+	updateParams: list of tuples, [('section', 'param', 'value'), ...]
 	
+	
+	Returns
+	-------
+	Updated pyprop config object
+	
+	
+	Note: Section references (i.e. through 'base') will be updated as well.
+
+	"""
+	tmpConf = Config(conf.cfgObj)
+	logger = GetFunctionLogger()
+	
+	#Update config
+	for section, param, val in updateParams:
+		if not hasattr(tmpConf, section) and addMissingSections:
+			logging.info("Config object did not contain section: %s, creating it now." % section)
+			cfg = tmpConf.cfgObj
+			cfg._dict = dict
+			cfg.add_section(section)
+			tmpConf = Config(cfg)
+		logger.debug("Updating config: %s(%s): %s" % (section, param, val))
+		tmpConf.SetValue(section, param, val)
+
+	#Update config object from possible changed ConfigParser object
+	newConf = Config(tmpConf.cfgObj)
+	
+	return newConf

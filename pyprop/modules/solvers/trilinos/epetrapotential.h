@@ -74,6 +74,43 @@ public:
 		Multiply(srcPsi, destPsi);
 	}
 
+	int NumMyNonzeros()
+	{
+		return Matrix->NumMyNonzeros();
+	}
+
+	int NumGlobalRows()
+	{
+		return Matrix->NumGlobalRows();
+	}
+
+	int NumGlobalCols()
+	{
+		return Matrix->NumGlobalCols();
+	}
+
+	bool StorageOptimizied()
+	{
+		return Matrix->StorageOptimized();
+	}
+    Epetra_Map_Ptr GetProcessorMap()
+    {
+        return ProcessorMap;
+    }
+
+    Epetra_FECrsMatrix_Ptr GetEpetraMatrix()
+    {
+        return Matrix;
+    }
+
+    /*
+     * Multiply all values in the Epetra potential by a constant value (in place).
+     */
+    void Scale(double scaleConstant)
+    {
+        Matrix->Scale(scaleConstant);
+    }
+
 
 private:
 	Epetra_Map_Ptr ProcessorMap;

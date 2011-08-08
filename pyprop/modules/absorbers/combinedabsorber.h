@@ -29,8 +29,11 @@ class CombinedAbsorberPotential
 private:
 	typedef std::pair< AbsorberModel::Ptr, int> AbsorberRankElement;
 	std::vector< AbsorberRankElement > AbsorberList;
-		
+
 public:
+	CombinedAbsorberPotential() {}
+	virtual ~CombinedAbsorberPotential() {}
+
 	void AddAbsorber(AbsorberModel::Ptr absorber, int rank)
 	{
 		AbsorberList.push_back( AbsorberRankElement(absorber, rank) );

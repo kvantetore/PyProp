@@ -21,13 +21,13 @@ class GeometryInfoBase(object):
 		Whether the grid representation or the basis representation should
 		be used to evaluate the potential
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetGlobalBasisPairCount(self):
 		"""
 		Returns the number of stored matrix elements
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetLocalBasisPairCount(self):
 		return self.GetGlobalBasisPairCount()
@@ -39,7 +39,7 @@ class GeometryInfoBase(object):
 		the first column being the row index, and the second being
 		the col-index
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetGlobalBasisPairs(self):
 		"""
@@ -50,7 +50,7 @@ class GeometryInfoBase(object):
 		if not self.HasParallelMultiply():
 			return self.GetBasisPairs()
 		else:
-			raise NotImplementedException()
+			raise NotImplementedError()
 
 	def GetLocalBasisPairIndices(self):
 		"""
@@ -61,19 +61,19 @@ class GeometryInfoBase(object):
 		if not self.HasParallelMultiply():
 			return r_[:self.GetLocalBasisPairCount()]
 		else:
-			raise NotImplementedException()
+			raise NotImplementedError()
 	
 	def GetStorageId(self):
 		"""
 		Returns the string defining how the index pairs are ordered
 		"""
-		raise NotImplementedException()	
+		raise NotImplementedError()	
 
 	def GetMultiplyArguments(self, psi):
 		"""
 		Returns the arguments needed for TensorMultiply
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def HasParallelMultiply(self):
 		"""
@@ -130,7 +130,7 @@ class GeometryInfoDistributedBase(GeometryInfoBase):
 		return True
 
 	def SetupBasisPairs(self):
-		raise NotImplementedException("SetupBasisPairs is not implemented")
+		raise NotImplementedError("SetupBasisPairs is not implemented")
 
 
 
@@ -141,27 +141,28 @@ class BasisfunctionBase(object):
 	"""
 
 	def ApplyConfigSection(self, config):
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetGridRepresentation(self):
 		"""
 		Creates a one dimensional representation for this rank
 		in the grid representation
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetBasisRepresentation(self):
 		"""
 		Creates a one dimensional representation for this rank
 		in the basis representation
 		"""
-		raise NotImplementedException()
+		raise NotImplementedError()
 
 	def GetGeometryInfo(self, geometryName):
-		raise NotImplementedException()
+		raise NotImplementedError()
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
-		raise NotImplementedException
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
+		raise NotImplementedError()
 
 
 #------------------------------------------------------------------------------------
@@ -304,7 +305,7 @@ class GeometryInfoCommonBandedDistributed(GeometryInfoDistributedBase):
 		assert(repr.GetBaseRank() in [0,1])
 		self.BaseRank = repr.GetBaseRank()
 		self.Representation = repr
-		self.RankCount = int(repr.GetFullShape()[0])
+		self.RankCount = int(repr.GetFullShape()[repr.GetBaseRank()])
 		self.TempArrays = None
 		self.MultiplyArguments = None
 

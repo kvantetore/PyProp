@@ -11,6 +11,8 @@ import libbspline
 #                       BSpline
 #------------------------------------------------------------------------------------
 
+#restore some builtin functions in this namespace 
+from __builtin__ import min, max
 
 class GeometryInfoBSplineBanded(geometryinfo.GeometryInfoBase):
 	"""
@@ -220,7 +222,8 @@ class BasisfunctionBSpline(geometryinfo.BasisfunctionBase):
 		else:
 			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionBSpline" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		pairs = geometryInfo.GetGlobalBasisPairs()
 		storageId = geometryInfo.GetStorageId()
 

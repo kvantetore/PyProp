@@ -157,7 +157,8 @@ if __name__ == "__main__":
         if 'pgcc' in distutils.sysconfig.get_config_var('CC'):
             extra_compile_args = [' -fPIC -tp amd64'] #Valid for pgcc
         elif 'gcc' in distutils.sysconfig.get_config_var('CC'):
-            extra_compile_args = [' -fPIC -m64'] #Valid for gcc
+	        #extra_compile_args = [' -fPIC -m64'] #Valid for gcc
+	        extra_compile_args = [] #Options here cause trouble for gcc 4.4.3 it seems
         elif 'icc' in distutils.sysconfig.get_config_var('CC'):
             extra_compile_args = [' -fPIC'] #Valid for icc
         else:

@@ -78,6 +78,7 @@ class TensorPotentialGenerator(object):
 
 	def __init__(self, **args):
 		self.BasisList = []
+		self.Logger = pyprop.GetClassLogger(self)
 
 		if "config" in args:
 			config = args["config"]
@@ -182,12 +183,15 @@ class TensorPotentialGenerator(object):
 		else:
 			origDistribution = list(repr.GetDistributedModel().GetDistribution())
 			distribution = list(repr.GetDistributedModel().GetDistribution())
-		transpose = repr.GetDistributedModel().GetTranspose() 
+		transpose = repr.GetDistributedModel().GetTranspose()
 
 		for distribRank in distribution:
 			geomInfo = geometryList[distribRank]
 			if not geometryList[distribRank].HasParallelMultiply():
-				raise Exception("Distributed Rank %i (%s), has no support for parallel multiplication" % (distribRank, geomInfo.GetStorageId()))
+				errStr = "Distributed Rank %i (%s), has no support " + \
+					"for parallel multiplication!" % \
+					(distribRank, geomInfo.GetStorageId())
+				self.Logger.Error(errStr)
 
 		#5) Represent the potential in the bases
 		tempDistributions = []
@@ -254,7 +258,9 @@ class TensorPotentialGenerator(object):
 				dest.ResizeArray(array(destShape))
 
 				#Represent this rank in the basis
-				basis.RepresentPotentialInBasis(source.GetArray(), dest.GetArray(), rank, geometryInfo, differentiation) 
+				basis.RepresentPotentialInBasis(source.GetArray(), \
+					dest.GetArray(), rank, geometryInfo, differentiation, \
+					configSection)
 
 				#Use the destination from this rank as the source to the next
 				del source
@@ -308,7 +314,7 @@ class TensorPotentialGenerator(object):
 		
 	def GetGeometryList(self, configSection):
 		"""
-		Creates a list of geometry infos for each basos on the
+		Creates a list of geometry infos for each basis on the
 		the given potential (configSection)
 		"""
 		geometryList = []

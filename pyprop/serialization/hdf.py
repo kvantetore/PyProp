@@ -6,6 +6,8 @@ except:
 	print "Failed to import tables. HDF5 support is not available"
 
 
+import pyprop
+
 DEBUG = False
 
 #--------------------------------------------------------------------------------------
@@ -222,3 +224,31 @@ def GetConfigFromHDF5(file, datasetPath = None, confObjName = "configObject"):
 	
 	return cfgObj
 
+#--------------------------------------------------------------------------------------
+#                         High level functions
+#--------------------------------------------------------------------------------------
+def GetArrayFromHDF5(filename, path, name):
+	"""Load an array from a HDF5 file
+	"""
+	logger = pyprop.GetFunctionLogger()
+	with tables.openFile(filename, "r") as h5file:
+		try:
+			A = h5file.getNode(path, name)[:]
+		except:
+			logger.error("Could not find array %s/%s in file %s!" % (path, name, filename))
+			A = []
+		
+	return A
+
+def GetAttributeFromHDF5(filename, path, attrName):
+	"""Get an attribute from a HDF5 file
+	"""
+	logger = pyprop.GetFunctionLogger()
+	with tables.openFile(filename, "r") as h5file:
+		try:
+			nodeAttr = h5file.getNodeAttr(path, attrName)
+		except:
+			logger.error("Could not find attribute '%s' under '%s' in file '%s'!" % (attrName, path, filename))
+			nodeAttr = None
+		
+	return nodeAttr

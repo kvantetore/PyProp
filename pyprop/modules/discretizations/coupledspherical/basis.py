@@ -155,6 +155,12 @@ class BasisfunctionCoupledSphericalHarmonic(geometryinfo.BasisfunctionBase):
 				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleR12(multipoleCutoff)
 			elif selectionRuleName == "linearpolarizedfield":
 				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleLinearPolarizedField()
+			elif selectionRuleName == "linearpolarizedfieldperpendicular":
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleLinearPolarizedFieldPerpendicular()
+			elif selectionRuleName == "linearpolarizedfieldangle":
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleLinearPolarizedFieldAngle()
+			elif selectionRuleName == "diatomiccoulomb":
+				selectionRule = libcoupledspherical.CoupledSphericalSelectionRuleDiatomicCoulomb()
 			else:	
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 
@@ -162,7 +168,8 @@ class BasisfunctionCoupledSphericalHarmonic(geometryinfo.BasisfunctionBase):
 		else:
 			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionReducedSpherical" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		raise Exception("Coupled Spherical Harmonics are already in a basis and should not be integrated")
 BasisfunctionCoupledSphericalHarmonic = RegisterBasisfunction(libcoupledspherical.CoupledSphericalHarmonicRepresentation)(BasisfunctionCoupledSphericalHarmonic)
 

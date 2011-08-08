@@ -56,6 +56,13 @@ class BSplineObject(libbspline.BSpline):
 			                                  conf.xmax, \
 			                                  conf.xsize) \
 
+		elif(conf.bpstype == 'linearregions'):
+			bpsSeq = LinearBreakpointSequenceRegions(conf.xmin, \
+											  conf.xmax, \
+											  conf.xsize, \
+											  conf.xcutoff, \
+											  conf.gamma)
+
 		elif(conf.bpstype == 'exponential'):
 
 			bpsSeq = bps.ExponentialBreakpointSequence(conf.xmin, \

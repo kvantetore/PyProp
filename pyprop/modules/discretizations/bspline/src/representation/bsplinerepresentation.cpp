@@ -27,8 +27,8 @@ void BSplineRepresentation::SetupRepresentation(BSpline::Ptr bsplineObject)
 	// Get grid/weight size from BSpline object
 	int gridSize = BSplineObject->NumberOfBSplines;
 	//cout << "k = " << BSplineObject->MaxSplineOrder << " N = " << BSplineObject->NumberOfBSplines << endl;
-	cout << "Got BSpline basis size " << gridSize << endl;
-	cout << "Got number of BSpline integration points " << BSplineObject->GetQuadratureGridGlobal().extent(0) << endl;
+	//cout << "Got BSpline basis size " << gridSize << endl;
+	//cout << "Got number of BSpline integration points " << BSplineObject->GetQuadratureGridGlobal().extent(0) << endl;
 
 	//Grid is just a range integers (0,1,2...)
 	Grid.resize(gridSize);

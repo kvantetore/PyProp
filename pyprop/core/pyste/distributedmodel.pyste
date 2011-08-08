@@ -1,6 +1,7 @@
 import sys
 if not '-DSINGLEPROC' in sys.argv:
 	ArrayTranspose = Template("ArrayTranspose", "mpi/blitztranspose.h")
+	exclude(ArrayTranspose.GetGroupCommRank)
 	AT_1 = ArrayTranspose("1")
 	AT_2 = ArrayTranspose("2")
 	AT_3 = ArrayTranspose("3")

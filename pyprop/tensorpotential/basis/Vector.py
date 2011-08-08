@@ -40,6 +40,7 @@ class BasisfunctionVector(geometryinfo.BasisfunctionBase):
 		else:
 			raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionVector" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, differentiation):
+	def RepresentPotentialInBasis(self, source, dest, rank, geometryInfo, \
+			differentiation, configSection):
 		raise Exception("Vector basis already in a basis and should not be integrated")
 

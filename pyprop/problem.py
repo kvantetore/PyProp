@@ -1,5 +1,7 @@
 import numpy
 from numpy import sign, isreal, imag, log
+import signal
+from pyproplogging import GetClassLogger, GetFunctionLogger
 
 import wavefunction
 import propagator.base 
@@ -34,6 +36,7 @@ class Problem:
 	def __init__(self, config):
 		self.TempPsi = None
 		self.Config = config
+		self.Logger = GetClassLogger(self)
 		try:
 			#Enable redirect
 			if hasattr(config.Propagation, "silent"):
@@ -46,9 +49,9 @@ class Problem:
 			#Create wavefunction
 			self.psi = wavefunction.CreateWavefunction(config)
 		
-			print "Creating Propagator..."
+			self.Logger.debug("Creating Propagator...")
 			self.Propagator = propagator.base.CreatePropagator(config, self.psi)
-		
+
 			#apply propagation config
 			config.Propagation.Apply(self)
 
@@ -89,16 +92,16 @@ class Problem:
 			redirectStateOld = Redirect.redirect_stdout
 			Redirect.Enable(self.Silent)
 			
-			print "Starting setup timestep..."
-			print "    Setting up Propagator."
+			self.Logger.debug("Starting setup timestep...")
+			self.Logger.debug("    Setting up Propagator.")
 			if self.Propagator != None:
 				self.Propagator.SetupStep(self.TimeStep)
 
-			print "    Setting up initial wavefunction"
+			self.Logger.debug("    Setting up initial wavefunction")
 			if not skipWavefunctionSetup:
 				self.SetupWavefunction()
 			
-			print "Setup timestep complete."
+			self.Logger.info("Setup timestep complete.")
 	
 			#Disable redirect
 			if not redirectStateOld:
@@ -239,7 +242,7 @@ class Problem:
 		#Check that the energy is real
 		if not hasattr(self, "IgnoreWarningRealEnergy"):
 			if abs(imag(energy)) > 1e-10:
-				print "Warning: Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy)
+				self.Logger.warning("Energy is not real (%s). Possible bug. Supressing further warnings of this type" % (energy))
 				self.IgnoreWarningRealEnergy = True
 		return energy.real
 	
@@ -249,7 +252,7 @@ class Problem:
 		we can then find the energy by looking at the norm of the decaying
 		wavefunction.
 
-		This will only work when negaive imaginary time is used to propagate
+		This will only work when negative imaginary time is used to propagate
 		to the groundstate, and will only give a good estimate for the ground
 		state energy when the wavefunction is well converged to the ground state.
 
@@ -278,7 +281,7 @@ class Problem:
 			self.PropagatedTime = 0
 			self.StartTime = 0
 			if hasattr(configSection, "start_time"):
-				self.StartTime = configSection["start_time"]
+				self.StartTime = configSection.start_time
 				self.PropagatedTime = self.StartTime
 
 
@@ -306,7 +309,7 @@ class Problem:
 		elif type == None:
 			pass
 		else:
-			raise "Invalid InitialConditionType: " + type
+			raise Exception("Invalid InitialConditionType: " + type)
 			
 	def SetupWavefunctionClass(self, config, psi):
 		classname = config.InitialCondition.classname

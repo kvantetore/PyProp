@@ -44,10 +44,10 @@ class EpetraPotential(potential.PotentialWrapper):
 		self.MultiplyPotential(psi, tmpPsi, t, timeStep)
 
 		#Solve for all overlap matrices
-		repr = self.psi.GetRepresentation()
+		repr = self.Psi.GetRepresentation()
 		repr.SolveOverlap(tmpPsi)
 		
-		return self.psi.InnerProduct(tmpPsi)
+		return self.Psi.InnerProduct(tmpPsi)
 
 
 	def CanConsolidate(self, otherPot):

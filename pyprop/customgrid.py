@@ -4,6 +4,8 @@ from numpy import array, double, exp, log, r_, sign, sqrt
 Grid generation for CustomGridRepresentation
 
 """
+from numpy import array, r_, log, exp, sign, double, sqrt
+import copy
 
 
 def GetGridLinear(conf, xmax=None, xmin=None):
@@ -37,7 +39,7 @@ def GetGridQuadratic(conf):
 
 def GetBidirectionalGridExponential(conf):
 	xmax = float(conf.xmax)
-	count = conf.count
+	#count = conf.count
 	gamma = float(conf.gamma)
 
 	xmin = - log(xmax+1) / gamma
@@ -68,5 +70,39 @@ def GetBidirectionalGridExponentialLinear(conf):
 	grid = array(list(reversed(-1*positiveGrid))[:-1] + list(positiveGrid))
 	
 	return grid
+
+
+def GetGridBilinear(conf):
+	"""Return a "bilinear" grid, i.e. two joined grids with different linear spacings.
+
+	Config options
+	--------------
+	xmin:         leftmost grid point
+	xmax:         rightmost grid point
+	inner_count:  number of grid points of inner (leftmost) grid portion
+	outer_count:  number of grid points of outer (rightmost) grid portion
+	partition:    divions point between inner and outer grid
+	include_left_boundary
+	include_right_boundary
+
+	"""
+	localConf = copy.copy(conf)
+
+	#Setup inner grid
+	localConf.Set("count", conf.inner_count)
+	localConf.Set("xmin", conf.xmin)
+	localConf.Set("xmax", conf.partition)
+	localConf.Set("include_right_boundary", True)
+	innerGrid = list(GetGridLinear(localConf))
+
+	#Setup outer grid
+	localConf.Set("count", conf.outer_count)
+	localConf.Set("xmin", conf.partition)
+	localConf.Set("xmax", conf.xmax)
+	localConf.Set("include_left_boundary", False)
+	localConf.Set("include_right_boundary", conf.include_right_boundary)
+	outerGrid = list(GetGridLinear(localConf))
+
+	return array(innerGrid + outerGrid)
 
 

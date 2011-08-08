@@ -38,3 +38,14 @@ class RedirectClass:
 	
 
 Redirect = RedirectClass()
+
+
+class EnableRedirect:
+	def __enter__(self):
+		self.Redirect = RedirectClass()
+		self.Redirect.Enable(silent=True)
+
+	def __exit__(self, type, value, tracebkac):
+		self.Redirect.Disable()
+
+

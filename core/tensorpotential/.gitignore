@@ -1,0 +1,3 @@
+*.f90
+tensorpotentialmultiply_wrapper.cpp
+tensorpotentialmultiply_wrapper.h

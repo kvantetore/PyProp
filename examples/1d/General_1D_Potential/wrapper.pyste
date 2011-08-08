@@ -1,0 +1,7 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Kinetic Energy Potentials
+PotentialEvaluator("KineticEnergyPotential<1> 1","KineticEnergyPotential_1")
+
+
