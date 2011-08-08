@@ -1,17 +1,11 @@
 import os
 import ConfigParser
 
-try:
-	import tables
-except:
-	pass
-
 from createinstance import FindObjectStack
-from serialization import hdf
+from distribution import PrintOut
 
 #Import some common objects such that they are found
 #by FindObjectStack when loading config files
-from numpy import array
 from potential import PotentialType, StaticStorageModel
 from problem import InitialConditionType
 
@@ -33,22 +27,22 @@ class Section:
 				self.LoadConfig(importName, cfg)
 			else:
 				self.SetOptionString(optionName, cfg.get(name, optionName))
-			
+
 	def SetOptionString(self, optionName, optionString):
 		optionValue = FindObjectStack(optionString)
 		self.Set(optionName, optionValue)
-		
+
 	def Set(self, optionName, optionValue):
 		if optionName in ["name", "SetOptionString", "Set", "Get"]:
 			raise Exception, "Invalid optionName %s" % optionName
 		self.__dict__[optionName] = optionValue
-	
+
 	def Get(self, optionName):
 		return self.__dict__[optionName]
 
 	def Exists(self, optionName):
 		return hasattr(self, optionName)
-		
+
 	def Apply(self, other):
 		if hasattr(other,"ApplyConfigSection"):
 			#print "Applying config section to ", other.__class__.__name__
@@ -56,7 +50,7 @@ class Section:
 
 class Config:
 
-	def __init__(self, cfg):	
+	def __init__(self, cfg):
 		self.Logger = pyproplogging.GetClassLogger(self)
 		for sectionName in cfg.sections():
 			if sectionName in ["GetSection"]:
@@ -68,7 +62,7 @@ class Config:
 
 	def GetSection(self, sectionName):
 		return self.__dict__[sectionName]
-		
+
 	def Apply(self, other):
 		if hasattr(other, "ApplyConfig"):
 			#print "Applying config to ", other.__class__.__name__
@@ -107,7 +101,7 @@ def Load(fileName, silent=True):
 		if not silent:
 			PrintOut("Using config file %s" % absFile)
 		configFiles.insert(0, absFile)
-		
+
 		#find Import statements from curFile
 		cfg = ConfigParser.ConfigParser()
 		cfg.readfp(open(absFile))
@@ -122,7 +116,7 @@ def Load(fileName, silent=True):
 	#read all config files
 	for file in configFiles:
 		cfg.readfp(open(file))
-	
+
 	#parse the configparser object
 	parsedConfig = Config(cfg)
 
@@ -137,19 +131,19 @@ def UpdateConfig(conf, updateParams, addMissingSections=False):
 	-----
 	conf: pyprop config object
 	updateParams: list of tuples, [('section', 'param', 'value'), ...]
-	
-	
+
+
 	Returns
 	-------
 	Updated pyprop config object
-	
-	
+
+
 	Note: Section references (i.e. through 'base') will be updated as well.
 
 	"""
 	tmpConf = Config(conf.cfgObj)
 	logger = GetFunctionLogger()
-	
+
 	#Update config
 	for section, param, val in updateParams:
 		if not hasattr(tmpConf, section) and addMissingSections:
@@ -163,5 +157,5 @@ def UpdateConfig(conf, updateParams, addMissingSections=False):
 
 	#Update config object from possible changed ConfigParser object
 	newConf = Config(tmpConf.cfgObj)
-	
+
 	return newConf

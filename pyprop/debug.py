@@ -1,7 +1,7 @@
 import sys
 
 import core
-from distribution import ProcCount, ProcId, pypar, PrintOut
+from distribution import ProcCount, ProcId, pypar
 
 
 DEBUG_PRINT_MEMORY_USAGE = False
@@ -24,7 +24,7 @@ def SerialPrint(str, proc=-1):
 		for i in procList:
 			if i == ProcId:
 				print "Proc %4i: %s" % (ProcId, str,)
-			sys.stdout.flush()	
+			sys.stdout.flush()
 			pypar.barrier()
 
 def PrintMemoryUsage(header, proc=-1):

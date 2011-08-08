@@ -1,20 +1,20 @@
 import pyprop.propagator.base as base
 from numpy import array, zeros
-from ..distribution import GetAnotherDistribution2
+from ..distribution import GetAnotherDistribution2, PrintOut
 
 class CombinedPropagator(base.PropagatorBase):
 	__Base = base.PropagatorBase
 
 	TransposeForward = 1
 	TransposeBackward = -1
-	
+
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
 		self.Rank = psi.GetRank()
 
 	def ApplyConfig(self, config):
 		self.__Base.ApplyConfig(self, config)
-	
+
 		#Create all sub propagators
 		self.SubPropagators = []
 		for i in range(self.Rank):
@@ -25,21 +25,21 @@ class CombinedPropagator(base.PropagatorBase):
 				#Create sub-propagator
 				prop = section.propagator(self.psi, i)
 				PrintOut("Propagator for rank %i is %s" % (i, prop))
-			
+
 				#Apply config to sub propagator
 				config.Apply(prop)
 				section.Apply(prop)
-				
+
 				self.SubPropagators.append(prop)
-			
-	def ApplyConfigSection(self, configSection): 
+
+	def ApplyConfigSection(self, configSection):
 		self.__Base.ApplyConfigSection(self, configSection)
 
 	def SetupStep(self, dt):
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()
 		self.DistributionList = []
 		self.DistributionList.append( (distrModel.GetDistribution().copy(), array(self.psi.GetData().shape)) )
-		#if len(self.DistributionList[0][0]) > 1: 
+		#if len(self.DistributionList[0][0]) > 1:
 		#	raise "Does not support more than 1D proc grid"
 		self.RankDistributionMap = zeros(len(self.SubPropagators)+1, dtype=int)
 
@@ -49,13 +49,13 @@ class CombinedPropagator(base.PropagatorBase):
 			#parallelization
 			if not distrModel.IsSingleProc():
 				if distrModel.IsDistributedRank(curRank) and not prop.SupportsParallelPropagation():
-					#Get the current distribution	
+					#Get the current distribution
 					distribIndex = self.RankDistributionMap[curRank]
-					startDistrib, startShape = self.DistributionList[distribIndex] 
+					startDistrib, startShape = self.DistributionList[distribIndex]
 
 					#Find the next distribution
 					finalDistrib = GetAnotherDistribution2(startDistrib, curRank, self.Rank)
-		
+
 					#Find shape of the next distribution
 					transpose = distrModel.GetTranspose()
 					fullShape = self.psi.GetRepresentation().GetFullShape()
@@ -111,7 +111,7 @@ class CombinedPropagator(base.PropagatorBase):
 				self.Transpose(curRank, self.TransposeBackward, srcPsi)
 				self.Transpose(curRank, self.TransposeBackward, destPsi)
 
-	
+
 	def CalculatePotentialExpectationValue(self, tmpPsi, potential, t, dt):
 		"""
 		Calculate expectation value of a grid potential
@@ -159,9 +159,9 @@ class CombinedPropagator(base.PropagatorBase):
 			nextRank = curRank + 1
 			#if curRank < self.Rank-1: nextRank = curRank + 1
 			#else: nextRank = curRank - 1
-			
+
 			"""
-                  0     1    2 
+                  0     1    2
 			0)	  D     -    -
 			1)    -     D    -
 			2)    D     -    -
@@ -185,12 +185,12 @@ class CombinedPropagator(base.PropagatorBase):
 
 			curRank = 0
 				do rank0, 1->0
-				
+
 			"""
 
 			#If we're going backward, we should do the
 			#inverse transpose in order to ensure that the
-			#wavefunction distributed the same way as when going 
+			#wavefunction distributed the same way as when going
 			#forward
 			if direction == self.TransposeBackward:
 				curRank, nextRank = nextRank, curRank
@@ -210,13 +210,13 @@ class CombinedPropagator(base.PropagatorBase):
 				transposeBufferName = psi.GetAvailableDataBufferName(nextShape)
 				if transposeBufferName == -1:
 					transposeBufferName = psi.AllocateData(nextShape)
-		
+
 				#Change Distribution
 				#print "ProcId = %i, direction = %i, curRank = %i (in)" % (ProcId, direction, curRank)
 				distrModel.ChangeDistribution(psi, nextDistrib, transposeBufferName)
 				#distrModel.GlobalBarrier()
 				#print "ProcId = %i, direction = %i, curRank = %i (out)" % (ProcId, direction, curRank)
-		
+
 				#HACK: Update all sub-representation with the new distribution
 				for i in range(self.Rank):
 					subRepr = psi.GetRepresentation().GetRepresentation(i)
@@ -227,12 +227,12 @@ class CombinedPropagator(base.PropagatorBase):
 		return prop.GetBasisFunction(rank, basisIndex)
 
 
-		
+
 	def PerformGridOperation(self, gridFunction, wavefunctionList):
 		"""
 		Perform a grid operation, as defined by the function 'gridFunction'.
-		The wavefunction is transformed to the grid representation, then 
-		'gridFunction' is applied, and finally the wavefunction is transformed 
+		The wavefunction is transformed to the grid representation, then
+		'gridFunction' is applied, and finally the wavefunction is transformed
 		back to the basis representation.
 		"""
 		distrModel = self.psi.GetRepresentation().GetDistributedModel()

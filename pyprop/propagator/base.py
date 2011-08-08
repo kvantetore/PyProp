@@ -1,4 +1,5 @@
 from pyprop.potential import CreatePotential
+from pyprop.distribution import PrintOut
 
 def CreatePropagator(config, psi):
 	#Create instance
@@ -9,7 +10,7 @@ def CreatePropagator(config, psi):
 		config.Propagation.Apply(propagator)
 	else:
 		print "WARNING: No propagator specified in config file. Make sure your potential evaluator includes kinetic energy."
-	
+
 	return propagator
 
 
@@ -19,29 +20,29 @@ def CreatePropagator(config, psi):
 class PropagatorBase:
 	"""
 	This is the most basic propagator, and should probably be used as a basis for creating new
-	propagators, but not used directly. It has functionality for setting up potential and applying 
+	propagators, but not used directly. It has functionality for setting up potential and applying
 	potentials, but no functionality for handling difference operators.
 
 	"""
-	
+
 	def __init__(self, psi):
 		#we'll need this later
 		self.psi = psi
 
-	def ApplyConfig(self, config): 
+	def ApplyConfig(self, config):
 		#Create list of potentials.
 		PrintOut("Creating Potentials...")
 		potentialNames = config.Propagation.potential_evaluation
 		self.PotentialList = [CreatePotential(config, name, self.psi) for name in potentialNames]
-		
+
 	def ApplyConfigSection(self, configSection):
 		self.RenormalizeActive = configSection.renormalization
-				
+
 	#Propagator interface. Should most likely be overridden by inheriting classes
 	def SetupStep(self, dt):
 		PrintOut("    Setting up Potentials.")
 		self.SetupPotential(dt)
-	
+
 	def RestartPropagation(self, timestep, startTime, propagationTime):
 		"""
 		Implement on inheriting propagator if any particular restarting
@@ -57,7 +58,7 @@ class PropagatorBase:
 			self.psi.Normalize()
 
 	def MultiplyHamiltonian(self, srcPsi, destPsi, t, dt):
-		raise "MultiplyHamiltonian should be implemented by inheriting class %s, but it's not" % (self.__class__) 
+		raise "MultiplyHamiltonian should be implemented by inheriting class %s, but it's not" % (self.__class__)
 
 	#Basic functionality that inheriting classes should use.
 	def SetupPotential(self, dt):
@@ -82,7 +83,7 @@ class PropagatorBase:
 	def GetPotentialList(self):
 		raise NotImplementedError
 
-	
+
 	def PerformGridOperation(self, gridFunction):
 		"""
 		Perform a grid operation, as defined by the function 'gridFunction'.
