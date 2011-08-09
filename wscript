@@ -10,7 +10,7 @@ blddir = 'build'
 def set_options(opt):
 	gr = opt.parser.add_option_group("pyprop build options")
 	opt.pyprop_build_options = gr
-	gr.add_option("--pyste", action="store_true", dest="PysteEnabled", default=False, help="Pyste is only run if this option is supplied to the build command")
+	gr.add_option("--enable-pyste", action="store_true", dest="PysteEnabled", default=False, help="Pyste is only run if this option is supplied to the build command")
 	
 	gr = opt.parser.add_option_group("pyprop configuration options")
 	opt.pyprop_configuration_options = gr
@@ -36,6 +36,7 @@ def configure(conf):
 
 
 def build(bld):
-	bld.add_subdirs("pyprop") 
+	bld.add_subdirs("pyprop")
+	bld.add_subdirs("modules")
 
-
+# vim: syntax=python

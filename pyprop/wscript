@@ -32,5 +32,4 @@ def build(bld):
 	bld.add_group("modules")
 	bld.add_subdirs("modules")
 
-
-
+# vim: syntax=python

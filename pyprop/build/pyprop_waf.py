@@ -4,7 +4,7 @@ from TaskGen import feature, extension, before, after
 import Task
 import Utils
 import Build
-import Options 
+import Options
 
 import fabricate as fab
 
@@ -21,8 +21,8 @@ def compile_cpp(self):
 	"""
 	Task function for compiling a cpp file
 	"""
-	fab.run(self.env.MPICXX, 
-		"-c", self.inputs[0].srcpath(self.env), 
+	fab.run(self.env.MPICXX,
+		"-c", self.inputs[0].srcpath(self.env),
 		"-o", self.outputs[0].bldpath(self.env),
 		["-I%s" % i for i in getattr(self, "additional_includes", [])],
 		["-I%s" %i for i in self.env.INCLUDE],
@@ -37,8 +37,8 @@ def compile_f90(self):
 	"""
 	Task function for compiling a cpp file
 	"""
-	fab.run(self.env.MPIF90, 
-		"-c", self.inputs[0].srcpath(self.env), 
+	fab.run(self.env.MPIF90,
+		"-c", self.inputs[0].srcpath(self.env),
 		"-o", self.outputs[0].bldpath(self.env),
 		["-I%s" % i for i in getattr(self, "additional_includes", [])],
 		["-D%s" %i for i in self.env.DEFINES],
@@ -68,7 +68,7 @@ def run_link(self):
 
 		#get the name with out the prefixing lib
 		if not baseLibName.startswith("lib"):
-			raise Exception("Shared library %s does not start with lib!" % lib) 
+			raise Exception("Shared library %s does not start with lib!" % lib)
 		localLibs.append(baseLibName[3:])
 
 
@@ -187,7 +187,7 @@ def run_python_generate(task):
 		raise Exception("python_generate task requires one python file as input")
 	if len(task.outputs) != 1:
 		raise Exception("python_generate task requires one file as output")
-	
+
 	python = task.env.PYTHON_EXEC
 	src = task.inputs[0].srcpath(task.env)
 	dst = task.outputs[0].bldpath(task.env)
@@ -228,7 +228,7 @@ def init_pyprop(self):
 @before('apply_core')
 def init_pyste(self):
 	"""
-	The pyste feature creates tasks to use pyste to create 
+	The pyste feature creates tasks to use pyste to create
 	boost::python wrappers
 
 	Furthermore, the generated boost::python wrappers are added
@@ -241,7 +241,7 @@ def init_pyste(self):
 	if len(pysteFiles) == 0:
 		return
 
-	#Set up nodes for the generated boost::python wrappers 
+	#Set up nodes for the generated boost::python wrappers
 	modulePath = self.path.abspath(self.env)
 	wrapperNodes = []
 	for f in Utils.to_list(self.pyste_files):
@@ -265,7 +265,7 @@ def init_pyste(self):
 		wrapperNodes.append(wrapperNode)
 
 	#main wrapper file
-	mainFile = os.path.join(pysteOutput, "_main.cpp") 
+	mainFile = os.path.join(pysteOutput, "_main.cpp")
 	wrapperNodes.append(self.path.find_or_declare([mainFile]))
 
 	#add to all nodes
@@ -279,7 +279,7 @@ def init_pyste(self):
 		tskGenerateWrapper.additional_includes = self.additional_includes
 		tskGenerateMain = self.create_task("pyste_multiple_generate_main")
 	else:
-		#if pyste is not enabled, we create placeholder tasks, 
+		#if pyste is not enabled, we create placeholder tasks,
 		#which checks that the generated boost::python wrapper files exist
 		tskGenerateWrapper = self.create_task("pyste_multiple_placeholder")
 		tskGenerateMain = self.create_task("pyste_multiple_generate_main_placeholder")
@@ -367,7 +367,7 @@ def extension_cpp(self, node):
 	additional_includes = list(self.additional_includes)
 	additional_includes += [self.path.srcpath(self.env), self.path.bldpath(self.env)]
 	tsk.additional_includes = additional_includes
-	
+
 	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
 
@@ -385,7 +385,7 @@ def extension_f90(self, node):
 	additional_includes = list(self.additional_includes)
 	additional_includes += [self.path.srcpath(self.env), self.path.bldpath(self.env)]
 	tsk.additional_includes = additional_includes
-	
+
 	#Add .o to list of compiled files for linking
 	self.compiled_files.append(outputNode)
 
@@ -442,44 +442,44 @@ def detect(conf):
 
 	check_fftw(conf)
 	consolidate_conf("FFTW")
-	
+
 	check_gsl(conf)
 	consolidate_conf("GSL")
-	
+
 	check_pyste(conf)
 
 
 def add_option_flags_fortran(opt, optName, variableName, **args):
 	opt.add_option(optName, action="store", dest=variableName, default=None, **args)
-	opt.add_option(optName + "-disable-default", action="store_true", dest=variableName + "DisableDefault", default=False)	
+	opt.add_option(optName + "-disable-default", action="store_true", dest=variableName + "DisableDefault", default=False)
 
 def set_option_flags(conf, variableName, flagName):
 	optVar = getattr(Options.options, variableName)
 	disableDefault = getattr(Options.options, variableName + "DisableDefault")
-	
+
 	if not disableDefault:
 		flagValue = getattr(conf.env, flagName)
 	else:
 		flagValue = []
 
 	if not optVar is None:
-		flagValue += optVar.split(" ")	
-	
+		flagValue += optVar.split(" ")
+
 	setattr(conf.env, flagName, flagValue)
 
 def add_options_lib(opt, libname, defaultLib, defaultPath="", defaultDefines=""):
 	l1 = libname.lower().replace("_","-")
 	l2 = libname.upper()
-	
-	opt.add_option("--%s-lib" % l1, action="store", dest="%s_LIB" % l2, default=defaultLib, help="List of Libraries from %s to link against, default=%s" % (l1, defaultLib))			
-	opt.add_option("--%s-path" % l1, action="store", dest="%s_PATH" % l2, default=defaultPath, help="Path to %s, default=%s" % (l1, defaultPath))			
-	opt.add_option("--%s-libpath" % l1, action="store", dest="%s_LIBPATH" % l2, default="lib", help="Path to the libraries of %s, default=lib" % l1)			
-	opt.add_option("--%s-inc" % l1, action="store", dest="%s_INC" % l2, default="include", help="Path to the include files of %s, default=include" % l1)			
-	opt.add_option("--%s-defines" % l1, action="store", dest="%s_DEFINES" % l2, default=defaultDefines, help="Extra defines required by %s, default=%s" % (l1, defaultDefines))			
+
+	opt.add_option("--%s-lib" % l1, action="store", dest="%s_LIB" % l2, default=defaultLib, help="List of Libraries from %s to link against, default=%s" % (l1, defaultLib))
+	opt.add_option("--%s-path" % l1, action="store", dest="%s_PATH" % l2, default=defaultPath, help="Path to %s, default=%s" % (l1, defaultPath))
+	opt.add_option("--%s-libpath" % l1, action="store", dest="%s_LIBPATH" % l2, default="lib", help="Path to the libraries of %s, default=lib" % l1)
+	opt.add_option("--%s-inc" % l1, action="store", dest="%s_INC" % l2, default="include", help="Path to the include files of %s, default=include" % l1)
+	opt.add_option("--%s-defines" % l1, action="store", dest="%s_DEFINES" % l2, default=defaultDefines, help="Extra defines required by %s, default=%s" % (l1, defaultDefines))
 
 def split_names(namestring):
 	return namestring.replace(",", " ").replace(";", " ").split()
-	
+
 
 def set_options_lib(conf, libname):
 	path = getattr(Options.options, "%s_PATH" % libname.upper())
@@ -494,7 +494,7 @@ def set_options_lib(conf, libname):
 		libpath = [libpath]
 	setattr(conf.env, "%s_LIBPATH" % libname.upper(), libpath)
 
-	inc = getattr(Options.options, "%s_INC" % libname.upper())	
+	inc = getattr(Options.options, "%s_INC" % libname.upper())
 	if not os.path.isabs(inc):
 		if path == "":
 			inc = []
@@ -506,16 +506,16 @@ def set_options_lib(conf, libname):
 
 	lib = getattr(Options.options, "%s_LIB" % libname.upper())
 	setattr(conf.env, "%s_LIB" % libname.upper(), split_names(lib))
-	
+
 	defines = getattr(Options.options, "%s_DEFINES" % libname.upper())
 	setattr(conf.env, "%s_DEFINES" % libname.upper(), split_names(defines))
-	
+
 
 def options_fortran(opt):
 	opt = opt.parser.add_option_group("Fortran options")
 	opt.add_option("--fortran-compiler", action="store", dest="FortranCompiler", default="mpif90", help="Fortran compiler to use")
 	add_option_flags_fortran(opt, "--fortarn-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
-	
+
 @conftest
 def check_fortran(conf):
 	print "  - Detecting Fortran90"
@@ -554,7 +554,7 @@ def options_python(opt):
 	opt.add_option("--python-inc", action="store", dest="PYTHON_INC", default=distutils.sysconfig.get_python_inc())
 	opt.add_option("--python-lib", action="store", dest="PYTHON_LIB", default="")
 	opt.add_option("--python-cxxflags", action="store", dest="PYTHON_CXXFLAGS", default="-fPIC")
-	
+
 
 @conftest
 def check_python(conf):
@@ -564,7 +564,7 @@ def check_python(conf):
 	conf.env.PYTHON_INC = split_names(Options.options.PYTHON_INC)
 	conf.env.PYTHON_LIB =  split_names(Options.options.PYTHON_LIB)
 	conf.env.PYTHON_CXXFLAGS = split_names(Options.options.PYTHON_CXXFLAGS)
-	
+
 	#TODO add compile tests
 
 def options_boost_python(opt):
@@ -575,7 +575,7 @@ def options_boost_python(opt):
 def check_boost_python(conf):
 	print "  - Detecting boost::python"
 	set_options_lib(conf, "boost_python")
-	
+
 	#TODO add compile tests
 
 
@@ -585,7 +585,7 @@ def options_blitz(opt):
 
 @conftest
 def check_blitz(conf):
-	print "  - Detecting blitz "  
+	print "  - Detecting blitz "
 	set_options_lib(conf, "blitz")
 
 
@@ -603,7 +603,7 @@ def check_trilinos(conf):
 
 		if Options.options.PypropUseTrilinosTpetra:
 			conf.env.TRILINOS_DEFINES += ["PYPROP_USE_TRILINOS_TPETRA"]
-	
+
 	#TODO add compile tests
 
 
@@ -615,7 +615,7 @@ def options_fftw(opt):
 def check_fftw(conf):
 	print "  - Detecting fftw"
 	set_options_lib(conf, "fftw")
-	
+
 	#TODO add compile tests
 
 
@@ -630,9 +630,9 @@ def options_mpi(opt):
 @conftest
 def check_mpi(conf):
 	print "  - Detecting MPI compilers"
-	
+
 	testprogram = "int main(int argc, char** argv) { return 0; }"
-	
+
 	conf.env.MPICXX = conf.find_program(Options.options.MPICXX, mandatory=True)
 	conf.env.MPIF90 = conf.find_program(Options.options.MPIF90, mandatory=True)
 	conf.env.MPIRUN = conf.find_program(Options.options.MPIRUN, mandatory=False)
@@ -669,31 +669,31 @@ def check_gsl(conf):
 def is_module_enabled(self, moduleName):
 	"""
 	Checks whether a module is enabled or disabled from the command line
-	
+
 	"""
 	enabled = True
-	
+
 	#defaults to the options set at config time
 	enableModules = self.env.EnableModules
 	disableModules = self.env.DisableModules
-	
+
 	#overridden now?
 	if Options.options.EnableModules != "":
 		enableModules = Options.options.EnableModules
 	if Options.options.DisableModules != "":
 		disableModules = Options.options.DisableModules
 
-	
-	# If enable-modules is specified, only the explicitly enabled modules 
+
+	# If enable-modules is specified, only the explicitly enabled modules
 	# are enabled
 	if enableModules != "":
 		enabled = moduleName in enableModules.split()
-		
+
 	# If the module is mentioned in disable-modules, it is disabled regardless
 	if moduleName in disableModules.split():
 		enabled = False
-		
-	return enabled 
+
+	return enabled
 
 
-Build.BuildContext.is_module_enabled = is_module_enabled 
+Build.BuildContext.is_module_enabled = is_module_enabled

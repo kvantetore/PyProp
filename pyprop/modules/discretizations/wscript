@@ -1,7 +1,7 @@
 import os.path
 import os
 
-subdirs = "bspline fourier coupledspherical reducedspherical"
+subdirs = "bspline fourier coupledspherical reducedspherical sphericalbasis"
 
 def set_options(opt):
 	print('----> Options from discretizations')
