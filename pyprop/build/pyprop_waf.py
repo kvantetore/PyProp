@@ -514,7 +514,7 @@ def set_options_lib(conf, libname):
 def options_fortran(opt):
 	opt = opt.parser.add_option_group("Fortran options")
 	opt.add_option("--fortran-compiler", action="store", dest="FortranCompiler", default="mpif90", help="Fortran compiler to use")
-	add_option_flags_fortran(opt, "--fortarn-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
+	add_option_flags_fortran(opt, "--fortran-flags", "FortranFlags", help="Flags to pass to the fortran compiler")
 
 @conftest
 def check_fortran(conf):
@@ -589,10 +589,11 @@ def check_blitz(conf):
 	set_options_lib(conf, "blitz")
 
 
-
 def options_trilinos(opt):
 	opt = opt.parser.add_option_group("trilinos options")
 	add_options_lib(opt, "trilinos", "epetra, teuchos, ifpack, anasazi", "/opt/trilinos")
+	opt.add_option("--disable-trilinos", action="store_false", dest="PypropUseTrilinos", default=True, help="Disables integration with trilinos completely.")
+	opt.add_option("--disable-trilinos-tpetra", action="store_false", dest="PypropUseTrilinosTpetra", default=True, help="Disables trilinos/tpetra integration. Only applies if trilinos is enabled")
 
 @conftest
 def check_trilinos(conf):
@@ -647,6 +648,7 @@ def options_pyste(opt):
 	opt.add_option("--gccxml-flags", action="store", dest="GCCXML_FLAGS", default="", help="Flags for gccxml")
 	opt.add_option("--pyste",  action="store", dest="PYSTE", default=pyste, help="Command to run pyste")
 	opt.add_option("--pyste-include", action="store", dest="PYSTE_INCLUDE", default="/usr/lib/openmpi/include", help="Extra include paths for pyste")
+	opt.add_option("--enable-pyste", action="store_true", dest="PysteEnabled", default=False, help="Pyste is only run if this option is supplied to the build command")
 
 @conftest
 def check_pyste(conf):
