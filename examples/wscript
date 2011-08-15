@@ -1,0 +1,23 @@
+import os.path
+import os
+import Options
+
+examples_to_build = ["1d/pulse", "tensor/hydrogen_1d"]
+
+def set_options(opt):
+	print('--> Options from pyprop examples')
+
+	gr = opt.pyprop_build_options
+	opt.sub_options(" ".join(examples_to_build))
+
+def configure(conf):
+	print('--> Configuring pyprop examples')
+
+	[conf.sub_config(m) for m in examples_to_build]
+
+def build(bld):
+	for m in examples_to_build:
+		bld.add_group(m)
+		bld.add_subdirs(m)
+
+# vim: syntax=python

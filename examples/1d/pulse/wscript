@@ -1,0 +1,31 @@
+import os
+import Options
+
+sources = [
+]
+
+pyste_module = "libpulse"
+pyste_sources = [
+	"wrapper.pyste",
+]
+
+def set_options(opt):
+	#options from pyprop_waf
+	opt.tool_options("pyprop_waf", tooldir="../../../pyprop/build")
+	
+
+def configure(conf):
+	print("---> Configuring pulse")
+
+
+def build(bld):
+	tskgen = bld.new_task_gen(
+		features="pyprop pyste compile link",
+		source=sources,
+		local_libraries="core/libcore",
+		pyste_files=pyste_sources,
+		pyste_module=pyste_module,
+		pyste_force=False,
+		pyprop_path="../../..",
+	)
+

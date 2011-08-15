@@ -2,19 +2,24 @@
 import sys
 import os
 
+from numpy import double, abs, exp
+
 #Make sure we use the correct pyprop library
 sys.path.insert(1, os.path.abspath("../../.."))
-
-#Load and reload pyprop in order to get recent changes
 import pyprop
-pyprop = reload(pyprop)
-from libpotential import *
 
-#numpy an pylab for good measure
-try:
-	from pylab import *
-except: pass
-from numpy import *
+import pyprop
+if pyprop.IsRunningFromSource:
+	sys.path.append(os.path.join(pyprop.BuildPath, "../examples", "1d", "pulse"))
+import libpulse
+from libpulse import PulsePotential_1
+
+import pyprop.config
+import pyprop.problem
+
+#referenced from config file
+import pyprop.modules.discretizations.fourier as fourier
+
 
 #Choose radial grid type:
 class GridType:
@@ -29,15 +34,15 @@ def SetGridType(conf, gridType):
 	#Set Representation section
 	if gridType == GridType.CARTESIAN:
 		conf.Representation = conf.CartesianRepresentation
-		conf.Propagation.propagator = pyprop.CartesianPropagator
+		conf.Propagation.propagator = fourier.CartesianPropagator
 
 	elif gridType == GridType.TRANSFORMED:
 		conf.Representation = conf.TransformedRepresentation
-		conf.Propagation.propagator = pyprop.TransformedGridPropagator
+		conf.Propagation.propagator = fourier.TransformedGridPropagator
 	else:
 		raise "Invalid grid type ", gridType
 
-	#Set radialtype 
+	#Set radialtype
 	conf.Representation.radialtype = conf.Representation.type
 
 def SetupConfig(conf, **args):
@@ -59,7 +64,7 @@ def SetupConfig(conf, **args):
 	else:
 		gridType = None
 	SetGridType(conf, gridType)
-	
+
 	#TimeStep
 	if 'dt' in args:
 		dt = args['dt']
@@ -81,10 +86,10 @@ def SetupConfig(conf, **args):
 	print ""
 
 def test(**args):
-	conf = pyprop.Load("config.ini")
+	conf = pyprop.config.Load("config.ini")
 	SetupConfig(conf, **args)
 
-	prop = pyprop.Problem(conf)
+	prop = pyprop.problem.Problem(conf)
 	prop.SetupStep()
 	return prop
 
@@ -131,13 +136,13 @@ def RunPulseExperiment(gridType=GridType.CARTESIAN):
 		norm = prop.psi.GetNorm()
 		corr = abs(prop.psi.InnerProduct(initPsi))**2
 		print "t = ", t, "; Norm = ", norm, "; Corr = ", corr
-		
+
 		index += 1
 
 	norm = prop.psi.GetNorm()
 	corr = abs(prop.psi.InnerProduct(initPsi))**2
 	print "Final: Norm = ", norm, "; Corr = ", corr
-	
+
 
 	return prop
 
@@ -153,8 +158,8 @@ def CalculateAngularMomentumDistribution(prop):
 			lDistrib[l] += lmDistrib[MapLmIndex(l,m)]
 
 	return lDistrib
-	
-	
+
+
 def PlotAngularMomentumDistribution(prop):
 	lDistrib = CalculateAngularMomentumDistribution(prop)
 	bar(r_[0:len(lDistrib)], lDistrib)
