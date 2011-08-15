@@ -8,12 +8,11 @@
 *.so
 *.pyc
 *.swp
-build/
 .lock-wscript
 .waf*
 extern/blitz/blitz-configure/
 *.mod
-build/
+./build/
 .lock-wscript
 .waf*
 .deps*
