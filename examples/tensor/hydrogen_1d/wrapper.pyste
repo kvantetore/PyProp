@@ -1,0 +1,9 @@
+#declare potential evaluator for cartesian-like potentials
+PotentialEvaluator = Template("DynamicPotentialEvaluator", "potential.cpp")
+
+#Compile potentials
+PotentialEvaluator("KineticEnergyPotential<1> 1","KineticEnergyPotential_1")
+#PotentialEvaluator("DipoleLaserPotential<1> 1","DipoleLaserPotential_1")
+PotentialEvaluator("RegularizedCoulombPotential<1> 1","RegularizedCoulombPotential_1")
+PotentialEvaluator("HarmonicPotential<1> 1","HarmonicPotential_1")
+PotentialEvaluator("ManolopoulosAbsorber<1> 1","ManolopoulosAbsorber_1")
