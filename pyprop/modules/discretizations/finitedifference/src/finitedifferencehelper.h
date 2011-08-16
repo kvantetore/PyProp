@@ -1,11 +1,11 @@
 #ifndef FINITEDIFFERENCEHELPER_H
 #define FINITEDIFFERENCEHELPER_H
 
-#include "../common.h"
-#include "../utility/blitzlapack.h"
-#include "../utility/blitzblas.h"
-#include "../utility/blitztricks.h"
-#include "../utility/matrix_conversion.h"
+#include <core/common.h>
+#include <core/utility/blitzlapack.h>
+#include <core/utility/blitzblas.h>
+#include <core/utility/blitztricks.h>
+#include <core/utility/matrix_conversion.h>
 
 
 class FiniteDifferenceHelper

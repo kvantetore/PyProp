@@ -1,19 +1,21 @@
-from numpy import ones
+from numpy import ones, array, zeros, int32, r_
 import re
 
 import pyprop.core as core
-import pyprop.tensorpotential.GeometryInfo as geometryinfo
+import pyprop.tensorpotential.geometryinfo as geometryinfo
+from pyprop.tensorpotential.tensorpotentialgenerator import RegisterBasisfunction
 from pyprop.pyproplogging import GetClassLogger
 
+import libfinitedifference
 
-class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase):
+class GeometryInfoFiniteDifferenceBandedDistributed(geometryinfo.GeometryInfoDistributedBase):
 	"""
 	Geometry for a banded finite difference matrix with support for parallel
 	matvec through Epetra.
 	"""
 	def __init__(self, repr, bandCount, useGrid):
-		GeometryInfoDistributedBase.__init__(self)
-		#Set member variables 
+		geometryinfo.GeometryInfoDistributedBase.__init__(self)
+		#Set member variables
 		self.UseGrid = useGrid
 		self.BaseRank = repr.GetBaseRank()
 		self.Representation = repr
@@ -49,7 +51,7 @@ class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase)
 		k = self.BandCount
 		rowSize = 2*k + 1
 
-		#Get local rows from wavefunction distribution 
+		#Get local rows from wavefunction distribution
 		psiRange = distr.GetLocalIndexRange(numberOfRows, rank)
 
 		#Check that proc number for this rank divides number of rows
@@ -57,7 +59,7 @@ class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase)
 			procRankIdx = distr.GetDistribution()[rank]
 			numProcRank = distr.GetTranspose().GetProcGridShape()[procRankIdx]
 			infoStr = """
-				Number of procs %i for rank %i does not divide number of 
+				Number of procs %i for rank %i does not divide number of
 				matrix rows (psi shape) %s
 				""".replace("\n", "").replace("\t", "") \
 				% (numProcRank, rank, numberOfRows)
@@ -74,7 +76,7 @@ class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase)
 
 			#iterate one full row
 			for j in xrange(colStart, colStart+rowSize):
-			
+
 				#Check for padded element, if so, set row/col to -1
 				if j >= colEnd:
 					pairs[index, 0] = -1
@@ -117,14 +119,14 @@ class GeometryInfoFiniteDifferenceBandedDistributed(GeometryInfoDistributedBase)
 #                       Finite Difference Basis Function
 #-------------------------------------------------------------------------------
 
-
+@RegisterBasisfunction(core.CustomGridRepresentation)
 class BasisfunctionFiniteDifference(geometryinfo.BasisfunctionBase):
 	"""
-	Basisfunction class for finite differences. 
+	Basisfunction class for finite differences.
 
 	Finite differences is not really a basis expansion, as it is
-	always represented on a grid, but it's practical to have it 
-	in this framework, as it makes it easier to switch between 
+	always represented on a grid, but it's practical to have it
+	in this framework, as it makes it easier to switch between
 	FD and B-splines
 	"""
 
@@ -146,13 +148,13 @@ class BasisfunctionFiniteDifference(geometryinfo.BasisfunctionBase):
 				array([.0] * (self.BandCount * (self.BandCount+1) / 2))
 		self.Offset = 0
 		self.Logger = GetClassLogger(self)
-		
+
 	def GetGridRepresentation(self):
 		return self.Representation
 
 	def GetBasisRepresentation(self):
 		return self.Representation
-		
+
 	def GetGeometryInfo(self, geometryName):
 		geom = geometryName.lower().strip()
 		if geom == "identity":
@@ -175,28 +177,34 @@ class BasisfunctionFiniteDifference(geometryinfo.BasisfunctionBase):
 			else:
 				raise geometryinfo.UnsupportedGeometryException("Geometry '%s' not supported by BasisfunctionFiniteDifference" % geometryName)
 
-	def RepresentPotentialInBasis(self, source, dest, rank, 
+	def RepresentPotentialInBasis(self, source, dest, rank,
 	                              geometryInfo, differentiation, configSection):
 		if differentiation == 0:
 			diffMatrix = ones((self.GridSize, 1), dtype=complex)
 		elif differentiation == 2:
-			self.BoundaryScaling = getattr(configSection, "boundary_scaling%i"\
-				%  rank, self.BoundaryScaling)
-			self.Offset = getattr(configSection, "offset%i"\
-				%  rank, self.Offset)
-			self.Logger.debug("Using boundary condition scaling for rank %i: \
-					%s" % (rank, self.BoundaryScaling))
-			fd = core.FiniteDifferenceHelperCustomBoundary()
-			baseRank = self.Representation.GetBaseRank()
-			grid = self.Representation.GetGlobalGrid(baseRank)
-			fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling, \
-					self.Offset)
+			customBoundary = getattr(configSection, "custom_boundary", False)
+			if customBoundary:
+				self.BoundaryScaling = getattr(configSection, "boundary_scaling%i"\
+					%  rank, self.BoundaryScaling)
+				self.Offset = getattr(configSection, "offset%i"\
+					%  rank, self.Offset)
+				self.Logger.debug("Using boundary condition scaling for rank %i: \
+						%s" % (rank, self.BoundaryScaling))
+				fd = libfinitedifference.FiniteDifferenceHelperCustomBoundary()
+				baseRank = self.Representation.GetBaseRank()
+				grid = self.Representation.GetGlobalGrid(baseRank)
+				fd.Setup(grid, self.DifferenceOrder, self.BoundaryScaling, \
+						self.Offset)
+			else:
+				fd = libfinitedifference.FiniteDifferenceHelper()
+				baseRank = self.Representation.GetBaseRank()
+				grid = self.Representation.GetGlobalGrid(baseRank)
+				fd.Setup(grid, self.DifferenceOrder)
 			diffMatrix = fd.SetupLaplacianBlasBanded().copy()
+
 		else:
 			raise Exception("Finite Difference currently only supports diff \
 				of order 2")
 
 		indexPairs = geometryInfo.GetGlobalBasisPairs()
 		core.RepresentPotentialInBasisFiniteDifference(diffMatrix, source, dest, indexPairs, rank)
-
-
