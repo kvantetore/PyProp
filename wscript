@@ -37,7 +37,6 @@ def configure(conf):
 
 def build(bld):
 	bld.add_subdirs("pyprop")
-	bld.add_subdirs("modules")
 	bld.add_subdirs("examples")
 
 # vim: syntax=python
