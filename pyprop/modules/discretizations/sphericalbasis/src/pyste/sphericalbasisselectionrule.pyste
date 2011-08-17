@@ -1,0 +1,9 @@
+#Selection rules for potential representations in a spherical basis (l,m)
+Class("SphericalBasisSelectionRule", "src/tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedField", "src/tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleDiagonal", "src/tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular", "src/tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleLinearPolarizedFieldAngle", "src/tensorpotential/sphericalbasisselectionrule.h")
+Class("SphericalBasisSelectionRuleDiatomicCoulomb", "src/tensorpotential/sphericalbasisselectionrule.h")
+
+

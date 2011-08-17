@@ -1,0 +1,34 @@
+from Configure import conftest
+from TaskGen import feature, extension, before, after
+import Options
+
+sources = [
+	"src/representation/sphericalharmonicbasisrepresentation.cpp",
+]
+
+pyste_module = "libsphericalbasis"
+pyste_sources = [
+	"src/pyste/sphericalbasisselectionrule.pyste",
+	"src/pyste/sphericalharmonicbasisrepresentation.pyste",
+]
+
+def set_options(opt):
+	pass
+
+def configure(conf):
+	print("-----> Configuring sphericalbasis")
+
+
+def build(bld):
+	if bld.is_module_enabled("sphericalbasis"):
+		tskgen = bld.new_task_gen(
+			features="pyprop pyste compile link",
+			source=sources,
+			local_libraries="core/libcore",
+			pyste_files=pyste_sources,
+			pyste_module=pyste_module,
+			pyste_force=False,
+			pyprop_path="../../../../",
+		)
+
+# vim: syntax=python

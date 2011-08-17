@@ -1,0 +1,15 @@
+#Representation
+Repr = Class("SphericalBasis::SphericalHarmonicBasisRepresentation", "src/representation/sphericalharmonicbasisrepresentation.h")
+no_virtual(Repr)
+use_shared_ptr(Repr)
+
+#Range-class for mananging quantum numbers
+LmBasisRange = Class("SphericalBasis::LmBasisRange", "src/representation/lmbasisrange.h")
+no_virtual(LmBasisRange)
+use_shared_ptr(LmBasisRange)
+
+#Struct to keep track of the quantum numbers of the spherical harmonic representation
+LmIndex = Class("SphericalBasis::LmIndex", "src/representation/lmbasisrange.h")
+
+#Class for calculating clebsh gordan coefficients
+ClebschGordan = Class("SphericalBasis::ClebschGordan", "src/representation/lmbasisrange.h")
