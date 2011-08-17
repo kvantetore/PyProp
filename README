@@ -1,0 +1,17 @@
+Pyprop - A framework for propagating the time dependent Schrödinger equation
+(TDSE) written in Python/C++.
+
+Pyprop is a fairly general framework for solving TDSE-like initial value
+problems, and related problems. The aim is to have a standard framework taking
+care of parallelization, loading and saving the wavefunction, etc.
+Discretization schemes and propagation methods are implemented following
+a standard interface, which enables users to test different methods without
+requiring detailed knowledge about the implementation.
+
+Propagators for N-dimensional Cartesian coordinates, as well as 3D spherical
+coordinates are included in the standard package. In addition representations
+can be combined to create more exotic systems, such as including radial nuclear
+motion in a diatomic molecule (3D + 1D), combining 3 radial dimensions to
+simulate a 1D model for a 3-electron atom (1D + 1D + 1D).
+
+Pyprop is written in Python (depending heavily on the numpy module), while all the computationally intensive routines have been developed in C++ (using the blitz++ array library)
