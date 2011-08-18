@@ -14,4 +14,6 @@ can be combined to create more exotic systems, such as including radial nuclear
 motion in a diatomic molecule (3D + 1D), combining 3 radial dimensions to
 simulate a 1D model for a 3-electron atom (1D + 1D + 1D).
 
-Pyprop is written in Python (depending heavily on the numpy module), while all the computationally intensive routines have been developed in C++ (using the blitz++ array library)
+Pyprop is written in Python (depending heavily on the numpy module), while all
+the computationally intensive routines have been developed in C++ (using the
+blitz++ array library)

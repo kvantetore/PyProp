@@ -534,13 +534,21 @@ def check_fortran(conf):
 
 def options_blas_lapack(opt):
 	opt = opt.parser.add_option_group("BLAS/LAPACK options")
-	add_options_lib(opt, "blas_lapack", "mkl, guide, mkl_core, mkl_lapack, pthread", )
+	add_options_lib(opt, "blas_lapack", "blas lapack")
+	opt.add_option("--enable-blas-mkl", action="store_true",
+			dest="PypropUseMKL", default=False,
+			help="Enable Intel MKL for BLAS/LAPACK.")
 
 @conftest
 def check_blas_lapack(conf):
-	print "  - Detecting BLAS/LAPACK"
-	set_options_lib(conf, "blas_lapack")
-	conf.env.BLAS_LAPACK_DEFINES += ["PYPROP_USE_BLAS"]
+	if Options.options.PypropUseMKL:
+		print "  - Detecting Intel MKL BLAS/LAPACK"
+		Options.options.BLAS_LAPACK_LIB = "mkl, guide, mkl_core, mkl_lapack, pthread"
+		set_options_lib(conf, "blas_lapack")
+		conf.env.BLAS_LAPACK_DEFINES += ["PYPROP_USE_BLAS_MKL"]
+	else:
+		print "  - Detecting BLAS/LAPACK"
+		set_options_lib(conf, "blas_lapack")
 
 	#TODO add compile tests
 
