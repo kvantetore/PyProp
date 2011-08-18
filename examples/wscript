@@ -9,15 +9,19 @@ def set_options(opt):
 
 	gr = opt.pyprop_build_options
 	opt.sub_options(" ".join(examples_to_build))
+	gr.add_option("--build-examples", action="store_true",
+		dest="PypropBuildExamples", default=False, 
+		help="Build some simple Pyprop examples")
 
 def configure(conf):
-	print('--> Configuring pyprop examples')
-
-	[conf.sub_config(m) for m in examples_to_build]
+	if Options.options.PypropBuildExamples:
+		print('--> Configuring pyprop examples')
+		[conf.sub_config(m) for m in examples_to_build]
 
 def build(bld):
-	for m in examples_to_build:
-		bld.add_group(m)
-		bld.add_subdirs(m)
+	if Options.options.PypropBuildExamples:
+		for m in examples_to_build:
+			bld.add_group(m)
+			bld.add_subdirs(m)
 
 # vim: syntax=python
