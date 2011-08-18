@@ -1,0 +1,36 @@
+Pyprop uses the waf framework for configuration and building, and also
+fabricate.
+
+
+Quickstart
+==========
+
+The first step is to configure and build blitz++. Simply go to the extern/blitz
+folder, and execute 
+
+  ./configure-blitz
+
+To configure pyprop, issue the following (in the pyprop root folder)
+
+  ./waf configure
+
+Then, build pyprop with
+
+  ./waf build
+
+That's it (hopefully)!
+
+
+Some more details
+=================
+
+Pyprop requires several external libraries to function optimally, such as
+(optimized) BLAS/LAPACK and Trilinos. You may also run into problems if some
+default libraries are named differently than pyprop expects. In such cases,
+additional options must be passed to waf during the configure phase. For a list
+of these options, run
+
+  ./waf --help
+
+Note also the option to control which pyprop modules should be built; those
+found in the pyprop/modules subfolder (all are built by default).
