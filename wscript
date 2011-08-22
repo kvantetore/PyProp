@@ -21,7 +21,7 @@ def set_options(opt):
 	opt.tool_options("pyprop_waf", tooldir="./pyprop/build")
 
 	#options from subfolders
-	opt.sub_options("pyprop examples")
+	opt.sub_options("pyprop examples modules")
 
 
 def configure(conf):
@@ -32,11 +32,12 @@ def configure(conf):
 	conf.check_tool("pyprop_waf", tooldir="./pyprop/build")
 
 	#configure modules
-	conf.sub_config("pyprop examples")
+	conf.sub_config("pyprop examples modules")
 
 
 def build(bld):
 	bld.add_subdirs("pyprop")
 	bld.add_subdirs("examples")
+	bld.add_subdirs("modules")
 
 # vim: syntax=python

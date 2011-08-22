@@ -32,5 +32,6 @@ of these options, run
 
   ./waf --help
 
+Note that most of these options must be given during the configure phase.
 Note also the option to control which pyprop modules should be built; those
 found in the pyprop/modules subfolder (all are built by default).

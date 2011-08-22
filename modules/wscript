@@ -1,0 +1,35 @@
+import os.path
+import os
+import Options
+
+def get_modules(ctx):
+	"""Return all module (directories) in current directory
+
+	"""
+	path = ctx.get_curdir()
+	dirItems = ["%s/%s" % (path, it) for it in os.listdir(path)]
+	modules = filter(os.path.isdir, dirItems)
+	symLinks = filter(os.path.islink, dirItems)
+	modules += [m for m in symLinks 
+		if os.path.isdir(os.readlink(m))]
+
+	return modules
+
+
+def set_options(opt):
+	print('--> Options from pyprop modules')
+
+	gr = opt.pyprop_build_options
+	opt.sub_options(" ".join(get_modules(opt)))
+
+def configure(conf):
+	print('--> Configuring modules')
+
+	[conf.sub_config(m) for m in get_modules(conf)]
+
+def build(bld):
+	for m in get_modules(bld):
+		bld.add_group(m)
+		bld.add_subdirs(m)
+
+# vim: syntax=python
