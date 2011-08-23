@@ -1,12 +1,17 @@
+from pyprop.propagator.base import PropagatorBase
+from pyprop.createinstance import CreateInstanceRank
+from pyprop.timer import Timers
+
+import libkrylov
 
 class CayleyPropagator(PropagatorBase):
 	__Base = PropagatorBase
-	
+
 	def __init__(self, psi):
 		self.__Base.__init__(self, psi)
 		self.Rank = psi.GetRank()
-		
-		self.Solver = CreateInstanceRank("core.krylov_GmresWrapper", self.Rank)
+
+		self.Solver = CreateInstanceRank("libkrylov.krylov_GmresWrapper", self.Rank)
 		self.Timers = Timers()
 
 	def ApplyConfig(self, config):
@@ -31,14 +36,14 @@ class CayleyPropagator(PropagatorBase):
 			self.Preconditioner = None
 
 
-	def ApplyConfigSection(self, configSection): 
+	def ApplyConfigSection(self, configSection):
 		self.__Base.ApplyConfigSection(self, configSection)
 
 		#Set up base propagator
 		configSection.Apply(self.BasePropagator)
-		#Set up the solver 
+		#Set up the solver
 		configSection.Apply(self.Solver)
-	
+
 	def SetupStep(self, dt):
 		self.Timers["SetupStep"].Start()
 		self.BasePropagator.SetupStep(dt)
@@ -83,7 +88,7 @@ class CayleyPropagator(PropagatorBase):
 		self.Timers["ForwardStep"].Start()
 		self.MultiplySpH(self.psi, self.TempPsi, -1.0j*dt/2, t + abs(dt/2.), dt)
 		self.Timers["ForwardStep"].Stop()
-		
+
 		#plot(abs(self.TempPsi.GetData()), "g--")
 
 		#solve (S - i dt H) psi(t+dt)
@@ -140,7 +145,7 @@ class CayleyPropagator(PropagatorBase):
 		destPsi.GetData()[:] *= hFactor
 
 		destPsi.GetData()[:] += self.TempPsiMultiply.GetData()
-		
+
 
 	def SolverCallback(self, sourcePsi, destPsi, t, dt):
 		self.MultiplySpH(sourcePsi, destPsi, 1.0j*dt/2.0, t, dt)
@@ -154,5 +159,5 @@ class CayleyPropagator(PropagatorBase):
 		#print sum(abs(tempPsi.GetData())**2), abs(sum(conj(sourcePsi.GetData()) * destPsi.GetData()))**2
 
 
-		
+
 

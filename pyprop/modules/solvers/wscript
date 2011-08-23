@@ -1,7 +1,7 @@
 import os.path
 import os
 
-subdirs = "krylov"
+subdirs = "krylov trilinos"
 
 def set_options(opt):
 	opt.sub_options(subdirs)

@@ -98,7 +98,7 @@ class GeometryInfoSphericalHarmonicDistributed(geometryinfo.GeometryInfoDistribu
 
 		self.TempArrays = [recvTemp, sendTemp]
 
-@RegisterBasisfunction
+@RegisterBasisfunction(libsphericalbasis.SphericalHarmonicBasisRepresentation)
 class BasisfunctionSphericalHarmonic(geometryinfo.BasisfunctionBase):
 	"""
 	Basisfunction class for spherical harmonics Y{l1,m1}
@@ -140,7 +140,8 @@ class BasisfunctionSphericalHarmonic(geometryinfo.BasisfunctionBase):
 		if geom == "identity":
 			return GeometryInfoCommonIdentity(False)
 		elif geom == "diagonal":
-			selectionRule = core.SphericalBasisSelectionRuleDiagonal()
+			selectionRule = \
+					libsphericalbasis.SphericalBasisSelectionRuleDiagonal()
 			return self.GeometryFunction(self.BasisRepresentation,
 					selectionRule)
 		elif geom == "dense":
@@ -149,16 +150,16 @@ class BasisfunctionSphericalHarmonic(geometryinfo.BasisfunctionBase):
 			selectionRuleName = geom[len("selectionrule_"):]
 			if selectionRuleName == "linearpolarizedfield":
 				selectionRule = \
-					core.SphericalBasisSelectionRuleLinearPolarizedField()
+					libsphericalbasis.SphericalBasisSelectionRuleLinearPolarizedField()
 			elif selectionRuleName == "linearpolarizedfieldperpendicular":
 				selectionRule = \
-					core.SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular()
+					libsphericalbasis.SphericalBasisSelectionRuleLinearPolarizedFieldPerpendicular()
 			elif selectionRuleName == "linearpolarizedfieldangle":
 				selectionRule = \
-					core.SphericalBasisSelectionRuleLinearPolarizedFieldAngle()
+					libsphericalbasis.SphericalBasisSelectionRuleLinearPolarizedFieldAngle()
 			elif selectionRuleName == "diatomiccoulomb":
 				selectionRule = \
-					core.SphericalBasisSelectionRuleDiatomicCoulomb()
+					libsphericalbasis.SphericalBasisSelectionRuleDiatomicCoulomb()
 			else:
 				raise Exception("Unkonwn selection rule %s" % selectionRuleName)
 

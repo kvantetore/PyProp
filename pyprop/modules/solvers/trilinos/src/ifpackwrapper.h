@@ -3,7 +3,7 @@
 #include <core/representation/representation.h>
 #include <core/trilinos/pyprop_epetra.h>
 #include <core/trilinos/pyprop_tpetra.h>
-#include <core/trilinos/wrappers/epetrapotential.h>
+#include "src/epetrapotential.h"
 
 #include <Ifpack.h>
 
